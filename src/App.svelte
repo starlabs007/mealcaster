@@ -6,6 +6,7 @@
   import Catalog from './routes/Catalog.svelte';
   import RecipeDetail from './routes/RecipeDetail.svelte';
   import Grocery from './routes/Grocery.svelte';
+  import SheetsSettings from './routes/SheetsSettings.svelte';
   import { route } from './lib/router.svelte.js';
 
   const recipeId = $derived(route.path.match(/^\/recipe\/([\w-]+)$/)?.[1]);
@@ -26,5 +27,9 @@
     <WeeklyPlanner />
   {/if}
 </main>
+{#if route.path === '/sheets-sync'}
+  <!-- The settings modal sits over the weekly menu, as in the mock. -->
+  <SheetsSettings />
+{/if}
 <AppFooter />
 <Toast />

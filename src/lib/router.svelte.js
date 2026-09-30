@@ -1,5 +1,6 @@
 // Minimal hash router — hash URLs work on GitHub Pages without server rewrites.
-// Routes: #/ (weekly menu), #/catalog?day=&q=&filter=, #/recipe/:id?day=
+// Routes: #/ (weekly menu), #/catalog?day=&q=&filter=, #/recipe/:id?day=, #/grocery,
+// #/sheets-sync (settings modal over the weekly menu)
 
 /** @returns {{ path: string, query: Record<string, string> }} */
 function parse() {
@@ -9,10 +10,20 @@ function parse() {
 
 export const route = $state(parse());
 
+// Whether there's an earlier in-app page to go back to.
+let inAppHistory = false;
+
 window.addEventListener('hashchange', () => {
+  inAppHistory = true;
   Object.assign(route, parse());
   window.scrollTo({ top: 0 });
 });
+
+/** Back to the previous in-app page, or `fallback` when the app was opened here. */
+export function goBack(fallback = '/') {
+  if (inAppHistory) history.back();
+  else navigate(fallback);
+}
 
 /** @param {string} path @param {Record<string, string | undefined | null>} [query] */
 export function href(path, query = {}) {

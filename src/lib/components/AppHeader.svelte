@@ -17,19 +17,14 @@
       ? 'recipe-catalog'
       : route.path === '/grocery'
         ? 'grocery'
-        : 'weekly-menu',
+        : route.path === '/sheets-sync'
+          ? 'sheets-sync'
+          : 'weekly-menu',
   );
   let search = $state('');
 
   const groceries = $derived(groceryCount());
   const isThisWeek = $derived(planner.weekStart === mondayOf(new Date()));
-
-  /** @param {(typeof tabs)[number]} tab */
-  function selectTab(event, tab) {
-    if (tab.id !== 'sheets-sync') return;
-    event.preventDefault();
-    comingSoon(tab.label);
-  }
 
   function submitSearch(event) {
     event.preventDefault();
@@ -43,7 +38,6 @@
       <a
         href={href(tab.path)}
         aria-current={tab.id === active ? 'page' : undefined}
-        onclick={(e) => selectTab(e, tab)}
         class="whitespace-nowrap rounded-lg px-4 py-2 text-label-md transition-all {tab.id === active
           ? 'bg-primary-container text-on-primary shadow-sm'
           : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}"

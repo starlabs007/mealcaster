@@ -12,7 +12,7 @@
   import { planner, currentWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { formatRange, formatWeekday, isoWeek } from '../lib/dates.js';
-  import { showToast, comingSoon } from '../lib/toast.svelte.js';
+  import { showToast } from '../lib/toast.svelte.js';
 
   const toneClass = {
     sage: 'bg-[#eaf0ec] text-[#2c4635]',
@@ -177,9 +177,9 @@
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2 print:hidden md:justify-end">
-      <button type="button" class="btn-outline" onclick={() => comingSoon('Google Sheets sync')}>
-        <Icon name="sync" class="text-[16px]" /> Sync Sheets
-      </button>
+      <a href={href('/sheets-sync')} class="btn-outline">
+        <Icon name="sync" class="text-[16px]" /> Sheets Settings
+      </a>
       <button type="button" class="btn-outline" onclick={share}>
         <Icon name="share" class="text-[16px]" /> Share
       </button>
@@ -424,13 +424,12 @@
             This list lives in your browser for now. Connect a spreadsheet to sync it to a <code class="text-[12px]">[Provisions]</code> tab.
           </p>
         </div>
-        <button
-          type="button"
+        <a
+          href={href('/sheets-sync')}
           class="btn mt-3 w-full bg-surface-container-lowest py-2 text-on-surface hover:bg-surface-container-high"
-          onclick={() => comingSoon('Google Sheets sync')}
         >
           <Icon name="add_link" class="text-[16px]" /> Connect Google Sheets
-        </button>
+        </a>
       </section>
     </aside>
   </div>
