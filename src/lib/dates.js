@@ -53,3 +53,11 @@ export function formatRangeCompact(weekStart) {
   const sameMonth = fromISO(weekStart).getMonth() === fromISO(end).getMonth();
   return `${formatShort(weekStart)}–${sameMonth ? fromISO(end).getDate() : formatShort(end)}`;
 }
+
+/** ISO-8601 week number of the week containing `iso`. */
+export function isoWeek(iso) {
+  const d = fromISO(iso);
+  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7)); // Thursday of this week
+  const jan4 = new Date(d.getFullYear(), 0, 4);
+  return 1 + Math.round(((d - jan4) / 86_400_000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
+}

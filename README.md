@@ -3,8 +3,8 @@
 Weekly dinner menu planner — plan, prep and shop for the week's dinners.
 Built with **Svelte 5 + Vite + Tailwind CSS**, deployed as a static site to GitHub Pages.
 
-> Status: **Weekly Dinner Menu Planner**, **Recipe Catalog** and **Recipe Detail** are implemented.
-> Quick Grocery List and Google Sheets Sync are still placeholders ("coming soon" toasts).
+> Status: **Weekly Dinner Menu Planner**, **Recipe Catalog**, **Recipe Detail** and **Quick Grocery
+> List** are implemented. Google Sheets Sync is still a placeholder ("coming soon" toasts).
 
 ## Run it locally
 
@@ -46,6 +46,16 @@ npm run preview    # http://localhost:4173
 - Mise-en-place checklist grouped by component; **Push Unchecked to Grocery** and **Add to List**.
 - Numbered method steps with durations; "Next: {Day} {Recipe}" walks through the week's dinners.
 
+## Quick Grocery List (`#/grocery`)
+
+- Auto-compiled from the viewed week's upcoming dinners, grouped into Produce, Meat & Seafood,
+  Dairy and Pantry aisles (with aisle tabs). Each line shows which dinner needs it.
+- Tap the circle when bought; the box icon moves an item to the **Already In Pantry / Acquired**
+  ledger (pantry staples like oil and salt start there). **Clear Done** moves bought items to the ledger.
+- **Add Item** for anything extra, **Share** (native share sheet or clipboard), **Print Kitchen
+  Checklist** (print-friendly layout). Sheets sync is a placeholder.
+- Sidebar: items to buy, completion, department spread and the dinners feeding the list.
+
 ## Local data
 
 Until the Google Sheets sync exists, state lives in `localStorage`; clear these keys to reset:
@@ -54,10 +64,9 @@ Until the Google Sheets sync exists, state lives in `localStorage`; clear these 
 | --- | --- |
 | `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
-| `mealcaster.groceryExtras.v1` | ingredients pushed manually to the grocery list |
+| `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/pantry status, pushed and custom items |
 
-The grocery badge counts non-staple ingredients of this week's upcoming dinners plus anything pushed
-from a Recipe Detail page.
+The grocery badge counts items still to buy for the viewed week.
 
 ## Project layout
 
@@ -68,6 +77,7 @@ src/
     WeeklyPlanner.svelte     #/
     Catalog.svelte           #/catalog
     RecipeDetail.svelte      #/recipe/:id
+    Grocery.svelte           #/grocery
   lib/
     router.svelte.js         hash router (works on GitHub Pages)
     planner.svelte.js        weekly plan state + actions (Svelte runes)
@@ -75,6 +85,7 @@ src/
     favorites.svelte.js
     toast.svelte.js
     dates.js
+    format.js                quantity formatting (1/3, 3 1/2)
     data/recipes.js          [Recipes] data, filters, tag metadata
     data/slotPrompts.js      copy for open dinner slots
     components/              AppHeader, DayCard, RecipeCard, ...

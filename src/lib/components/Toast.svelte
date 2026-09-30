@@ -3,7 +3,7 @@
   import { toast, dismissToast } from '../toast.svelte.js';
 </script>
 
-<div class="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4" aria-live="polite">
+<div class="pointer-events-none fixed inset-x-0 bottom-6 z-[60] flex justify-center px-4 print:hidden" aria-live="polite">
   {#key toast.id}
     {#if toast.message}
       <div

@@ -13,7 +13,11 @@
   ];
   // Recipe Detail lives under the catalog tab.
   const active = $derived(
-    route.path.startsWith('/catalog') || route.path.startsWith('/recipe') ? 'recipe-catalog' : 'weekly-menu',
+    route.path.startsWith('/catalog') || route.path.startsWith('/recipe')
+      ? 'recipe-catalog'
+      : route.path === '/grocery'
+        ? 'grocery'
+        : 'weekly-menu',
   );
   let search = $state('');
 
@@ -50,7 +54,7 @@
   </nav>
 {/snippet}
 
-<header class="fixed left-0 top-0 z-50 w-full bg-surface/90 shadow-header backdrop-blur-xl">
+<header class="fixed left-0 top-0 z-50 w-full print:hidden bg-surface/90 shadow-header backdrop-blur-xl">
   <div class="flex h-20 w-full items-center justify-between gap-4 px-4 md:px-gutter-desktop">
     <div class="flex items-center gap-6">
       <a href={href('/')} class="flex items-center gap-2" aria-label="MealCaster home">
@@ -61,7 +65,8 @@
     </div>
 
     <div class="flex items-center gap-2 sm:gap-4">
-      <form class="relative hidden items-center lg:flex" role="search" onsubmit={submitSearch}>
+      <!-- Hidden at xl, where the tabs join the header row and space runs out. -->
+      <form class="relative hidden items-center lg:flex xl:hidden 2xl:flex" role="search" onsubmit={submitSearch}>
         <Icon name="search" class="pointer-events-none absolute left-3 text-[18px] text-outline" />
         <input
           type="search"
@@ -91,9 +96,9 @@
       </div>
 
       <a
-        href="#/grocery-list"
-        onclick={(e) => (e.preventDefault(), comingSoon('Quick Grocery List'))}
-        class="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-label-md text-on-secondary shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] transition-all hover:bg-[#b34728] sm:px-4"
+        href={href('/grocery')}
+        aria-current={active === 'grocery' ? 'page' : undefined}
+        class="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-label-md text-on-secondary shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] transition-all hover:bg-[#b34728] sm:px-4 {active === 'grocery' ? 'ring-2 ring-secondary/30 ring-offset-2 ring-offset-surface' : ''}"
         aria-label="Quick Grocery List, {groceries} items"
       >
         <Icon name="shopping_basket" class="text-[16px]" />
