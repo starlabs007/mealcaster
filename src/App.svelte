@@ -8,6 +8,7 @@
   import Grocery from './routes/Grocery.svelte';
   import SheetsSettings from './routes/SheetsSettings.svelte';
   import RecipeEditor from './routes/RecipeEditor.svelte';
+  import ColumnConflicts from './routes/ColumnConflicts.svelte';
   import { route } from './lib/router.svelte.js';
   import { recipeById } from './lib/recipes.svelte.js';
 
@@ -38,6 +39,8 @@
 {#if route.path === '/sheets-sync'}
   <!-- The settings modal sits over the weekly menu, as in the mock. -->
   <SheetsSettings />
+{:else if route.path === '/sheets-sync/columns'}
+  <ColumnConflicts />
 {/if}
 <AppFooter />
 <Toast />

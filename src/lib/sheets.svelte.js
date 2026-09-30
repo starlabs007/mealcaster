@@ -25,8 +25,24 @@ export const SCHEMA = {
  *   direction: SyncDirection,
  *   instantPush: boolean,
  *   snapshots: boolean,
+ *   autoAppendOptional: boolean,
+ *   schemaCheck: Partial<Record<keyof typeof SCHEMA, SchemaCheck>>,
  *   savedAt: string | null,
  * }} SheetsSettings
+ */
+
+/**
+ * Result of the Column Conflict check for one tab: the sheet's header row and
+ * how MealCaster should read it (expected column → sheet header, or null when
+ * the column is missing), plus missing columns to add or leave out.
+ * @typedef {{
+ *   headers: string[],
+ *   sample: string[][],
+ *   map: Record<string, string | null>,
+ *   append: string[],
+ *   ignore: string[],
+ *   checkedAt: string,
+ * }} SchemaCheck
  */
 
 /** @returns {SheetsSettings} */
@@ -38,6 +54,8 @@ export const defaultSettings = () => ({
   direction: 'bidirectional',
   instantPush: true,
   snapshots: true,
+  autoAppendOptional: true,
+  schemaCheck: {},
   savedAt: null,
 });
 
@@ -69,6 +87,15 @@ function persist() {
 /** @param {SheetsSettings} next */
 export function saveSheetsSettings(next) {
   Object.assign(sheets, structuredClone(next), { savedAt: new Date().toISOString() });
+  persist();
+}
+
+/**
+ * Saves the Column Conflict results without touching the rest of the settings.
+ * @param {SheetsSettings['schemaCheck']} schemaCheck @param {boolean} autoAppendOptional
+ */
+export function saveSchemaCheck(schemaCheck, autoAppendOptional) {
+  Object.assign(sheets, { schemaCheck: structuredClone(schemaCheck), autoAppendOptional });
   persist();
 }
 

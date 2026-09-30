@@ -17,7 +17,7 @@
       ? 'recipe-catalog'
       : route.path === '/grocery'
         ? 'grocery'
-        : route.path === '/sheets-sync'
+        : route.path.startsWith('/sheets-sync')
           ? 'sheets-sync'
           : 'weekly-menu',
   );

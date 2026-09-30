@@ -15,7 +15,7 @@
   import { starterWorkbook } from '../lib/sheetsTemplate.js';
   import { downloadBlob } from '../lib/xlsx.js';
   import { recipes } from '../lib/recipes.svelte.js';
-  import { goBack } from '../lib/router.svelte.js';
+  import { goBack, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
 
   // Edits happen on a draft; Save commits it, Cancel / close discards it.
@@ -46,6 +46,7 @@
 
   const comparable = ({ savedAt, ...rest }) => JSON.stringify(rest);
   const dirty = $derived(comparable($state.snapshot(draft)) !== comparable($state.snapshot(sheets)));
+  const checkedTabs = $derived(Object.keys(sheets.schemaCheck ?? {}).length);
 
   onMount(() => {
     dialog.focus();
@@ -354,6 +355,30 @@
               {@render headerChips(SCHEMA.provisions)}
             </div>
           {/if}
+        </div>
+        <div class="flex flex-col gap-3 rounded-xl border border-outline-variant/40 bg-surface-container-low p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-secondary-fixed/70 text-secondary">
+              <Icon name="difference" class="text-[20px]" />
+            </span>
+            <div class="flex flex-col gap-0.5">
+              <span class="text-label-md text-on-surface">Column headers</span>
+              <span class="text-body-sm text-on-surface-variant">
+                {checkedTabs
+                  ? `Mapping saved for ${checkedTabs} tab${checkedTabs === 1 ? '' : 's'}. Check again after renaming or adding columns.`
+                  : 'Renamed or moved columns in your sheet? Check its headers against what MealCaster expects.'}
+              </span>
+            </div>
+          </div>
+          <button
+            type="button"
+            class="btn-outline shrink-0 self-start py-2 sm:self-auto"
+            disabled={dirty}
+            title={dirty ? 'Save or cancel your changes first' : undefined}
+            onclick={() => navigate('/sheets-sync/columns')}
+          >
+            <Icon name="fact_check" class="text-[16px]" /> Check Column Headers
+          </button>
         </div>
       </section>
 
