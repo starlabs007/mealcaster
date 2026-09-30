@@ -3,7 +3,7 @@
 // until the two-way Sheets sync is built.
 
 import { recipes, recipeById } from './data/recipes.js';
-import { addDays, mondayOf, toISO, weekDates } from './dates.js';
+import { addDays, fromISO, mondayOf, toISO, weekDates } from './dates.js';
 import { showToast } from './toast.svelte.js';
 
 const STORAGE_KEY = 'mealcaster.weeklyPlan.v1';
@@ -27,7 +27,7 @@ function seedEntries() {
     });
 
   assign(addDays(thisWeek, -7), [
-    'roast-chicken', 'lentil-dal', 'miso-eggplant', 'tuscan-ragu', 'sourdough-pizza', 'out', 'short-ribs',
+    'sheet-pan-chicken', 'lentil-dal', 'miso-eggplant', 'tuscan-ragu', 'sourdough-pizza', 'out', 'short-ribs',
   ]);
   assign(thisWeek, ['salmon-risotto', 'poblano-enchiladas', null, 'tuscan-ragu', 'sourdough-pizza', null, null]);
   return entries;
@@ -67,7 +67,8 @@ $effect.root(() => {
 export function statusOf(iso) {
   const entry = planner.entries[iso];
   const past = iso < planner.today;
-  if (entry?.recipeId) return past || entry.completed ? 'completed' : 'planned';
+  // Ignore assignments whose recipe no longer exists in the pool.
+  if (entry?.recipeId && recipeById.has(entry.recipeId)) return past || entry.completed ? 'completed' : 'planned';
   if (entry?.diningOut) return 'diningOut';
   return past ? 'missed' : 'open';
 }
@@ -95,11 +96,21 @@ export function weekSummary() {
   };
 }
 
-/** Unbought grocery items: ingredients of every upcoming dinner in the viewed week. */
-export function groceryCount() {
-  return currentWeek()
-    .filter((d) => d.status === 'planned')
-    .reduce((n, d) => n + (d.recipe?.ingredients.length ?? 0), 0);
+/** First plannable open slot in the viewed week (today onward), if any. */
+export function firstOpenDay() {
+  return weekDates(planner.weekStart).find((iso) => statusOf(iso) === 'open');
+}
+
+/** The viewed-week day a recipe is assigned to, if any. */
+export function dayOfRecipe(recipeId) {
+  return weekDates(planner.weekStart).find((iso) => planner.entries[iso]?.recipeId === recipeId);
+}
+
+/** Next day after `iso` in its week that has a recipe assigned. */
+export function nextPlannedAfter(iso) {
+  return weekDates(mondayOf(fromISO(iso)))
+    .filter((d) => d > iso && recipeById.has(planner.entries[d]?.recipeId ?? ''))
+    .map((d) => ({ iso: d, recipe: recipeById.get(planner.entries[d].recipeId) }))[0];
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────
@@ -134,11 +145,17 @@ export function goToThisWeek() {
   planner.weekStart = mondayOf(new Date());
 }
 
-/** @param {string} iso */
-export function surpriseMe(iso) {
-  const recipe = pickRecipe();
+/** @param {string} iso @param {string} recipeId */
+export function assignRecipe(iso, recipeId) {
+  planner.entries[iso] = { recipeId };
+}
+
+/** @param {string} iso @param {import('./data/recipes.js').Recipe[]} [pool] */
+export function surpriseMe(iso, pool) {
+  const recipe = pool?.length ? pool[Math.floor(Math.random() * pool.length)] : pickRecipe();
   planner.entries[iso] = { recipeId: recipe.id };
   showToast(`Surprise! ${recipe.title}`);
+  return recipe;
 }
 
 /** @param {string} iso */

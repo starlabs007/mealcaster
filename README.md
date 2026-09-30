@@ -3,8 +3,8 @@
 Weekly dinner menu planner — plan, prep and shop for the week's dinners.
 Built with **Svelte 5 + Vite + Tailwind CSS**, deployed as a static site to GitHub Pages.
 
-> Status: the **Weekly Dinner Menu Planner** (home screen) is implemented. Recipe Catalog,
-> Recipe Detail, Grocery List and Google Sheets Sync are placeholders ("coming soon" toasts).
+> Status: **Weekly Dinner Menu Planner**, **Recipe Catalog** and **Recipe Detail** are implemented.
+> Quick Grocery List and Google Sheets Sync are still placeholders ("coming soon" toasts).
 
 ## Run it locally
 
@@ -33,22 +33,51 @@ npm run preview    # http://localhost:4173
 - **Surprise Me** and **Dining Out / Leftovers** on open slots.
 - Grocery badge counts the ingredients of this week's upcoming dinners.
 
-The plan is saved in `localStorage` (key `mealcaster.weeklyPlan.v1`) in the same shape as the
-Google Sheets `[WeeklyPlan]` tab; clear that key to restore the sample week.
+## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
+
+- Keyword search across titles, descriptions, tags and ingredients (the header search lands here too).
+- Favorites + culinary attribute filters (combined with AND), four sort orders, paging (9 per page).
+- **Select for {Day}** assigns the recipe to the chosen day; "Planning for" switches the target day.
+- **Surprise Me & Assign** picks at random from the current results.
+
+## Recipe Detail (`#/recipe/:id?day=YYYY-MM-DD`)
+
+- Breadcrumb back to the plan, favorite toggle, Swap Meal, serving scaler (quantities rescale).
+- Mise-en-place checklist grouped by component; **Push Unchecked to Grocery** and **Add to List**.
+- Numbered method steps with durations; "Next: {Day} {Recipe}" walks through the week's dinners.
+
+## Local data
+
+Until the Google Sheets sync exists, state lives in `localStorage`; clear these keys to reset:
+
+| Key | Mirrors |
+| --- | --- |
+| `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
+| `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
+| `mealcaster.groceryExtras.v1` | ingredients pushed manually to the grocery list |
+
+The grocery badge counts non-staple ingredients of this week's upcoming dinners plus anything pushed
+from a Recipe Detail page.
 
 ## Project layout
 
 ```
 src/
-  App.svelte                 app shell (header, main, footer, toast)
-  routes/WeeklyPlanner.svelte
+  App.svelte                 app shell + hash routes
+  routes/
+    WeeklyPlanner.svelte     #/
+    Catalog.svelte           #/catalog
+    RecipeDetail.svelte      #/recipe/:id
   lib/
+    router.svelte.js         hash router (works on GitHub Pages)
     planner.svelte.js        weekly plan state + actions (Svelte runes)
+    grocery.svelte.js        grocery list model
+    favorites.svelte.js
     toast.svelte.js
     dates.js
-    data/recipes.js          sample [Recipes] data
+    data/recipes.js          [Recipes] data, filters, tag metadata
     data/slotPrompts.js      copy for open dinner slots
-    components/              AppHeader, AppFooter, PlannerHeader, DayCard, ...
+    components/              AppHeader, DayCard, RecipeCard, ...
 ```
 
 ## Deploying

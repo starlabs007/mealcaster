@@ -1,23 +1,35 @@
 <script>
   import Icon from './Icon.svelte';
-  import { planner, shiftWeek, goToThisWeek, groceryCount } from '../planner.svelte.js';
+  import { planner, shiftWeek, goToThisWeek } from '../planner.svelte.js';
+  import { groceryCount } from '../grocery.svelte.js';
+  import { route, href, navigate } from '../router.svelte.js';
   import { formatRange, formatRangeCompact, mondayOf } from '../dates.js';
   import { comingSoon } from '../toast.svelte.js';
 
   const tabs = [
-    { id: 'weekly-menu', label: 'Weekly Menu' },
-    { id: 'recipe-catalog', label: 'Recipe Catalog' },
-    { id: 'sheets-sync', label: 'Google Sheets Sync' },
+    { id: 'weekly-menu', label: 'Weekly Menu', path: '/' },
+    { id: 'recipe-catalog', label: 'Recipe Catalog', path: '/catalog' },
+    { id: 'sheets-sync', label: 'Google Sheets Sync', path: '/sheets-sync' },
   ];
-  const active = 'weekly-menu';
+  // Recipe Detail lives under the catalog tab.
+  const active = $derived(
+    route.path.startsWith('/catalog') || route.path.startsWith('/recipe') ? 'recipe-catalog' : 'weekly-menu',
+  );
+  let search = $state('');
 
   const groceries = $derived(groceryCount());
   const isThisWeek = $derived(planner.weekStart === mondayOf(new Date()));
 
   /** @param {(typeof tabs)[number]} tab */
   function selectTab(event, tab) {
+    if (tab.id !== 'sheets-sync') return;
     event.preventDefault();
-    if (tab.id !== active) comingSoon(tab.label);
+    comingSoon(tab.label);
+  }
+
+  function submitSearch(event) {
+    event.preventDefault();
+    navigate('/catalog', { ...(route.path === '/catalog' ? route.query : {}), q: search.trim() });
   }
 </script>
 
@@ -25,7 +37,7 @@
   <nav aria-label="Primary" class="items-center gap-1 rounded-xl bg-surface-container-low p-1 {extra}">
     {#each tabs as tab (tab.id)}
       <a
-        href="#/{tab.id}"
+        href={href(tab.path)}
         aria-current={tab.id === active ? 'page' : undefined}
         onclick={(e) => selectTab(e, tab)}
         class="whitespace-nowrap rounded-lg px-4 py-2 text-label-md transition-all {tab.id === active
@@ -41,7 +53,7 @@
 <header class="fixed left-0 top-0 z-50 w-full bg-surface/90 shadow-header backdrop-blur-xl">
   <div class="flex h-20 w-full items-center justify-between gap-4 px-4 md:px-gutter-desktop">
     <div class="flex items-center gap-6">
-      <a href="#/weekly-menu" class="flex items-center gap-2" aria-label="MealCaster home">
+      <a href={href('/')} class="flex items-center gap-2" aria-label="MealCaster home">
         <img src="./logo-mark.png" alt="" class="h-8 w-8 rounded-lg object-cover shadow-sm" />
         <span class="hidden font-display text-headline-sm tracking-tight text-primary sm:inline">MealCaster</span>
       </a>
@@ -49,10 +61,11 @@
     </div>
 
     <div class="flex items-center gap-2 sm:gap-4">
-      <form class="relative hidden items-center lg:flex" role="search" onsubmit={(e) => (e.preventDefault(), comingSoon('Recipe search'))}>
+      <form class="relative hidden items-center lg:flex" role="search" onsubmit={submitSearch}>
         <Icon name="search" class="pointer-events-none absolute left-3 text-[18px] text-outline" />
         <input
           type="search"
+          bind:value={search}
           aria-label="Search recipes"
           placeholder="Search culinary recipes, ingredients..."
           class="w-60 rounded-lg border border-outline-variant/60 bg-surface-container-lowest py-1.5 pl-9 pr-3 text-body-sm text-on-surface shadow-card placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container xl:w-72"

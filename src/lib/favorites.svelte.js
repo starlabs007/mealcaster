@@ -1,0 +1,29 @@
+// Mirrors the Favorite_Flag column of the [Recipes] tab; persisted locally for now.
+
+const STORAGE_KEY = 'mealcaster.favorites.v1';
+const SEED = ['sheet-pan-chicken', 'salmon-risotto', 'sourdough-pizza'];
+
+function load() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // Fall back to the seed favorites.
+  }
+  return SEED;
+}
+
+export const favorites = $state({ /** @type {string[]} */ ids: load() });
+
+/** @param {string} id */
+export const isFavorite = (id) => favorites.ids.includes(id);
+
+/** @param {string} id */
+export function toggleFavorite(id) {
+  favorites.ids = isFavorite(id) ? favorites.ids.filter((x) => x !== id) : [...favorites.ids, id];
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites.ids));
+  } catch {
+    // In-memory only.
+  }
+}

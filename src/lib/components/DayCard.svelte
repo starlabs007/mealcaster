@@ -4,7 +4,7 @@
   import { slotPrompts } from '../data/slotPrompts.js';
   import { surpriseMe, markDiningOut, clearDay } from '../planner.svelte.js';
   import { formatShort, formatWeekday } from '../dates.js';
-  import { comingSoon } from '../toast.svelte.js';
+  import { href, navigate } from '../router.svelte.js';
 
   /**
    * @type {{ day: {
@@ -37,7 +37,7 @@
   function altAction() {
     if (prompt.alt.action === 'surprise') surpriseMe(day.iso);
     else if (prompt.alt.action === 'diningOut') markDiningOut(day.iso);
-    else comingSoon('Recipe Catalog');
+    else navigate('/catalog', { day: day.iso, filter: 'comfort' });
   }
 </script>
 
@@ -100,8 +100,7 @@
         </p>
         <div class="mt-3 flex items-center gap-4">
           <a
-            href="#/recipe/{recipe.id}"
-            onclick={(e) => (e.preventDefault(), comingSoon('Recipe Detail'))}
+            href={href(`/recipe/${recipe.id}`, { day: day.iso })}
             class="inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday
               ? 'rounded-md bg-primary-container px-3 py-1.5 text-on-primary shadow-sm hover:bg-primary'
               : day.status === 'planned'
@@ -111,13 +110,12 @@
             View Recipe <Icon name="arrow_forward" class="text-[14px]" />
           </a>
           {#if day.status === 'planned'}
-            <button
-              type="button"
+            <a
+              href={href('/catalog', { day: day.iso })}
               class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
-              onclick={() => comingSoon('Recipe Catalog')}
             >
               <Icon name="sync_alt" class="text-[14px]" /> Swap Meal
-            </button>
+            </a>
           {/if}
         </div>
       </div>
@@ -144,9 +142,9 @@
 
       {#if day.status === 'open'}
         <div class="flex w-full flex-shrink-0 items-center gap-2 pt-2 sm:w-auto sm:pt-0">
-          <button type="button" class="btn-primary flex-1 py-2 sm:flex-none" onclick={() => comingSoon('Recipe Catalog')}>
+          <a href={href('/catalog', { day: day.iso })} class="btn-primary flex-1 py-2 sm:flex-none">
             <Icon name="add" class="text-[15px]" /> Choose a Meal
-          </button>
+          </a>
           <button type="button" class="btn-outline flex-1 py-2 text-on-surface sm:flex-none" onclick={altAction}>
             <Icon name={prompt.alt.icon} class="text-[15px]" /> {prompt.alt.label}
           </button>
