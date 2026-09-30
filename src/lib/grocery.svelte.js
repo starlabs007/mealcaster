@@ -10,7 +10,7 @@
 // Each line is 'need' (to buy), 'bought' (checked off) or 'owned' (in the pantry).
 // Ingredient keys are `${recipeId}:${groupIndex}:${itemIndex}`.
 
-import { recipeById } from './data/recipes.js';
+import { recipeById } from './recipes.svelte.js';
 import { planner, currentWeek } from './planner.svelte.js';
 import { formatQty } from './format.js';
 import { formatWeekday } from './dates.js';

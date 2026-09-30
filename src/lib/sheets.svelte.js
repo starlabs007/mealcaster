@@ -7,7 +7,11 @@ const STORAGE_KEY = 'mealcaster.sheetsSettings.v1';
 /** Column headers each tab is expected to have (PRD §4.6). */
 export const SCHEMA = {
   weeklyPlan: ['Date_ISO', 'Day_Of_Week', 'Recipe_ID_Assigned', 'Completed_Flag', 'Custom_Notes'],
-  recipes: ['Recipe_ID', 'Title', 'Description', 'Ingredients_JSON', 'Method_Steps', 'Image_URL', 'Tags', 'Favorite_Flag'],
+  // PRD columns first; Category → Notes were added so custom recipes round-trip.
+  recipes: [
+    'Recipe_ID', 'Title', 'Description', 'Ingredients_JSON', 'Method_Steps', 'Image_URL', 'Tags', 'Favorite_Flag',
+    'Category', 'Servings', 'Prep_Minutes', 'Cook_Minutes', 'Notes',
+  ],
   provisions: ['Week_Of', 'Item', 'Detail', 'Department', 'Status', 'Source'],
 };
 

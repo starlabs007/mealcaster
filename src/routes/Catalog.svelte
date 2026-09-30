@@ -2,7 +2,7 @@
   import { fly } from 'svelte/transition';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
-  import { recipes, recipeById, filters, tagMeta } from '../lib/data/recipes.js';
+  import { recipes, recipeById, filters, tagMeta } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
   import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe } from '../lib/planner.svelte.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
@@ -123,6 +123,7 @@
         {/if}
       </h1>
     </div>
+    <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
     {#if plannable.length}
       <label class="flex min-w-0 items-center gap-2 text-label-md text-on-surface-variant">
         <span class="shrink-0">Planning for</span>
@@ -138,6 +139,10 @@
         </select>
       </label>
     {/if}
+      <a href={href('/recipe/new')} class="btn-outline shrink-0 self-start py-2 sm:self-auto">
+        <Icon name="add" class="text-[16px]" /> Add Custom Recipe
+      </a>
+    </div>
   </div>
 
   <!-- Search & sort toolbar -->

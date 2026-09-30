@@ -35,6 +35,7 @@ export default {
       },
       fontSize: {
         'headline-xl': ['40px', { lineHeight: '48px', letterSpacing: '-0.02em', fontWeight: '600' }],
+        'headline-xl-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.01em', fontWeight: '600' }],
         'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.015em', fontWeight: '600' }],
         'headline-lg-mobile': ['24px', { lineHeight: '32px', fontWeight: '600' }],
         'headline-md': ['22px', { lineHeight: '28px', fontWeight: '600' }],

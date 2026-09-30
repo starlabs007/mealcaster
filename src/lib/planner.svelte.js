@@ -2,7 +2,7 @@
 // (Date_ISO → Recipe_ID_Assigned / Completed_Flag). Persisted to localStorage
 // until the two-way Sheets sync is built.
 
-import { recipes, recipeById } from './data/recipes.js';
+import { recipes, recipeById } from './recipes.svelte.js';
 import { addDays, fromISO, mondayOf, toISO, weekDates } from './dates.js';
 import { showToast } from './toast.svelte.js';
 

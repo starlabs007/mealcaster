@@ -9,11 +9,11 @@
   import Icon from '../lib/components/Icon.svelte';
   import { formatQty } from '../lib/format.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
-  import { recipeById, formatMinutes } from '../lib/data/recipes.js';
+  import { recipeById, formatMinutes, deleteRecipe, restoreRecipe } from '../lib/recipes.svelte.js';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
   import { groceryKeys, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
   import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe } from '../lib/planner.svelte.js';
-  import { href } from '../lib/router.svelte.js';
+  import { href, navigate } from '../lib/router.svelte.js';
   import { formatLong, formatWeekday } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
 
@@ -60,6 +60,12 @@
     showToast(`${recipe.shortTitle} planned for ${formatLong(iso)}.`);
   }
 
+  function remove() {
+    const removed = deleteRecipe(recipe.id);
+    navigate('/catalog');
+    showToast(`${recipe.shortTitle} deleted.`, { label: 'Undo', run: () => restoreRecipe(removed) });
+  }
+
   /** @param {import('../lib/data/recipes.js').Step} step @param {number} i */
   function stepTone(step, i) {
     if (step.critical) return 'bg-secondary-fixed/50 text-secondary';
@@ -104,6 +110,12 @@
       </nav>
 
       <div class="flex flex-wrap items-center gap-2">
+        <a href={href(`/recipe/${recipe.id}/edit`)} class="btn-outline">
+          <Icon name="edit" class="text-[16px]" /> Edit
+        </a>
+        <button type="button" class="btn-outline hover:text-secondary" onclick={remove}>
+          <Icon name="delete" class="text-[16px]" /> Delete
+        </button>
         <button
           type="button"
           aria-pressed={favorite}
@@ -149,12 +161,23 @@
             <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> Scheduled: {formatLong(day)}
           </span>
         {/if}
-        <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-label-sm text-on-surface-variant">
-          <Icon name="table_chart" class="text-[13px]" /> Row {recipe.sheetRow} in [Recipes] sheet
-        </span>
+        {#if recipe.custom}
+          <span class="inline-flex items-center gap-1 rounded-full bg-secondary-fixed/60 px-2.5 py-1 text-label-sm text-secondary">
+            <Icon name="family_restroom" class="text-[13px]" /> Custom recipe · saved on this device
+          </span>
+        {:else}
+          <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-label-sm text-on-surface-variant">
+            <Icon name="table_chart" class="text-[13px]" /> Row {recipe.sheetRow} in [Recipes] sheet
+          </span>
+          {#if recipe.edited}
+            <span class="inline-flex items-center gap-1 rounded-full bg-secondary-fixed/60 px-2.5 py-1 text-label-sm text-secondary">
+              <Icon name="edit" class="text-[13px]" /> Edited on this device
+            </span>
+          {/if}
+        {/if}
       </div>
       <h1 class="max-w-4xl font-display text-headline-xl-mobile text-primary md:text-headline-xl">{recipe.title}</h1>
-      <p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>
+      {#if recipe.description}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
 
       <div class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:max-w-4xl">
         {#each stats as stat (stat.label)}
@@ -190,7 +213,8 @@
       <!-- Left: photo & notes -->
       <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-5">
         <figure class="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-card">
-          <div class="relative aspect-[4/3]">
+          <!-- Photo-less (custom) recipes get a shorter placeholder until the column layout kicks in. -->
+          <div class="relative {recipe.hero ?? recipe.image ? 'aspect-[4/3]' : 'aspect-[3/1] lg:aspect-[4/3]'}">
             <RecipeImage src={recipe.hero ?? recipe.image} alt={recipe.title} class="h-full w-full" />
             <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
               <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md">
@@ -203,6 +227,7 @@
           </div>
         </figure>
 
+        {#if recipe.secret || recipe.pairing}
         <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card">
           <div class="mb-4 flex items-center gap-3">
             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-low text-primary">
@@ -213,19 +238,24 @@
               <p class="text-label-caps uppercase text-outline">Notes</p>
             </div>
           </div>
-          <div class="rounded-r-lg border-l-4 border-secondary bg-surface-container-low p-4">
-            <p class="mb-1.5 flex items-center gap-1 text-label-caps uppercase text-secondary">
-              <Icon name="tips_and_updates" class="text-[14px]" /> Critical Culinary Secret
-            </p>
-            <p class="text-body-sm text-on-surface-variant">{recipe.secret}</p>
-          </div>
-          <div class="mt-3 rounded-r-lg border-l-4 border-primary-container bg-surface-container-low p-4">
-            <p class="mb-1.5 flex items-center gap-1 text-label-caps uppercase text-primary">
-              <Icon name="wine_bar" class="text-[14px]" /> Pairing
-            </p>
-            <p class="text-body-sm text-on-surface-variant">{recipe.pairing}</p>
-          </div>
+          {#if recipe.secret}
+            <div class="rounded-r-lg border-l-4 border-secondary bg-surface-container-low p-4">
+              <p class="mb-1.5 flex items-center gap-1 text-label-caps uppercase text-secondary">
+                <Icon name="tips_and_updates" class="text-[14px]" /> {recipe.pairing ? 'Critical Culinary Secret' : 'Cook’s Notes'}
+              </p>
+              <p class="whitespace-pre-line text-body-sm text-on-surface-variant">{recipe.secret}</p>
+            </div>
+          {/if}
+          {#if recipe.pairing}
+            <div class="mt-3 rounded-r-lg border-l-4 border-primary-container bg-surface-container-low p-4">
+              <p class="mb-1.5 flex items-center gap-1 text-label-caps uppercase text-primary">
+                <Icon name="wine_bar" class="text-[14px]" /> Pairing
+              </p>
+              <p class="text-body-sm text-on-surface-variant">{recipe.pairing}</p>
+            </div>
+          {/if}
         </section>
+        {/if}
       </aside>
 
       <!-- Right: ingredients & method -->
@@ -308,7 +338,7 @@
             <span class="text-label-caps uppercase text-outline">{recipe.steps.length} Essential Movements</span>
           </div>
           <ol class="flex flex-col gap-4">
-            {#each recipe.steps as step, i (step.title)}
+            {#each recipe.steps as step, i (i)}
               <li class="flex gap-4 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card">
                 <span
                   class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-display text-body-lg font-semibold {step.critical
@@ -320,11 +350,13 @@
                 <div class="flex-1">
                   <div class="mb-1.5 flex items-start justify-between gap-3">
                     <h3 class="font-display text-headline-sm text-on-surface">{step.title}</h3>
-                    <span class="shrink-0 rounded-full px-2 py-0.5 text-label-caps uppercase {stepTone(step, i)}">
-                      {mins(step.minutes)}
-                    </span>
+                    {#if step.minutes}
+                      <span class="shrink-0 rounded-full px-2 py-0.5 text-label-caps uppercase {stepTone(step, i)}">
+                        {mins(step.minutes)}
+                      </span>
+                    {/if}
                   </div>
-                  <p class="text-body-sm text-on-surface-variant">{step.text}</p>
+                  <p class="whitespace-pre-line text-body-sm text-on-surface-variant">{step.text}</p>
                 </div>
               </li>
             {/each}

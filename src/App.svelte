@@ -7,9 +7,12 @@
   import RecipeDetail from './routes/RecipeDetail.svelte';
   import Grocery from './routes/Grocery.svelte';
   import SheetsSettings from './routes/SheetsSettings.svelte';
+  import RecipeEditor from './routes/RecipeEditor.svelte';
   import { route } from './lib/router.svelte.js';
+  import { recipeById } from './lib/recipes.svelte.js';
 
   const recipeId = $derived(route.path.match(/^\/recipe\/([\w-]+)$/)?.[1]);
+  const editId = $derived(route.path.match(/^\/recipe\/([\w-]+)\/edit$/)?.[1]);
 </script>
 
 <AppHeader />
@@ -18,9 +21,14 @@
     <Catalog />
   {:else if route.path === '/grocery'}
     <Grocery />
+  {:else if route.path === '/recipe/new'}
+    {#key route.path}<RecipeEditor />{/key}
+  {:else if editId}
+    {#key editId}<RecipeEditor id={editId} />{/key}
   {:else if recipeId}
-    <!-- Keyed so per-recipe state (servings) resets when moving between recipes. -->
-    {#key recipeId}
+    <!-- Keyed so per-recipe state (servings) resets when moving between recipes, and so the
+         page redraws when the recipe itself is replaced (e.g. undoing a revert). -->
+    {#key recipeById.get(recipeId) ?? recipeId}
       <RecipeDetail id={recipeId} day={route.query.day} />
     {/key}
   {:else}

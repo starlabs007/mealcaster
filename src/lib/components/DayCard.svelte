@@ -94,10 +94,14 @@
       />
       <div class="min-w-0 flex-1">
         <h3 class="font-display text-on-surface {emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
-        <p class="mt-2 flex items-start gap-1.5 rounded-md bg-surface-container-low px-2.5 py-1.5 text-xs text-on-surface-variant">
-          <Icon name={recipe.prep.icon} class="mt-px text-[15px] {recipe.prep.tone === 'secondary' ? 'text-secondary' : 'text-tertiary'}" />
-          <span><strong>{recipe.prep.label}:</strong> {recipe.prep.text}</span>
-        </p>
+        {#if recipe.prep}
+          <p class="mt-2 flex items-start gap-1.5 rounded-md bg-surface-container-low px-2.5 py-1.5 text-xs text-on-surface-variant">
+            <Icon name={recipe.prep.icon} class="mt-px text-[15px] {recipe.prep.tone === 'secondary' ? 'text-secondary' : 'text-tertiary'}" />
+            <span><strong>{recipe.prep.label}:</strong> {recipe.prep.text}</span>
+          </p>
+        {:else}
+          <p class="mt-1 text-xs text-on-surface-variant">{recipe.badge.label} · {recipe.prepMinutes + recipe.cookMinutes} min · Serves {recipe.serves}</p>
+        {/if}
         <div class="mt-3 flex items-center gap-4">
           <a
             href={href(`/recipe/${recipe.id}`, { day: day.iso })}

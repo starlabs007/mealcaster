@@ -1,5 +1,5 @@
-// Recipe pool mirroring the Google Sheets [Recipes] tab.
-// Until the Sheets sync lands, this is the app's recipe source.
+// Sample recipe pool mirroring the Google Sheets [Recipes] tab. The live list
+// (samples + the user's custom recipes) is in ../recipes.svelte.js.
 
 const IMG = 'https://lh3.googleusercontent.com/aida-public/';
 
@@ -16,7 +16,7 @@ const IMG = 'https://lh3.googleusercontent.com/aida-public/';
  *   description: string,
  *   image?: string,
  *   hero?: string,
- *   sheetRow: number,
+ *   sheetRow?: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
  *   minutes: number,
@@ -29,11 +29,13 @@ const IMG = 'https://lh3.googleusercontent.com/aida-public/';
  *   addedAt: string,
  *   tags: string[],
  *   highlight?: string,
- *   prep: PrepTip,
+ *   prep?: PrepTip,
  *   secret: string,
  *   pairing: string,
  *   ingredients: IngredientGroup[],
  *   steps: Step[],
+ *   custom?: boolean,
+ *   edited?: boolean,
  * }} Recipe
  */
 
@@ -1070,10 +1072,7 @@ const pool = [
 ];
 
 /** @type {Recipe[]} */
-export const recipes = pool.map((r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes }));
-
-/** @type {Map<string, Recipe>} */
-export const recipeById = new Map(recipes.map((r) => [r.id, r]));
+export const sampleRecipes = pool.map((r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes }));
 
 /** Catalog filters. `tags` match if the recipe carries any of them. */
 export const filters = [

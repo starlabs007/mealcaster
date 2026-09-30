@@ -1,7 +1,7 @@
 <script>
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
-  import { tagMeta, formatMinutes } from '../data/recipes.js';
+  import { tagMeta, formatMinutes } from '../recipes.svelte.js';
   import { isFavorite, toggleFavorite } from '../favorites.svelte.js';
   import { href } from '../router.svelte.js';
 
@@ -63,9 +63,13 @@
 
       <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-on-primary">
         <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">{recipe.stat}</span>
-        <span class="flex items-center gap-0.5 text-label-sm font-bold text-[#ffdead]">
-          ★ {recipe.rating.toFixed(1)} <span class="font-normal text-white/80">({recipe.ratings})</span>
-        </span>
+        {#if recipe.ratings}
+          <span class="flex items-center gap-0.5 text-label-sm font-bold text-[#ffdead]">
+            ★ {recipe.rating.toFixed(1)} <span class="font-normal text-white/80">({recipe.ratings})</span>
+          </span>
+        {:else if recipe.custom}
+          <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">Your recipe</span>
+        {/if}
       </div>
     </div>
 

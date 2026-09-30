@@ -14,7 +14,7 @@
   } from '../lib/sheets.svelte.js';
   import { starterWorkbook } from '../lib/sheetsTemplate.js';
   import { downloadBlob } from '../lib/xlsx.js';
-  import { recipes } from '../lib/data/recipes.js';
+  import { recipes } from '../lib/recipes.svelte.js';
   import { goBack } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
 

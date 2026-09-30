@@ -1,7 +1,7 @@
 // Starter spreadsheet: the PRD tabs with headers, pre-filled with what's saved
 // on this device so importing it into Google Sheets carries the data across.
 
-import { recipes } from './data/recipes.js';
+import { recipes } from './recipes.svelte.js';
 import { planner } from './planner.svelte.js';
 import { favorites } from './favorites.svelte.js';
 import { departments, groceryLines } from './grocery.svelte.js';
@@ -19,9 +19,15 @@ export function starterWorkbook(settings) {
     r.description,
     JSON.stringify(r.ingredients),
     r.steps.map((s, i) => `${i + 1}. ${s.title}: ${s.text}`).join('\n'),
-    r.image ?? '',
+    // Uploaded photos are data: URLs that only live on this device.
+    r.image?.startsWith('data:') ? '' : (r.image ?? ''),
     r.tags.join(', '),
     favorites.ids.includes(r.id),
+    r.badge.label,
+    r.serves,
+    r.prepMinutes,
+    r.cookMinutes,
+    [r.secret, r.pairing && `Pairing: ${r.pairing}`].filter(Boolean).join('\n\n'),
   ]);
 
   const planRows = Object.entries(planner.entries)
