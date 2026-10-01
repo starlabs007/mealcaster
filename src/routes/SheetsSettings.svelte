@@ -39,6 +39,9 @@
 
   const phase = $derived(syncPhase());
   const signedIn = $derived(Boolean(auth.token));
+  // Firefox's Enhanced Tracking Protection blocks the Google Picker frame's sign-in cookies:
+  // it stays blank or says the API developer key is invalid. Pages can't tell, so always hint.
+  const firefox = /firefox/i.test(navigator.userAgent);
 
   const tabKeys = $derived(
     /** @type {('weeklyPlan' | 'recipes' | 'provisions')[]} */ (
@@ -331,6 +334,15 @@
               </div>
             {/if}
           </div>
+          {#if googleConfigured && firefox}
+            <p class="flex items-start gap-2 text-body-sm text-on-surface-variant">
+              <Icon name="info" class="mt-0.5 shrink-0 text-[16px]" />
+              <span>
+                Using Firefox? If the Google Drive window stays blank or says the API developer key is invalid, click the
+                shield icon in the address bar, turn off Enhanced Tracking Protection for this site, then reload.
+              </span>
+            </p>
+          {/if}
 
           <!-- Sync status -->
           <div class="flex flex-col gap-2 rounded-lg bg-surface-container-low px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
