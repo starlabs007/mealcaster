@@ -5,6 +5,7 @@
   import { tagClass } from '../tagColors.svelte.js';
   import { isFavorite, toggleFavorite } from '../favorites.svelte.js';
   import { href } from '../router.svelte.js';
+  import LastMade from './LastMade.svelte';
 
   /**
    * @type {{
@@ -79,6 +80,7 @@
           <a href={href(`/recipe/${recipe.id}`, { day })}>{recipe.title}</a>
         </h2>
         <p class="mt-1.5 line-clamp-2 text-body-sm text-on-surface-variant">{recipe.description}</p>
+        <LastMade recipeId={recipe.id} class="mt-2 text-label-sm" />
       </div>
     </div>
   </div>

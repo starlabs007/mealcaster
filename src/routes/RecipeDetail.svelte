@@ -15,6 +15,7 @@
   import { printOptions, setPrintOptions, TEXT_DELTA } from '../lib/printOptions.svelte.js';
   import { recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon } from '../lib/recipes.svelte.js';
   import { tagClass } from '../lib/tagColors.svelte.js';
+  import LastMade from '../lib/components/LastMade.svelte';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
   import { groceryKeys, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
   import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe } from '../lib/planner.svelte.js';
@@ -213,6 +214,7 @@
       </div>
       <h1 class="max-w-4xl font-display text-headline-xl-mobile text-primary md:text-headline-xl">{recipe.title}</h1>
       {#if recipe.description}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
+      <LastMade recipeId={recipe.id} class="-mt-1 text-label-md print:hidden" />
       {#if recipe.tags.length}
         <ul class="flex max-w-4xl flex-wrap gap-1.5 print:hidden" aria-label="Tags">
           {#each recipe.tags as tag (tag)}

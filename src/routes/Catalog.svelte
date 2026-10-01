@@ -4,7 +4,8 @@
   import RecipeCard from '../lib/components/RecipeCard.svelte';
   import { recipes, recipeById, tagChoices, tagIcon, normalizeTags } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
-  import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe } from '../lib/planner.svelte.js';
+  import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe, madeRecently, RECENT_DAYS } from '../lib/planner.svelte.js';
+  import { storageKey } from '../lib/env.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
   import { formatLong, formatWeekday, mondayOf, fromISO, weekDates } from '../lib/dates.js';
 
@@ -19,6 +20,29 @@
   let query = $state('');
   let sort = $state('most-cooked');
   let favoritesOnly = $state(false);
+
+  // "Not made in 7 days" is remembered on this device: skipping repeats is a standing preference.
+  const HIDE_RECENT_KEY = storageKey('catalogHideRecent.v1');
+  let hideRecent = $state(readHideRecent());
+
+  function readHideRecent() {
+    try {
+      return localStorage.getItem(HIDE_RECENT_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  /** @param {boolean} on */
+  function setHideRecent(on) {
+    hideRecent = on;
+    pages = 1;
+    try {
+      localStorage.setItem(HIDE_RECENT_KEY, String(on));
+    } catch {
+      // In-memory only.
+    }
+  }
   /** @type {string[]} */
   let active = $state([]);
   let pages = $state(1);
@@ -54,6 +78,7 @@
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     return recipes
       .filter((r) => !favoritesOnly || favorites.ids.includes(r.id))
+      .filter((r) => !hideRecent || !madeRecently(r.id))
       .filter((r) => active.every((t) => r.tags.includes(t)))
       .filter((r) => {
         if (!words.length) return true;
@@ -71,7 +96,7 @@
   });
   const visible = $derived(results.slice(0, pages * PAGE_SIZE));
   const remaining = $derived(results.length - visible.length);
-  const activeCount = $derived(active.length + (favoritesOnly ? 1 : 0));
+  const activeCount = $derived(active.length + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0));
 
   function toggleFilter(id) {
     active = active.includes(id) ? active.filter((x) => x !== id) : [...active, id];
@@ -81,7 +106,7 @@
   function clearFilters() {
     active = [];
     favoritesOnly = false;
-    pages = 1;
+    setHideRecent(false);
   }
 
   function chooseDay(event) {
@@ -208,6 +233,7 @@
         </button>
       {/snippet}
       {@render pill(favoritesOnly, 'Favorites', 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
+      {@render pill(hideRecent, `Not made in ${RECENT_DAYS} days`, 'history', () => setHideRecent(!hideRecent))}
       {#each filters as tag (tag)}
         {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
       {/each}
