@@ -336,10 +336,11 @@
           </div>
           {#if googleConfigured && firefox}
             <p class="flex items-start gap-2 text-body-sm text-on-surface-variant">
-              <Icon name="info" class="mt-0.5 shrink-0 text-[16px]" />
+              <Icon name="warning" class="icon-filled shrink-0 text-[24px] text-tertiary" />
               <span>
-                Using Firefox? If the Google Drive window stays blank or says the API developer key is invalid, click the
-                shield icon in the address bar, turn off Enhanced Tracking Protection for this site, then reload.
+                <strong class="font-bold text-secondary">Using Firefox?</strong> If the Google Drive window stays blank or says the
+                API developer key is invalid, click the shield icon in the address bar, turn off Enhanced Tracking Protection for
+                this site, then reload.
               </span>
             </p>
           {/if}
