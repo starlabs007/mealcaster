@@ -133,6 +133,9 @@ export async function ensurePhotoFolder(knownId) {
   return folder.id;
 }
 
+/** A photo from the recipe editor that's waiting to be uploaded. */
+export const isPhotoDataUrl = (url) => /^data:image\/(jpeg|png|webp)[;,]/.test(url ?? '');
+
 /**
  * Uploads a recipe photo and shares it as "anyone with the link can view", so
  * it shows on every device and to anyone the sheet is shared with.
@@ -142,6 +145,7 @@ export async function ensurePhotoFolder(knownId) {
  * @returns {Promise<string>} image URL for the Image_URL column
  */
 export async function uploadPhoto(dataUrl, name, folderId) {
+  if (!isPhotoDataUrl(dataUrl)) throw new Error('Only JPG, PNG or WebP photos can be uploaded.');
   const image = await (await fetch(dataUrl)).blob();
   const boundary = `mealcaster${Math.random().toString(36).slice(2)}`;
   const metadata = { name, parents: [folderId], mimeType: image.type || 'image/jpeg' };

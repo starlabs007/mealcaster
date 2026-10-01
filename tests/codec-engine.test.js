@@ -63,6 +63,19 @@ describe('codec', () => {
     assert.equal(row.Image_URL, '');
   });
 
+  it('only reads https image links from the sheet', () => {
+    const read = (url) =>
+      codec.recipeFromRow({ ...codec.recipeToRow(recipe('r1', 'Pasta'), new Set()), Image_URL: url }, undefined, {
+        columns: SCHEMA.recipes,
+        favorites: new Set(),
+        today: '2026-09-30',
+      }).recipe.image;
+    assert.equal(read(' https://lh3.googleusercontent.com/d/abc '), 'https://lh3.googleusercontent.com/d/abc');
+    for (const url of ['data:text/html;base64,PGgxPg==', 'data:image/jpeg;base64,AAAA', 'http://example.com/a.jpg', 'javascript:alert(1)', 'a.jpg']) {
+      assert.equal(read(url), undefined, url);
+    }
+  });
+
   it('round-trips plan entries, dining out and notes', () => {
     const columns = SCHEMA.weeklyPlan;
     const read = (row) => codec.planFromRow(row, undefined, columns);

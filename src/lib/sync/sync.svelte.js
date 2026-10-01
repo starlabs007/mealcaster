@@ -5,7 +5,7 @@
 
 import { googleConfigured } from '../google/config.js';
 import { auth, currentToken, prepareAuth, signIn, signOut } from '../google/auth.svelte.js';
-import { GoogleApiError, createSpreadsheet, ensurePhotoFolder, getAccount, sheetsApi, uploadPhoto } from '../google/api.js';
+import { GoogleApiError, createSpreadsheet, ensurePhotoFolder, getAccount, isPhotoDataUrl, sheetsApi, uploadPhoto } from '../google/api.js';
 import { pickSpreadsheet, preparePicker } from '../google/picker.js';
 import { sheets, updateSheetsSettings } from '../sheets.svelte.js';
 import { recipes, replaceRecipes, saveRecipe } from '../recipes.svelte.js';
@@ -191,7 +191,7 @@ let lastFingerprint = '';
 
 /** Uploads photos added on this device to Drive, so every device can show them. */
 async function uploadPendingPhotos() {
-  const pending = recipes.filter((r) => r.image?.startsWith('data:'));
+  const pending = recipes.filter((r) => isPhotoDataUrl(r.image));
   if (!pending.length) return;
   const folder = await ensurePhotoFolder(sheets.photosFolderId);
   if (folder !== sheets.photosFolderId) updateSheetsSettings({ photosFolderId: folder });
