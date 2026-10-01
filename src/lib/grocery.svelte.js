@@ -22,7 +22,7 @@ const LEGACY_KEY = storageKey('groceryExtras.v1');
 
 /**
  * @typedef {'need' | 'bought' | 'owned'} LineStatus
- * @typedef {'produce' | 'meat' | 'dairy' | 'pantry'} Dept
+ * @typedef {'produce' | 'meat' | 'dairy' | 'pantry' | 'other'} Dept
  * @typedef {{ id: string, name: string, note: string, dept: Dept }} CustomItem
  * @typedef {{ extras: string[], status: Record<string, LineStatus>, custom: CustomItem[] }} WeekList
  * @typedef {{
@@ -52,6 +52,7 @@ const TAG_DEPT = {
   Spices: 'pantry',
   Broth: 'pantry',
   Bakery: 'pantry',
+  Other: 'other',
 };
 
 // Source-tag colors cycle by weekday so each dinner reads distinctly.

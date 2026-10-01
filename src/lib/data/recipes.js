@@ -61,6 +61,7 @@ const pool = [
           { qty: 2, text: 'fresh wild salmon fillets (6 oz each), skin-on & thoroughly scaled', tag: 'Fresh' },
           { qty: 1, unit: 'tbsp', text: 'high-smoke point avocado oil or clarified butter', tag: 'Pantry', staple: true },
           { text: 'Flaky Maldon sea salt & freshly cracked black peppercorns', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'pack', text: 'bamboo skewers or kitchen twine, for trussing & turning', tag: 'Other' },
         ],
       },
       {
@@ -162,6 +163,7 @@ const pool = [
           { qty: 2, unit: 'cups', text: 'shredded Monterey Jack', tag: 'Dairy' },
           { qty: 1, unit: 'bunch', text: 'fresh cilantro', tag: 'Herbs' },
           { qty: 1, text: 'lime, cut into wedges', tag: 'Citrus' },
+          { qty: 1, unit: 'roll', text: 'aluminum foil, to cover the baking dish', tag: 'Other' },
         ],
       },
     ],
@@ -289,6 +291,7 @@ const pool = [
           { qty: 2, text: 'balls fresh burrata', tag: 'Dairy' },
           { qty: 1, unit: 'bunch', text: 'fresh basil', tag: 'Herbs' },
           { qty: 3, unit: 'tbsp', text: 'hot honey', tag: 'Pantry' },
+          { qty: 1, unit: 'roll', text: 'parchment paper, for sliding the pizza onto the stone', tag: 'Other' },
         ],
       },
     ],
