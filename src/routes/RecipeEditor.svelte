@@ -743,29 +743,28 @@
 
         <!-- Method -->
         <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
-          <div class="mb-4 flex items-start justify-between gap-3">
-            <div>
-              <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-                <Icon name="skillet" class="text-[20px] text-primary" /> Preparation &amp; Method
-              </h2>
-              <p class="text-body-sm text-on-surface-variant">Ordered steps, saved to the Method_Steps column</p>
-              <p class="text-body-sm text-on-surface-variant">
-                Supports Markdown:
-                <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
-              </p>
+          <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
+            <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+              <Icon name="skillet" class="text-[20px] text-primary" /> Preparation &amp; Method
+            </h2>
+            <span class="text-label-caps uppercase text-outline">Column: Method_Steps</span>
+          </div>
+          <p class="text-body-sm text-on-surface-variant">Ordered steps</p>
+          <p class="mb-3 text-body-sm text-on-surface-variant">
+            Supports Markdown:
+            <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
+          </p>
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
+              {#each [[false, 'Write'], [true, 'Preview']] as [on, label] (label)}
+                <button
+                  type="button"
+                  class="rounded-md px-3 py-1 {stepPreview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}"
+                  onclick={() => (stepPreview = on)}
+                >{label}</button>
+              {/each}
             </div>
-            <div class="flex items-center gap-3">
-              <div class="inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
-                {#each [[false, 'Write'], [true, 'Preview']] as [on, label] (label)}
-                  <button
-                    type="button"
-                    class="rounded-md px-3 py-1 {stepPreview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}"
-                    onclick={() => (stepPreview = on)}
-                  >{label}</button>
-                {/each}
-              </div>
-              <span class="text-label-caps uppercase text-outline">{form.steps.length} {form.steps.length === 1 ? 'step' : 'steps'}</span>
-            </div>
+            <span class="text-label-caps uppercase text-outline">{form.steps.length} {form.steps.length === 1 ? 'step' : 'steps'}</span>
           </div>
 
           <ol class="flex flex-col gap-3">
