@@ -19,7 +19,7 @@ const IMG = 'https://lh3.googleusercontent.com/aida-public/';
  *   cookMinutes: number,
  *   minutes: number,
  *   serves: number,
- *   badge: { label: string },
+ *   badge: { label: string }, // category; '' = none
  *   addedAt: string,
  *   tags: string[],
  *   notes: string,
@@ -48,7 +48,7 @@ const pool = [
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 2,
-    badge: { label: 'Seafood' },
+    badge: { label: 'Dinner' },
     addedAt: '2026-03-02',
     tags: ['Gluten-Free'],
     notes:
@@ -130,7 +130,7 @@ const pool = [
     prepMinutes: 20,
     cookMinutes: 30,
     serves: 4,
-    badge: { label: 'Family Classic' },
+    badge: { label: 'Dinner' },
     addedAt: '2025-11-18',
     tags: ['Vegetarian'],
     notes:
@@ -204,7 +204,7 @@ const pool = [
     prepMinutes: 15,
     cookMinutes: 45,
     serves: 4,
-    badge: { label: 'Pasta & Grains' },
+    badge: { label: 'Dinner' },
     addedAt: '2025-10-04',
     tags: ['Poultry & Meat'],
     notes:
@@ -269,7 +269,7 @@ const pool = [
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 4,
-    badge: { label: 'Artisan Bakes' },
+    badge: { label: '' },
     addedAt: '2025-09-12',
     tags: ['Vegetarian'],
     notes:
@@ -329,7 +329,7 @@ const pool = [
     prepMinutes: 15,
     cookMinutes: 20,
     serves: 2,
-    badge: { label: 'Plant-Based' },
+    badge: { label: 'Dinner' },
     addedAt: '2026-06-20',
     tags: ['Vegetarian'],
     notes:
@@ -385,7 +385,7 @@ const pool = [
     prepMinutes: 5,
     cookMinutes: 20,
     serves: 4,
-    badge: { label: 'Stews & Soups' },
+    badge: { label: 'Dinner' },
     addedAt: '2025-12-01',
     tags: ['Quick (<30m)', 'Vegetarian'],
     notes:
@@ -444,7 +444,7 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 2,
-    badge: { label: 'Seafood' },
+    badge: { label: 'Dinner' },
     addedAt: '2026-01-15',
     tags: ['Quick (<30m)', 'Gluten-Free'],
     notes:
@@ -509,7 +509,7 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 25,
     serves: 4,
-    badge: { label: 'Stews & Soups' },
+    badge: { label: 'Lunch' },
     addedAt: '2025-10-28',
     tags: ['Vegetarian'],
     notes:
@@ -568,7 +568,7 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 30,
     serves: 4,
-    badge: { label: 'Sheet Pan & Roasts' },
+    badge: { label: 'Dinner' },
     addedAt: '2025-08-30',
     tags: ['Poultry & Meat'],
     notes:
@@ -626,7 +626,7 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 20,
     serves: 4,
-    badge: { label: 'Pasta & Grains' },
+    badge: { label: 'Dinner' },
     addedAt: '2026-09-15',
     tags: ['Vegetarian'],
     notes:
@@ -685,7 +685,7 @@ const pool = [
     prepMinutes: 7,
     cookMinutes: 8,
     serves: 2,
-    badge: { label: 'Pasta & Grains' },
+    badge: { label: 'Lunch' },
     addedAt: '2026-07-08',
     tags: ['Quick (<30m)', 'Vegetarian'],
     notes:
@@ -744,7 +744,7 @@ const pool = [
     prepMinutes: 30,
     cookMinutes: 180,
     serves: 6,
-    badge: { label: 'Family Classic' },
+    badge: { label: 'Dinner' },
     addedAt: '2025-11-02',
     tags: ['Poultry & Meat'],
     notes:
@@ -810,7 +810,7 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 4,
-    badge: { label: 'Quick Skillet' },
+    badge: { label: 'Lunch' },
     addedAt: '2026-05-11',
     tags: ['Poultry & Meat', 'Quick (<30m)'],
     notes:
@@ -870,7 +870,7 @@ const pool = [
     prepMinutes: 5,
     cookMinutes: 15,
     serves: 2,
-    badge: { label: 'Plant-Based' },
+    badge: { label: 'Lunch' },
     addedAt: '2026-08-22',
     tags: ['Vegetarian', 'Gluten-Free', 'Quick (<30m)'],
     notes:

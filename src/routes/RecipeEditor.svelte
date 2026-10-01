@@ -3,17 +3,6 @@
 
   const DRAFT_KEY = storageKey('recipeDraft.v1');
 
-  const categories = [
-    'Family Classic',
-    'Pasta & Grains',
-    'Stews & Soups',
-    'Quick Skillet',
-    'Sheet Pan & Roasts',
-    'Seafood',
-    'Plant-Based',
-    'Artisan Bakes',
-  ];
-
   /** Which form field fills each [Recipes] column. */
   const COLUMN_SOURCE = {
     Recipe_ID: 'Generated',
@@ -42,6 +31,8 @@
     tagChoices,
     normalizeTag,
     TAG_MAX,
+    categoryChoices,
+    normalizeCategory,
     aisles,
     parseQty,
     guessAisle,
@@ -94,7 +85,7 @@
       title: '',
       description: '',
       image: '',
-      category: categories[0],
+      category: '',
       serves: 4,
       prepMinutes: 15,
       cookMinutes: 30,
@@ -149,6 +140,7 @@
       draft.ingredients = draft.ingredients.map((row) => ({ ...row, key: nextKey() }));
       draft.steps = draft.steps.map((step) => ({ ...step, key: nextKey() }));
       draft.tags = normalizeTags(draft.tags);
+      draft.category = normalizeCategory(draft.category);
       return draft;
     } catch {
       return null;
@@ -167,6 +159,18 @@
   let notesPreview = $state(false);
   let stepPreview = $state(false);
   let form = $state(editing ? formFrom(editing) : (savedDraft ?? blankForm()));
+
+  // ---- Category ------------------------------------------------------------------
+  let newCategory = $state('');
+  const categoryOptions = $derived(categoryChoices([...recipes.map((r) => r.badge.label), form.category]));
+
+  /** The typed category, if any, else the picked one. */
+  const chosenCategory = () => normalizeCategory(newCategory) || form.category;
+
+  function addCategory() {
+    form.category = chosenCategory();
+    newCategory = '';
+  }
 
   // ---- Tags ----------------------------------------------------------------------
   let newTag = $state('');
@@ -340,7 +344,7 @@
       prepMinutes: form.prepMinutes,
       cookMinutes: form.cookMinutes,
       serves: form.serves,
-      badge: { label: form.category },
+      badge: { label: chosenCategory() },
       tags: withNewTag(),
       notes,
       ingredients: groups,
@@ -623,17 +627,58 @@
           </div>
 
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label for="recipe-category" class="mb-1.5 block text-label-md text-on-surface">Category</label>
-              <select id="recipe-category" bind:value={form.category} class="{field} {border(false)}">
-                {#each categories as c (c)}<option value={c}>{c}</option>{/each}
-                {#if !categories.includes(form.category)}<option value={form.category}>{form.category}</option>{/if}
-              </select>
-            </div>
-            {@render numberField('serves', 'Yield / Servings', '', 'servings')}
+            <div class="sm:col-span-2 sm:max-w-[calc(50%-0.5rem)]">{@render numberField('serves', 'Yield / Servings', '', 'servings')}</div>
             {@render numberField('prepMinutes', 'Prep Time', 'timer', 'min')}
             {@render numberField('cookMinutes', 'Cook Time', 'skillet', 'min')}
           </div>
+
+          <fieldset>
+            <legend class="mb-2 flex w-full items-baseline justify-between gap-2">
+              <span class="text-label-md text-on-surface">Category <span class="text-outline">(optional)</span></span>
+              <span class="text-body-sm text-outline">Column: Category</span>
+            </legend>
+            <div class="flex flex-wrap gap-1.5">
+              {#each categoryOptions as category (category)}
+                {@const on = form.category === category}
+                <button
+                  type="button"
+                  aria-pressed={on}
+                  title={category}
+                  onclick={() => (form.category = on ? '' : category)}
+                  class="inline-flex max-w-full items-center gap-1 rounded-full px-3 py-1 text-label-caps transition-all {on
+                    ? 'bg-primary text-on-primary shadow-sm'
+                    : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-dim'}"
+                >
+                  {#if on}<Icon name="check" class="text-[13px]" />{/if}
+                  <span class="truncate">{category}</span>
+                </button>
+              {/each}
+            </div>
+            <div class="mt-2 flex gap-2">
+              <input
+                type="text"
+                aria-label="New category"
+                bind:value={newCategory}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addCategory();
+                  }
+                }}
+                placeholder="Add your own category, e.g. Breakfast"
+                class="{field} {border(false)} flex-1 py-2"
+              />
+              <button
+                type="button"
+                disabled={!normalizeCategory(newCategory)}
+                onclick={addCategory}
+                class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-surface-container px-3 text-label-md text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
+              >
+                <Icon name="add" class="text-[16px]" /> Add
+              </button>
+            </div>
+            <p class="mt-1 text-body-sm text-outline">One per recipe; tap the selected one again to clear it.</p>
+          </fieldset>
 
           <fieldset>
             <legend class="mb-2 flex w-full items-baseline justify-between gap-2">

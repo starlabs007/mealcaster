@@ -277,9 +277,11 @@
               <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md">
                 <Icon name="restaurant_menu" class="text-[13px]" /> {formatMinutes(recipe.minutes)} · Serves {recipe.serves}
               </span>
-              <span class="rounded-full bg-primary-container/90 px-2.5 py-1 text-label-caps text-on-primary shadow-sm backdrop-blur-md">
-                {recipe.badge.label}
-              </span>
+              {#if recipe.badge.label}
+                <span class="rounded-full bg-primary-container/90 px-2.5 py-1 text-label-caps text-on-primary shadow-sm backdrop-blur-md">
+                  {recipe.badge.label}
+                </span>
+              {/if}
             </div>
           </div>
         </figure>

@@ -80,7 +80,7 @@
       />
       <div class="min-w-0 flex-1">
         <h3 class="font-display text-on-surface {emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
-        <p class="mt-1 text-xs text-on-surface-variant">{recipe.badge.label} · {recipe.prepMinutes + recipe.cookMinutes} min · Serves {recipe.serves}</p>
+        <p class="mt-1 text-xs text-on-surface-variant">{[recipe.badge.label, `${recipe.prepMinutes + recipe.cookMinutes} min`, `Serves ${recipe.serves}`].filter(Boolean).join(' · ')}</p>
         <div class="mt-3 flex items-center gap-4">
           <a
             href={href(`/recipe/${recipe.id}`, { day: day.iso })}

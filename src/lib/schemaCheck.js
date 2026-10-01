@@ -26,7 +26,7 @@ export const COLUMN_INFO = {
     Image_URL: { note: 'Link to a photo of the dish.', aliases: ['image', 'photo', 'picture', 'img', 'photo url'] },
     Tags: { note: 'Comma-separated recipe tags (e.g. Vegetarian, Gluten-Free).', aliases: ['tags csv', 'labels', 'dietary labels', 'flags', 'diet'] },
     Favorite_Flag: { note: 'TRUE for starred recipes.', aliases: ['favorite', 'favourite', 'starred', 'fav', 'favourite flag'] },
-    Category: { note: 'Badge such as Seafood or Vegetarian.', aliases: ['course', 'type', 'course type', 'meal type'] },
+    Category: { note: 'Optional category such as Dinner, Lunch or Dessert.', aliases: ['course', 'type', 'course type', 'meal type'] },
     Servings: { note: 'How many people the recipe feeds.', aliases: ['serves', 'yield', 'portions'] },
     Prep_Minutes: { note: 'Hands-on prep time in minutes.', aliases: ['prep', 'prep time', 'prep mins'] },
     Cook_Minutes: { note: 'Cooking time in minutes.', aliases: ['cook', 'cook time', 'cooking time', 'cook mins'] },

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeTag, normalizeTags, tagChoices, assignTones, TONES, TAG_MAX } from '../src/lib/tags.js';
+import { normalizeTag, normalizeTags, tagChoices, assignTones, TONES, TAG_MAX, categoryChoices, normalizeCategory } from '../src/lib/tags.js';
 
 test('normalizeTag capitalizes each word and tidies spacing', () => {
   assert.equal(normalizeTag('  date   night '), 'Date Night');
@@ -36,4 +36,10 @@ test('assignTones hands out colours round-robin and keeps them', () => {
   assert.equal(colors.tones.Aa, TONES[1]);
   assert.equal(colors.tones.B, TONES[1]);
   assert.equal(colors.next, 7);
+});
+
+test('categoryChoices lists Dinner, Lunch, Dessert first, then others alphabetically, skipping blanks', () => {
+  assert.deepEqual(categoryChoices(['Snack', '', 'Dinner', 'Breakfast', 'Snack']), ['Dinner', 'Lunch', 'Dessert', 'Breakfast', 'Snack']);
+  assert.equal(normalizeCategory('  sunday   brunch '), 'Sunday Brunch');
+  assert.equal(normalizeCategory(undefined), '');
 });

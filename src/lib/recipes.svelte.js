@@ -6,12 +6,12 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
 import { migrateNotes } from './markdown.js';
-import { normalizeTags } from './tags.js';
+import { normalizeCategory, normalizeTags } from './tags.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
 
 export { formatMinutes } from './data/recipes.js';
-export { suggestedTags, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX } from './tags.js';
+export { suggestedTags, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX, normalizeCategory, categoryChoices } from './tags.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */
@@ -31,7 +31,7 @@ const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes });
 const migrate = (r) => {
   // Mock-only sample fields, since removed (cook counts now come from the plan).
   const { highlight, prep, stat, rating, ratings, cookCount, ...rest } = migrateNotes(r);
-  return { ...rest, badge: { label: rest.badge?.label ?? 'Dinner' }, tags: normalizeTags(r.tags) };
+  return { ...rest, badge: { label: normalizeCategory(rest.badge?.label ?? 'Dinner') }, tags: normalizeTags(r.tags) };
 };
 
 /** @returns {{ saved: SavedRecipe[], deleted: string[] }} */
