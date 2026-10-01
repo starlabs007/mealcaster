@@ -25,6 +25,19 @@ const num = (v) => {
   return Number.isFinite(n) && n >= 0 ? n : 0;
 };
 const bool = (v) => v === true || /^(true|yes|y|1|x|✓|✔)$/i.test(str(v));
+/**
+ * Image link from a sheet cell: https only. A `data:` URL would be queued as a
+ * photo to upload (and share publicly) from this account; `http:`, `javascript:`
+ * and the like have no business in an <img>.
+ */
+const imageUrl = (v) => {
+  const text = str(v);
+  try {
+    return new URL(text).protocol === 'https:' ? text : '';
+  } catch {
+    return '';
+  }
+};
 
 /**
  * Date cell → "YYYY-MM-DD". Sheets returns real dates as serial numbers
@@ -153,7 +166,7 @@ const RECIPE_COLUMNS = {
     // Photos still waiting to be uploaded to Drive aren't written.
     get: (r) => (r.image && !r.image.startsWith('data:') ? r.image : ''),
     set: (r, v) => {
-      const url = str(v);
+      const url = imageUrl(v);
       if (url) r.image = url;
       else delete r.image;
       delete r.hero;
