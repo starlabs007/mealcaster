@@ -104,7 +104,7 @@
   </div>
 {:else}
   <!-- Breadcrumb & actions bar -->
-  <div class="border-b border-surface-container-high bg-surface-container-low/60">
+  <div class="border-b border-surface-container-high bg-surface-container-low/60 print:hidden">
     <div class="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-gutter-desktop">
       <nav aria-label="Breadcrumb" class="flex min-w-0 items-center gap-1.5 text-label-md text-on-surface-variant">
         <Icon name="arrow_back" class="text-[16px]" />
@@ -133,7 +133,7 @@
           class="btn-outline {favorite ? 'text-secondary' : ''}"
         >
           <Icon name="favorite" class="text-[16px] text-secondary {favorite ? 'icon-filled' : ''}" />
-          {favorite ? 'Saved' : 'Save'}
+          {favorite ? 'Favorited' : 'Favorite'}
         </button>
         {#if editable}
           <a href={href('/catalog', { day })} class="btn-outline">
@@ -144,6 +144,9 @@
             <Icon name="event_available" class="text-[16px]" /> Plan for {formatWeekday(openDay)}
           </button>
         {/if}
+        <button type="button" class="btn-outline" onclick={() => window.print()}>
+          <Icon name="print" class="text-[16px]" /> Print
+        </button>
         <button
           type="button"
           disabled={!notOnList.length}
@@ -206,7 +209,7 @@
             <div class="text-label-caps uppercase text-outline">Servings</div>
             <div class="text-body-sm font-semibold text-on-surface">{servings} Servings</div>
           </div>
-          <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest">
+          <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest print:hidden">
             <button type="button" aria-label="Fewer servings" class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40" disabled={servings <= 1} onclick={() => servings--}>
               <Icon name="remove" class="text-[16px]" />
             </button>
@@ -266,7 +269,7 @@
                 <p class="text-body-sm text-on-surface-variant">Check items as you prep or push directly to grocery</p>
               </div>
             </div>
-            <button type="button" class="inline-flex shrink-0 items-center gap-1 text-label-sm text-on-surface-variant hover:text-primary" onclick={toggleAll}>
+            <button type="button" class="inline-flex shrink-0 items-center gap-1 text-label-sm text-on-surface-variant hover:text-primary print:hidden" onclick={toggleAll}>
               <Icon name={checked.length === allKeys.length ? 'remove_done' : 'done_all'} class="text-[16px]" />
               {checked.length === allKeys.length ? 'Clear all' : 'Select all'}
             </button>
@@ -309,7 +312,7 @@
             {/each}
           </div>
 
-          <div class="mt-5 flex flex-col gap-3 border-t border-surface-container-high pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div class="mt-5 flex flex-col gap-3 border-t border-surface-container-high pt-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
             <p class="text-body-sm text-on-surface-variant">
               Missing something? Push every unchecked ingredient to your grocery list.
             </p>
@@ -363,7 +366,7 @@
     </div>
 
     <!-- Bottom navigation -->
-    <div class="flex flex-col gap-4 rounded-2xl bg-surface-container-low p-5 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex flex-col gap-4 rounded-2xl bg-surface-container-low p-5 sm:flex-row sm:items-center sm:justify-between print:hidden">
       <div class="flex items-center gap-3">
         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-lowest text-on-surface-variant shadow-card">
           <Icon name="cloud_off" class="text-[20px]" />
