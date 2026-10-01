@@ -179,3 +179,9 @@ src/
 Enable it once in the repo under **Settings → Pages → Source: GitHub Actions**.
 The Vite `base` is relative (`./`), so the site works from the `/<repo>/` sub-path.
 The build job runs in the `production` environment to read the three `GOOGLE_*` values.
+
+## To do
+
+- **Dinner picks ignore the category.** Auto-fill and Surprise Me choose from every recipe, so a Lunch or
+  Dessert recipe (e.g. the New York Cheesecake sample) can land on a dinner day. Limit both to recipes in the
+  Dinner category or with no category.
