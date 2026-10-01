@@ -7,7 +7,7 @@ import autoprefixer from 'autoprefixer';
 const root = fileURLToPath(new URL('.', import.meta.url));
 
 // Relative base so the build works from any GitHub Pages sub-path (e.g. /mealcaster/).
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   // Google credentials come from .env.local in dev and the `production` environment in CI.
   // Only these three names are exposed to the browser bundle.
   const env = loadEnv(mode, root, 'GOOGLE_');
@@ -21,7 +21,11 @@ export default defineConfig(({ mode }) => {
     root,
     base: './',
     plugins: [svelte()],
-    define: { __GOOGLE_CONFIG__: JSON.stringify(google) },
+    define: {
+      __GOOGLE_CONFIG__: JSON.stringify(google),
+      // Sample recipes/plan: `npm run dev` only. `npm run dev:empty` (mode "empty") and builds start empty.
+      __SAMPLE_DATA__: JSON.stringify(command === 'serve' && mode !== 'empty'),
+    },
     css: {
       postcss: {
         plugins: [tailwindcss({ config: `${root}tailwind.config.js` }), autoprefixer()],

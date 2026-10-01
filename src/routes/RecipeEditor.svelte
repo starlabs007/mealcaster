@@ -1,5 +1,7 @@
 <script module>
-  const DRAFT_KEY = 'mealcaster.recipeDraft.v1';
+  import { storageKey } from '../lib/env.js';
+
+  const DRAFT_KEY = storageKey('recipeDraft.v1');
 
   const categories = [
     'Family Classic',

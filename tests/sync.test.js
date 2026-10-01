@@ -163,6 +163,31 @@ describe('first sync', () => {
   });
 });
 
+describe('clearing device data (switching dev modes)', () => {
+  // Why env.js clears the sync base together with the data.
+  const setUp = async () => {
+    const sheet = fakeSheet();
+    const device = fakeDevice({ recipes: [recipe('r1', 'Pasta'), recipe('r2', 'Soup')] });
+    const { base } = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [TABS[0]] }));
+    return { sheet, base };
+  };
+
+  it('an empty device with the old sync base would delete the sheet’s rows', async () => {
+    const { sheet, base } = await setUp();
+    await runSync(syncOptions(sheet, fakeDevice(), base, { tabs: [TABS[0]] }));
+    assert.deepEqual(sheet.column('Recipes', 'Title'), []);
+  });
+
+  it('an empty device without a sync base pulls the sheet back instead', async () => {
+    const { sheet } = await setUp();
+    const device = fakeDevice();
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [TABS[0]] }));
+    assert.equal(result.status, 'done');
+    assert.deepEqual(sheet.column('Recipes', 'Title'), ['Pasta', 'Soup']);
+    assert.deepEqual(device.recipes.map((r) => r.title), ['Pasta', 'Soup']);
+  });
+});
+
 describe('sheet layout and options', () => {
   it('reads real date cells (serial numbers) and checkbox flags', async () => {
     const sheet = fakeSheet({

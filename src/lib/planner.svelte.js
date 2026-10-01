@@ -5,8 +5,9 @@
 import { recipes, recipeById } from './recipes.svelte.js';
 import { addDays, fromISO, mondayOf, toISO, weekDates } from './dates.js';
 import { showToast } from './toast.svelte.js';
+import { sampleData, storageKey } from './env.js';
 
-const STORAGE_KEY = 'mealcaster.weeklyPlan.v1';
+const STORAGE_KEY = storageKey('weeklyPlan.v1');
 
 /**
  * `notes` holds the sheet's Custom_Notes for that evening.
@@ -41,8 +42,8 @@ function load() {
   } catch {
     // Storage unavailable or corrupt — fall back to the sample plan.
   }
-  // The sample plan points at sample recipes, which only exist in development.
-  return import.meta.env.DEV ? seedEntries() : {};
+  // The sample plan points at sample recipes, which only exist in the sample dev build.
+  return sampleData ? seedEntries() : {};
 }
 
 export const planner = $state({

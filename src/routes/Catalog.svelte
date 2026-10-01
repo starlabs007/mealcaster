@@ -247,6 +247,19 @@
         />
       {/each}
     </div>
+  {:else if !recipes.length}
+    <!-- A new household: nothing in the catalog yet. -->
+    <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-16 text-center">
+      <Icon name="menu_book" class="text-[36px] text-outline" />
+      <h2 class="font-display text-headline-sm text-on-surface">Your recipe catalog is empty</h2>
+      <p class="max-w-md text-body-sm text-on-surface-variant">
+        Add your first family recipe, or connect a Google Sheet that already has your recipes.
+      </p>
+      <div class="mt-2 flex flex-wrap justify-center gap-2">
+        <a href={href('/recipe/new')} class="btn-primary"><Icon name="add" class="text-[16px]" /> Add a Recipe</a>
+        <a href={href('/sheets-sync')} class="btn-outline"><Icon name="table_chart" class="text-[16px]" /> Connect Google Sheets</a>
+      </div>
+    </div>
   {:else}
     <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-16 text-center">
       <Icon name="search_off" class="text-[36px] text-outline" />

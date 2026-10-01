@@ -15,9 +15,10 @@ import { planner, currentWeek } from './planner.svelte.js';
 import { formatQty } from './format.js';
 import { formatWeekday } from './dates.js';
 import { departments } from './data/departments.js';
+import { storageKey } from './env.js';
 
-const STORAGE_KEY = 'mealcaster.grocery.v2';
-const LEGACY_KEY = 'mealcaster.groceryExtras.v1';
+const STORAGE_KEY = storageKey('grocery.v2');
+const LEGACY_KEY = storageKey('groceryExtras.v1');
 
 /**
  * @typedef {'need' | 'bought' | 'owned'} LineStatus

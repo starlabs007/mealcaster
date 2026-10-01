@@ -1,8 +1,10 @@
 // Mirrors the Favorite_Flag column of the [Recipes] tab; cached locally.
 
-const STORAGE_KEY = 'mealcaster.favorites.v1';
-// Sample favorites exist only alongside the development sample recipes.
-const SEED = import.meta.env.DEV ? ['sheet-pan-chicken', 'salmon-risotto', 'sourdough-pizza'] : [];
+import { sampleData, storageKey } from './env.js';
+
+const STORAGE_KEY = storageKey('favorites.v1');
+// Sample favorites exist only alongside the sample recipes.
+const SEED = sampleData ? ['sheet-pan-chicken', 'salmon-risotto', 'sourdough-pizza'] : [];
 
 function load() {
   try {

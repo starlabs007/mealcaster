@@ -1,4 +1,4 @@
-// Live recipe list: the sample pool (dev builds only) plus the user's own
+// Live recipe list: the sample pool (sample dev build only) plus the user's own
 // recipes. Every recipe is editable: edits to a sample are saved under the
 // sample's id and deleted samples are remembered. This is the on-device cache;
 // when a Google Sheet is connected, sync replaces it with the sheet's recipes.
@@ -6,17 +6,18 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
 import { cellText, recipeToRow } from './sync/codec.js';
+import { sampleData, storageKey } from './env.js';
 
 export { filters, tagMeta, formatMinutes } from './data/recipes.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */
 
-const STORAGE_KEY = 'mealcaster.recipeBox.v1';
-const LEGACY_KEY = 'mealcaster.customRecipes.v1';
+const STORAGE_KEY = storageKey('recipeBox.v1');
+const LEGACY_KEY = storageKey('customRecipes.v1');
 
-// Sample recipes are development data only — production starts empty.
-const builtIn = import.meta.env.DEV ? sampleRecipes : [];
+// Sample recipes are development data only (`npm run dev`) — production starts empty.
+const builtIn = sampleData ? sampleRecipes : [];
 const sampleById = new Map(builtIn.map((r) => [r.id, r]));
 export const isSample = (id) => sampleById.has(id);
 

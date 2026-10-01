@@ -14,6 +14,7 @@ import { planner, replacePlan, statusOf } from '../planner.svelte.js';
 import { grocery, groceryLines, replaceGrocery } from '../grocery.svelte.js';
 import { mondayOf, weekDates } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
+import { storageKey } from '../env.js';
 import {
   groceryFromRows,
   planEntryHasContent,
@@ -30,7 +31,7 @@ import { emptyBase, runSync } from './run.js';
 /** @typedef {import('./run.js').SyncBase} SyncBase */
 /** @typedef {import('./run.js').Counts} Counts */
 
-const BASE_KEY = 'mealcaster.syncBase.v1';
+const BASE_KEY = storageKey('syncBase.v1');
 
 /**
  * @typedef {'unavailable' | 'unlinked' | 'signedOut' | 'syncing' | 'synced' | 'error' | 'conflict' | 'choose'} SyncPhase

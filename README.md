@@ -4,7 +4,7 @@ Weekly dinner menu planner — plan, prep and shop for the week's dinners.
 Built with **Svelte 5 + Vite + Tailwind CSS**, deployed as a static site to GitHub Pages.
 
 > Status: all screens are implemented, including two-way **Google Sheets sync**. Sample recipes and
-> a sample plan exist only in the dev server (`npm run dev`); production builds start empty.
+> a sample plan exist only in `npm run dev`; `npm run dev:empty` and production builds start empty.
 
 ## Run it locally
 
@@ -14,10 +14,16 @@ Requires Node 18.18+ (`.nvmrc` pins 18).
 nvm use
 npm install
 cp .env.example .env.local   # then fill in the Google values (see below)
-npm run dev        # http://localhost:5173
+npm run dev        # http://localhost:5173 — with sample recipes, plan and favorites
+npm run dev:empty  # same, but starts empty like production
 ```
 
 Without `.env.local` the app still runs; Google sync is just unavailable.
+
+Both dev modes run on `localhost:5173` (run one at a time) and use the same localStorage keys.
+Switching mode clears this browser's saved recipes, plan, favorites, grocery list and sync history
+(Sheets settings are kept) — the sample mode re-seeds, the empty mode starts blank. Within a mode, data
+survives reloads. Production runs on its own origin, so its saved data is never touched.
 
 Tests (Node's built-in runner, no extra dependencies):
 

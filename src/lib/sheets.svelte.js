@@ -1,9 +1,10 @@
 // Google Sheets connection settings (Connection & Settings modal), saved on
 // this device. The sign-in token itself is never stored (see google/auth).
 
-const STORAGE_KEY = 'mealcaster.sheetsSettings.v1';
+const STORAGE_KEY = storageKey('sheetsSettings.v1');
 
 import { SCHEMA } from './schema.js';
+import { storageKey } from './env.js';
 
 export { SCHEMA };
 
