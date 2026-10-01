@@ -67,7 +67,8 @@ export function formatSteps(steps) {
   return steps
     .map((s, i) => {
       const flags = [s.minutes ? `${s.minutes} min` : '', s.critical ? 'critical' : ''].filter(Boolean).join(', ');
-      return `${i + 1}. ${s.title}${flags ? ` (${flags})` : ''}: ${s.text}`;
+      // Continuation lines are indented so Markdown lists inside a step aren't read as new steps.
+      return `${i + 1}. ${s.title}${flags ? ` (${flags})` : ''}: ${s.text.replace(/\n/g, '\n    ')}`;
     })
     .join('\n');
 }
@@ -76,9 +77,9 @@ export function formatSteps(steps) {
 export function parseSteps(text) {
   const steps = [];
   for (const line of str(text).split(/\r?\n/)) {
-    const start = line.match(/^\s*(\d+)[.)]\s+(.*)$/);
+    const start = line.match(/^(\d+)[.)]\s+(.*)$/);
     if (!start && steps.length) {
-      if (line.trim()) steps.at(-1).text += `\n${line.trim()}`;
+      steps.at(-1).text += `\n${line.replace(/^ {1,4}/, '')}`;
       continue;
     }
     const body = (start ? start[2] : line).trim();
@@ -96,6 +97,7 @@ export function parseSteps(text) {
     }
     steps.push({ title: head.trim() || `Step ${steps.length + 1}`, minutes, text: rest, ...(critical && { critical: true }) });
   }
+  for (const s of steps) s.text = s.text.trim();
   return steps;
 }
 
@@ -141,8 +143,6 @@ export function parseIngredients(value) {
   const flat = items(data);
   return flat.length ? [{ title: 'Ingredients', category: `${flat.length} items`, items: flat }] : [];
 }
-
-const notesText = (r) => [r.secret, r.pairing && `Pairing: ${r.pairing}`].filter(Boolean).join('\n\n');
 
 /**
  * Per column: what a recipe writes, and how a changed cell updates a recipe.
@@ -193,12 +193,8 @@ const RECIPE_COLUMNS = {
   Prep_Minutes: { get: (r) => r.prepMinutes, set: (r, v) => (r.prepMinutes = num(v)) },
   Cook_Minutes: { get: (r) => r.cookMinutes, set: (r, v) => (r.cookMinutes = num(v)) },
   Notes: {
-    get: notesText,
-    set: (r, v) => {
-      const [secret, pairing = ''] = str(v).split(/\n\nPairing: /);
-      r.secret = secret;
-      r.pairing = pairing;
-    },
+    get: (r) => r.notes ?? '',
+    set: (r, v) => (r.notes = str(v)),
   },
 };
 
@@ -226,8 +222,7 @@ function blankRecipe(id, today) {
     cookCount: 0,
     addedAt: today,
     tags: [],
-    secret: '',
-    pairing: '',
+    notes: '',
     ingredients: [],
     steps: [],
     custom: true,

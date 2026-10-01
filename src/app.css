@@ -37,4 +37,70 @@
   .btn-outline {
     @apply btn border border-outline-variant bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface;
   }
+
+  /* Rendered Markdown (recipe notes). */
+  .notes-md > * + * {
+    @apply mt-2;
+  }
+  .notes-md h3,
+  .notes-md h4,
+  .notes-md h5,
+  .notes-md h6 {
+    @apply font-semibold text-on-surface;
+  }
+  .notes-md ul {
+    @apply list-disc pl-5;
+  }
+  .notes-md ol {
+    @apply list-decimal pl-5;
+  }
+  .notes-md strong {
+    @apply font-semibold text-on-surface;
+  }
+  .notes-md a {
+    @apply text-primary underline;
+  }
+  .notes-md blockquote {
+    @apply border-l-2 border-outline-variant pl-3 italic;
+  }
+  .notes-md code {
+    @apply rounded bg-surface-container-high px-1 text-[0.9em];
+  }
+  .notes-md hr {
+    @apply border-outline-variant;
+  }
+}
+
+/* Recipe print text size (Small / Large): shifts every type-scale size by
+   --print-delta, set on the .print-sized wrapper in RecipeDetail.svelte. */
+@media print {
+  .print-sized h1 {
+    font-size: calc(30px + var(--print-delta));
+    line-height: 1.25;
+  }
+  .print-sized .text-headline-md {
+    font-size: calc(22px + var(--print-delta));
+    line-height: 1.3;
+  }
+  .print-sized .text-headline-sm {
+    font-size: calc(18px + var(--print-delta));
+    line-height: 1.3;
+  }
+  .print-sized .text-body-lg {
+    font-size: calc(16px + var(--print-delta));
+    line-height: 1.5;
+  }
+  .print-sized .text-body-sm,
+  .print-sized .text-label-md {
+    font-size: calc(13px + var(--print-delta));
+    line-height: 1.4;
+  }
+  .print-sized .text-label-sm {
+    font-size: calc(11px + var(--print-delta));
+    line-height: 1.3;
+  }
+  .print-sized .text-label-caps {
+    font-size: calc(10px + var(--print-delta));
+    line-height: 1.2;
+  }
 }

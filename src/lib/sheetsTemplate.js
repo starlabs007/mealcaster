@@ -27,7 +27,7 @@ export function starterWorkbook(settings) {
     r.serves,
     r.prepMinutes,
     r.cookMinutes,
-    [r.secret, r.pairing && `Pairing: ${r.pairing}`].filter(Boolean).join('\n\n'),
+    r.notes ?? '',
   ]);
 
   const planRows = Object.entries(planner.entries)

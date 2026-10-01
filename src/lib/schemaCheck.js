@@ -30,7 +30,7 @@ export const COLUMN_INFO = {
     Servings: { note: 'How many people the recipe feeds.', aliases: ['serves', 'yield', 'portions'] },
     Prep_Minutes: { note: 'Hands-on prep time in minutes.', aliases: ['prep', 'prep time', 'prep mins'] },
     Cook_Minutes: { note: 'Cooking time in minutes.', aliases: ['cook', 'cook time', 'cooking time', 'cook mins'] },
-    Notes: { note: 'Chef’s tips and wine pairing.', aliases: ['recipe notes', 'tips', 'comments'] },
+    Notes: { note: 'Cook’s secrets, in Markdown.', aliases: ['recipe notes', 'tips', 'comments'] },
   },
   provisions: {
     Week_Of: { note: 'Monday of the grocery week.', required: true, aliases: ['week', 'week start', 'week starting'] },

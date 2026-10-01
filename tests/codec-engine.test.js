@@ -9,6 +9,13 @@ import { SCHEMA } from '../src/lib/schema.js';
 import { recipe } from './fakes.js';
 
 describe('codec', () => {
+  it('round-trips Markdown steps with lists and paragraphs', () => {
+    const steps = [
+      { title: 'Prep', minutes: 5, text: 'Gather:\n\n1. **Salt**\n2. Oil\n\nThen rest.' },
+      { title: 'Cook', minutes: 0, text: 'Sear.' },
+    ];
+    assert.deepEqual(codec.parseSteps(codec.formatSteps(steps)), steps);
+  });
   it('round-trips method steps, including colons and multi-line text', () => {
     const steps = [
       { title: 'Sear', minutes: 8, text: 'Hot pan: very hot', critical: true },
