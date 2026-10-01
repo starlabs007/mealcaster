@@ -1,24 +1,19 @@
-// Google Sheets connection settings (Connection & Settings modal).
-// Google sign-in isn't wired up yet, so these are saved locally and describe
-// the spreadsheet the app will sync with once it is.
+// Google Sheets connection settings (Connection & Settings modal), saved on
+// this device. The sign-in token itself is never stored (see google/auth).
 
 const STORAGE_KEY = 'mealcaster.sheetsSettings.v1';
 
-/** Column headers each tab is expected to have (PRD §4.6). */
-export const SCHEMA = {
-  weeklyPlan: ['Date_ISO', 'Day_Of_Week', 'Recipe_ID_Assigned', 'Completed_Flag', 'Custom_Notes'],
-  // PRD columns first; Category → Notes were added so custom recipes round-trip.
-  recipes: [
-    'Recipe_ID', 'Title', 'Description', 'Ingredients_JSON', 'Method_Steps', 'Image_URL', 'Tags', 'Favorite_Flag',
-    'Category', 'Servings', 'Prep_Minutes', 'Cook_Minutes', 'Notes',
-  ],
-  provisions: ['Week_Of', 'Item', 'Detail', 'Department', 'Status', 'Source'],
-};
+import { SCHEMA } from './schema.js';
+
+export { SCHEMA };
 
 /**
  * @typedef {'bidirectional' | 'pushOnly'} SyncDirection
  * @typedef {{
  *   spreadsheet: string,
+ *   spreadsheetName: string,
+ *   accountEmail: string,
+ *   photosFolderId: string,
  *   tabs: { weeklyPlan: string, recipes: string, provisions: string },
  *   syncProvisions: boolean,
  *   autoDetect: boolean,
@@ -48,6 +43,9 @@ export const SCHEMA = {
 /** @returns {SheetsSettings} */
 export const defaultSettings = () => ({
   spreadsheet: '',
+  spreadsheetName: '',
+  accountEmail: '',
+  photosFolderId: '',
   tabs: { weeklyPlan: 'WeeklyPlan', recipes: 'Recipes', provisions: 'Provisions' },
   syncProvisions: true,
   autoDetect: true,
@@ -87,6 +85,15 @@ function persist() {
 /** @param {SheetsSettings} next */
 export function saveSheetsSettings(next) {
   Object.assign(sheets, structuredClone(next), { savedAt: new Date().toISOString() });
+  persist();
+}
+
+/**
+ * Saves some fields straight away (connection details, found while syncing).
+ * @param {Partial<SheetsSettings>} fields
+ */
+export function updateSheetsSettings(fields) {
+  Object.assign(sheets, fields);
   persist();
 }
 

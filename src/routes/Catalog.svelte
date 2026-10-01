@@ -93,7 +93,7 @@
   function surprise() {
     if (!targetDay) return;
     const recipe = surpriseMe(targetDay, results.length ? results : undefined);
-    assigned = { iso: targetDay, title: recipe.shortTitle };
+    if (recipe) assigned = { iso: targetDay, title: recipe.shortTitle };
   }
 
   /** @param {string} iso */

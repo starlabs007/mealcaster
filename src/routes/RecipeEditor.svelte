@@ -51,6 +51,7 @@
   import { showToast } from '../lib/toast.svelte.js';
   import { formatQty } from '../lib/format.js';
   import { toISO } from '../lib/dates.js';
+  import SyncStatus from '../lib/components/SyncStatus.svelte';
 
   /** @type {{ id?: string }} */
   let { id } = $props();
@@ -458,12 +459,12 @@
         <span class="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-3 py-1.5 text-label-md text-on-surface shadow-card">
           <Icon name="table_chart" class="text-[16px] text-primary" /> [{sheets.tabs.recipes}] tab
         </span>
-        <span class="inline-flex items-center gap-1.5 text-label-caps uppercase text-on-surface-variant">
-          <span class="h-2 w-2 rounded-full bg-outline"></span> Not connected · saved on this device
-        </span>
-        <span class="hidden items-center gap-1.5 text-body-sm text-on-surface-variant lg:inline-flex">
-          <Icon name="sync_alt" class="text-[16px]" /> Will append a row to your sheet once sync is set up
-        </span>
+        <SyncStatus />
+        {#if sheets.spreadsheet}
+          <span class="hidden items-center gap-1.5 text-body-sm text-on-surface-variant lg:inline-flex">
+            <Icon name="sync_alt" class="text-[16px]" /> Saving writes this recipe’s row in your sheet
+          </span>
+        {/if}
       </div>
       <div class="flex flex-wrap gap-2">
         <a href={href('/sheets-sync')} class="btn text-on-surface-variant hover:bg-surface-container-high">
@@ -594,7 +595,7 @@
             {#if photoError}
               <p class="mt-1 text-body-sm text-secondary">{photoError}</p>
             {:else if uploaded}
-              <p class="mt-1 text-body-sm text-outline">Uploaded photos stay on this device — use a link to share them through your sheet.</p>
+              <p class="mt-1 text-body-sm text-outline">{sheets.spreadsheet ? 'Uploaded photos go to a “MealCaster Photos” folder in your Google Drive, viewable by anyone with the link.' : 'Uploaded photos stay on this device until you connect a Google Sheet.'}</p>
             {/if}
           </div>
 

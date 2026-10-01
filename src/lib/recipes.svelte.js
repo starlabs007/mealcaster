@@ -1,10 +1,11 @@
-// Live recipe list: the sample pool plus the user's own recipes (Custom Recipe
-// Importer). Every recipe is editable: edits to a sample are saved under the
-// sample's id and deleted samples are remembered, all locally until the Sheets
-// sync lands.
+// Live recipe list: the sample pool (dev builds only) plus the user's own
+// recipes. Every recipe is editable: edits to a sample are saved under the
+// sample's id and deleted samples are remembered. This is the on-device cache;
+// when a Google Sheet is connected, sync replaces it with the sheet's recipes.
 
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
+import { cellText, recipeToRow } from './sync/codec.js';
 
 export { filters, tagMeta, formatMinutes } from './data/recipes.js';
 
@@ -14,7 +15,9 @@ export { filters, tagMeta, formatMinutes } from './data/recipes.js';
 const STORAGE_KEY = 'mealcaster.recipeBox.v1';
 const LEGACY_KEY = 'mealcaster.customRecipes.v1';
 
-const sampleById = new Map(sampleRecipes.map((r) => [r.id, r]));
+// Sample recipes are development data only — production starts empty.
+const builtIn = import.meta.env.DEV ? sampleRecipes : [];
+const sampleById = new Map(builtIn.map((r) => [r.id, r]));
 export const isSample = (id) => sampleById.has(id);
 
 /** @param {SavedRecipe} r @returns {Recipe} */
@@ -41,7 +44,7 @@ const deleted = new Set(box.deleted);
 
 /** @type {Recipe[]} */
 export const recipes = $state([
-  ...sampleRecipes.filter((r) => !deleted.has(r.id)).map((r) => (savedById.has(r.id) ? withMinutes(savedById.get(r.id)) : r)),
+  ...builtIn.filter((r) => !deleted.has(r.id)).map((r) => (savedById.has(r.id) ? withMinutes(savedById.get(r.id)) : r)),
   ...box.saved.filter((r) => !isSample(r.id)).map(withMinutes),
 ]);
 
@@ -112,6 +115,35 @@ export function restoreRecipe({ recipe, index }) {
   const at = Math.min(index, recipes.length);
   recipes.splice(at, 0, recipe);
   recipeById.set(recipe.id, recipes[at]);
+  persist();
+}
+
+/** Same content as far as the Google Sheet can tell (favorites aside). */
+function sameInSheet(a, b) {
+  const none = new Set();
+  const [ra, rb] = [recipeToRow(a, none), recipeToRow(b, none)];
+  return Object.keys(ra).every((col) => cellText(ra[col]) === cellText(rb[col]));
+}
+
+/**
+ * Replaces the whole recipe list with the synced one. Sample recipes that match
+ * the built-in version are stored as plain samples; changed ones as edits.
+ * @param {Recipe[]} list
+ */
+export function replaceRecipes(list) {
+  const ids = new Set(list.map((r) => r.id));
+  deleted.clear();
+  for (const sample of builtIn) if (!ids.has(sample.id)) deleted.add(sample.id);
+  const next = list.map((r) => {
+    const sample = sampleById.get(r.id);
+    if (!sample) return { ...r, custom: true };
+    if (sameInSheet(r, sample)) return sample;
+    const { custom, ...rest } = r;
+    return { ...rest, edited: true };
+  });
+  recipes.splice(0, recipes.length, ...next);
+  recipeById.clear();
+  for (const r of recipes) recipeById.set(r.id, r);
   persist();
 }
 

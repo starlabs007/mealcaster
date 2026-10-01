@@ -13,6 +13,9 @@
   import { href } from '../lib/router.svelte.js';
   import { formatRange, formatWeekday, isoWeek } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
+  import { sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
+  import { syncPhase, syncNow, connect } from '../lib/sync/sync.svelte.js';
+  import SyncStatus from '../lib/components/SyncStatus.svelte';
 
   const toneClass = {
     sage: 'bg-[#eaf0ec] text-[#2c4635]',
@@ -173,7 +176,11 @@
       </h1>
       <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
         Auto-compiled from this week’s planned dinners <strong class="text-on-surface">({formatRange(planner.weekStart)})</strong>.
-        Will sync with your Google Sheets <code class="rounded bg-surface-container-high px-1 text-[12px]">[Provisions]</code> tab once connected.
+        {#if sheets.spreadsheet && sheets.syncProvisions}
+          Synced with the <code class="rounded bg-surface-container-high px-1 text-[12px]">[{sheets.tabs.provisions}]</code> tab of your Google Sheet.
+        {:else}
+          Saved on this device{sheets.spreadsheet ? '' : ' — connect a Google Sheet to keep it in a [Provisions] tab'}.
+        {/if}
       </p>
     </div>
     <div class="flex flex-wrap items-center gap-2 print:hidden md:justify-end">
@@ -414,22 +421,37 @@
           <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
             <Icon name="table_chart" class="text-[20px]" /> Sheets Two-Way Sync
           </h2>
-          <Icon name="cloud_off" class="text-[20px] text-outline" />
+          <Icon name={sheets.spreadsheet ? 'cloud_done' : 'cloud_off'} class="text-[20px] {sheets.spreadsheet ? 'text-primary' : 'text-outline'}" />
         </div>
-        <div class="rounded-xl bg-surface-container-lowest p-3">
-          <div class="flex items-center justify-between text-label-caps uppercase text-on-surface-variant">
-            <span>Target spreadsheet</span><span class="text-outline">Not connected</span>
+        <div class="flex flex-col gap-2 rounded-xl bg-surface-container-lowest p-3">
+          <div class="flex items-center justify-between gap-2 text-label-caps uppercase text-on-surface-variant">
+            <span>Target spreadsheet</span>
+            {#if sheets.spreadsheet}
+              <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="inline-flex min-w-0 items-center gap-1 normal-case tracking-normal text-primary hover:underline">
+                <span class="truncate">{sheets.spreadsheetName || 'Open sheet'}</span><Icon name="open_in_new" class="text-[14px]" />
+              </a>
+            {:else}
+              <span class="text-outline">Not connected</span>
+            {/if}
           </div>
-          <p class="mt-1 text-body-sm text-on-surface-variant">
-            This list lives in your browser for now. Connect a spreadsheet to sync it to a <code class="text-[12px]">[Provisions]</code> tab.
-          </p>
+          <SyncStatus />
         </div>
-        <a
-          href={href('/sheets-sync')}
-          class="btn mt-3 w-full bg-surface-container-lowest py-2 text-on-surface hover:bg-surface-container-high"
-        >
-          <Icon name="add_link" class="text-[16px]" /> Connect Google Sheets
-        </a>
+        {#if syncPhase() === 'signedOut'}
+          <button type="button" class="btn mt-3 w-full bg-surface-container-lowest py-2 text-on-surface hover:bg-surface-container-high" onclick={connect}>
+            <Icon name="login" class="text-[16px]" /> Reconnect
+          </button>
+        {:else if syncPhase() === 'synced' || syncPhase() === 'error'}
+          <button type="button" class="btn mt-3 w-full bg-surface-container-lowest py-2 text-on-surface hover:bg-surface-container-high" onclick={() => syncNow()}>
+            <Icon name="sync" class="text-[16px]" /> Sync Now
+          </button>
+        {:else}
+          <a
+            href={href('/sheets-sync')}
+            class="btn mt-3 w-full bg-surface-container-lowest py-2 text-on-surface hover:bg-surface-container-high"
+          >
+            <Icon name={sheets.spreadsheet ? 'settings' : 'add_link'} class="text-[16px]" /> {sheets.spreadsheet ? 'Sheets Settings' : 'Connect Google Sheets'}
+          </a>
+        {/if}
       </section>
     </aside>
   </div>

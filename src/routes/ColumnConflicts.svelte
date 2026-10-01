@@ -14,6 +14,9 @@
   } from '../lib/schemaCheck.js';
   import { goBack } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
+  import { auth } from '../lib/google/auth.svelte.js';
+  import { readTopRows, writeHeaderRow } from '../lib/google/api.js';
+  import { syncNow } from '../lib/sync/sync.svelte.js';
 
   /** @typedef {keyof typeof SCHEMA} TabKey */
   /** @typedef {import('../lib/schemaCheck.js').Resolution} Resolution */
@@ -65,6 +68,12 @@
   let checks = $state(/** @type {Record<TabKey, TabCheck>} */ (Object.fromEntries(tabKeys.map((k) => [k, fromSaved(k)]))));
   let active = $state(/** @type {TabKey} */ (tabKeys.find((k) => sheets.schemaCheck?.[k]) ?? tabKeys[0]));
   let autoAppend = $state(sheets.autoAppendOptional ?? true);
+  // Signed in with a spreadsheet linked: read and repair the sheet directly.
+  const live = Boolean(auth.token && sheets.spreadsheet);
+  let loading = $state(false);
+  let readError = $state('');
+  /** Tabs that don't exist yet or have no header row — sync sets those up itself. */
+  let blankTabs = $state(/** @type {Partial<Record<TabKey, 'missing' | 'empty'>>} */ ({}));
   let pasteText = $state('');
   let pasteError = $state('');
   /** @type {HTMLElement} */
@@ -105,6 +114,7 @@
 
   onMount(() => {
     dialog.focus();
+    if (live) readSheet();
     const { overflow } = document.body.style;
     document.body.style.overflow = 'hidden';
     return () => (document.body.style.overflow = overflow);
@@ -112,36 +122,61 @@
 
   const close = () => goBack('/sheets-sync');
 
-  /** @param {string[][]} rows */
-  function analyze(rows) {
-    const headers = [...rows[0]];
+  /**
+   * Checks a tab's first rows. Pasted rows must look like MealCaster's (to catch
+   * a copy that missed row 1); rows read from the sheet are taken as they are.
+   * @param {unknown[][]} rows @param {TabKey} key
+   * @returns {string} problem with the rows, or ''
+   */
+  function analyze(rows, key = active, strict = true) {
+    const headers = (rows[0] ?? []).map((h) => String(h ?? '').trim());
     while (headers.length && !headers.at(-1)) headers.pop();
-    if (!headers.length) {
-      pasteError = 'The first row is empty — copy starting from row 1, the header row.';
-      return;
+    if (!headers.length) return 'The first row is empty — copy starting from row 1, the header row.';
+    const resolution = suggestMapping(key, headers, { autoAppendOptional: autoAppend });
+    if (strict && !Object.values(resolution).some((r) => r.index !== null)) {
+      return 'None of these look like MealCaster headers. Make sure the copy starts at row 1 of the tab.';
     }
-    const resolution = suggestMapping(active, headers, { autoAppendOptional: autoAppend });
-    if (!Object.values(resolution).some((r) => r.index !== null)) {
-      pasteError = 'None of these look like MealCaster headers. Make sure the copy starts at row 1 of the tab.';
-      return;
+    const sample = rows.slice(1, 3).map((r) => headers.map((_, i) => String(r[i] ?? '')));
+    checks[key] = { headers, rows: sample, resolution };
+    return '';
+  }
+
+  /** Reads row 1–3 of every tab from the linked spreadsheet. */
+  async function readSheet() {
+    loading = true;
+    readError = '';
+    try {
+      const top = await readTopRows(sheets.spreadsheet, tabKeys.map((k) => sheets.tabs[k]));
+      const blanks = {};
+      for (const key of tabKeys) {
+        const rows = top[sheets.tabs[key]];
+        const empty = !rows?.length || rows[0].every((c) => String(c ?? '').trim() === '');
+        if (empty) {
+          blanks[key] = rows ? 'empty' : 'missing';
+          checks[key] = { headers: [], rows: [], resolution: null };
+        } else analyze(rows, key, false);
+      }
+      blankTabs = blanks;
+    } catch (error) {
+      readError = `Couldn’t read the spreadsheet: ${error.message}`;
+    } finally {
+      loading = false;
     }
-    checks[active] = { headers, rows: rows.slice(1, 3).map((r) => r.slice(0, headers.length)), resolution };
-    pasteText = '';
-    pasteError = '';
   }
 
   function checkPasted() {
     const rows = parsePastedRows(pasteText);
-    if (!rows.length) pasteError = 'Paste the copied rows first.';
-    else analyze(rows);
+    pasteError = rows.length ? analyze(rows) : 'Paste the copied rows first.';
+    if (!pasteError) pasteText = '';
   }
 
   function useExample() {
-    analyze(structuredClone(EXAMPLES[active]));
+    pasteError = analyze(structuredClone(EXAMPLES[active]));
   }
 
   function startOver() {
-    checks[active] = { headers: [], rows: [], resolution: null };
+    if (live) readSheet();
+    else checks[active] = { headers: [], rows: [], resolution: null };
   }
 
   /** @param {string} column @param {Partial<Resolution>} patch */
@@ -185,22 +220,26 @@
       if (r.index === null && r.action === null) r.action = 'append';
     }
     const row = repairedHeaderRow(key, current.headers, current.resolution);
+    const tab = sheets.tabs[key];
     try {
-      await navigator.clipboard.writeText(row.join('\t'));
-    } catch {
+      if (live) await writeHeaderRow(sheets.spreadsheet, tab, row);
+      else await navigator.clipboard.writeText(row.join('\t'));
+    } catch (error) {
       checks[key] = previous;
-      showToast('Couldn’t copy to the clipboard from this browser.');
+      showToast(live ? `Couldn’t update the sheet: ${error.message}` : 'Couldn’t copy to the clipboard from this browser.');
       return;
     }
-    // From here on the check describes the sheet as it will be once the row is pasted.
+    // From here on the check describes the repaired sheet (once the row is pasted, when copied).
     const ignored = SCHEMA[key].filter((c) => current.resolution[c].action === 'ignore');
     const resolution = suggestMapping(key, row, { autoAppendOptional: autoAppend });
     for (const column of ignored) resolution[column].action = 'ignore';
     checks[key] = { headers: row, rows: current.rows.map((r) => [...r, ...Array(row.length - r.length).fill('')]), resolution };
-    showToast(`Repaired header row copied — paste it into cell A1 of the “${sheets.tabs[key]}” tab.`, {
+    showToast(live ? `Header row of “${tab}” repaired in your sheet.` : `Repaired header row copied — paste it into cell A1 of the “${tab}” tab.`, {
       label: 'Undo',
-      run: () => {
+      run: async () => {
         checks[key] = previous;
+        // Put the old headers back, blanking the cells repair added.
+        if (live) await writeHeaderRow(sheets.spreadsheet, tab, [...previous.headers, ...Array(row.length - previous.headers.length).fill('')]);
       },
     });
   }
@@ -226,8 +265,9 @@
       }),
     );
     saveSchemaCheck(result, autoAppend);
-    showToast('Column mapping saved — live sync will read your sheet this way.');
+    showToast(live ? 'Column mapping saved — syncing with your sheet.' : 'Column mapping saved — sync will read your sheet this way.');
     close();
+    syncNow();
   }
 
   function onKeydown(event) {
@@ -424,25 +464,35 @@
             <Icon name="table_rows" class="text-[22px]" />
           </span>
           <div class="flex flex-col gap-0.5 text-body-md text-on-surface-variant">
-            <span class="text-label-md text-on-surface">Detected from the rows you pasted:</span>
+            <span class="text-label-md text-on-surface">
+              {live ? `Read from “${sheets.spreadsheetName || 'your spreadsheet'}”:` : 'Detected from the rows you pasted:'}
+            </span>
             <span class="flex flex-wrap items-center gap-x-1.5 gap-y-1">
               {#each tabKeys as key, i (key)}
                 {#if i}<span class="text-outline">·</span>{/if}
                 <span>
                   <code class="rounded bg-surface-container-high px-1.5 py-0.5 font-mono text-[12px] font-semibold text-primary">{sheets.tabs[key]}</code>
-                  ({summaries[key] ? detectedText(summaries[key]) : 'not checked'})
+                  ({summaries[key]
+                    ? detectedText(summaries[key])
+                    : blankTabs[key] === 'missing'
+                      ? 'tab will be created'
+                      : blankTabs[key] === 'empty'
+                        ? 'empty — headers will be added'
+                        : loading
+                          ? 'reading…'
+                          : 'not checked'})
                 </span>
               {/each}
             </span>
           </div>
         </div>
-        {#if summary}
+        {#if summary || live}
           <div class="flex shrink-0 items-center gap-2">
             <button
               type="button"
               class="btn bg-secondary px-4 py-2.5 text-body-md text-on-secondary shadow-sm hover:bg-secondary/90"
-              disabled={!repairable}
-              title={repairable ? 'Copies a corrected row 1 to paste into the sheet' : 'This tab’s headers already match'}
+              disabled={!repairable || loading}
+              title={repairable ? (live ? 'Renames and adds headers in row 1 of the sheet' : 'Copies a corrected row 1 to paste into the sheet') : 'This tab’s headers already match'}
               onclick={repair}
             >
               <Icon name="build_circle" class="text-[18px]" /> Repair Header Row
@@ -450,8 +500,8 @@
             <button
               type="button"
               class="rounded-lg p-2 text-outline transition-colors hover:bg-surface-container-high hover:text-on-surface"
-              aria-label="Paste new rows for this tab"
-              title="Paste new rows for this tab"
+              aria-label={live ? 'Read the sheet again' : 'Paste new rows for this tab'}
+              title={live ? 'Read the sheet again' : 'Paste new rows for this tab'}
               onclick={startOver}
             >
               <Icon name="refresh" class="text-[20px]" />
@@ -490,7 +540,30 @@
         {/each}
       </div>
 
-      {#if !summary}
+      {#if !summary && live}
+        <!-- Reading the sheet, or a tab sync will set up itself -->
+        <div class="flex items-start gap-3 rounded-xl bg-surface-container-lowest p-5 shadow-card">
+          <Icon
+            name={loading ? 'progress_activity' : readError ? 'error' : 'add_notes'}
+            class="mt-0.5 text-[22px] {loading ? 'animate-spin text-outline' : readError ? 'text-secondary' : 'text-primary'}"
+          />
+          <div class="flex flex-col gap-1">
+            {#if loading}
+              <span class="text-label-md text-on-surface">Reading your spreadsheet…</span>
+            {:else if readError}
+              <span class="text-label-md text-secondary">{readError}</span>
+              <button type="button" class="btn w-fit px-0 text-body-sm text-primary hover:underline" onclick={readSheet}>Try again</button>
+            {:else}
+              <span class="text-label-md text-on-surface">
+                {blankTabs[active] === 'missing' ? `There’s no “${sheets.tabs[active]}” tab yet` : `The “${sheets.tabs[active]}” tab is empty`}
+              </span>
+              <span class="text-body-sm text-on-surface-variant">
+                Nothing to resolve — the next sync {blankTabs[active] === 'missing' ? 'creates the tab and ' : ''}writes MealCaster’s column headers.
+              </span>
+            {/if}
+          </div>
+        </div>
+      {:else if !summary}
         <!-- Paste step -->
         <div class="grid gap-5 rounded-xl bg-surface-container-lowest p-4 shadow-card sm:p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
           <div class="flex flex-col gap-3">
@@ -570,8 +643,13 @@
           <div class="flex flex-col gap-1">
             <span class="text-label-md text-on-surface">Safe, reversible header fixes</span>
             <span class="text-body-sm text-on-surface-variant">
-              Nothing is written to your sheet from here. “Repair Header Row” copies a corrected row 1 for you to paste
-              into cell A1 — it only renames or adds headers and never touches cell values or past dinners.
+              {#if live}
+                “Repair Header Row” only renames or adds headers in row 1 of the tab — it never touches cell values or
+                past dinners, and Undo puts the old headers back.
+              {:else}
+                Nothing is written to your sheet from here. “Repair Header Row” copies a corrected row 1 for you to paste
+                into cell A1 — it only renames or adds headers and never touches cell values or past dinners.
+              {/if}
             </span>
           </div>
         </div>
@@ -596,7 +674,7 @@
     <!-- Footer -->
     <div class="flex flex-col-reverse gap-3 border-t border-surface-container-high bg-surface-container-low px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-4">
       <div>
-        {#if summary}
+        {#if summary && !live}
           <button type="button" class="btn px-0 text-body-md text-on-surface-variant hover:text-on-surface hover:underline" onclick={startOver}>
             <Icon name="history" class="text-[18px]" /> Paste {sheets.tabs[active]} Again
           </button>

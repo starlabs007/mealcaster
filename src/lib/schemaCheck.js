@@ -1,8 +1,8 @@
 // Column conflict detection: compares the header row of a sheet tab with the
 // columns MealCaster expects (SCHEMA) and suggests a mapping for renamed ones.
-// Without Google sign-in the rows come from a copy/paste of the tab.
+// Rows come from the connected sheet, or from a copy/paste of the tab when not signed in.
 
-import { SCHEMA } from './sheets.svelte.js';
+import { SCHEMA } from './schema.js';
 
 /**
  * What each expected column holds, whether sync can work without it, and other
@@ -38,7 +38,8 @@ export const COLUMN_INFO = {
     Detail: { note: 'Amount and notes, e.g. 450 g.', aliases: ['qty', 'quantity', 'amount', 'details'] },
     Department: { note: 'Store aisle the item is filed under.', aliases: ['aisle', 'section', 'dept'] },
     Status: { note: 'To buy, Bought or In pantry.', aliases: ['state', 'bought', 'checked'] },
-    Source: { note: 'Recipe the item is for, or “Added by hand”.', aliases: ['recipe', 'for', 'from'] },
+    Source: { note: 'Recipe the item is for, or “Added by you”.', aliases: ['recipe', 'for', 'from'] },
+    Line_Key: { note: 'MealCaster’s ID for the line — leave it as is.', required: true, aliases: ['key', 'line id', 'id'] },
   },
 };
 

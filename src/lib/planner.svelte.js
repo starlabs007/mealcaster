@@ -1,6 +1,6 @@
 // Weekly plan state, shaped like the Google Sheets [WeeklyPlan] tab
-// (Date_ISO → Recipe_ID_Assigned / Completed_Flag). Persisted to localStorage
-// until the two-way Sheets sync is built.
+// (Date_ISO → Recipe_ID_Assigned / Completed_Flag / Custom_Notes). Cached in
+// localStorage; sync.svelte.js keeps it in step with the connected sheet.
 
 import { recipes, recipeById } from './recipes.svelte.js';
 import { addDays, fromISO, mondayOf, toISO, weekDates } from './dates.js';
@@ -9,7 +9,8 @@ import { showToast } from './toast.svelte.js';
 const STORAGE_KEY = 'mealcaster.weeklyPlan.v1';
 
 /**
- * @typedef {{ recipeId?: string, diningOut?: boolean, completed?: boolean }} PlanEntry
+ * `notes` holds the sheet's Custom_Notes for that evening.
+ * @typedef {{ recipeId?: string, diningOut?: boolean, completed?: boolean, notes?: string }} PlanEntry
  * @typedef {'completed' | 'missed' | 'planned' | 'diningOut' | 'open'} DayStatus
  */
 
@@ -40,7 +41,8 @@ function load() {
   } catch {
     // Storage unavailable or corrupt — fall back to the sample plan.
   }
-  return seedEntries();
+  // The sample plan points at sample recipes, which only exist in development.
+  return import.meta.env.DEV ? seedEntries() : {};
 }
 
 export const planner = $state({
@@ -73,8 +75,9 @@ export function statusOf(iso) {
   return past ? 'missed' : 'open';
 }
 
-export function currentWeek() {
-  return weekDates(planner.weekStart).map((iso, weekday) => {
+/** Days of the viewed week (or of `weekStart`). */
+export function currentWeek(weekStart = planner.weekStart) {
+  return weekDates(weekStart).map((iso, weekday) => {
     const recipeId = planner.entries[iso]?.recipeId;
     return {
       iso,
@@ -150,9 +153,18 @@ export function assignRecipe(iso, recipeId) {
   planner.entries[iso] = { recipeId };
 }
 
-/** @param {string} iso @param {import('./data/recipes.js').Recipe[]} [pool] */
+const NO_RECIPES = 'Add a recipe to the catalog first.';
+
+/**
+ * @param {string} iso @param {import('./data/recipes.js').Recipe[]} [pool]
+ * @returns {import('./data/recipes.js').Recipe | undefined} undefined when there are no recipes yet
+ */
 export function surpriseMe(iso, pool) {
   const recipe = pool?.length ? pool[Math.floor(Math.random() * pool.length)] : pickRecipe();
+  if (!recipe) {
+    showToast(NO_RECIPES);
+    return undefined;
+  }
   planner.entries[iso] = { recipeId: recipe.id };
   showToast(`Surprise! ${recipe.title}`);
   return recipe;
@@ -171,6 +183,7 @@ export function clearDay(iso) {
 export function autoFillRemaining() {
   const open = editableDays().filter((iso) => statusOf(iso) === 'open');
   if (!open.length) return showToast('Every dinner this week is already planned.');
+  if (!recipes.length) return showToast(NO_RECIPES);
   const undo = snapshotWeek();
   for (const iso of open) planner.entries[iso] = { recipeId: pickRecipe().id };
   showToast(`Filled ${open.length} open ${open.length === 1 ? 'slot' : 'slots'}.`, { label: 'Undo', run: undo });
@@ -196,4 +209,9 @@ export function resetWeek() {
   const undo = snapshotWeek();
   for (const iso of targets) delete planner.entries[iso];
   showToast('Weekly plan reset.', { label: 'Undo', run: undo });
+}
+
+/** Replaces the whole plan (used by Google Sheets sync). @param {Record<string, PlanEntry>} entries */
+export function replacePlan(entries) {
+  planner.entries = entries;
 }

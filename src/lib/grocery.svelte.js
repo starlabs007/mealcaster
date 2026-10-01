@@ -14,6 +14,7 @@ import { recipeById } from './recipes.svelte.js';
 import { planner, currentWeek } from './planner.svelte.js';
 import { formatQty } from './format.js';
 import { formatWeekday } from './dates.js';
+import { departments } from './data/departments.js';
 
 const STORAGE_KEY = 'mealcaster.grocery.v2';
 const LEGACY_KEY = 'mealcaster.groceryExtras.v1';
@@ -35,12 +36,7 @@ const LEGACY_KEY = 'mealcaster.groceryExtras.v1';
  * }} GroceryLine
  */
 
-export const departments = [
-  { id: 'produce', label: 'Fresh Produce & Herbs', short: 'Produce', icon: 'eco', where: 'Aisle 1 & Wet Rack', color: '#4a6b56' },
-  { id: 'meat', label: 'Meat & Fresh Seafood', short: 'Seafood & Meat', icon: 'set_meal', where: 'Butcher & Fishmonger', color: '#a23e18' },
-  { id: 'dairy', label: 'Dairy & Refrigerated', short: 'Dairy', icon: 'egg_alt', where: 'Cheese Counter & Dairy Wall', color: '#865c00' },
-  { id: 'pantry', label: 'Pantry, Grains & Spices', short: 'Pantry', icon: 'shelves', where: 'Center Aisles', color: '#727973' },
-];
+export { departments };
 
 /** Ingredient tag → store department. */
 const TAG_DEPT = {
@@ -96,7 +92,7 @@ function weekList() {
   return (grocery.weeks[planner.weekStart] ??= { extras: [], status: {}, custom: [] });
 }
 
-const readWeek = () => grocery.weeks[planner.weekStart] ?? { extras: [], status: {}, custom: [] };
+const readWeek = (weekStart) => grocery.weeks[weekStart] ?? { extras: [], status: {}, custom: [] };
 
 /** @param {string} key */
 function lookup(key) {
@@ -113,9 +109,9 @@ export function ingredientKeys(recipeId) {
   return recipe.ingredients.flatMap((group, g) => group.items.map((_, i) => `${recipeId}:${g}:${i}`));
 }
 
-/** @returns {GroceryLine[]} */
-export function groceryLines() {
-  const week = readWeek();
+/** Lines of the viewed week's list (or of `weekStart`'s). @returns {GroceryLine[]} */
+export function groceryLines(weekStart = planner.weekStart) {
+  const week = readWeek(weekStart);
   /** @type {Map<string, GroceryLine>} */
   const lines = new Map();
 
@@ -140,7 +136,7 @@ export function groceryLines() {
     });
   };
 
-  for (const day of currentWeek()) {
+  for (const day of currentWeek(weekStart)) {
     if (day.status === 'planned' && day.recipe) ingredientKeys(day.recipe.id).forEach((k) => addIngredient(k, day));
   }
   week.extras.forEach((k) => addIngredient(k));
@@ -201,4 +197,9 @@ export function removeCustomItem(id) {
   const week = weekList();
   week.custom = week.custom.filter((c) => c.id !== id);
   delete week.status[id];
+}
+
+/** Replaces every week's list (used by Google Sheets sync). @param {Record<string, WeekList>} weeks */
+export function replaceGrocery(weeks) {
+  grocery.weeks = weeks;
 }

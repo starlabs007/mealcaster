@@ -7,24 +7,38 @@
     defaultSettings,
     saveSheetsSettings,
     clearSheetsSettings,
-    spreadsheetIdFrom,
     spreadsheetUrl,
     shortId,
     tabNameError,
   } from '../lib/sheets.svelte.js';
+  import { googleConfigured } from '../lib/google/config.js';
+  import { auth, signOut } from '../lib/google/auth.svelte.js';
+  import {
+    syncState,
+    syncPhase,
+    syncNow,
+    connect,
+    chooseSpreadsheet,
+    createNewSpreadsheet,
+    disconnect,
+  } from '../lib/sync/sync.svelte.js';
+  import SyncStatus from '../lib/components/SyncStatus.svelte';
   import { starterWorkbook } from '../lib/sheetsTemplate.js';
   import { downloadBlob } from '../lib/xlsx.js';
   import { recipes } from '../lib/recipes.svelte.js';
   import { goBack, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
 
-  // Edits happen on a draft; Save commits it, Cancel / close discards it.
-  let draft = $state(structuredClone($state.snapshot(sheets)));
+  // The form edits a draft of these fields; Save commits it, Cancel / close discards it.
+  // Connection details (account, spreadsheet) change immediately and aren't part of it.
+  const EDITABLE = ['tabs', 'syncProvisions', 'direction', 'instantPush'];
+  const pick = (from) => structuredClone(Object.fromEntries(EDITABLE.map((k) => [k, $state.snapshot(from[k])])));
+  let draft = $state(pick(sheets));
   /** @type {HTMLElement} */
   let dialog;
 
-  const spreadsheetId = $derived(spreadsheetIdFrom(draft.spreadsheet));
-  const urlError = $derived(draft.spreadsheet.trim() !== '' && !spreadsheetId);
+  const phase = $derived(syncPhase());
+  const signedIn = $derived(Boolean(auth.token));
 
   const tabKeys = $derived(
     /** @type {('weeklyPlan' | 'recipes' | 'provisions')[]} */ (
@@ -44,8 +58,7 @@
   );
   const tabsValid = $derived(Object.values(tabErrors).every((e) => !e));
 
-  const comparable = ({ savedAt, ...rest }) => JSON.stringify(rest);
-  const dirty = $derived(comparable($state.snapshot(draft)) !== comparable($state.snapshot(sheets)));
+  const dirty = $derived(JSON.stringify(pick(draft)) !== JSON.stringify(pick(sheets)));
   const checkedTabs = $derived(Object.keys(sheets.schemaCheck ?? {}).length);
 
   onMount(() => {
@@ -58,29 +71,28 @@
   const close = () => goBack('/');
 
   function save() {
-    if (urlError || !tabsValid) return;
-    draft.spreadsheet = spreadsheetId ?? '';
-    saveSheetsSettings($state.snapshot(draft));
-    showToast('Sheets settings saved on this device.');
+    if (!tabsValid) return;
+    saveSheetsSettings({ ...$state.snapshot(sheets), ...$state.snapshot(draft) });
+    showToast(sheets.spreadsheet ? 'Sheets settings saved.' : 'Sheets settings saved on this device.');
     close();
   }
 
   function clearSaved() {
     const previous = $state.snapshot(sheets);
     clearSheetsSettings();
-    draft = defaultSettings();
+    draft = pick(defaultSettings());
     showToast('Saved Sheets settings cleared.', {
       label: 'Undo',
       run: () => {
         saveSheetsSettings(previous);
-        draft = structuredClone(previous);
+        draft = pick(previous);
       },
     });
   }
 
   function exportTemplate() {
-    downloadBlob(starterWorkbook($state.snapshot(draft)), 'MealCaster_Starter_Template.xlsx');
-    showToast('Template downloaded — in Google Sheets use File → Import → Upload.');
+    downloadBlob(starterWorkbook({ ...$state.snapshot(sheets), ...$state.snapshot(draft) }), 'MealCaster_Starter_Template.xlsx');
+    showToast('Workbook downloaded.');
   }
 
   function onKeydown(event) {
@@ -210,9 +222,7 @@
             <h2 id="sheets-dialog-title" class="font-display text-headline-sm text-on-surface sm:text-headline-md">
               Google Sheets Connection &amp; Settings
             </h2>
-            <span class="inline-flex items-center gap-1.5 rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">
-              <span class="h-1.5 w-1.5 rounded-full bg-outline"></span> Not connected
-            </span>
+            <SyncStatus variant="badge" />
           </div>
           <p id="sheets-dialog-subtitle" class="text-body-md text-on-surface-variant">
             Configure the two-sheet database for your weekly meal plans and custom recipes.
@@ -233,65 +243,112 @@
     <div class="flex flex-col gap-6 overflow-y-auto px-4 py-4 sm:px-8">
       <!-- 01 Account & spreadsheet -->
       <section class="flex flex-col gap-3" aria-label="Account and target spreadsheet">
-        {@render sectionLabel('01. Account & Target Spreadsheet', 'Google sign-in not set up yet')}
+        {@render sectionLabel('01. Account & Target Spreadsheet', googleConfigured ? 'Only files you choose are shared with MealCaster' : '')}
         <div class="flex flex-col gap-4 rounded-xl bg-surface-container-lowest p-4 shadow-card">
+          <!-- Google account -->
           <div class="flex flex-col justify-between gap-3 rounded-lg bg-surface-container-low/60 p-3 sm:flex-row sm:items-center">
-            <div class="flex items-center gap-3">
-              <span class="flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-high text-outline">
-                <Icon name="person" class="text-[20px]" />
-              </span>
-              <div class="flex flex-col">
-                <span class="text-label-md text-on-surface">Google account</span>
-                <span class="text-body-sm text-outline">Sign-in arrives with live sync — until then everything stays on this device.</span>
+            <div class="flex min-w-0 items-center gap-3">
+              {#if signedIn && syncState.account?.photo}
+                <img src={syncState.account.photo} alt="" referrerpolicy="no-referrer" class="h-9 w-9 shrink-0 rounded-full object-cover" />
+              {:else}
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full {signedIn ? 'bg-primary-fixed text-primary' : 'bg-surface-container-high text-outline'}">
+                  <Icon name="person" class="text-[20px]" />
+                </span>
+              {/if}
+              <div class="flex min-w-0 flex-col">
+                {#if !googleConfigured}
+                  <span class="text-label-md text-on-surface">Google sync isn’t set up for this build</span>
+                  <span class="text-body-sm text-outline">
+                    {import.meta.env.DEV
+                      ? 'Add GOOGLE_CLIENT_ID, GOOGLE_API_KEY and GOOGLE_APP_ID to repo/.env.local (see .env.example), then restart the dev server.'
+                      : 'Everything is saved on this device.'}
+                  </span>
+                {:else if signedIn}
+                  <span class="truncate text-label-md text-on-surface">{syncState.account?.name || 'Signed in to Google'}</span>
+                  <span class="truncate text-body-sm text-on-surface-variant">{syncState.account?.email || sheets.accountEmail}</span>
+                {:else}
+                  <span class="text-label-md text-on-surface">Google account</span>
+                  <span class="text-body-sm text-outline">
+                    {sheets.spreadsheet
+                      ? `Reconnect${sheets.accountEmail ? ` as ${sheets.accountEmail}` : ''} to sync — until then changes stay on this device.`
+                      : 'Sign in to keep your recipes and plans in a Google Sheet.'}
+                  </span>
+                {/if}
               </div>
             </div>
-            <button type="button" class="btn-outline shrink-0 self-start sm:self-auto" disabled title="Google sign-in isn’t available yet">
-              <Icon name="login" class="text-[16px]" /> Sign in with Google
-            </button>
+            {#if googleConfigured}
+              {#if signedIn}
+                <button type="button" class="btn shrink-0 self-start text-on-surface-variant hover:bg-surface-container-high sm:self-auto" onclick={signOut}>
+                  <Icon name="logout" class="text-[16px]" /> Sign Out
+                </button>
+              {:else}
+                <button type="button" class="btn-primary shrink-0 self-start py-2 sm:self-auto" disabled={phase === 'syncing'} onclick={connect}>
+                  <Icon name="login" class="text-[16px]" /> {sheets.spreadsheet ? 'Reconnect' : 'Sign in with Google'}
+                </button>
+              {/if}
+            {/if}
           </div>
 
-          <div class="flex items-start gap-3">
-            <span class="mt-1 hidden h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-high text-primary sm:flex">
-              <Icon name="description" class="text-[24px]" />
-            </span>
-            <label class="flex min-w-0 flex-1 flex-col gap-1">
-              <span class="text-label-md text-on-surface">Target spreadsheet</span>
-              <input
-                type="text"
-                inputmode="url"
-                autocomplete="off"
-                spellcheck="false"
-                bind:value={draft.spreadsheet}
-                placeholder="https://docs.google.com/spreadsheets/d/…"
-                aria-invalid={urlError ? 'true' : undefined}
-                aria-describedby="spreadsheet-hint"
-                class="{inputClass} {urlError ? 'border-secondary' : 'border-outline-variant'}"
-              />
-              <span id="spreadsheet-hint" class="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-sm">
-                {#if urlError}
-                  <span class="text-secondary">That doesn’t look like a Google Sheets link or spreadsheet ID.</span>
-                {:else if spreadsheetId}
-                  <span class="text-on-surface-variant">ID: {shortId(spreadsheetId)}</span>
-                  <span class="text-outline">•</span>
-                  <a href={spreadsheetUrl(spreadsheetId)} target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-primary underline underline-offset-2 hover:text-primary-container">
+          <!-- Spreadsheet -->
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+              <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-high text-primary">
+                <Icon name="description" class="text-[24px]" />
+              </span>
+              <div class="flex min-w-0 flex-col gap-0.5">
+                <span class="text-label-md text-on-surface">Target spreadsheet</span>
+                {#if sheets.spreadsheet}
+                  <span class="truncate text-body-md text-on-surface">{sheets.spreadsheetName || shortId(sheets.spreadsheet)}</span>
+                  <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="inline-flex w-fit items-center gap-1 text-body-sm text-primary underline underline-offset-2 hover:text-primary-container">
                     Open in Google Sheets <Icon name="open_in_new" class="text-[14px]" />
                   </a>
                 {:else}
-                  <span class="text-outline">Paste the link from your browser’s address bar while the sheet is open.</span>
+                  <span class="text-body-sm text-outline">
+                    {googleConfigured
+                      ? 'Choose one from your Google Drive, or let MealCaster create a new one with the right tabs.'
+                      : 'None — recipes, plans and grocery lists are saved on this device.'}
+                  </span>
                 {/if}
-              </span>
-            </label>
+              </div>
+            </div>
+            {#if googleConfigured}
+              <div class="flex shrink-0 flex-wrap gap-2">
+                {#if sheets.spreadsheet}
+                  <button type="button" class="btn-outline py-2" disabled={phase === 'syncing'} onclick={chooseSpreadsheet}>
+                    <Icon name="swap_horiz" class="text-[16px]" /> Change
+                  </button>
+                  <button type="button" class="btn py-2 text-secondary hover:bg-secondary-fixed/50" onclick={disconnect}>
+                    <Icon name="link_off" class="text-[16px]" /> Disconnect
+                  </button>
+                {:else}
+                  <button type="button" class="btn-outline py-2" disabled={phase === 'syncing'} onclick={chooseSpreadsheet}>
+                    <Icon name="folder_open" class="text-[16px]" /> Choose from Drive
+                  </button>
+                  <button type="button" class="btn-primary py-2" disabled={phase === 'syncing'} onclick={createNewSpreadsheet}>
+                    <Icon name="add" class="text-[16px]" /> Create New Sheet
+                  </button>
+                {/if}
+              </div>
+            {/if}
           </div>
 
-          <div class="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-2 text-label-sm text-on-surface-variant">
-            <Icon name={spreadsheetId ? 'link' : 'link_off'} class="text-[16px] {spreadsheetId ? 'text-primary' : 'text-outline'}" />
-            {spreadsheetId
-              ? 'Spreadsheet linked — access is verified once Google sign-in is enabled.'
-              : 'No spreadsheet linked yet.'}
+          <!-- Sync status -->
+          <div class="flex flex-col gap-2 rounded-lg bg-surface-container-low px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
+            <SyncStatus variant="line" />
+            {#if phase === 'synced' || phase === 'error'}
+              <button type="button" class="btn shrink-0 self-start bg-surface-container-lowest text-on-surface hover:bg-surface-container-high sm:self-auto" onclick={() => syncNow()}>
+                <Icon name="sync" class="text-[16px]" /> Sync Now
+              </button>
+            {:else if phase === 'conflict'}
+              <button type="button" class="btn shrink-0 self-start bg-secondary text-on-secondary hover:bg-secondary/90 sm:self-auto" onclick={() => navigate('/sheets-sync/columns')}>
+                <Icon name="difference" class="text-[16px]" /> Resolve Columns
+              </button>
+            {/if}
           </div>
         </div>
 
         <!-- Starter template -->
+        {#if !sheets.spreadsheet}
         <div class="flex flex-col gap-4 rounded-xl border border-outline-variant/40 bg-surface-container-low p-4 md:flex-row md:items-center md:justify-between">
           <div class="flex items-start gap-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-fixed/60 text-primary">
@@ -299,19 +356,16 @@
             </span>
             <div class="flex max-w-sm flex-col gap-1">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="text-label-md text-on-surface">Starting with a new spreadsheet?</span>
-                <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">Ready-to-use</span>
+                <span class="text-label-md text-on-surface">Prefer a file?</span>
+                <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">Offline copy</span>
               </div>
               <p class="text-body-sm text-on-surface-variant">
-                Export a template with your {recipes.length} recipes, planned dinners{draft.syncProvisions ? ' and grocery list' : ''} already filled in,
-                then import it into a blank Google Sheet (File → Import → Upload).
+                Download your {recipes.length} recipes, planned dinners{draft.syncProvisions ? ' and grocery list' : ''} as an .xlsx workbook with
+                MealCaster’s tabs — a backup, or something to open in Excel or Numbers.
               </p>
             </div>
           </div>
           <div class="flex shrink-0 flex-wrap gap-2">
-            <a href="https://sheets.new" target="_blank" rel="noopener noreferrer" class="btn-outline py-2">
-              <Icon name="add" class="text-[16px]" /> Open Blank Sheet
-            </a>
             <button
               type="button"
               class="btn bg-primary-fixed/70 py-2 text-primary hover:bg-primary-fixed"
@@ -319,20 +373,18 @@
               title={tabsValid ? undefined : 'Fix the tab names first'}
               onclick={exportTemplate}
             >
-              <Icon name="download" class="text-[16px]" /> Export Template (.xlsx)
+              <Icon name="download" class="text-[16px]" /> Export (.xlsx)
             </button>
           </div>
         </div>
+        {/if}
       </section>
 
       <!-- 02 Tab mapping -->
       <section class="flex flex-col gap-3" aria-label="Tab mapping">
         <div class="flex flex-wrap items-center justify-between gap-2">
           <h3 class="text-label-caps uppercase tracking-wider text-primary">02. Two-Sheet Tab Mapping</h3>
-          <label class="flex cursor-pointer items-center gap-2 text-label-sm text-on-surface-variant">
-            <input type="checkbox" bind:checked={draft.autoDetect} class="h-4 w-4 rounded accent-primary" />
-            Auto-detect schema headers
-          </label>
+          <span class="text-label-sm text-outline">MealCaster adds a tab if it’s missing</span>
         </div>
         <div class="grid gap-3 md:grid-cols-2">
           {@render tabCard('weeklyPlan', 'calendar_month', 'Weekly Meals Tab')}
@@ -384,15 +436,14 @@
 
       <!-- 03 Sync strategy -->
       <section class="flex flex-col gap-3" aria-label="Sync strategy">
-        {@render sectionLabel('03. Sync Strategy & Automation', 'Applies once connected')}
+        {@render sectionLabel('03. Sync Strategy & Automation', 'The Google Sheet wins when both sides changed')}
         <div class="flex flex-col gap-2 rounded-xl bg-surface-container-lowest p-3 shadow-card sm:p-4">
           <div class="grid gap-2 md:grid-cols-2" role="radiogroup" aria-label="Sync direction">
             {@render directionOption('bidirectional', 'Bidirectional Sync', 'Changes in Sheets or MealCaster reflect in both', 'sync_alt')}
-            {@render directionOption('pushOnly', 'MealCaster → Sheets', 'Google Sheets as a read-only historical export', 'arrow_forward')}
+            {@render directionOption('pushOnly', 'MealCaster → Sheets', 'The sheet mirrors this device; edits made in the sheet are overwritten', 'arrow_forward')}
           </div>
           <div class="divide-y divide-surface-container-high px-1">
-            {@render toggle('instantPush', 'Instant Reactive Push', 'Update connected rows immediately whenever a dinner or custom recipe changes. Off means syncing only when you press Sync.')}
-            {@render toggle('snapshots', 'Automatic Version Snapshot', 'Create a date-stamped backup tab before batch updates.')}
+            {@render toggle('instantPush', 'Instant Reactive Push', 'Push changes a moment after you make them. Off means syncing only on connect, when you return to the app, or when you press Sync Now.')}
           </div>
         </div>
       </section>
@@ -401,7 +452,7 @@
     <!-- Footer -->
     <div class="flex flex-col-reverse gap-3 border-t border-surface-container-high bg-surface-container-low px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-4">
       <div>
-        {#if sheets.savedAt}
+        {#if sheets.savedAt && !sheets.spreadsheet}
           <button type="button" class="btn px-0 text-body-md text-secondary hover:underline" onclick={clearSaved}>
             <Icon name="link_off" class="text-[18px]" /> Clear Saved Settings
           </button>
@@ -412,7 +463,7 @@
         <button
           type="button"
           class="btn-primary px-5 py-2 text-body-md"
-          disabled={!dirty || urlError || !tabsValid}
+          disabled={!dirty || !tabsValid}
           onclick={save}
         >
           <Icon name="check" class="text-[18px]" /> Save Settings

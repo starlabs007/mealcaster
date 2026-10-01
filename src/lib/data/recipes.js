@@ -1072,7 +1072,7 @@ const pool = [
 ];
 
 /** @type {Recipe[]} */
-export const sampleRecipes = pool.map((r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes }));
+export const sampleRecipes = /* @__PURE__ */ pool.map((r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes }));
 
 /** Catalog filters. `tags` match if the recipe carries any of them. */
 export const filters = [

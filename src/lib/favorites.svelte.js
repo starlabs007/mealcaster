@@ -1,7 +1,8 @@
-// Mirrors the Favorite_Flag column of the [Recipes] tab; persisted locally for now.
+// Mirrors the Favorite_Flag column of the [Recipes] tab; cached locally.
 
 const STORAGE_KEY = 'mealcaster.favorites.v1';
-const SEED = ['sheet-pan-chicken', 'salmon-risotto', 'sourdough-pizza'];
+// Sample favorites exist only alongside the development sample recipes.
+const SEED = import.meta.env.DEV ? ['sheet-pan-chicken', 'salmon-risotto', 'sourdough-pizza'] : [];
 
 function load() {
   try {
@@ -20,7 +21,12 @@ export const isFavorite = (id) => favorites.ids.includes(id);
 
 /** @param {string} id */
 export function toggleFavorite(id) {
-  favorites.ids = isFavorite(id) ? favorites.ids.filter((x) => x !== id) : [...favorites.ids, id];
+  setFavorites(isFavorite(id) ? favorites.ids.filter((x) => x !== id) : [...favorites.ids, id]);
+}
+
+/** @param {string[]} ids */
+export function setFavorites(ids) {
+  favorites.ids = ids;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites.ids));
   } catch {

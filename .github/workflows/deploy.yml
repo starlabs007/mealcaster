@@ -17,6 +17,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # Google credentials live in the `production` environment (as variables or secrets).
+    environment: production
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -24,7 +26,12 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm test
       - run: npm run build
+        env:
+          GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_API_KEY: ${{ vars.GOOGLE_API_KEY || secrets.GOOGLE_API_KEY }}
+          GOOGLE_APP_ID: ${{ vars.GOOGLE_APP_ID || secrets.GOOGLE_APP_ID }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
