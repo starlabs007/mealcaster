@@ -1,7 +1,8 @@
 <script>
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
-  import { tagMeta, formatMinutes } from '../recipes.svelte.js';
+  import { formatMinutes } from '../recipes.svelte.js';
+  import { tagClass } from '../tagColors.svelte.js';
   import { isFavorite, toggleFavorite } from '../favorites.svelte.js';
   import { href } from '../router.svelte.js';
 
@@ -17,12 +18,6 @@
   let { recipe, day, dayName, selected = false, onselect } = $props();
 
   const favorite = $derived(isFavorite(recipe.id));
-  const toneClass = {
-    sage: 'bg-[#eaf0ec] text-[#2c4635]',
-    saffron: 'bg-[#faf3e5] text-[#8c6517]',
-    paprika: 'bg-[#faece8] text-secondary',
-    neutral: 'bg-surface-container-high text-on-surface-variant',
-  };
 </script>
 
 <article
@@ -76,7 +71,7 @@
     <div class="flex flex-col gap-3 p-5">
       <div class="flex flex-wrap gap-1.5">
         {#each recipe.tags.slice(0, 3) as tag (tag)}
-          <span class="rounded-full px-2 py-0.5 text-label-caps {toneClass[tagMeta[tag].tone]}">{tagMeta[tag].label}</span>
+          <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
         {/each}
       </div>
       <div>

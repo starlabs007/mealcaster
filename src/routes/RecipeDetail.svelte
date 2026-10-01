@@ -13,7 +13,8 @@
   import PrintOptionsDialog from '../lib/components/PrintOptionsDialog.svelte';
   import RecipePrintSimple from '../lib/components/RecipePrintSimple.svelte';
   import { printOptions, setPrintOptions, TEXT_DELTA } from '../lib/printOptions.svelte.js';
-  import { recipeById, formatMinutes, deleteRecipe, restoreRecipe } from '../lib/recipes.svelte.js';
+  import { recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon } from '../lib/recipes.svelte.js';
+  import { tagClass } from '../lib/tagColors.svelte.js';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
   import { groceryKeys, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
   import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe } from '../lib/planner.svelte.js';
@@ -212,6 +213,22 @@
       </div>
       <h1 class="max-w-4xl font-display text-headline-xl-mobile text-primary md:text-headline-xl">{recipe.title}</h1>
       {#if recipe.description}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
+      {#if recipe.tags.length}
+        <ul class="flex max-w-4xl flex-wrap gap-1.5 print:hidden" aria-label="Tags">
+          {#each recipe.tags as tag (tag)}
+            <li class="max-w-full">
+              <a
+                href={href('/catalog', { filter: tag })}
+                title="Browse recipes tagged {tag}"
+                class="inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-label-caps transition-opacity hover:opacity-80 {tagClass(tag)}"
+              >
+                {#if tagIcon(tag)}<Icon name={tagIcon(tag)} class="text-[13px]" />{/if}
+                <span class="truncate">{tag}</span>
+              </a>
+            </li>
+          {/each}
+        </ul>
+      {/if}
 
       <div class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:max-w-4xl print:max-w-none print:grid-cols-4">
         {#each stats as stat (stat.label)}

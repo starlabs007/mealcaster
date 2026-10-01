@@ -10,6 +10,7 @@
 
 import { departments } from '../data/departments.js';
 import { formatWeekday } from '../dates.js';
+import { normalizeTags } from '../tags.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -179,7 +180,7 @@ const RECIPE_COLUMNS = {
   },
   Tags: {
     get: (r) => r.tags.join(', '),
-    set: (r, v) => (r.tags = str(v).split(',').map((t) => t.trim()).filter(Boolean)),
+    set: (r, v) => (r.tags = normalizeTags(str(v).split(','))),
   },
   Favorite_Flag: { get: (r, ctx) => ctx.favorites.has(r.id), set: (r, v, ctx) => (ctx.favorite = bool(v)) },
   Category: { get: (r) => r.badge.label, set: (r, v) => (r.badge = { ...r.badge, label: str(v) || 'Dinner' }) },

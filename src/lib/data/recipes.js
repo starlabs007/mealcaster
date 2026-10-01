@@ -62,7 +62,7 @@ const pool = [
     ratings: 38,
     cookCount: 11,
     addedAt: '2026-03-02',
-    tags: ['pescatarian', 'gluten-free'],
+    tags: ['Gluten-Free'],
     prep: {
       label: 'Mise en place',
       text: 'Defrost salmon fillets morning of in chilled bath',
@@ -153,7 +153,7 @@ const pool = [
     ratings: 26,
     cookCount: 9,
     addedAt: '2025-11-18',
-    tags: ['vegetarian', 'kid-friendly', 'comfort'],
+    tags: ['Vegetarian'],
     prep: {
       label: 'Mise en place',
       text: 'Roast and blend tomatillo salsa verde the night before',
@@ -236,7 +236,7 @@ const pool = [
     ratings: 44,
     cookCount: 12,
     addedAt: '2025-10-04',
-    tags: ['poultry-meat', 'one-pot', 'comfort'],
+    tags: ['Poultry & Meat'],
     prep: {
       label: 'Mise en place / Chef tip',
       text: 'Slow simmer ragù base for depth of flavor',
@@ -311,7 +311,7 @@ const pool = [
     ratings: 51,
     cookCount: 14,
     addedAt: '2025-09-12',
-    tags: ['vegetarian', 'kid-friendly', 'comfort'],
+    tags: ['Vegetarian'],
     highlight: 'Pizza Night • Family Feast',
     prep: {
       label: 'Kitchen timing',
@@ -381,7 +381,7 @@ const pool = [
     ratings: 17,
     cookCount: 4,
     addedAt: '2026-06-20',
-    tags: ['vegetarian', 'light-fresh'],
+    tags: ['Vegetarian'],
     prep: {
       label: 'Mise en place',
       text: 'Quick-pickle the cucumbers at lunch so they are bright by dinner',
@@ -447,7 +447,7 @@ const pool = [
     ratings: 33,
     cookCount: 8,
     addedAt: '2025-12-01',
-    tags: ['quick', 'vegetarian', 'one-pot', 'comfort'],
+    tags: ['Quick (<30m)', 'Vegetarian'],
     prep: {
       label: 'Chef tip',
       text: 'Bloom whole spices in ghee just before serving for the tadka',
@@ -516,7 +516,7 @@ const pool = [
     ratings: 32,
     cookCount: 10,
     addedAt: '2026-01-15',
-    tags: ['pescatarian', 'quick', 'gluten-free'],
+    tags: ['Quick (<30m)', 'Gluten-Free'],
     prep: {
       label: 'Mise en place',
       text: 'Par-boil the baby potatoes at lunch so they only need to crisp',
@@ -591,7 +591,7 @@ const pool = [
     ratings: 41,
     cookCount: 7,
     addedAt: '2025-10-28',
-    tags: ['vegetarian', 'one-pot', 'comfort'],
+    tags: ['Vegetarian'],
     prep: {
       label: 'Chef tip',
       text: 'Save a parmesan rind to simmer in the stew for extra depth',
@@ -660,7 +660,7 @@ const pool = [
     ratings: 64,
     cookCount: 16,
     addedAt: '2025-08-30',
-    tags: ['poultry-meat', 'kid-friendly', 'sheet-pan'],
+    tags: ['Poultry & Meat'],
     prep: {
       label: 'Mise en place',
       text: 'Marinate the thighs in Dijon, lemon and thyme the night before',
@@ -728,7 +728,7 @@ const pool = [
     ratings: 28,
     cookCount: 6,
     addedAt: '2026-09-15',
-    tags: ['vegetarian', 'comfort', 'kid-friendly'],
+    tags: ['Vegetarian'],
     prep: {
       label: 'Mise en place',
       text: 'Roast and purée the squash up to two days ahead',
@@ -797,7 +797,7 @@ const pool = [
     ratings: 19,
     cookCount: 5,
     addedAt: '2026-07-08',
-    tags: ['quick', 'vegetarian', 'light-fresh'],
+    tags: ['Quick (<30m)', 'Vegetarian'],
     prep: {
       label: 'Mise en place',
       text: 'Whisk the sesame-tamari dressing in a jar and keep it chilled',
@@ -866,7 +866,7 @@ const pool = [
     ratings: 57,
     cookCount: 3,
     addedAt: '2025-11-02',
-    tags: ['poultry-meat', 'batch-slow', 'comfort'],
+    tags: ['Poultry & Meat'],
     highlight: 'Slow Sunday • Braise',
     prep: {
       label: 'Kitchen timing',
@@ -943,7 +943,7 @@ const pool = [
     ratings: 49,
     cookCount: 9,
     addedAt: '2026-05-11',
-    tags: ['poultry-meat', 'light-fresh', 'quick'],
+    tags: ['Poultry & Meat', 'Quick (<30m)'],
     prep: {
       label: 'Mise en place',
       text: 'Marinate the chicken in lemon, garlic and oregano that morning',
@@ -1013,7 +1013,7 @@ const pool = [
     ratings: 22,
     cookCount: 4,
     addedAt: '2026-08-22',
-    tags: ['vegetarian', 'gluten-free', 'light-fresh', 'quick'],
+    tags: ['Vegetarian', 'Gluten-Free', 'Quick (<30m)'],
     prep: {
       label: 'Mise en place',
       text: 'Cook a double batch of quinoa on Sunday for this and lunches',
@@ -1068,35 +1068,6 @@ const pool = [
 
 /** @type {Recipe[]} */
 export const sampleRecipes = /* @__PURE__ */ pool.map((r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes }));
-
-/** Catalog filters. `tags` match if the recipe carries any of them. */
-export const filters = [
-  { id: 'quick', label: 'Quick (<30m)', icon: 'timer', tags: ['quick'] },
-  { id: 'kid-friendly', label: 'Kid-Friendly', icon: 'face', tags: ['kid-friendly'] },
-  { id: 'vegetarian', label: 'Vegetarian', tags: ['vegetarian'] },
-  { id: 'pescatarian', label: 'Pescatarian', tags: ['pescatarian'] },
-  { id: 'poultry-meat', label: 'Poultry & Meat', tags: ['poultry-meat'] },
-  { id: 'gluten-free', label: 'Gluten-Free', tags: ['gluten-free'] },
-  { id: 'one-pot', label: 'One-Pot / Sheet-Pan', tags: ['one-pot', 'sheet-pan'] },
-  { id: 'batch-slow', label: 'Batch & Slow Cooker', tags: ['batch-slow'] },
-  { id: 'comfort', label: 'Comfort Food', tags: ['comfort'] },
-  { id: 'light-fresh', label: 'Light & Fresh', tags: ['light-fresh'] },
-];
-
-/** Short labels + tones for the tag pills on recipe cards. */
-export const tagMeta = {
-  quick: { label: 'Quick (<30m)', tone: 'saffron' },
-  'kid-friendly': { label: 'Kid-Friendly', tone: 'neutral' },
-  vegetarian: { label: 'Vegetarian', tone: 'sage' },
-  pescatarian: { label: 'Pescatarian', tone: 'sage' },
-  'poultry-meat': { label: 'Poultry & Meat', tone: 'neutral' },
-  'gluten-free': { label: 'Gluten-Free', tone: 'neutral' },
-  'one-pot': { label: 'One-Pot', tone: 'neutral' },
-  'sheet-pan': { label: 'Sheet-Pan', tone: 'neutral' },
-  'batch-slow': { label: 'Batch & Slow', tone: 'saffron' },
-  comfort: { label: 'Comfort Food', tone: 'paprika' },
-  'light-fresh': { label: 'Light & Fresh', tone: 'neutral' },
-};
 
 /** "25 min", "1 hr", "3.5 hrs" */
 export function formatMinutes(min) {

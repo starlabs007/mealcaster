@@ -24,7 +24,7 @@ export const COLUMN_INFO = {
     Ingredients_JSON: { note: 'Item names, amounts and grocery aisle tags.', required: true, aliases: ['ingredients', 'ingredient list', 'ingredients list'] },
     Method_Steps: { note: 'Numbered step-by-step prep & cooking.', required: true, aliases: ['steps', 'instructions', 'method', 'directions', 'preparation', 'preparation steps', 'instructions arr'] },
     Image_URL: { note: 'Link to a photo of the dish.', aliases: ['image', 'photo', 'picture', 'img', 'photo url'] },
-    Tags: { note: 'Comma-separated dietary & pacing flags (e.g. Pescatarian, 30m).', aliases: ['tags csv', 'labels', 'dietary labels', 'flags', 'diet'] },
+    Tags: { note: 'Comma-separated recipe tags (e.g. Vegetarian, Gluten-Free).', aliases: ['tags csv', 'labels', 'dietary labels', 'flags', 'diet'] },
     Favorite_Flag: { note: 'TRUE for starred recipes.', aliases: ['favorite', 'favourite', 'starred', 'fav', 'favourite flag'] },
     Category: { note: 'Badge such as Seafood or Vegetarian.', aliases: ['course', 'type', 'course type', 'meal type'] },
     Servings: { note: 'How many people the recipe feeds.', aliases: ['serves', 'yield', 'portions'] },

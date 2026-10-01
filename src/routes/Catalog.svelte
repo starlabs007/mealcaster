@@ -2,7 +2,7 @@
   import { fly } from 'svelte/transition';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
-  import { recipes, recipeById, filters, tagMeta } from '../lib/recipes.svelte.js';
+  import { recipes, recipeById, tagChoices, tagIcon, normalizeTags } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
   import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe } from '../lib/planner.svelte.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
@@ -25,12 +25,18 @@
   /** @type {{ iso: string, title: string } | null} */
   let assigned = $state(null);
 
-  // Keep search / filter in sync with the URL (header search, "Browse Comfort Food" links).
+  // Keep search / filter in sync with the URL (header search, "Browse Recipes" links).
+  // `filter` is a comma-separated list of tags (tags never contain commas).
   $effect(() => {
     query = route.query.q ?? '';
-    active = route.query.filter ? route.query.filter.split(',').filter((id) => filters.some((f) => f.id === id)) : [];
+    active = normalizeTags(route.query.filter?.split(','));
     pages = 1;
   });
+
+  // One filter per tag in use (suggested tags first); an active tag stays listed even with no recipes.
+  const filters = $derived(
+    tagChoices([...recipes.flatMap((r) => r.tags), ...active]).filter((t) => active.includes(t) || recipes.some((r) => r.tags.includes(t))),
+  );
 
   // A day passed in the URL moves the week stepper to that day's week.
   $effect(() => {
@@ -46,16 +52,15 @@
 
   const results = $derived.by(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-    const chosen = filters.filter((f) => active.includes(f.id));
     return recipes
       .filter((r) => !favoritesOnly || favorites.ids.includes(r.id))
-      .filter((r) => chosen.every((f) => f.tags.some((t) => r.tags.includes(t))))
+      .filter((r) => active.every((t) => r.tags.includes(t)))
       .filter((r) => {
         if (!words.length) return true;
         const haystack = [
           r.title,
           r.description,
-          ...r.tags.map((t) => tagMeta[t].label),
+          ...r.tags,
           ...r.ingredients.flatMap((g) => g.items.map((i) => i.text)),
         ]
           .join(' ')
@@ -198,13 +203,13 @@
             : 'border-surface-container-high bg-surface-container-lowest text-on-surface hover:border-outline-variant hover:bg-surface-container-low'}"
         >
           {#if icon}<Icon name={icon} class="text-[16px] {icon === 'favorite' && !on ? 'text-secondary' : ''} {icon === 'favorite' && on ? 'icon-filled' : ''}" />{/if}
-          {label}
+          <span class="max-w-[16rem] truncate">{label}</span>
           {#if on && icon !== 'favorite'}<Icon name="close" class="ml-0.5 text-[14px]" />{/if}
         </button>
       {/snippet}
       {@render pill(favoritesOnly, 'Favorites', 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
-      {#each filters as f (f.id)}
-        {@render pill(active.includes(f.id), f.label, f.icon, () => toggleFilter(f.id))}
+      {#each filters as tag (tag)}
+        {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
       {/each}
     </div>
   </div>

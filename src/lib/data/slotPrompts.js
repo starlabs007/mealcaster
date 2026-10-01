@@ -52,6 +52,6 @@ export const slotPrompts = [
     icon: 'soup_kitchen',
     title: 'Sunday Family Dinner slot open',
     text: 'Great moment for batch cooking, braised slow cooker roasts, or fragrant sourdough focaccia.',
-    alt: { action: 'browse', label: 'Browse Comfort Food', icon: 'menu_book' },
+    alt: { action: 'browse', label: 'Browse Recipes', icon: 'menu_book' },
   },
 ];

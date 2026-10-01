@@ -37,8 +37,11 @@
   import Icon from '../lib/components/Icon.svelte';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
   import {
+    recipes,
     recipeById,
-    tagMeta,
+    tagChoices,
+    normalizeTag,
+    TAG_MAX,
     aisles,
     parseQty,
     guessAisle,
@@ -54,6 +57,8 @@
   import { formatQty } from '../lib/format.js';
   import { renderMarkdown } from '../lib/markdown.js';
   import { toISO } from '../lib/dates.js';
+  import { normalizeTags } from '../lib/tags.js';
+  import { tagClasses } from '../lib/tagColors.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
 
   /** @type {{ id?: string }} */
@@ -143,6 +148,7 @@
       // Fresh keys so they can't collide with rows added from here on.
       draft.ingredients = draft.ingredients.map((row) => ({ ...row, key: nextKey() }));
       draft.steps = draft.steps.map((step) => ({ ...step, key: nextKey() }));
+      draft.tags = normalizeTags(draft.tags);
       return draft;
     } catch {
       return null;
@@ -161,6 +167,22 @@
   let notesPreview = $state(false);
   let stepPreview = $state(false);
   let form = $state(editing ? formFrom(editing) : (savedDraft ?? blankForm()));
+
+  // ---- Tags ----------------------------------------------------------------------
+  let newTag = $state('');
+  const tagOptions = $derived(tagChoices([...recipes.flatMap((r) => r.tags), ...form.tags]));
+  const tagColor = $derived(tagClasses(tagOptions));
+
+  /** form.tags plus whatever is typed in the new-tag box (commas separate tags). */
+  function withNewTag() {
+    const typed = newTag.split(',').map(normalizeTag).filter(Boolean);
+    return [...new Set([...form.tags, ...typed])];
+  }
+
+  function addTag() {
+    form.tags = withNewTag();
+    newTag = '';
+  }
   let submitted = $state(false);
   let bulkOpen = $state(false);
   let bulkText = $state('');
@@ -320,7 +342,7 @@
       serves: form.serves,
       badge: { ...base.badge, label: form.category },
       stat: base.custom || !base.stat ? `Serves ${form.serves}` : base.stat,
-      tags: [...form.tags],
+      tags: withNewTag(),
       notes,
       ingredients: groups,
       steps: form.steps
@@ -620,21 +642,46 @@
               <span class="text-body-sm text-outline">Column: Tags</span>
             </legend>
             <div class="flex flex-wrap gap-1.5">
-              {#each Object.entries(tagMeta) as [tag, meta] (tag)}
+              {#each tagOptions as tag (tag)}
                 {@const on = form.tags.includes(tag)}
                 <button
                   type="button"
                   aria-pressed={on}
+                  title={tag}
                   onclick={() => (form.tags = on ? form.tags.filter((t) => t !== tag) : [...form.tags, tag])}
-                  class="inline-flex items-center gap-1 rounded-full px-3 py-1 text-label-caps transition-all {on
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'bg-surface-container text-on-surface-variant hover:bg-surface-container-high'}"
+                  class="inline-flex max-w-full items-center gap-1 rounded-full px-3 py-1 text-label-caps transition-all {tagColor.get(tag)} {on
+                    ? 'shadow-sm ring-[1.5px] ring-inset ring-current'
+                    : 'opacity-75 hover:opacity-100'}"
                 >
                   {#if on}<Icon name="check" class="text-[13px]" />{:else}+{/if}
-                  {meta.label}
+                  <span class="truncate">{tag}</span>
                 </button>
               {/each}
             </div>
+            <div class="mt-2 flex gap-2">
+              <input
+                type="text"
+                aria-label="New tag"
+                                bind:value={newTag}
+                onkeydown={(e) => {
+                  if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addTag();
+                  }
+                }}
+                placeholder="Add your own tag, e.g. Date Night"
+                class="{field} {border(false)} flex-1 py-2"
+              />
+              <button
+                type="button"
+                disabled={!newTag.split(',').some((t) => normalizeTag(t))}
+                onclick={addTag}
+                class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-surface-container px-3 text-label-md text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
+              >
+                <Icon name="add" class="text-[16px]" /> Add
+              </button>
+            </div>
+            <p class="mt-1 text-body-sm text-outline">Press Enter to add. Words are capitalized for you; up to {TAG_MAX} characters per tag, commas separate tags.</p>
           </fieldset>
         </section>
 

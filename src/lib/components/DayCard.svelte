@@ -37,7 +37,7 @@
   function altAction() {
     if (prompt.alt.action === 'surprise') surpriseMe(day.iso);
     else if (prompt.alt.action === 'diningOut') markDiningOut(day.iso);
-    else navigate('/catalog', { day: day.iso, filter: 'comfort' });
+    else navigate('/catalog', { day: day.iso });
   }
 </script>
 
