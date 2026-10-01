@@ -70,7 +70,7 @@ const pool = [
       tone: 'tertiary',
     },
     notes:
-      'Pat salmon skin thoroughly bone-dry with clean paper towels 15 minutes before cooking. Any surface moisture turns to steam, preventing the coveted glass-like crackling skin. Keep your broth at an active bare simmer right on the adjacent burner.\n\n**Pairing:** A chilled Sancerre or dry Oregon Pinot Gris echoes the Meyer lemon without overpowering the salmon.',
+      '### Crispy skin, every time\n\nPat the salmon skin **bone-dry** with clean paper towels 15 minutes before cooking. Surface moisture turns to steam and prevents that glass-like crackle.\n\n- Keep the broth at an *active bare simmer* on the adjacent burner.\n- Press each fillet down for the first 10 seconds so the skin stays flat.\n\n**Pairing:** A chilled Sancerre or dry Oregon Pinot Gris echoes the Meyer lemon without overpowering the salmon.',
     ingredients: [
       {
         title: 'The Crispy Wild Salmon',
@@ -109,12 +109,12 @@ const pool = [
       {
         title: 'Simmer Broth & Skin Prep',
         minutes: 5,
-        text: 'Bring the broth to a gentle simmer in a small saucepan and keep warm over low heat. Pat salmon fillets dry and score the skin lightly in three diagonal cuts to prevent curling in the hot pan.',
+        text: 'Bring the **broth** to a gentle simmer in a small saucepan and keep warm over low heat.\n\n- Pat salmon fillets *completely dry*.\n- Score the skin lightly in **three diagonal cuts** to prevent curling in the hot pan.',
       },
       {
         title: 'Build Risotto Base & Toast Rice (Tostatura)',
         minutes: 6,
-        text: 'Melt 1 tbsp butter with 1 tbsp olive oil in a wide sauté pan over medium-low heat. Sweat the shallot and garlic for 3 minutes until translucent. Add the rice and toast, stirring constantly, for 2 minutes until the kernel edges turn pearl-like.',
+        text: 'Melt 1 tbsp butter with 1 tbsp olive oil in a wide sauté pan over medium-low heat.\n\n1. Sweat the shallot and garlic for 3 minutes until translucent.\n2. Add the rice and toast, stirring constantly, for 2 minutes until the kernel edges turn *pearl-like*.',
       },
       {
         title: 'Simmer & Continuous Hydration',
@@ -125,7 +125,7 @@ const pool = [
         title: 'The Salmon Crisp & Asparagus Char',
         minutes: 7,
         critical: true,
-        text: 'Heat a heavy skillet over high until lightly smoking and add avocado oil. Season the salmon and lay it skin-side down, pressing gently with a fish spatula for 30 seconds. Cook undisturbed for 5 minutes, flip for 90 seconds, and blister the asparagus in the empty spaces of the pan.',
+        text: 'Heat a heavy skillet over high until lightly smoking and add avocado oil.\n\n1. Season the salmon and lay it **skin-side down**, pressing gently with a fish spatula for 30 seconds.\n2. Cook undisturbed for **5 minutes**, then flip for 90 seconds.\n3. Blister the asparagus in the same pan alongside the fish.\n\n> Don\'t move the fillets while the skin crisps. They release on their own.',
       },
       {
         title: 'The Mantecatura, Plating & Garnish',
@@ -244,7 +244,7 @@ const pool = [
       tone: 'tertiary',
     },
     notes:
-      'Reserve a full mug of starchy pasta water before draining. Tossing the rigatoni with the ragù and a splash of that water over high heat for one minute emulsifies the sauce so it coats every ridge.\n\n**Pairing:** A Chianti Classico or Rosso di Montalcino — bright acidity to cut through the sausage.',
+      '### Silky sauce, no cream\n\nReserve **a full mug of starchy pasta water** before draining. Toss the rigatoni with the ragù and a splash of that water over high heat for one minute; it emulsifies the sauce so it coats every ridge.\n\n1. Drain the pasta *2 minutes early*.\n2. Finish it in the pan with the ragù and pasta water.\n3. Off the heat, stir in the pecorino.\n\n**Pairing:** A Chianti Classico or Rosso di Montalcino. Bright acidity cuts through the sausage.',
     ingredients: [
       {
         title: 'The Ragù',
@@ -272,7 +272,7 @@ const pool = [
       {
         title: 'Brown the Sausage',
         minutes: 8,
-        text: 'In a heavy Dutch oven, brown the sausage over medium-high heat, breaking it into rustic crumbles. Leave the fond on the bottom of the pot.',
+        text: 'In a heavy Dutch oven, brown the sausage over medium-high heat, breaking it into rustic crumbles.\n\n> Leave the **fond** on the bottom of the pot. It becomes the flavor base of the sauce.',
       },
       {
         title: 'Build the Soffritto',
@@ -283,12 +283,12 @@ const pool = [
         title: 'Slow Simmer',
         minutes: 30,
         critical: true,
-        text: 'Crush in the tomatoes by hand, add the beans and simmer uncovered on low for 30 minutes, stirring occasionally, until thick and glossy.',
+        text: 'Crush in the tomatoes **by hand**, add the beans and simmer uncovered on low for 30 minutes.\n\n- Stir occasionally.\n- It\'s ready when the ragù is *thick and glossy*.',
       },
       {
         title: 'Marry Pasta & Sauce',
         minutes: 12,
-        text: 'Cook the rigatoni 2 minutes shy of al dente. Toss into the ragù with a splash of pasta water over high heat, then finish with pecorino and torn basil.',
+        text: 'Cook the rigatoni **2 minutes shy of al dente**.\n\n1. Toss into the ragù with a splash of pasta water over high heat.\n2. Finish with pecorino and torn basil.',
       },
     ],
   },
@@ -320,7 +320,7 @@ const pool = [
       tone: 'secondary',
     },
     notes:
-      'A full hour of preheating matters more than the recipe. The stone must be saturated with heat so the base puffs and chars in under 7 minutes.\n\n**Pairing:** A lightly chilled Lambrusco, or sparkling blood-orange soda for the kids.',
+      'A full hour of preheating matters more than the recipe.\n\n> The stone must be saturated with heat so the base puffs and chars in **under 7 minutes**.\n\n- Oven at its highest setting, stone on the top-middle rack.\n- Add the *hot honey* and *burrata* only after baking.\n\n**Pairing:** A lightly chilled Lambrusco, or sparkling blood-orange soda for the kids.',
     ingredients: [
       {
         title: 'Dough & Sauce',
@@ -389,7 +389,7 @@ const pool = [
       tone: 'tertiary',
     },
     notes:
-      'Score the eggplant flesh in a deep crosshatch so the miso glaze seeps in and caramelizes in every groove.\n\n**Pairing:** A cold junmai sake or roasted barley tea.',
+      'Score the eggplant flesh in a **deep crosshatch** so the miso glaze seeps in and caramelizes in every groove.\n\n- Cut about 1 cm deep, but don\'t pierce the skin.\n- Brush the glaze on *twice*: once before broiling, once at the end.\n\n**Pairing:** A cold junmai sake or roasted barley tea.',
     ingredients: [
       {
         title: 'Glazed Eggplant',
@@ -455,7 +455,7 @@ const pool = [
       tone: 'secondary',
     },
     notes:
-      'Add the tadka at the very last second — the hiss of hot spiced ghee hitting the dal is where the aroma comes from.\n\n**Pairing:** A salted mango lassi or an off-dry Riesling.',
+      '### The tadka is everything\n\nAdd the tadka at the **very last second**. The hiss of hot spiced ghee hitting the dal is where the aroma comes from.\n\n- Heat the ghee until the cumin seeds *dance*, then add garlic and chilli.\n- Pour straight over the dal and cover for 30 seconds.\n- Leftovers thicken overnight; loosen with a splash of water.\n\n**Pairing:** A salted mango lassi or an off-dry Riesling.',
     ingredients: [
       {
         title: 'The Dal',
@@ -875,7 +875,7 @@ const pool = [
       tone: 'secondary',
     },
     notes:
-      'Braise a day ahead. Chill overnight, lift off the solidified fat, and reheat — the sauce becomes deeper and cleaner.\n\n**Pairing:** The same Chianti you braised with, or a Barolo for a special Sunday.',
+      '### Braise a day ahead\n\nChill overnight, lift off the solidified fat, and reheat. The sauce becomes **deeper and cleaner**.\n\n1. Brown the ribs well; don\'t rush this step.\n2. Braise until the meat is tender enough to slump from the bone.\n3. Chill in the braising liquid, skim, and gently reheat.\n\n> Tip: reduce the strained liquid by a third for a glossy glaze.\n\n**Pairing:** The same Chianti you braised with, or a Barolo for a special Sunday.',
     ingredients: [
       {
         title: 'The Braise',

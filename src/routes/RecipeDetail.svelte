@@ -344,7 +344,7 @@
                       </span>
                     {/if}
                   </div>
-                  <p class="whitespace-pre-line text-body-sm text-on-surface-variant">{step.text}</p>
+                  <div class="notes-md text-body-sm text-on-surface-variant">{@html renderMarkdown(step.text)}</div>
                 </div>
               </li>
             {/each}

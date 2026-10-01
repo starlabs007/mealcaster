@@ -159,6 +159,7 @@
 
   const savedDraft = editing ? null : loadDraft();
   let notesPreview = $state(false);
+  let stepPreview = $state(false);
   let form = $state(editing ? formFrom(editing) : (savedDraft ?? blankForm()));
   let submitted = $state(false);
   let bulkOpen = $state(false);
@@ -748,8 +749,23 @@
                 <Icon name="skillet" class="text-[20px] text-primary" /> Preparation &amp; Method
               </h2>
               <p class="text-body-sm text-on-surface-variant">Ordered steps, saved to the Method_Steps column</p>
+              <p class="text-body-sm text-on-surface-variant">
+                Supports Markdown:
+                <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
+              </p>
             </div>
-            <span class="text-label-caps uppercase text-outline">{form.steps.length} {form.steps.length === 1 ? 'step' : 'steps'}</span>
+            <div class="flex items-center gap-3">
+              <div class="inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
+                {#each [[false, 'Write'], [true, 'Preview']] as [on, label] (label)}
+                  <button
+                    type="button"
+                    class="rounded-md px-3 py-1 {stepPreview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}"
+                    onclick={() => (stepPreview = on)}
+                  >{label}</button>
+                {/each}
+              </div>
+              <span class="text-label-caps uppercase text-outline">{form.steps.length} {form.steps.length === 1 ? 'step' : 'steps'}</span>
+            </div>
           </div>
 
           <ol class="flex flex-col gap-3">
@@ -777,14 +793,24 @@
                     </button>
                   </div>
                 </div>
-                <textarea
-                  rows="2"
-                  aria-label="Step {i + 1} directions"
-                  placeholder="Describe the technique, temperatures and timing…"
-                  bind:value={step.text}
-                  aria-invalid={badStep ? 'true' : undefined}
-                  class="{field} {border(badStep)} resize-y"
-                ></textarea>
+                {#if stepPreview}
+                  <div class="notes-md min-h-[3.5rem] rounded-lg bg-surface-container-low p-3 text-body-sm text-on-surface-variant">
+                    {#if step.text.trim()}
+                      {@html renderMarkdown(step.text)}
+                    {:else}
+                      <p class="text-outline">Nothing to preview yet.</p>
+                    {/if}
+                  </div>
+                {:else}
+                  <textarea
+                    rows="2"
+                    aria-label="Step {i + 1} directions"
+                    placeholder="Describe the technique, temperatures and timing… (Markdown supported)"
+                    bind:value={step.text}
+                    aria-invalid={badStep ? 'true' : undefined}
+                    class="{field} {border(badStep)} resize-y"
+                  ></textarea>
+                {/if}
                 <label class="flex items-center gap-2 self-end text-body-sm text-outline">
                   <Icon name="schedule" class="text-[16px]" />
                   <input type="number" min="0" step="1" inputmode="numeric" placeholder="—" bind:value={step.minutes} class="{cellField} {border(false)} w-16 text-center" />
@@ -812,9 +838,10 @@
             </label>
             <span class="text-label-caps uppercase text-outline">Optional · Column: Notes</span>
           </div>
+          <p class="mb-1 text-body-sm text-on-surface-variant">Family adjustments, the best brand of ricotta, or a side dish that always works.</p>
           <p class="mb-3 text-body-sm text-on-surface-variant">
-            Family adjustments, the best brand of ricotta, or a side dish that always works. Supports Markdown:
-            <code>**bold**</code>, <code>*italic*</code>, <code>- lists</code>, <code>## headings</code>, <code>[links](https://…)</code>.
+            Supports Markdown:
+            <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
           </p>
           <div class="mb-2 inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
             {#each [[false, 'Write'], [true, 'Preview']] as [on, label] (label)}
