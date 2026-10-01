@@ -1,5 +1,4 @@
 <script>
-  import { fly } from 'svelte/transition';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
   import { recipes, recipeById, tagChoices, tagIcon, normalizeTags } from '../lib/recipes.svelte.js';
@@ -7,6 +6,7 @@
   import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe, madeRecently, RECENT_DAYS } from '../lib/planner.svelte.js';
   import { storageKey } from '../lib/env.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
+  import { showToast } from '../lib/toast.svelte.js';
   import { formatLong, formatWeekday, mondayOf, fromISO, weekDates } from '../lib/dates.js';
 
   const PAGE_SIZE = 9;
@@ -46,8 +46,6 @@
   /** @type {string[]} */
   let active = $state([]);
   let pages = $state(1);
-  /** @type {{ iso: string, title: string } | null} */
-  let assigned = $state(null);
 
   // Keep search / filter in sync with the URL (header search, "Browse Recipes" links).
   // `filter` is a comma-separated list of tags (tags never contain commas).
@@ -115,15 +113,25 @@
 
   /** @param {import('../lib/data/recipes.js').Recipe} recipe */
   function select(recipe) {
-    if (!targetDay) return;
-    assignRecipe(targetDay, recipe.id);
-    assigned = { iso: targetDay, title: recipe.shortTitle };
+    const iso = targetDay; // targetDay moves on to the next open day once this one is filled
+    if (!iso) return;
+    assignRecipe(iso, recipe.id);
+    announce(iso, recipe);
   }
 
   function surprise() {
-    if (!targetDay) return;
-    const recipe = surpriseMe(targetDay, results.length ? results : undefined);
-    if (recipe) assigned = { iso: targetDay, title: recipe.shortTitle };
+    const iso = targetDay;
+    if (!iso) return;
+    const recipe = surpriseMe(iso, results.length ? results : undefined);
+    if (recipe) announce(iso, recipe, 'Surprise! ');
+  }
+
+  /** Toast rather than a banner, so it's seen wherever the catalog is scrolled to. */
+  function announce(iso, recipe, prefix = '') {
+    showToast(`${prefix}${recipe.shortTitle} added to ${formatLong(iso)} dinner and your grocery basket was updated.`, {
+      label: 'Go to Weekly View',
+      run: () => navigate('/'),
+    });
   }
 
   /** @param {string} iso */
@@ -240,31 +248,6 @@
     </div>
   </div>
 
-  {#if assigned}
-    <div
-      transition:fly={{ y: -8, duration: 200 }}
-      class="flex flex-col gap-3 rounded-2xl bg-primary px-5 py-4 text-on-primary shadow-lift sm:flex-row sm:items-center sm:justify-between"
-      role="status"
-    >
-      <div class="flex items-center gap-3">
-        <Icon name="check_circle" class="text-[24px] text-primary-fixed" />
-        <div>
-          <p class="font-display text-headline-sm">Meal Assigned!</p>
-          <p class="text-body-sm text-on-primary/80">
-            {assigned.title} added to {formatLong(assigned.iso)} dinner and your grocery basket was updated.
-          </p>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <a href={href('/')} class="rounded-lg bg-surface-container-lowest px-3 py-1.5 text-label-md text-primary hover:bg-surface-container">
-          Go to Weekly View
-        </a>
-        <button type="button" aria-label="Dismiss" class="rounded-full p-1 text-on-primary/70 hover:text-on-primary" onclick={() => (assigned = null)}>
-          <Icon name="close" class="text-[18px]" />
-        </button>
-      </div>
-    </div>
-  {/if}
 
   {#if visible.length}
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
