@@ -93,6 +93,18 @@ describe('codec', () => {
     }
   });
 
+  it('reads an optional, tidied category from the sheet', () => {
+    const read = (category) =>
+      codec.recipeFromRow({ ...codec.recipeToRow(recipe('r1', 'Pasta'), new Set()), Category: category }, undefined, {
+        columns: SCHEMA.recipes,
+        favorites: new Set(),
+        today: '2026-09-30',
+      }).recipe.badge.label;
+    assert.equal(read(''), '', 'blank means no category');
+    assert.equal(read('  sunday brunch '), 'Sunday Brunch');
+    assert.equal(read('Dessert'), 'Dessert');
+  });
+
   it('round-trips plan entries, dining out and notes', () => {
     const columns = SCHEMA.weeklyPlan;
     const read = (row) => codec.planFromRow(row, undefined, columns);

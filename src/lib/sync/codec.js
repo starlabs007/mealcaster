@@ -10,7 +10,7 @@
 
 import { departments } from '../data/departments.js';
 import { formatWeekday } from '../dates.js';
-import { normalizeTags } from '../tags.js';
+import { normalizeCategory, normalizeTags } from '../tags.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -183,7 +183,7 @@ const RECIPE_COLUMNS = {
     set: (r, v) => (r.tags = normalizeTags(str(v).split(','))),
   },
   Favorite_Flag: { get: (r, ctx) => ctx.favorites.has(r.id), set: (r, v, ctx) => (ctx.favorite = bool(v)) },
-  Category: { get: (r) => r.badge.label, set: (r, v) => (r.badge = { label: str(v) || 'Dinner' }) },
+  Category: { get: (r) => r.badge.label, set: (r, v) => (r.badge = { label: normalizeCategory(str(v)) }) },
   Servings: {
     get: (r) => r.serves,
     set: (r, v) => (r.serves = num(v) || 2),
@@ -213,7 +213,7 @@ function blankRecipe(id, today) {
     cookMinutes: 0,
     minutes: 0,
     serves: 2,
-    badge: { label: 'Dinner' },
+    badge: { label: '' },
     addedAt: today,
     tags: [],
     notes: '',

@@ -51,9 +51,9 @@ npm run preview    # http://localhost:4173
 
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
 
-- Keyword search across titles, descriptions, tags and ingredients (the header search lands here too).
+- Keyword search across titles, descriptions, categories, tags and ingredients (the header search lands here too).
 - Filters (combined with AND): Favorites, **Not made in 7 days** (remembered on the device) and one per
-  recipe tag in use. Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
+  recipe tag in use, plus one category at a time (Filter by Category). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
   Recently Added to Box. Paging, 9 per page.
 - Each card says when the meal was **last made** (from the plan): terracotta within 7 days, green otherwise.
 - **Select for {Day}** assigns the recipe to the chosen day (confirmed with a toast); "Planning for"
@@ -73,6 +73,10 @@ Tags are free text: the editor offers Quick (<30m), Vegetarian, Poultry & Meat, 
 already in use, and takes new ones (each word capitalized, at most 100 characters, commas separate tags).
 Each tag gets the next colour in a fixed rotation the first time it appears and keeps it (per device).
 The `Tags` column holds them as comma-separated text.
+
+A recipe has at most one **category** (optional; shown on the cards, the detail hero and the planner day card).
+The editor offers Dinner, Lunch, Dessert and every category in use, and takes a custom one (tidied like a tag).
+The `Category` column holds it; blank means none.
 
 ## Quick Grocery List (`#/grocery`)
 
@@ -158,7 +162,7 @@ src/
     router.svelte.js         hash router (works on GitHub Pages)
     planner.svelte.js        weekly plan state + actions, last made / times made (Svelte runes)
     recipes.svelte.js        live recipe list (samples + saved), save/delete/revert
-    tags.js                  tag normalizing, suggestions, colour rotation
+    tags.js                  tag & category normalizing, suggestions, colour rotation
     tagColors.svelte.js      per-device tag colours
     grocery.svelte.js        grocery list model
     favorites.svelte.js

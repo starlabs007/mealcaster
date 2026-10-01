@@ -1,7 +1,7 @@
 <script>
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
-  import { recipes, recipeById, tagChoices, tagIcon, normalizeTags } from '../lib/recipes.svelte.js';
+  import { recipes, recipeById, tagChoices, tagIcon, normalizeTags, categoryChoices, normalizeCategory } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
   import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe, madeRecently, timesMade, lastMadeOn, RECENT_DAYS } from '../lib/planner.svelte.js';
   import { storageKey } from '../lib/env.js';
@@ -52,6 +52,8 @@
   }
   /** @type {string[]} */
   let active = $state([]);
+  /** One category at a time ('' = any) — a recipe has at most one. */
+  let category = $state('');
   let pages = $state(1);
 
   // Keep search / filter in sync with the URL (header search, "Browse Recipes" links).
@@ -59,12 +61,20 @@
   $effect(() => {
     query = route.query.q ?? '';
     active = normalizeTags(route.query.filter?.split(','));
+    category = normalizeCategory(route.query.category);
     pages = 1;
   });
 
   // One filter per tag in use (suggested tags first); an active tag stays listed even with no recipes.
   const filters = $derived(
     tagChoices([...recipes.flatMap((r) => r.tags), ...active]).filter((t) => active.includes(t) || recipes.some((r) => r.tags.includes(t))),
+  );
+
+  // Categories in use (suggested ones first); the active one stays listed even with no recipes.
+  const categories = $derived(
+    categoryChoices([...recipes.map((r) => r.badge.label), category]).filter(
+      (c) => c === category || recipes.some((r) => r.badge.label === c),
+    ),
   );
 
   // A day passed in the URL moves the week stepper to that day's week.
@@ -84,12 +94,14 @@
     return recipes
       .filter((r) => !favoritesOnly || favorites.ids.includes(r.id))
       .filter((r) => !hideRecent || !madeRecently(r.id))
+      .filter((r) => !category || r.badge.label === category)
       .filter((r) => active.every((t) => r.tags.includes(t)))
       .filter((r) => {
         if (!words.length) return true;
         const haystack = [
           r.title,
           r.description,
+          r.badge.label,
           ...r.tags,
           ...r.ingredients.flatMap((g) => g.items.map((i) => i.text)),
         ]
@@ -101,21 +113,28 @@
   });
   const visible = $derived(results.slice(0, pages * PAGE_SIZE));
   const remaining = $derived(results.length - visible.length);
-  const activeCount = $derived(active.length + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0));
+  const activeCount = $derived(active.length + (category ? 1 : 0) + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0));
 
   function toggleFilter(id) {
     active = active.includes(id) ? active.filter((x) => x !== id) : [...active, id];
     pages = 1;
   }
 
+  /** @param {string} c */
+  function toggleCategory(c) {
+    category = category === c ? '' : c;
+    pages = 1;
+  }
+
   function clearFilters() {
     active = [];
+    category = '';
     favoritesOnly = false;
     setHideRecent(false);
   }
 
   function chooseDay(event) {
-    navigate('/catalog', { q: query, filter: active.join(','), day: event.currentTarget.value });
+    navigate('/catalog', { q: query, filter: active.join(','), category, day: event.currentTarget.value });
   }
 
   /** @param {import('../lib/data/recipes.js').Recipe} recipe */
@@ -232,27 +251,35 @@
         </button>
       {/if}
     </div>
+    {#snippet pill(on, label, icon, onclick)}
+      <button
+        type="button"
+        aria-pressed={on}
+        {onclick}
+        class="inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-label-md transition-all {on
+          ? 'border-primary bg-primary text-on-primary shadow-sm'
+          : 'border-surface-container-high bg-surface-container-lowest text-on-surface hover:border-outline-variant hover:bg-surface-container-low'}"
+      >
+        {#if icon}<Icon name={icon} class="text-[16px] {icon === 'favorite' && !on ? 'text-secondary' : ''} {icon === 'favorite' && on ? 'icon-filled' : ''}" />{/if}
+        <span class="max-w-[16rem] truncate">{label}</span>
+        {#if on && icon !== 'favorite'}<Icon name="close" class="ml-0.5 text-[14px]" />{/if}
+      </button>
+    {/snippet}
     <div class="flex flex-wrap gap-2">
-      {#snippet pill(on, label, icon, onclick)}
-        <button
-          type="button"
-          aria-pressed={on}
-          {onclick}
-          class="inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-label-md transition-all {on
-            ? 'border-primary bg-primary text-on-primary shadow-sm'
-            : 'border-surface-container-high bg-surface-container-lowest text-on-surface hover:border-outline-variant hover:bg-surface-container-low'}"
-        >
-          {#if icon}<Icon name={icon} class="text-[16px] {icon === 'favorite' && !on ? 'text-secondary' : ''} {icon === 'favorite' && on ? 'icon-filled' : ''}" />{/if}
-          <span class="max-w-[16rem] truncate">{label}</span>
-          {#if on && icon !== 'favorite'}<Icon name="close" class="ml-0.5 text-[14px]" />{/if}
-        </button>
-      {/snippet}
       {@render pill(favoritesOnly, 'Favorites', 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
       {@render pill(hideRecent, `Not made in ${RECENT_DAYS} days`, 'history', () => setHideRecent(!hideRecent))}
       {#each filters as tag (tag)}
         {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
       {/each}
     </div>
+    {#if categories.length > 1 || category}
+      <span class="mt-1 text-label-caps uppercase text-on-surface-variant">Filter by Category</span>
+      <div class="flex flex-wrap gap-2">
+        {#each categories as c (c)}
+          {@render pill(category === c, c, undefined, () => toggleCategory(c))}
+        {/each}
+      </div>
+    {/if}
   </div>
 
 

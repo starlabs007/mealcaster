@@ -40,9 +40,11 @@
           <Icon name={recipe.minutes >= 120 ? 'soup_kitchen' : 'timer'} class="text-[13px]" />
           {formatMinutes(recipe.minutes)}
         </span>
-        <span class="rounded-full bg-surface-container-lowest/90 px-2 py-1 text-label-caps text-on-surface-variant shadow-sm backdrop-blur-md">
-          {recipe.badge.label}
-        </span>
+        {#if recipe.badge.label}
+          <span class="rounded-full bg-surface-container-lowest/90 px-2 py-1 text-label-caps text-on-surface-variant shadow-sm backdrop-blur-md">
+            {recipe.badge.label}
+          </span>
+        {/if}
       </div>
 
       <button
