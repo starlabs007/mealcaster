@@ -10,6 +10,9 @@
   import { formatQty } from '../lib/format.js';
   import { renderMarkdown } from '../lib/markdown.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
+  import PrintOptionsDialog from '../lib/components/PrintOptionsDialog.svelte';
+  import RecipePrintSimple from '../lib/components/RecipePrintSimple.svelte';
+  import { printOptions, setPrintOptions, TEXT_DELTA } from '../lib/printOptions.svelte.js';
   import { recipeById, formatMinutes, deleteRecipe, restoreRecipe } from '../lib/recipes.svelte.js';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
   import { groceryKeys, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
@@ -17,6 +20,7 @@
   import { href, navigate } from '../lib/router.svelte.js';
   import { formatLong, formatWeekday } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
+  import { tick } from 'svelte';
 
   /** @type {{ id: string, day?: string }} */
   let { id, day: dayParam } = $props();
@@ -74,6 +78,18 @@
     const removed = deleteRecipe(recipe.id);
     navigate('/catalog');
     showToast(`${recipe.shortTitle} deleted.`, { label: 'Undo', run: () => restoreRecipe(removed) }, 10000);
+  }
+
+  let choosingPrint = $state(false);
+  const photo = recipe ? (recipe.hero ?? recipe.image) : undefined;
+  const textDelta = $derived(TEXT_DELTA[printOptions.textSize] ?? 0);
+
+  /** @param {import('../lib/printOptions.svelte.js').PrintOptions} options */
+  async function print(options) {
+    setPrintOptions(options);
+    choosingPrint = false;
+    await tick(); // let the dialog close before the print snapshot
+    window.print();
   }
 
   /** @param {import('../lib/data/recipes.js').Step} step @param {number} i */
@@ -144,7 +160,7 @@
             <Icon name="event_available" class="text-[16px]" /> Plan for {formatWeekday(openDay)}
           </button>
         {/if}
-        <button type="button" class="btn-outline" onclick={() => window.print()}>
+        <button type="button" class="btn-outline" onclick={() => (choosingPrint = true)}>
           <Icon name="print" class="text-[16px]" /> Print
         </button>
         <button
@@ -165,10 +181,15 @@
     </div>
   </div>
 
-  <div class="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 py-8 md:px-gutter-desktop">
+  <!-- Styled printout (two columns, tints kept); hidden when printing the simple layout. -->
+  <div
+    class="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 py-8 md:px-gutter-desktop print:gap-5 print:p-0 print:[-webkit-print-color-adjust:exact] print:[print-color-adjust:exact] print:[&_*]:shadow-none
+      {printOptions.simple ? 'print:hidden' : ''} {textDelta ? 'print-sized' : ''}"
+    style="--print-delta: {textDelta}pt; --print-image: {printOptions.imageScale}%"
+  >
     <!-- Title block -->
     <header class="flex flex-col gap-4">
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2 print:hidden">
         {#if day}
           <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/60 px-2.5 py-1 text-label-caps uppercase text-primary">
             <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> Scheduled: {formatLong(day)}
@@ -192,7 +213,7 @@
       <h1 class="max-w-4xl font-display text-headline-xl-mobile text-primary md:text-headline-xl">{recipe.title}</h1>
       {#if recipe.description}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:max-w-4xl">
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:max-w-4xl print:max-w-none print:grid-cols-4">
         {#each stats as stat (stat.label)}
           <div class="flex items-center gap-3 rounded-xl bg-surface-container-low px-4 py-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface-variant shadow-card">
@@ -222,10 +243,14 @@
       </div>
     </header>
 
-    <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+    <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 print:flex print:flex-col print:items-stretch print:gap-5">
+      <!-- Printed as one column: photo, ingredients, method, then notes. -->
       <!-- Left: photo & notes -->
-      <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-5">
-        <figure class="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-card">
+      <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-5 print:contents">
+        <figure
+          class="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-card print:order-1 print:mx-auto print:w-[var(--print-image)]
+            {printOptions.image && photo ? '' : 'print:hidden'}"
+        >
           <!-- Photo-less (custom) recipes get a shorter placeholder until the column layout kicks in. -->
           <div class="relative {recipe.hero ?? recipe.image ? 'aspect-[4/3]' : 'aspect-[3/1] lg:aspect-[4/3]'}">
             <RecipeImage src={recipe.hero ?? recipe.image} alt={recipe.title} class="h-full w-full" />
@@ -241,7 +266,7 @@
         </figure>
 
         {#if recipe.notes?.trim()}
-        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card">
+        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card print:order-3 print:break-inside-avoid">
           <div class="mb-4 flex items-center gap-3">
             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-low text-primary">
               <Icon name="auto_awesome" class="text-[18px]" />
@@ -259,14 +284,14 @@
       </aside>
 
       <!-- Right: ingredients & method -->
-      <div class="flex flex-col gap-8 lg:col-span-7">
+      <div class="flex flex-col gap-8 lg:col-span-7 print:order-2 print:gap-5">
         <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-4 flex items-start justify-between gap-4">
             <div class="flex items-start gap-3">
               <Icon name="receipt_long" class="mt-0.5 text-[22px] text-secondary" />
               <div>
                 <h2 class="font-display text-headline-sm text-on-surface">Mise en Place Ingredients</h2>
-                <p class="text-body-sm text-on-surface-variant">Check items as you prep or push directly to grocery</p>
+                <p class="text-body-sm text-on-surface-variant print:hidden">Check items as you prep or push directly to grocery</p>
               </div>
             </div>
             <button type="button" class="inline-flex shrink-0 items-center gap-1 text-label-sm text-on-surface-variant hover:text-primary print:hidden" onclick={toggleAll}>
@@ -286,7 +311,7 @@
                   {#each group.items as item, i (i)}
                     {@const key = `${recipe.id}:${g}:${i}`}
                     {@const isChecked = checked.includes(key)}
-                    <li>
+                    <li class="print:break-inside-avoid">
                       <label class="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container">
                         <input type="checkbox" class="peer sr-only" checked={isChecked} onchange={() => toggleCheck(key)} />
                         <span
@@ -337,9 +362,9 @@
             </h2>
             <span class="text-label-caps uppercase text-outline">{recipe.steps.length} Essential Movements</span>
           </div>
-          <ol class="flex flex-col gap-4">
+          <ol class="flex flex-col gap-4 print:gap-3">
             {#each recipe.steps as step, i (i)}
-              <li class="flex gap-4 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card">
+              <li class="flex gap-4 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card print:break-inside-avoid print:p-4">
                 <span
                   class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-display text-body-lg font-semibold {step.critical
                     ? 'bg-secondary-fixed/50 text-secondary'
@@ -395,6 +420,22 @@
 {/if}
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && (confirmingDelete = false)} />
+
+{#if recipe && printOptions.simple}
+  <RecipePrintSimple
+    {recipe}
+    {servings}
+    {scale}
+    {mins}
+    {textDelta}
+    image={printOptions.image ? photo : undefined}
+    imageScale={printOptions.imageScale}
+  />
+{/if}
+
+{#if choosingPrint}
+  <PrintOptionsDialog hasImage={!!photo} onprint={print} onclose={() => (choosingPrint = false)} />
+{/if}
 
 {#if confirmingDelete}
   <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (Escape handled on window) -->

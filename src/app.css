@@ -70,3 +70,37 @@
     @apply border-outline-variant;
   }
 }
+
+/* Recipe print text size (Small / Large): shifts every type-scale size by
+   --print-delta, set on the .print-sized wrapper in RecipeDetail.svelte. */
+@media print {
+  .print-sized h1 {
+    font-size: calc(30px + var(--print-delta));
+    line-height: 1.25;
+  }
+  .print-sized .text-headline-md {
+    font-size: calc(22px + var(--print-delta));
+    line-height: 1.3;
+  }
+  .print-sized .text-headline-sm {
+    font-size: calc(18px + var(--print-delta));
+    line-height: 1.3;
+  }
+  .print-sized .text-body-lg {
+    font-size: calc(16px + var(--print-delta));
+    line-height: 1.5;
+  }
+  .print-sized .text-body-sm,
+  .print-sized .text-label-md {
+    font-size: calc(13px + var(--print-delta));
+    line-height: 1.4;
+  }
+  .print-sized .text-label-sm {
+    font-size: calc(11px + var(--print-delta));
+    line-height: 1.3;
+  }
+  .print-sized .text-label-caps {
+    font-size: calc(10px + var(--print-delta));
+    line-height: 1.2;
+  }
+}
