@@ -211,6 +211,7 @@ export const aisles = [
   { tag: 'Spices', label: 'Spices' },
   { tag: 'Bakery', label: 'Bakery' },
   { tag: 'Frozen', label: 'Frozen' },
+  { tag: 'Other', label: 'Other' },
 ];
 
 const AISLE_WORDS = [

@@ -61,6 +61,7 @@ describe('codec', () => {
     assert.equal(codec.parseDept('Seafood & Meat'), 'meat');
     assert.equal(codec.parseDept('Veg'), 'produce');
     assert.equal(codec.parseDept('anything else'), 'pantry');
+    assert.equal(codec.parseDept('Other'), 'other');
   });
 
   it('keeps fields of unchanged cells and re-reads changed ones', () => {
