@@ -34,6 +34,15 @@ describe('codec', () => {
     assert.equal(codec.parseIngredients('not json'), null);
   });
 
+  it('skips nulls and bare values in hand-edited ingredient JSON', () => {
+    assert.deepEqual(codec.parseIngredients('[{"title":"Main","items":[null,"rice",{"text":"salt"}]}]'), [
+      { title: 'Main', category: '1 item', items: [{ text: 'salt', tag: 'Pantry' }] },
+    ]);
+    assert.deepEqual(codec.parseIngredients('[null,{"text":"salt"}]'), [
+      { title: 'Ingredients', category: '1 items', items: [{ text: 'salt', tag: 'Pantry' }] },
+    ]);
+  });
+
   it('parses dates, statuses and departments the way people type them', () => {
     assert.equal(codec.isoDate('2026-10-21'), '2026-10-21');
     assert.equal(codec.isoDate('10/21/2026'), '2026-10-21');

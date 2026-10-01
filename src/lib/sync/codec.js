@@ -125,16 +125,21 @@ export function parseIngredients(value) {
       ...(i.staple && { staple: true }),
     };
   };
+  // Hand-edited cells can hold nulls or bare values; skip them rather than fail the sync.
+  const items = (list) => list.filter((i) => i && typeof i === 'object').map(item).filter((i) => i.text);
   const isGroup = (g) => g && Array.isArray(g.items);
   if (data.every(isGroup)) {
-    return data.map((g) => ({
-      title: str(g.title) || 'Ingredients',
-      category: str(g.category) || `${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}`,
-      items: g.items.map(item).filter((i) => i.text),
-    }));
+    return data.map((g) => {
+      const kept = items(g.items);
+      return {
+        title: str(g.title) || 'Ingredients',
+        category: str(g.category) || `${kept.length} ${kept.length === 1 ? 'item' : 'items'}`,
+        items: kept,
+      };
+    });
   }
-  const items = data.filter((i) => i && typeof i === 'object').map(item).filter((i) => i.text);
-  return items.length ? [{ title: 'Ingredients', category: `${items.length} items`, items }] : [];
+  const flat = items(data);
+  return flat.length ? [{ title: 'Ingredients', category: `${flat.length} items`, items: flat }] : [];
 }
 
 const notesText = (r) => [r.secret, r.pairing && `Pairing: ${r.pairing}`].filter(Boolean).join('\n\n');
