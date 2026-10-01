@@ -3,7 +3,7 @@
 // localStorage; sync.svelte.js keeps it in step with the connected sheet.
 
 import { recipes, recipeById } from './recipes.svelte.js';
-import { addDays, fromISO, mondayOf, toISO, weekDates } from './dates.js';
+import { addDays, daysBetween, fromISO, mondayOf, toISO, weekDates } from './dates.js';
 import { showToast } from './toast.svelte.js';
 import { sampleData, storageKey } from './env.js';
 
@@ -76,6 +76,36 @@ export function statusOf(iso) {
   return past ? 'missed' : 'open';
 }
 
+/** Meals made within this many days count as recent (the catalog can hide them). */
+export const RECENT_DAYS = 7;
+
+// recipe id → how often and when it was last made: past days on the plan, plus today once marked done.
+const madeIndex = $derived.by(() => {
+  /** @type {Map<string, { last: string, count: number }>} */
+  const index = new Map();
+  for (const [iso, entry] of Object.entries(planner.entries)) {
+    if (!entry?.recipeId || iso > planner.today || (iso === planner.today && !entry.completed)) continue;
+    const made = index.get(entry.recipeId);
+    if (made) {
+      made.count += 1;
+      if (iso > made.last) made.last = iso;
+    } else index.set(entry.recipeId, { last: iso, count: 1 });
+  }
+  return index;
+});
+
+/** ISO date a recipe was last made, if ever. @param {string} recipeId */
+export const lastMadeOn = (recipeId) => madeIndex.get(recipeId)?.last;
+
+/** How many dinners on the plan were this recipe. @param {string} recipeId */
+export const timesMade = (recipeId) => madeIndex.get(recipeId)?.count ?? 0;
+
+/** Made within the last RECENT_DAYS days. @param {string} recipeId */
+export function madeRecently(recipeId) {
+  const iso = lastMadeOn(recipeId);
+  return !!iso && daysBetween(iso, planner.today) <= RECENT_DAYS;
+}
+
 /** Days of the viewed week (or of `weekStart`). */
 export function currentWeek(weekStart = planner.weekStart) {
   return weekDates(weekStart).map((iso, weekday) => {
@@ -133,12 +163,20 @@ function snapshotWeek() {
   };
 }
 
-/** Pick a recipe, preferring ones not already on the viewed week's menu. */
-function pickRecipe(exclude = new Set()) {
+/**
+ * Pick a random recipe from `pool`, preferring ones neither on the viewed week's menu nor
+ * made in the last RECENT_DAYS days, then ones just not on the menu, then any.
+ * @param {import('./data/recipes.js').Recipe[]} pool
+ */
+function pickRecipe(pool = recipes) {
   const used = new Set(weekDates(planner.weekStart).map((iso) => planner.entries[iso]?.recipeId));
-  const fresh = recipes.filter((r) => !used.has(r.id) && !exclude.has(r.id));
-  const pool = fresh.length ? fresh : recipes.filter((r) => !exclude.has(r.id));
-  return pool[Math.floor(Math.random() * pool.length)];
+  const tiers = [
+    pool.filter((r) => !used.has(r.id) && !madeRecently(r.id)),
+    pool.filter((r) => !used.has(r.id)),
+    pool,
+  ];
+  const best = tiers.find((tier) => tier.length) ?? [];
+  return best[Math.floor(Math.random() * best.length)];
 }
 
 export function shiftWeek(delta) {
@@ -157,11 +195,11 @@ export function assignRecipe(iso, recipeId) {
 const NO_RECIPES = 'Add a recipe to the catalog first.';
 
 /**
- * @param {string} iso @param {import('./data/recipes.js').Recipe[]} [pool]
+ * @param {string} iso @param {import('./data/recipes.js').Recipe[]} [pool] e.g. the catalog's filtered results
  * @returns {import('./data/recipes.js').Recipe | undefined} undefined when there are no recipes yet
  */
 export function surpriseMe(iso, pool) {
-  const recipe = pool?.length ? pool[Math.floor(Math.random() * pool.length)] : pickRecipe();
+  const recipe = pickRecipe(pool?.length ? pool : recipes);
   if (!recipe) {
     showToast(NO_RECIPES);
     return undefined;

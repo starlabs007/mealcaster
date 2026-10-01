@@ -21,6 +21,28 @@ export function addDays(iso, days) {
   return toISO(d);
 }
 
+/** Whole days from `from` to `to` (both ISO dates); negative if `to` is earlier. */
+export function daysBetween(from, to) {
+  return Math.round((fromISO(to).getTime() - fromISO(from).getTime()) / 86_400_000);
+}
+
+/**
+ * "Last made today", "… yesterday", "… 5 days ago", "… 3 weeks ago", "… 2 months ago",
+ * "… over a year ago"; "Not made yet" without a date.
+ * @param {string | undefined} iso @param {string} today
+ */
+export function formatLastMade(iso, today) {
+  if (!iso) return 'Not made yet';
+  const days = daysBetween(iso, today);
+  const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
+  if (days <= 0) return 'Last made today';
+  if (days === 1) return 'Last made yesterday';
+  if (days < 14) return `Last made ${plural(days, 'day')}`;
+  if (days < 60) return `Last made ${plural(Math.floor(days / 7), 'week')}`;
+  if (days < 365) return `Last made ${plural(Math.floor(days / 30), 'month')}`;
+  return 'Last made over a year ago';
+}
+
 /** Monday of the week containing `date`. */
 export function mondayOf(date = new Date()) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());

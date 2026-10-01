@@ -54,7 +54,6 @@ describe('a spreadsheet kept in sync over several passes', () => {
     assert.equal(result.pushed, 0);
     const r1 = device.recipes.find((r) => r.id === 'r1');
     assert.equal(r1.title, 'Pasta Night');
-    assert.equal(r1.rating, 4.5);
     assert.equal(r1.steps[0].minutes, 10);
   });
 

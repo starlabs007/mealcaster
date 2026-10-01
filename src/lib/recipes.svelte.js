@@ -6,10 +6,12 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
 import { migrateNotes } from './markdown.js';
+import { normalizeTags } from './tags.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
 
-export { filters, tagMeta, formatMinutes } from './data/recipes.js';
+export { formatMinutes } from './data/recipes.js';
+export { suggestedTags, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX } from './tags.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */
@@ -25,17 +27,24 @@ export const isSample = (id) => sampleById.has(id);
 /** @param {SavedRecipe} r @returns {Recipe} */
 const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes });
 
+/** Brings a recipe saved by an earlier build up to date. @param {SavedRecipe} r */
+const migrate = (r) => {
+  // Mock-only sample fields, since removed (cook counts now come from the plan).
+  const { highlight, prep, stat, rating, ratings, cookCount, ...rest } = migrateNotes(r);
+  return { ...rest, badge: { label: rest.badge?.label ?? 'Dinner' }, tags: normalizeTags(r.tags) };
+};
+
 /** @returns {{ saved: SavedRecipe[], deleted: string[] }} */
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const box = JSON.parse(raw);
-      return { ...box, saved: box.saved.map(migrateNotes) };
+      return { ...box, saved: box.saved.map(migrate) };
     }
     // Earlier builds stored only custom recipes, as a plain array.
     const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) return { saved: JSON.parse(legacy).map(migrateNotes), deleted: [] };
+    if (legacy) return { saved: JSON.parse(legacy).map(migrate), deleted: [] };
   } catch {
     // Start from the samples.
   }

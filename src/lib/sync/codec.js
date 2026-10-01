@@ -3,13 +3,14 @@
 // A row is an object keyed by the expected column names in SCHEMA, holding the
 // raw cell values (string, number or boolean). Reading a row back starts from
 // the existing on-device item and only re-parses cells whose text differs from
-// what that item would write, so details a cell can't hold (ratings, prep tips,
-// step timings typed in the app) survive a round trip through the sheet.
+// what that item would write, so details a cell can't hold (step timings typed
+// in the app) survive a round trip through the sheet.
 //
 // Plain JS (no runes) so it can be tested outside Svelte.
 
 import { departments } from '../data/departments.js';
 import { formatWeekday } from '../dates.js';
+import { normalizeTags } from '../tags.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -179,16 +180,13 @@ const RECIPE_COLUMNS = {
   },
   Tags: {
     get: (r) => r.tags.join(', '),
-    set: (r, v) => (r.tags = str(v).split(',').map((t) => t.trim()).filter(Boolean)),
+    set: (r, v) => (r.tags = normalizeTags(str(v).split(','))),
   },
   Favorite_Flag: { get: (r, ctx) => ctx.favorites.has(r.id), set: (r, v, ctx) => (ctx.favorite = bool(v)) },
-  Category: { get: (r) => r.badge.label, set: (r, v) => (r.badge = { ...r.badge, label: str(v) || 'Dinner' }) },
+  Category: { get: (r) => r.badge.label, set: (r, v) => (r.badge = { label: str(v) || 'Dinner' }) },
   Servings: {
     get: (r) => r.serves,
-    set: (r, v) => {
-      r.serves = num(v) || 2;
-      if (r.custom) r.stat = `Serves ${r.serves}`;
-    },
+    set: (r, v) => (r.serves = num(v) || 2),
   },
   Prep_Minutes: { get: (r) => r.prepMinutes, set: (r, v) => (r.prepMinutes = num(v)) },
   Cook_Minutes: { get: (r) => r.cookMinutes, set: (r, v) => (r.cookMinutes = num(v)) },
@@ -216,10 +214,6 @@ function blankRecipe(id, today) {
     minutes: 0,
     serves: 2,
     badge: { label: 'Dinner' },
-    stat: 'Serves 2',
-    rating: 0,
-    ratings: 0,
-    cookCount: 0,
     addedAt: today,
     tags: [],
     notes: '',

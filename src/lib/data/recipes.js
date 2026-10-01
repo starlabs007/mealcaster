@@ -4,8 +4,6 @@
 const IMG = 'https://lh3.googleusercontent.com/aida-public/';
 
 /**
- * @typedef {'tertiary' | 'secondary'} Tone
- * @typedef {{ label: string, text: string, icon: string, tone: Tone }} PrepTip
  * @typedef {{ qty?: number, unit?: string, text: string, tag: string, staple?: boolean }} Ingredient
  * @typedef {{ title: string, category: string, items: Ingredient[] }} IngredientGroup
  * @typedef {{ title: string, minutes: number, text: string, critical?: boolean }} Step
@@ -21,15 +19,9 @@ const IMG = 'https://lh3.googleusercontent.com/aida-public/';
  *   cookMinutes: number,
  *   minutes: number,
  *   serves: number,
- *   badge: { label: string, icon?: string },
- *   stat: string,
- *   rating: number,
- *   ratings: number,
- *   cookCount: number,
+ *   badge: { label: string },
  *   addedAt: string,
  *   tags: string[],
- *   highlight?: string,
- *   prep?: PrepTip,
  *   notes: string,
  *   ingredients: IngredientGroup[],
  *   steps: Step[],
@@ -56,19 +48,9 @@ const pool = [
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 2,
-    badge: { label: 'Chef’s Pick' },
-    stat: '560 kcal • 41g Protein',
-    rating: 4.9,
-    ratings: 38,
-    cookCount: 11,
+    badge: { label: 'Seafood' },
     addedAt: '2026-03-02',
-    tags: ['pescatarian', 'gluten-free'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Defrost salmon fillets morning of in chilled bath',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
+    tags: ['Gluten-Free'],
     notes:
       '### Crispy skin, every time\n\nPat the salmon skin **bone-dry** with clean paper towels 15 minutes before cooking. Surface moisture turns to steam and prevents that glass-like crackle.\n\n- Keep the broth at an *active bare simmer* on the adjacent burner.\n- Press each fillet down for the first 10 seconds so the skin stays flat.\n\n**Pairing:** A chilled Sancerre or dry Oregon Pinot Gris echoes the Meyer lemon without overpowering the salmon.',
     ingredients: [
@@ -147,19 +129,9 @@ const pool = [
     prepMinutes: 20,
     cookMinutes: 30,
     serves: 4,
-    badge: { label: 'Crowd Pleaser' },
-    stat: '440 kcal • Family Night',
-    rating: 4.8,
-    ratings: 26,
-    cookCount: 9,
+    badge: { label: 'Family Classic' },
     addedAt: '2025-11-18',
-    tags: ['vegetarian', 'kid-friendly', 'comfort'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Roast and blend tomatillo salsa verde the night before',
-      icon: 'skillet',
-      tone: 'secondary',
-    },
+    tags: ['Vegetarian'],
     notes:
       'Flash the tortillas in a hot dry skillet for 10 seconds per side before rolling — they turn pliable and won’t crack or go soggy under the salsa verde.\n\n**Pairing:** A crisp Mexican lager with lime, or an agua fresca of cucumber and mint.',
     ingredients: [
@@ -230,19 +202,9 @@ const pool = [
     prepMinutes: 15,
     cookMinutes: 45,
     serves: 4,
-    badge: { label: 'One-Pot' },
-    stat: '640 kcal • 34g Protein',
-    rating: 4.8,
-    ratings: 44,
-    cookCount: 12,
+    badge: { label: 'Pasta & Grains' },
     addedAt: '2025-10-04',
-    tags: ['poultry-meat', 'one-pot', 'comfort'],
-    prep: {
-      label: 'Mise en place / Chef tip',
-      text: 'Slow simmer ragù base for depth of flavor',
-      icon: 'dinner_dining',
-      tone: 'tertiary',
-    },
+    tags: ['Poultry & Meat'],
     notes:
       '### Silky sauce, no cream\n\nReserve **a full mug of starchy pasta water** before draining. Toss the rigatoni with the ragù and a splash of that water over high heat for one minute; it emulsifies the sauce so it coats every ridge.\n\n1. Drain the pasta *2 minutes early*.\n2. Finish it in the pan with the ragù and pasta water.\n3. Off the heat, stir in the pecorino.\n\n**Pairing:** A Chianti Classico or Rosso di Montalcino. Bright acidity cuts through the sausage.',
     ingredients: [
@@ -305,20 +267,9 @@ const pool = [
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 4,
-    badge: { label: 'Pizza Night', icon: 'local_pizza' },
-    stat: '690 kcal • Family Feast',
-    rating: 4.9,
-    ratings: 51,
-    cookCount: 14,
+    badge: { label: 'Artisan Bakes' },
     addedAt: '2025-09-12',
-    tags: ['vegetarian', 'kid-friendly', 'comfort'],
-    highlight: 'Pizza Night • Family Feast',
-    prep: {
-      label: 'Kitchen timing',
-      text: 'Preheat pizza stone to 500°F at 5:30 PM sharp',
-      icon: 'local_fire_department',
-      tone: 'secondary',
-    },
+    tags: ['Vegetarian'],
     notes:
       'A full hour of preheating matters more than the recipe.\n\n> The stone must be saturated with heat so the base puffs and chars in **under 7 minutes**.\n\n- Oven at its highest setting, stone on the top-middle rack.\n- Add the *hot honey* and *burrata* only after baking.\n\n**Pairing:** A lightly chilled Lambrusco, or sparkling blood-orange soda for the kids.',
     ingredients: [
@@ -375,19 +326,9 @@ const pool = [
     prepMinutes: 15,
     cookMinutes: 20,
     serves: 2,
-    badge: { label: 'Umami' },
-    stat: '420 kcal • Plant-Powered',
-    rating: 4.6,
-    ratings: 17,
-    cookCount: 4,
+    badge: { label: 'Plant-Based' },
     addedAt: '2026-06-20',
-    tags: ['vegetarian', 'light-fresh'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Quick-pickle the cucumbers at lunch so they are bright by dinner',
-      icon: 'eco',
-      tone: 'tertiary',
-    },
+    tags: ['Vegetarian'],
     notes:
       'Score the eggplant flesh in a **deep crosshatch** so the miso glaze seeps in and caramelizes in every groove.\n\n- Cut about 1 cm deep, but don\'t pierce the skin.\n- Brush the glaze on *twice*: once before broiling, once at the end.\n\n**Pairing:** A cold junmai sake or roasted barley tea.',
     ingredients: [
@@ -441,19 +382,9 @@ const pool = [
     prepMinutes: 5,
     cookMinutes: 20,
     serves: 4,
-    badge: { label: 'Pantry Hero' },
-    stat: '480 kcal • 22g Protein',
-    rating: 4.7,
-    ratings: 33,
-    cookCount: 8,
+    badge: { label: 'Stews & Soups' },
     addedAt: '2025-12-01',
-    tags: ['quick', 'vegetarian', 'one-pot', 'comfort'],
-    prep: {
-      label: 'Chef tip',
-      text: 'Bloom whole spices in ghee just before serving for the tadka',
-      icon: 'soup_kitchen',
-      tone: 'secondary',
-    },
+    tags: ['Quick (<30m)', 'Vegetarian'],
     notes:
       '### The tadka is everything\n\nAdd the tadka at the **very last second**. The hiss of hot spiced ghee hitting the dal is where the aroma comes from.\n\n- Heat the ghee until the cumin seeds *dance*, then add garlic and chilli.\n- Pour straight over the dal and cover for 30 seconds.\n- Leftovers thicken overnight; loosen with a splash of water.\n\n**Pairing:** A salted mango lassi or an off-dry Riesling.',
     ingredients: [
@@ -510,19 +441,9 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 2,
-    badge: { label: 'Easy Mise' },
-    stat: '480 kcal • 38g Protein',
-    rating: 4.9,
-    ratings: 32,
-    cookCount: 10,
+    badge: { label: 'Seafood' },
     addedAt: '2026-01-15',
-    tags: ['pescatarian', 'quick', 'gluten-free'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Par-boil the baby potatoes at lunch so they only need to crisp',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
+    tags: ['Quick (<30m)', 'Gluten-Free'],
     notes:
       'Start the salmon in a cold oiled pan skin-side down and bring it up to heat together — the fat renders slowly and the skin shatters.\n\n**Pairing:** An Albariño or Vinho Verde for briny, citrus-friendly lift.',
     ingredients: [
@@ -585,19 +506,9 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 25,
     serves: 4,
-    badge: { label: 'One-Pot' },
-    stat: '390 kcal • 18g Fiber',
-    rating: 4.8,
-    ratings: 41,
-    cookCount: 7,
+    badge: { label: 'Stews & Soups' },
     addedAt: '2025-10-28',
-    tags: ['vegetarian', 'one-pot', 'comfort'],
-    prep: {
-      label: 'Chef tip',
-      text: 'Save a parmesan rind to simmer in the stew for extra depth',
-      icon: 'soup_kitchen',
-      tone: 'tertiary',
-    },
+    tags: ['Vegetarian'],
     notes:
       'Mash a ladleful of the beans against the side of the pot — it thickens the broth into something silky without any cream.\n\n**Pairing:** A rustic Montepulciano d’Abruzzo.',
     ingredients: [
@@ -654,19 +565,9 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 30,
     serves: 4,
-    badge: { label: 'Sheet-Pan' },
-    stat: '540 kcal • High Protein',
-    rating: 5.0,
-    ratings: 64,
-    cookCount: 16,
+    badge: { label: 'Sheet Pan & Roasts' },
     addedAt: '2025-08-30',
-    tags: ['poultry-meat', 'kid-friendly', 'sheet-pan'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Marinate the thighs in Dijon, lemon and thyme the night before',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
+    tags: ['Poultry & Meat'],
     notes:
       'Give everything room on the pan. Crowded vegetables steam; spaced-out ones caramelize.\n\n**Pairing:** An oaked Chardonnay or a crisp hard cider.',
     ingredients: [
@@ -722,19 +623,9 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 20,
     serves: 4,
-    badge: { label: 'Seasonal' },
-    stat: '495 kcal • Autumn Staple',
-    rating: 4.9,
-    ratings: 28,
-    cookCount: 6,
+    badge: { label: 'Pasta & Grains' },
     addedAt: '2026-09-15',
-    tags: ['vegetarian', 'comfort', 'kid-friendly'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Roast and purée the squash up to two days ahead',
-      icon: 'eco',
-      tone: 'tertiary',
-    },
+    tags: ['Vegetarian'],
     notes:
       'Fry the sage leaves in the butter first, then use that sage-perfumed brown butter to finish the sauce.\n\n**Pairing:** A Viognier or a soft, fruity Dolcetto.',
     ingredients: [
@@ -791,19 +682,9 @@ const pool = [
     prepMinutes: 7,
     cookMinutes: 8,
     serves: 2,
-    badge: { label: 'Express', icon: 'bolt' },
-    stat: '340 kcal • Plant-Powered',
-    rating: 4.7,
-    ratings: 19,
-    cookCount: 5,
+    badge: { label: 'Pasta & Grains' },
     addedAt: '2026-07-08',
-    tags: ['quick', 'vegetarian', 'light-fresh'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Whisk the sesame-tamari dressing in a jar and keep it chilled',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
+    tags: ['Quick (<30m)', 'Vegetarian'],
     notes:
       'Rinse the soba under cold water immediately after draining, rubbing gently — it removes surface starch so the noodles stay springy.\n\n**Pairing:** Iced genmaicha or a dry Grüner Veltliner.',
     ingredients: [
@@ -860,20 +741,9 @@ const pool = [
     prepMinutes: 30,
     cookMinutes: 180,
     serves: 6,
-    badge: { label: 'Slow Cooker', icon: 'soup_kitchen' },
-    stat: '680 kcal • Weekend Showstopper',
-    rating: 5.0,
-    ratings: 57,
-    cookCount: 3,
+    badge: { label: 'Family Classic' },
     addedAt: '2025-11-02',
-    tags: ['poultry-meat', 'batch-slow', 'comfort'],
-    highlight: 'Slow Sunday • Braise',
-    prep: {
-      label: 'Kitchen timing',
-      text: 'Sear ribs and start the braise by 2:30 PM',
-      icon: 'local_fire_department',
-      tone: 'secondary',
-    },
+    tags: ['Poultry & Meat'],
     notes:
       '### Braise a day ahead\n\nChill overnight, lift off the solidified fat, and reheat. The sauce becomes **deeper and cleaner**.\n\n1. Brown the ribs well; don\'t rush this step.\n2. Braise until the meat is tender enough to slump from the bone.\n3. Chill in the braising liquid, skim, and gently reheat.\n\n> Tip: reduce the strained liquid by a third for a glossy glaze.\n\n**Pairing:** The same Chianti you braised with, or a Barolo for a special Sunday.',
     ingredients: [
@@ -937,19 +807,9 @@ const pool = [
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 4,
-    badge: { label: 'Grill Pan' },
-    stat: '460 kcal • 42g Protein',
-    rating: 4.9,
-    ratings: 49,
-    cookCount: 9,
+    badge: { label: 'Quick Skillet' },
     addedAt: '2026-05-11',
-    tags: ['poultry-meat', 'light-fresh', 'quick'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Marinate the chicken in lemon, garlic and oregano that morning',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
+    tags: ['Poultry & Meat', 'Quick (<30m)'],
     notes:
       'Salt and drain the grated cucumber for 10 minutes before folding into the yogurt — your tzatziki stays thick instead of watery.\n\n**Pairing:** A crisp Assyrtiko from Santorini.',
     ingredients: [
@@ -1007,19 +867,9 @@ const pool = [
     prepMinutes: 5,
     cookMinutes: 15,
     serves: 2,
-    badge: { label: 'Plant Meal' },
-    stat: '410 kcal • Gluten-Free',
-    rating: 4.8,
-    ratings: 22,
-    cookCount: 4,
+    badge: { label: 'Plant-Based' },
     addedAt: '2026-08-22',
-    tags: ['vegetarian', 'gluten-free', 'light-fresh', 'quick'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Cook a double batch of quinoa on Sunday for this and lunches',
-      icon: 'eco',
-      tone: 'tertiary',
-    },
+    tags: ['Vegetarian', 'Gluten-Free', 'Quick (<30m)'],
     notes:
       'Dry the chickpeas thoroughly and roast them before seasoning — spices burn, but a toss in cumin right out of the oven sticks perfectly.\n\n**Pairing:** Sparkling water with cucumber and mint, or a dry rosé.',
     ingredients: [
@@ -1068,35 +918,6 @@ const pool = [
 
 /** @type {Recipe[]} */
 export const sampleRecipes = /* @__PURE__ */ pool.map((r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes }));
-
-/** Catalog filters. `tags` match if the recipe carries any of them. */
-export const filters = [
-  { id: 'quick', label: 'Quick (<30m)', icon: 'timer', tags: ['quick'] },
-  { id: 'kid-friendly', label: 'Kid-Friendly', icon: 'face', tags: ['kid-friendly'] },
-  { id: 'vegetarian', label: 'Vegetarian', tags: ['vegetarian'] },
-  { id: 'pescatarian', label: 'Pescatarian', tags: ['pescatarian'] },
-  { id: 'poultry-meat', label: 'Poultry & Meat', tags: ['poultry-meat'] },
-  { id: 'gluten-free', label: 'Gluten-Free', tags: ['gluten-free'] },
-  { id: 'one-pot', label: 'One-Pot / Sheet-Pan', tags: ['one-pot', 'sheet-pan'] },
-  { id: 'batch-slow', label: 'Batch & Slow Cooker', tags: ['batch-slow'] },
-  { id: 'comfort', label: 'Comfort Food', tags: ['comfort'] },
-  { id: 'light-fresh', label: 'Light & Fresh', tags: ['light-fresh'] },
-];
-
-/** Short labels + tones for the tag pills on recipe cards. */
-export const tagMeta = {
-  quick: { label: 'Quick (<30m)', tone: 'saffron' },
-  'kid-friendly': { label: 'Kid-Friendly', tone: 'neutral' },
-  vegetarian: { label: 'Vegetarian', tone: 'sage' },
-  pescatarian: { label: 'Pescatarian', tone: 'sage' },
-  'poultry-meat': { label: 'Poultry & Meat', tone: 'neutral' },
-  'gluten-free': { label: 'Gluten-Free', tone: 'neutral' },
-  'one-pot': { label: 'One-Pot', tone: 'neutral' },
-  'sheet-pan': { label: 'Sheet-Pan', tone: 'neutral' },
-  'batch-slow': { label: 'Batch & Slow', tone: 'saffron' },
-  comfort: { label: 'Comfort Food', tone: 'paprika' },
-  'light-fresh': { label: 'Light & Fresh', tone: 'neutral' },
-};
 
 /** "25 min", "1 hr", "3.5 hrs" */
 export function formatMinutes(min) {

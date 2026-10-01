@@ -1,10 +1,9 @@
 <script>
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
-  import { slotPrompts } from '../data/slotPrompts.js';
   import { surpriseMe, markDiningOut, clearDay } from '../planner.svelte.js';
   import { formatShort, formatWeekday } from '../dates.js';
-  import { href, navigate } from '../router.svelte.js';
+  import { href } from '../router.svelte.js';
 
   /**
    * @type {{ day: {
@@ -18,10 +17,8 @@
    */
   let { day } = $props();
 
-  const prompt = $derived(slotPrompts[day.weekday]);
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
-  const accent = $derived(day.status === 'planned' && !day.isToday && !!day.recipe?.highlight);
   const dimmed = $derived(day.status === 'completed' || day.status === 'missed');
 
   const cardClass = $derived(
@@ -30,15 +27,10 @@
       : day.status === 'completed'
         ? 'border border-surface-container-high bg-surface-container-lowest/60 opacity-60'
         : day.status === 'planned'
-          ? `border bg-surface-container-lowest shadow-sm ${accent ? 'border-secondary/30' : 'border-surface-container-high'}`
+          ? 'border border-surface-container-high bg-surface-container-lowest shadow-sm'
           : `border border-dashed border-outline-variant bg-surface-container-low/70 ${dimmed ? 'opacity-60' : ''}`,
   );
 
-  function altAction() {
-    if (prompt.alt.action === 'surprise') surpriseMe(day.iso);
-    else if (prompt.alt.action === 'diningOut') markDiningOut(day.iso);
-    else navigate('/catalog', { day: day.iso, filter: 'comfort' });
-  }
 </script>
 
 <article
@@ -53,7 +45,7 @@
   <div class="flex flex-shrink-0 items-start justify-between gap-1 sm:w-36 sm:flex-col sm:self-stretch {day.isToday ? 'pl-1' : ''}">
     <div>
       <div
-        class="text-sm uppercase tracking-wide {day.isToday || accent
+        class="text-sm uppercase tracking-wide {day.isToday
           ? 'font-bold text-secondary'
           : 'font-semibold text-outline'}"
       >
@@ -69,16 +61,10 @@
         <Icon name="check_circle" class="text-[13px]" /> Completed
       </span>
     {:else if day.status === 'planned'}
-      {#if accent}
-        <span class="rounded bg-secondary-fixed/50 px-2 py-0.5 text-[11px] font-bold leading-4 tracking-wider text-secondary">
-          {day.recipe?.highlight}
-        </span>
-      {:else}
-        <span class="rounded bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">Planned</span>
-      {/if}
+      <span class="rounded bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">Planned</span>
     {:else}
       <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-outline">
-        {day.status === 'diningOut' ? 'Night off' : day.status === 'missed' ? 'Not logged' : prompt.tag}
+        {day.status === 'diningOut' ? 'Night off' : day.status === 'missed' ? 'Not logged' : 'Open'}
       </span>
     {/if}
   </div>
@@ -94,14 +80,7 @@
       />
       <div class="min-w-0 flex-1">
         <h3 class="font-display text-on-surface {emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
-        {#if recipe.prep}
-          <p class="mt-2 flex items-start gap-1.5 rounded-md bg-surface-container-low px-2.5 py-1.5 text-xs text-on-surface-variant">
-            <Icon name={recipe.prep.icon} class="mt-px text-[15px] {recipe.prep.tone === 'secondary' ? 'text-secondary' : 'text-tertiary'}" />
-            <span><strong>{recipe.prep.label}:</strong> {recipe.prep.text}</span>
-          </p>
-        {:else}
-          <p class="mt-1 text-xs text-on-surface-variant">{recipe.badge.label} · {recipe.prepMinutes + recipe.cookMinutes} min · Serves {recipe.serves}</p>
-        {/if}
+        <p class="mt-1 text-xs text-on-surface-variant">{recipe.badge.label} · {recipe.prepMinutes + recipe.cookMinutes} min · Serves {recipe.serves}</p>
         <div class="mt-3 flex items-center gap-4">
           <a
             href={href(`/recipe/${recipe.id}`, { day: day.iso })}
@@ -128,7 +107,7 @@
     <div class="flex w-full flex-1 flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
       <div class="flex items-center gap-3">
         <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-highest text-outline">
-          <Icon name={day.status === 'diningOut' ? 'storefront' : prompt.icon} class="text-2xl" />
+          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class="text-2xl" />
         </div>
         <div>
           {#if day.status === 'diningOut'}
@@ -138,19 +117,22 @@
             <h3 class="font-display text-base text-on-surface">No dinner was logged</h3>
             <p class="mt-0.5 text-xs text-on-surface-variant">This evening has passed without a planned meal.</p>
           {:else}
-            <h3 class="font-display text-base text-on-surface">{prompt.title}</h3>
-            <p class="mt-0.5 text-xs text-on-surface-variant">{prompt.text}</p>
+            <h3 class="font-display text-base text-on-surface">No dinner planned yet for {weekdayName}</h3>
+            <p class="mt-0.5 text-xs text-on-surface-variant">Choose a meal, let the app pick one, or take the night off.</p>
           {/if}
         </div>
       </div>
 
       {#if day.status === 'open'}
-        <div class="flex w-full flex-shrink-0 items-center gap-2 pt-2 sm:w-auto sm:pt-0">
-          <a href={href('/catalog', { day: day.iso })} class="btn-primary flex-1 py-2 sm:flex-none">
+        <div class="flex w-full flex-shrink-0 flex-wrap items-center gap-2 pt-2 sm:w-auto sm:flex-nowrap sm:pt-0">
+          <a href={href('/catalog', { day: day.iso })} class="btn-primary basis-full py-2 sm:basis-auto">
             <Icon name="add" class="text-[15px]" /> Choose a Meal
           </a>
-          <button type="button" class="btn-outline flex-1 py-2 text-on-surface sm:flex-none" onclick={altAction}>
-            <Icon name={prompt.alt.icon} class="text-[15px]" /> {prompt.alt.label}
+          <button type="button" class="btn-outline flex-1 py-2 text-on-surface sm:flex-none" onclick={() => surpriseMe(day.iso)}>
+            <Icon name="casino" class="text-[15px]" /> Surprise Me
+          </button>
+          <button type="button" class="btn-outline flex-1 py-2 text-on-surface sm:flex-none" onclick={() => markDiningOut(day.iso)}>
+            <Icon name="storefront" class="text-[15px]" /> Dining Out
           </button>
         </div>
       {:else if day.status === 'diningOut' && !day.isPast}

@@ -1,9 +1,11 @@
 <script>
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
-  import { tagMeta, formatMinutes } from '../recipes.svelte.js';
+  import { formatMinutes } from '../recipes.svelte.js';
+  import { tagClass } from '../tagColors.svelte.js';
   import { isFavorite, toggleFavorite } from '../favorites.svelte.js';
   import { href } from '../router.svelte.js';
+  import LastMade from './LastMade.svelte';
 
   /**
    * @type {{
@@ -17,12 +19,6 @@
   let { recipe, day, dayName, selected = false, onselect } = $props();
 
   const favorite = $derived(isFavorite(recipe.id));
-  const toneClass = {
-    sage: 'bg-[#eaf0ec] text-[#2c4635]',
-    saffron: 'bg-[#faf3e5] text-[#8c6517]',
-    paprika: 'bg-[#faece8] text-secondary',
-    neutral: 'bg-surface-container-high text-on-surface-variant',
-  };
 </script>
 
 <article
@@ -41,7 +37,7 @@
 
       <div class="absolute left-3 top-3 flex items-center gap-1.5">
         <span class="flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-primary shadow-sm backdrop-blur-md">
-          <Icon name={recipe.badge.icon === 'bolt' ? 'bolt' : recipe.minutes >= 120 ? 'soup_kitchen' : 'timer'} class="text-[13px]" />
+          <Icon name={recipe.minutes >= 120 ? 'soup_kitchen' : 'timer'} class="text-[13px]" />
           {formatMinutes(recipe.minutes)}
         </span>
         <span class="rounded-full bg-surface-container-lowest/90 px-2 py-1 text-label-caps text-on-surface-variant shadow-sm backdrop-blur-md">
@@ -62,12 +58,8 @@
       </button>
 
       <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-on-primary">
-        <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">{recipe.stat}</span>
-        {#if recipe.ratings}
-          <span class="flex items-center gap-0.5 text-label-sm font-bold text-[#ffdead]">
-            ★ {recipe.rating.toFixed(1)} <span class="font-normal text-white/80">({recipe.ratings})</span>
-          </span>
-        {:else if recipe.custom}
+        <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">Serves {recipe.serves}</span>
+        {#if recipe.custom}
           <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">Your recipe</span>
         {/if}
       </div>
@@ -76,7 +68,7 @@
     <div class="flex flex-col gap-3 p-5">
       <div class="flex flex-wrap gap-1.5">
         {#each recipe.tags.slice(0, 3) as tag (tag)}
-          <span class="rounded-full px-2 py-0.5 text-label-caps {toneClass[tagMeta[tag].tone]}">{tagMeta[tag].label}</span>
+          <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
         {/each}
       </div>
       <div>
@@ -84,6 +76,7 @@
           <a href={href(`/recipe/${recipe.id}`, { day })}>{recipe.title}</a>
         </h2>
         <p class="mt-1.5 line-clamp-2 text-body-sm text-on-surface-variant">{recipe.description}</p>
+        <LastMade recipeId={recipe.id} class="mt-2 text-label-sm" />
       </div>
     </div>
   </div>

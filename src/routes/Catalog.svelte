@@ -1,17 +1,25 @@
 <script>
-  import { fly } from 'svelte/transition';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
-  import { recipes, recipeById, filters, tagMeta } from '../lib/recipes.svelte.js';
+  import { recipes, recipeById, tagChoices, tagIcon, normalizeTags } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
-  import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe } from '../lib/planner.svelte.js';
+  import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe, madeRecently, timesMade, lastMadeOn, RECENT_DAYS } from '../lib/planner.svelte.js';
+  import { storageKey } from '../lib/env.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
+  import { showToast } from '../lib/toast.svelte.js';
   import { formatLong, formatWeekday, mondayOf, fromISO, weekDates } from '../lib/dates.js';
 
   const PAGE_SIZE = 9;
   const sorts = [
-    { id: 'most-cooked', label: 'Most Cooked in Household', compare: (a, b) => b.cookCount - a.cookCount },
-    { id: 'rating', label: 'Highest Rated (★ 4.8+)', compare: (a, b) => b.rating - a.rating || b.ratings - a.ratings },
+    {
+      id: 'most-cooked',
+      label: 'Most Cooked in Household',
+      // From the plan history; ties go to the one made most recently, then A–Z.
+      compare: (a, b) =>
+        timesMade(b.id) - timesMade(a.id) ||
+        (lastMadeOn(b.id) ?? '').localeCompare(lastMadeOn(a.id) ?? '') ||
+        a.title.localeCompare(b.title),
+    },
     { id: 'quickest', label: 'Quickest Prep Time', compare: (a, b) => a.minutes - b.minutes },
     { id: 'recent', label: 'Recently Added to Box', compare: (a, b) => b.addedAt.localeCompare(a.addedAt) },
   ];
@@ -19,18 +27,45 @@
   let query = $state('');
   let sort = $state('most-cooked');
   let favoritesOnly = $state(false);
+
+  // "Not made in 7 days" is remembered on this device: skipping repeats is a standing preference.
+  const HIDE_RECENT_KEY = storageKey('catalogHideRecent.v1');
+  let hideRecent = $state(readHideRecent());
+
+  function readHideRecent() {
+    try {
+      return localStorage.getItem(HIDE_RECENT_KEY) === 'true';
+    } catch {
+      return false;
+    }
+  }
+
+  /** @param {boolean} on */
+  function setHideRecent(on) {
+    hideRecent = on;
+    pages = 1;
+    try {
+      localStorage.setItem(HIDE_RECENT_KEY, String(on));
+    } catch {
+      // In-memory only.
+    }
+  }
   /** @type {string[]} */
   let active = $state([]);
   let pages = $state(1);
-  /** @type {{ iso: string, title: string } | null} */
-  let assigned = $state(null);
 
-  // Keep search / filter in sync with the URL (header search, "Browse Comfort Food" links).
+  // Keep search / filter in sync with the URL (header search, "Browse Recipes" links).
+  // `filter` is a comma-separated list of tags (tags never contain commas).
   $effect(() => {
     query = route.query.q ?? '';
-    active = route.query.filter ? route.query.filter.split(',').filter((id) => filters.some((f) => f.id === id)) : [];
+    active = normalizeTags(route.query.filter?.split(','));
     pages = 1;
   });
+
+  // One filter per tag in use (suggested tags first); an active tag stays listed even with no recipes.
+  const filters = $derived(
+    tagChoices([...recipes.flatMap((r) => r.tags), ...active]).filter((t) => active.includes(t) || recipes.some((r) => r.tags.includes(t))),
+  );
 
   // A day passed in the URL moves the week stepper to that day's week.
   $effect(() => {
@@ -46,16 +81,16 @@
 
   const results = $derived.by(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-    const chosen = filters.filter((f) => active.includes(f.id));
     return recipes
       .filter((r) => !favoritesOnly || favorites.ids.includes(r.id))
-      .filter((r) => chosen.every((f) => f.tags.some((t) => r.tags.includes(t))))
+      .filter((r) => !hideRecent || !madeRecently(r.id))
+      .filter((r) => active.every((t) => r.tags.includes(t)))
       .filter((r) => {
         if (!words.length) return true;
         const haystack = [
           r.title,
           r.description,
-          ...r.tags.map((t) => tagMeta[t].label),
+          ...r.tags,
           ...r.ingredients.flatMap((g) => g.items.map((i) => i.text)),
         ]
           .join(' ')
@@ -66,7 +101,7 @@
   });
   const visible = $derived(results.slice(0, pages * PAGE_SIZE));
   const remaining = $derived(results.length - visible.length);
-  const activeCount = $derived(active.length + (favoritesOnly ? 1 : 0));
+  const activeCount = $derived(active.length + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0));
 
   function toggleFilter(id) {
     active = active.includes(id) ? active.filter((x) => x !== id) : [...active, id];
@@ -76,7 +111,7 @@
   function clearFilters() {
     active = [];
     favoritesOnly = false;
-    pages = 1;
+    setHideRecent(false);
   }
 
   function chooseDay(event) {
@@ -85,15 +120,25 @@
 
   /** @param {import('../lib/data/recipes.js').Recipe} recipe */
   function select(recipe) {
-    if (!targetDay) return;
-    assignRecipe(targetDay, recipe.id);
-    assigned = { iso: targetDay, title: recipe.shortTitle };
+    const iso = targetDay; // targetDay moves on to the next open day once this one is filled
+    if (!iso) return;
+    assignRecipe(iso, recipe.id);
+    announce(iso, recipe);
   }
 
   function surprise() {
-    if (!targetDay) return;
-    const recipe = surpriseMe(targetDay, results.length ? results : undefined);
-    if (recipe) assigned = { iso: targetDay, title: recipe.shortTitle };
+    const iso = targetDay;
+    if (!iso) return;
+    const recipe = surpriseMe(iso, results.length ? results : undefined);
+    if (recipe) announce(iso, recipe, 'Surprise! ');
+  }
+
+  /** Toast rather than a banner, so it's seen wherever the catalog is scrolled to. */
+  function announce(iso, recipe, prefix = '') {
+    showToast(`${prefix}${recipe.shortTitle} added to ${formatLong(iso)} dinner and your grocery basket was updated.`, {
+      label: 'Go to Weekly View',
+      run: () => navigate('/'),
+    });
   }
 
   /** @param {string} iso */
@@ -198,42 +243,18 @@
             : 'border-surface-container-high bg-surface-container-lowest text-on-surface hover:border-outline-variant hover:bg-surface-container-low'}"
         >
           {#if icon}<Icon name={icon} class="text-[16px] {icon === 'favorite' && !on ? 'text-secondary' : ''} {icon === 'favorite' && on ? 'icon-filled' : ''}" />{/if}
-          {label}
+          <span class="max-w-[16rem] truncate">{label}</span>
           {#if on && icon !== 'favorite'}<Icon name="close" class="ml-0.5 text-[14px]" />{/if}
         </button>
       {/snippet}
       {@render pill(favoritesOnly, 'Favorites', 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
-      {#each filters as f (f.id)}
-        {@render pill(active.includes(f.id), f.label, f.icon, () => toggleFilter(f.id))}
+      {@render pill(hideRecent, `Not made in ${RECENT_DAYS} days`, 'history', () => setHideRecent(!hideRecent))}
+      {#each filters as tag (tag)}
+        {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
       {/each}
     </div>
   </div>
 
-  {#if assigned}
-    <div
-      transition:fly={{ y: -8, duration: 200 }}
-      class="flex flex-col gap-3 rounded-2xl bg-primary px-5 py-4 text-on-primary shadow-lift sm:flex-row sm:items-center sm:justify-between"
-      role="status"
-    >
-      <div class="flex items-center gap-3">
-        <Icon name="check_circle" class="text-[24px] text-primary-fixed" />
-        <div>
-          <p class="font-display text-headline-sm">Meal Assigned!</p>
-          <p class="text-body-sm text-on-primary/80">
-            {assigned.title} added to {formatLong(assigned.iso)} dinner and your grocery basket was updated.
-          </p>
-        </div>
-      </div>
-      <div class="flex items-center gap-2">
-        <a href={href('/')} class="rounded-lg bg-surface-container-lowest px-3 py-1.5 text-label-md text-primary hover:bg-surface-container">
-          Go to Weekly View
-        </a>
-        <button type="button" aria-label="Dismiss" class="rounded-full p-1 text-on-primary/70 hover:text-on-primary" onclick={() => (assigned = null)}>
-          <Icon name="close" class="text-[18px]" />
-        </button>
-      </div>
-    </div>
-  {/if}
 
   {#if visible.length}
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
