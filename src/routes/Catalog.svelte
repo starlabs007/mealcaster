@@ -3,7 +3,7 @@
   import RecipeCard from '../lib/components/RecipeCard.svelte';
   import { recipes, recipeById, tagChoices, tagIcon, normalizeTags } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
-  import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe, madeRecently, RECENT_DAYS } from '../lib/planner.svelte.js';
+  import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe, madeRecently, timesMade, lastMadeOn, RECENT_DAYS } from '../lib/planner.svelte.js';
   import { storageKey } from '../lib/env.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -11,8 +11,15 @@
 
   const PAGE_SIZE = 9;
   const sorts = [
-    { id: 'most-cooked', label: 'Most Cooked in Household', compare: (a, b) => b.cookCount - a.cookCount },
-    { id: 'rating', label: 'Highest Rated (★ 4.8+)', compare: (a, b) => b.rating - a.rating || b.ratings - a.ratings },
+    {
+      id: 'most-cooked',
+      label: 'Most Cooked in Household',
+      // From the plan history; ties go to the one made most recently, then A–Z.
+      compare: (a, b) =>
+        timesMade(b.id) - timesMade(a.id) ||
+        (lastMadeOn(b.id) ?? '').localeCompare(lastMadeOn(a.id) ?? '') ||
+        a.title.localeCompare(b.title),
+    },
     { id: 'quickest', label: 'Quickest Prep Time', compare: (a, b) => a.minutes - b.minutes },
     { id: 'recent', label: 'Recently Added to Box', compare: (a, b) => b.addedAt.localeCompare(a.addedAt) },
   ];

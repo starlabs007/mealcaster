@@ -79,19 +79,26 @@ export function statusOf(iso) {
 /** Meals made within this many days count as recent (the catalog can hide them). */
 export const RECENT_DAYS = 7;
 
-// recipe id → latest date it was made: a past day on the plan, or today once marked done.
-const lastMadeIndex = $derived.by(() => {
-  /** @type {Map<string, string>} */
+// recipe id → how often and when it was last made: past days on the plan, plus today once marked done.
+const madeIndex = $derived.by(() => {
+  /** @type {Map<string, { last: string, count: number }>} */
   const index = new Map();
   for (const [iso, entry] of Object.entries(planner.entries)) {
     if (!entry?.recipeId || iso > planner.today || (iso === planner.today && !entry.completed)) continue;
-    if (!(index.get(entry.recipeId) >= iso)) index.set(entry.recipeId, iso);
+    const made = index.get(entry.recipeId);
+    if (made) {
+      made.count += 1;
+      if (iso > made.last) made.last = iso;
+    } else index.set(entry.recipeId, { last: iso, count: 1 });
   }
   return index;
 });
 
 /** ISO date a recipe was last made, if ever. @param {string} recipeId */
-export const lastMadeOn = (recipeId) => lastMadeIndex.get(recipeId);
+export const lastMadeOn = (recipeId) => madeIndex.get(recipeId)?.last;
+
+/** How many dinners on the plan were this recipe. @param {string} recipeId */
+export const timesMade = (recipeId) => madeIndex.get(recipeId)?.count ?? 0;
 
 /** Made within the last RECENT_DAYS days. @param {string} recipeId */
 export function madeRecently(recipeId) {

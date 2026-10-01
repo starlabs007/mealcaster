@@ -323,11 +323,11 @@
     const image = form.image.trim();
     const notes = form.notes.trim();
 
-    // Start from the existing recipe so fields the form doesn't show (ratings,
+    // Start from the existing recipe so fields the form doesn't show (
     // cook count, sheet row…) are kept; new recipes start blank.
     const { minutes, hero, ...base } = editing
       ? $state.snapshot(editing)
-      : { minutes: 0, hero: undefined, rating: 0, ratings: 0, cookCount: 0, addedAt: toISO(new Date()), custom: true };
+      : { minutes: 0, hero: undefined, addedAt: toISO(new Date()), custom: true };
     const recipe = {
       ...base,
       // The hero shot belongs to the original photo.
@@ -340,8 +340,7 @@
       prepMinutes: form.prepMinutes,
       cookMinutes: form.cookMinutes,
       serves: form.serves,
-      badge: { ...base.badge, label: form.category },
-      stat: base.custom || !base.stat ? `Serves ${form.serves}` : base.stat,
+      badge: { label: form.category },
       tags: withNewTag(),
       notes,
       ingredients: groups,

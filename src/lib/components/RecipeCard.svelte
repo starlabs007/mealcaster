@@ -37,7 +37,7 @@
 
       <div class="absolute left-3 top-3 flex items-center gap-1.5">
         <span class="flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-primary shadow-sm backdrop-blur-md">
-          <Icon name={recipe.badge.icon === 'bolt' ? 'bolt' : recipe.minutes >= 120 ? 'soup_kitchen' : 'timer'} class="text-[13px]" />
+          <Icon name={recipe.minutes >= 120 ? 'soup_kitchen' : 'timer'} class="text-[13px]" />
           {formatMinutes(recipe.minutes)}
         </span>
         <span class="rounded-full bg-surface-container-lowest/90 px-2 py-1 text-label-caps text-on-surface-variant shadow-sm backdrop-blur-md">
@@ -58,12 +58,8 @@
       </button>
 
       <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-on-primary">
-        <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">{recipe.stat}</span>
-        {#if recipe.ratings}
-          <span class="flex items-center gap-0.5 text-label-sm font-bold text-[#ffdead]">
-            ★ {recipe.rating.toFixed(1)} <span class="font-normal text-white/80">({recipe.ratings})</span>
-          </span>
-        {:else if recipe.custom}
+        <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">Serves {recipe.serves}</span>
+        {#if recipe.custom}
           <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">Your recipe</span>
         {/if}
       </div>
