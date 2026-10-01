@@ -9,13 +9,13 @@ export const toast = $state({
 
 let timer;
 
-/** @param {string} message @param {ToastAction} [action] */
-export function showToast(message, action) {
+/** @param {string} message @param {ToastAction} [action] @param {number} [duration] ms; defaults to 6 s with an action, 3.5 s without */
+export function showToast(message, action, duration) {
   clearTimeout(timer);
   toast.id += 1;
   toast.message = message;
   toast.action = action ?? null;
-  timer = setTimeout(dismissToast, action ? 6000 : 3500);
+  timer = setTimeout(dismissToast, duration ?? (action ? 6000 : 3500));
 }
 
 export function dismissToast() {

@@ -61,10 +61,19 @@
     showToast(`${recipe.shortTitle} planned for ${formatLong(iso)}.`);
   }
 
+  let confirmingDelete = $state(false);
+  /** @type {HTMLElement | undefined} */
+  let confirmDialog = $state();
+
+  $effect(() => {
+    if (confirmingDelete) confirmDialog?.focus();
+  });
+
   function remove() {
+    confirmingDelete = false;
     const removed = deleteRecipe(recipe.id);
     navigate('/catalog');
-    showToast(`${recipe.shortTitle} deleted.`, { label: 'Undo', run: () => restoreRecipe(removed) });
+    showToast(`${recipe.shortTitle} deleted.`, { label: 'Undo', run: () => restoreRecipe(removed) }, 10000);
   }
 
   /** @param {import('../lib/data/recipes.js').Step} step @param {number} i */
@@ -114,7 +123,7 @@
         <a href={href(`/recipe/${recipe.id}/edit`)} class="btn-outline">
           <Icon name="edit" class="text-[16px]" /> Edit
         </a>
-        <button type="button" class="btn-outline hover:text-secondary" onclick={remove}>
+        <button type="button" class="btn-outline hover:text-secondary" onclick={() => (confirmingDelete = true)}>
           <Icon name="delete" class="text-[16px]" /> Delete
         </button>
         <button
@@ -377,6 +386,37 @@
             Back to Weekly Menu <Icon name="arrow_forward" class="text-[16px]" />
           </a>
         {/if}
+      </div>
+    </div>
+  </div>
+{/if}
+
+<svelte:window onkeydown={(e) => e.key === 'Escape' && (confirmingDelete = false)} />
+
+{#if confirmingDelete}
+  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (Escape handled on window) -->
+  <div
+    class="fixed inset-0 z-[70] flex items-center justify-center bg-inverse-surface/40 p-4 backdrop-blur-md print:hidden"
+    onclick={(e) => e.target === e.currentTarget && (confirmingDelete = false)}
+  >
+    <div
+      bind:this={confirmDialog}
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="delete-title"
+      aria-describedby="delete-body"
+      tabindex="-1"
+      class="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-lift focus:outline-none"
+    >
+      <h2 id="delete-title" class="font-display text-headline-sm text-on-surface">Delete this recipe?</h2>
+      <p id="delete-body" class="mt-2 text-body-sm text-on-surface-variant">
+        <strong>{recipe.title}</strong> will be removed from your recipes. You can undo this right after.
+      </p>
+      <div class="mt-5 flex justify-end gap-2">
+        <button type="button" class="btn-outline" onclick={() => (confirmingDelete = false)}>Cancel</button>
+        <button type="button" class="btn bg-secondary text-on-secondary shadow-sm hover:opacity-90" onclick={remove}>
+          <Icon name="delete" class="text-[16px]" /> Delete
+        </button>
       </div>
     </div>
   </div>
