@@ -16,6 +16,7 @@
   import { sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
   import { syncPhase, syncNow, connect } from '../lib/sync/sync.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
+  import GroceryPrint from '../lib/components/GroceryPrint.svelte';
 
   const toneClass = {
     sage: 'bg-[#eaf0ec] text-[#2c4635]',
@@ -117,7 +118,7 @@
     <span class="hidden max-w-[45%] shrink-0 truncate rounded-full px-2 py-0.5 text-label-sm sm:inline {inPantry ? toneClass.neutral : toneClass[item.source.tone]}">
       {inPantry ? 'Pantry stocked' : `• ${item.source.label}`}
     </span>
-    <div class="flex shrink-0 items-center print:hidden">
+    <div class="flex shrink-0 items-center">
       {#if inPantry}
         <button
           type="button"
@@ -153,9 +154,10 @@
   </li>
 {/snippet}
 
-<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-gutter-desktop">
+<!-- Screen only; printing uses the plain checklist below. -->
+<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-gutter-desktop print:hidden">
   <!-- Breadcrumb & sync status -->
-  <div class="flex flex-wrap items-center justify-between gap-3 print:hidden">
+  <div class="flex flex-wrap items-center justify-between gap-3">
     <nav aria-label="Breadcrumb" class="flex items-center gap-1.5 text-label-md text-on-surface-variant">
       <Icon name="calendar_view_week" class="text-[16px]" />
       <a href={href('/')} class="hover:text-primary">Weekly Dinner Plan</a>
@@ -183,7 +185,7 @@
         {/if}
       </p>
     </div>
-    <div class="flex flex-wrap items-center gap-2 print:hidden md:justify-end">
+    <div class="flex flex-wrap items-center gap-2 md:justify-end">
       <a href={href('/sheets-sync')} class="btn-outline">
         <Icon name="sync" class="text-[16px]" /> Sheets Settings
       </a>
@@ -203,7 +205,7 @@
     <form
       transition:slide={{ duration: 180 }}
       onsubmit={addItem}
-      class="grid grid-cols-1 gap-3 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 shadow-card sm:grid-cols-[2fr_2fr_1.3fr_auto] sm:items-end print:hidden"
+      class="grid grid-cols-1 gap-3 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 shadow-card sm:grid-cols-[2fr_2fr_1.3fr_auto] sm:items-end"
     >
       <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
         Item
@@ -240,7 +242,7 @@
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
     <!-- Left: the list -->
     <div class="flex flex-col gap-6 lg:col-span-8">
-      <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-card print:hidden">
+      <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-card">
         <div class="flex flex-wrap gap-1" role="tablist" aria-label="Filter by aisle">
           {#each [{ id: 'all', short: 'All Aisles', count: shopping.length }, ...sections.map((s) => ({ id: s.id, short: s.short, count: s.items.length }))] as tab (tab.id)}
             <button
@@ -274,7 +276,7 @@
 
       {#each sections as section (section.id)}
         {#if section.items.length && (aisle === 'all' || aisle === section.id)}
-          <section aria-labelledby="dept-{section.id}" class="break-inside-avoid">
+          <section aria-labelledby="dept-{section.id}">
             <div class="mb-2 flex items-center justify-between gap-2 px-1">
               <h2 id="dept-{section.id}" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
                 <Icon name={section.icon} class="text-[20px]" style="color: {section.color}" />
@@ -295,7 +297,7 @@
       {/each}
 
       {#if pantry.length}
-        <section class="rounded-2xl bg-surface-container-low print:hidden" aria-labelledby="pantry-heading">
+        <section class="rounded-2xl bg-surface-container-low" aria-labelledby="pantry-heading">
           <div class="flex items-center justify-between gap-2 px-4 py-3">
             <h2 id="pantry-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
               <Icon name="inventory_2" class="text-[20px]" />
@@ -325,7 +327,7 @@
     </div>
 
     <!-- Right: overview, sources, sync -->
-    <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-4 print:hidden">
+    <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-4">
       <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card">
         <div class="flex items-center justify-between text-label-caps uppercase text-on-surface-variant">
           <span>Shopping Overview</span>
@@ -456,3 +458,9 @@
     </aside>
   </div>
 </div>
+
+<GroceryPrint
+  week={formatRange(planner.weekStart)}
+  {sections}
+  sources={sources.map(({ day }) => `${formatWeekday(day.iso)} ${day.recipe.shortTitle}`)}
+/>
