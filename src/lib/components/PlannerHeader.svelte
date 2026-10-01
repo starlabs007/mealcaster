@@ -30,9 +30,6 @@
       </span>
     </div>
     <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">{title}</h1>
-    <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-      Curate nourishment, streamline evening prep, and orchestrate seamless kitchen mise en place.
-    </p>
   </div>
 
   <div class="flex flex-wrap items-center gap-2 pt-2 md:max-w-[420px] md:justify-end md:pt-0 lg:max-w-none">

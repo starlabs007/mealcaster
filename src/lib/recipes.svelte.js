@@ -28,7 +28,11 @@ export const isSample = (id) => sampleById.has(id);
 const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes });
 
 /** Brings a recipe saved by an earlier build up to date. @param {SavedRecipe} r */
-const migrate = (r) => ({ ...migrateNotes(r), tags: normalizeTags(r.tags) });
+const migrate = (r) => {
+  // `highlight` and `prep` were mock-only sample fields, since removed.
+  const { highlight, prep, ...rest } = migrateNotes(r);
+  return { ...rest, tags: normalizeTags(r.tags) };
+};
 
 /** @returns {{ saved: SavedRecipe[], deleted: string[] }} */
 function load() {

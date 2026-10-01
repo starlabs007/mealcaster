@@ -324,7 +324,7 @@
     const notes = form.notes.trim();
 
     // Start from the existing recipe so fields the form doesn't show (ratings,
-    // cook count, sheet row, prep tip…) are kept; new recipes start blank.
+    // cook count, sheet row…) are kept; new recipes start blank.
     const { minutes, hero, ...base } = editing
       ? $state.snapshot(editing)
       : { minutes: 0, hero: undefined, rating: 0, ratings: 0, cookCount: 0, addedAt: toISO(new Date()), custom: true };

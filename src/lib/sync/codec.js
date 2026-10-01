@@ -3,7 +3,7 @@
 // A row is an object keyed by the expected column names in SCHEMA, holding the
 // raw cell values (string, number or boolean). Reading a row back starts from
 // the existing on-device item and only re-parses cells whose text differs from
-// what that item would write, so details a cell can't hold (ratings, prep tips,
+// what that item would write, so details a cell can't hold (ratings,
 // step timings typed in the app) survive a round trip through the sheet.
 //
 // Plain JS (no runes) so it can be tested outside Svelte.

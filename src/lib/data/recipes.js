@@ -4,8 +4,6 @@
 const IMG = 'https://lh3.googleusercontent.com/aida-public/';
 
 /**
- * @typedef {'tertiary' | 'secondary'} Tone
- * @typedef {{ label: string, text: string, icon: string, tone: Tone }} PrepTip
  * @typedef {{ qty?: number, unit?: string, text: string, tag: string, staple?: boolean }} Ingredient
  * @typedef {{ title: string, category: string, items: Ingredient[] }} IngredientGroup
  * @typedef {{ title: string, minutes: number, text: string, critical?: boolean }} Step
@@ -28,8 +26,6 @@ const IMG = 'https://lh3.googleusercontent.com/aida-public/';
  *   cookCount: number,
  *   addedAt: string,
  *   tags: string[],
- *   highlight?: string,
- *   prep?: PrepTip,
  *   notes: string,
  *   ingredients: IngredientGroup[],
  *   steps: Step[],
@@ -63,12 +59,6 @@ const pool = [
     cookCount: 11,
     addedAt: '2026-03-02',
     tags: ['Gluten-Free'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Defrost salmon fillets morning of in chilled bath',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
     notes:
       '### Crispy skin, every time\n\nPat the salmon skin **bone-dry** with clean paper towels 15 minutes before cooking. Surface moisture turns to steam and prevents that glass-like crackle.\n\n- Keep the broth at an *active bare simmer* on the adjacent burner.\n- Press each fillet down for the first 10 seconds so the skin stays flat.\n\n**Pairing:** A chilled Sancerre or dry Oregon Pinot Gris echoes the Meyer lemon without overpowering the salmon.',
     ingredients: [
@@ -154,12 +144,6 @@ const pool = [
     cookCount: 9,
     addedAt: '2025-11-18',
     tags: ['Vegetarian'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Roast and blend tomatillo salsa verde the night before',
-      icon: 'skillet',
-      tone: 'secondary',
-    },
     notes:
       'Flash the tortillas in a hot dry skillet for 10 seconds per side before rolling — they turn pliable and won’t crack or go soggy under the salsa verde.\n\n**Pairing:** A crisp Mexican lager with lime, or an agua fresca of cucumber and mint.',
     ingredients: [
@@ -237,12 +221,6 @@ const pool = [
     cookCount: 12,
     addedAt: '2025-10-04',
     tags: ['Poultry & Meat'],
-    prep: {
-      label: 'Mise en place / Chef tip',
-      text: 'Slow simmer ragù base for depth of flavor',
-      icon: 'dinner_dining',
-      tone: 'tertiary',
-    },
     notes:
       '### Silky sauce, no cream\n\nReserve **a full mug of starchy pasta water** before draining. Toss the rigatoni with the ragù and a splash of that water over high heat for one minute; it emulsifies the sauce so it coats every ridge.\n\n1. Drain the pasta *2 minutes early*.\n2. Finish it in the pan with the ragù and pasta water.\n3. Off the heat, stir in the pecorino.\n\n**Pairing:** A Chianti Classico or Rosso di Montalcino. Bright acidity cuts through the sausage.',
     ingredients: [
@@ -312,13 +290,6 @@ const pool = [
     cookCount: 14,
     addedAt: '2025-09-12',
     tags: ['Vegetarian'],
-    highlight: 'Pizza Night • Family Feast',
-    prep: {
-      label: 'Kitchen timing',
-      text: 'Preheat pizza stone to 500°F at 5:30 PM sharp',
-      icon: 'local_fire_department',
-      tone: 'secondary',
-    },
     notes:
       'A full hour of preheating matters more than the recipe.\n\n> The stone must be saturated with heat so the base puffs and chars in **under 7 minutes**.\n\n- Oven at its highest setting, stone on the top-middle rack.\n- Add the *hot honey* and *burrata* only after baking.\n\n**Pairing:** A lightly chilled Lambrusco, or sparkling blood-orange soda for the kids.',
     ingredients: [
@@ -382,12 +353,6 @@ const pool = [
     cookCount: 4,
     addedAt: '2026-06-20',
     tags: ['Vegetarian'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Quick-pickle the cucumbers at lunch so they are bright by dinner',
-      icon: 'eco',
-      tone: 'tertiary',
-    },
     notes:
       'Score the eggplant flesh in a **deep crosshatch** so the miso glaze seeps in and caramelizes in every groove.\n\n- Cut about 1 cm deep, but don\'t pierce the skin.\n- Brush the glaze on *twice*: once before broiling, once at the end.\n\n**Pairing:** A cold junmai sake or roasted barley tea.',
     ingredients: [
@@ -448,12 +413,6 @@ const pool = [
     cookCount: 8,
     addedAt: '2025-12-01',
     tags: ['Quick (<30m)', 'Vegetarian'],
-    prep: {
-      label: 'Chef tip',
-      text: 'Bloom whole spices in ghee just before serving for the tadka',
-      icon: 'soup_kitchen',
-      tone: 'secondary',
-    },
     notes:
       '### The tadka is everything\n\nAdd the tadka at the **very last second**. The hiss of hot spiced ghee hitting the dal is where the aroma comes from.\n\n- Heat the ghee until the cumin seeds *dance*, then add garlic and chilli.\n- Pour straight over the dal and cover for 30 seconds.\n- Leftovers thicken overnight; loosen with a splash of water.\n\n**Pairing:** A salted mango lassi or an off-dry Riesling.',
     ingredients: [
@@ -517,12 +476,6 @@ const pool = [
     cookCount: 10,
     addedAt: '2026-01-15',
     tags: ['Quick (<30m)', 'Gluten-Free'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Par-boil the baby potatoes at lunch so they only need to crisp',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
     notes:
       'Start the salmon in a cold oiled pan skin-side down and bring it up to heat together — the fat renders slowly and the skin shatters.\n\n**Pairing:** An Albariño or Vinho Verde for briny, citrus-friendly lift.',
     ingredients: [
@@ -592,12 +545,6 @@ const pool = [
     cookCount: 7,
     addedAt: '2025-10-28',
     tags: ['Vegetarian'],
-    prep: {
-      label: 'Chef tip',
-      text: 'Save a parmesan rind to simmer in the stew for extra depth',
-      icon: 'soup_kitchen',
-      tone: 'tertiary',
-    },
     notes:
       'Mash a ladleful of the beans against the side of the pot — it thickens the broth into something silky without any cream.\n\n**Pairing:** A rustic Montepulciano d’Abruzzo.',
     ingredients: [
@@ -661,12 +608,6 @@ const pool = [
     cookCount: 16,
     addedAt: '2025-08-30',
     tags: ['Poultry & Meat'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Marinate the thighs in Dijon, lemon and thyme the night before',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
     notes:
       'Give everything room on the pan. Crowded vegetables steam; spaced-out ones caramelize.\n\n**Pairing:** An oaked Chardonnay or a crisp hard cider.',
     ingredients: [
@@ -729,12 +670,6 @@ const pool = [
     cookCount: 6,
     addedAt: '2026-09-15',
     tags: ['Vegetarian'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Roast and purée the squash up to two days ahead',
-      icon: 'eco',
-      tone: 'tertiary',
-    },
     notes:
       'Fry the sage leaves in the butter first, then use that sage-perfumed brown butter to finish the sauce.\n\n**Pairing:** A Viognier or a soft, fruity Dolcetto.',
     ingredients: [
@@ -798,12 +733,6 @@ const pool = [
     cookCount: 5,
     addedAt: '2026-07-08',
     tags: ['Quick (<30m)', 'Vegetarian'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Whisk the sesame-tamari dressing in a jar and keep it chilled',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
     notes:
       'Rinse the soba under cold water immediately after draining, rubbing gently — it removes surface starch so the noodles stay springy.\n\n**Pairing:** Iced genmaicha or a dry Grüner Veltliner.',
     ingredients: [
@@ -867,13 +796,6 @@ const pool = [
     cookCount: 3,
     addedAt: '2025-11-02',
     tags: ['Poultry & Meat'],
-    highlight: 'Slow Sunday • Braise',
-    prep: {
-      label: 'Kitchen timing',
-      text: 'Sear ribs and start the braise by 2:30 PM',
-      icon: 'local_fire_department',
-      tone: 'secondary',
-    },
     notes:
       '### Braise a day ahead\n\nChill overnight, lift off the solidified fat, and reheat. The sauce becomes **deeper and cleaner**.\n\n1. Brown the ribs well; don\'t rush this step.\n2. Braise until the meat is tender enough to slump from the bone.\n3. Chill in the braising liquid, skim, and gently reheat.\n\n> Tip: reduce the strained liquid by a third for a glossy glaze.\n\n**Pairing:** The same Chianti you braised with, or a Barolo for a special Sunday.',
     ingredients: [
@@ -944,12 +866,6 @@ const pool = [
     cookCount: 9,
     addedAt: '2026-05-11',
     tags: ['Poultry & Meat', 'Quick (<30m)'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Marinate the chicken in lemon, garlic and oregano that morning',
-      icon: 'restaurant_menu',
-      tone: 'tertiary',
-    },
     notes:
       'Salt and drain the grated cucumber for 10 minutes before folding into the yogurt — your tzatziki stays thick instead of watery.\n\n**Pairing:** A crisp Assyrtiko from Santorini.',
     ingredients: [
@@ -1014,12 +930,6 @@ const pool = [
     cookCount: 4,
     addedAt: '2026-08-22',
     tags: ['Vegetarian', 'Gluten-Free', 'Quick (<30m)'],
-    prep: {
-      label: 'Mise en place',
-      text: 'Cook a double batch of quinoa on Sunday for this and lunches',
-      icon: 'eco',
-      tone: 'tertiary',
-    },
     notes:
       'Dry the chickpeas thoroughly and roast them before seasoning — spices burn, but a toss in cumin right out of the oven sticks perfectly.\n\n**Pairing:** Sparkling water with cucumber and mint, or a dry rosé.',
     ingredients: [
