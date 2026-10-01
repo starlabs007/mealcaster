@@ -45,21 +45,34 @@ npm run preview    # http://localhost:4173
 - Week stepper in the header (click the date range to jump back to this week).
 - **Auto-fill Remaining**, **Copy Last Week**, **Reset Week** — each with an Undo toast.
   Past days are kept as history and never overwritten.
-- **Surprise Me** and **Dining Out / Leftovers** on open slots.
+- **Choose a Meal**, **Surprise Me** and **Dining Out** on open slots. Surprise Me and Auto-fill prefer meals
+  not already on the week's plan and not made in the last 7 days.
 - Grocery badge counts the ingredients of this week's upcoming dinners.
 
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
 
 - Keyword search across titles, descriptions, tags and ingredients (the header search lands here too).
-- Favorites + culinary attribute filters (combined with AND), four sort orders, paging (9 per page).
-- **Select for {Day}** assigns the recipe to the chosen day; "Planning for" switches the target day.
-- **Surprise Me & Assign** picks at random from the current results.
+- Filters (combined with AND): Favorites, **Not made in 7 days** (remembered on the device) and one per
+  recipe tag in use. Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
+  Recently Added to Box. Paging, 9 per page.
+- Each card says when the meal was **last made** (from the plan): terracotta within 7 days, green otherwise.
+- **Select for {Day}** assigns the recipe to the chosen day (confirmed with a toast); "Planning for"
+  switches the target day.
+- **Surprise Me & Assign** picks at random from the current results, preferring meals not made recently.
 
 ## Recipe Detail (`#/recipe/:id?day=YYYY-MM-DD`)
 
 - Breadcrumb back to the plan, favorite toggle, Swap Meal, serving scaler (quantities rescale).
+- Tags (each links to the catalog filtered by it) and when the meal was last made.
 - Mise-en-place checklist grouped by component; **Push Unchecked to Grocery** and **Add to List**.
 - Numbered method steps with durations; "Next: {Day} {Recipe}" walks through the week's dinners.
+
+## Recipe tags
+
+Tags are free text: the editor offers Quick (<30m), Vegetarian, Poultry & Meat, Gluten-Free and every tag
+already in use, and takes new ones (each word capitalized, at most 100 characters, commas separate tags).
+Each tag gets the next colour in a fixed rotation the first time it appears and keeps it (per device).
+The `Tags` column holds them as comma-separated text.
 
 ## Quick Grocery List (`#/grocery`)
 
@@ -119,6 +132,9 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
 
+Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.tagColors.v1`,
+`mealcaster.catalogHideRecent.v1`; an unsaved new recipe is kept in `mealcaster.recipeDraft.v1`.
+
 The grocery badge counts items still to buy for the viewed week.
 
 ## Project layout
@@ -140,15 +156,17 @@ src/
     schema.js                expected column headers per tab
     schemaCheck.js           header matching for the Column Conflicts screen
     router.svelte.js         hash router (works on GitHub Pages)
-    planner.svelte.js        weekly plan state + actions (Svelte runes)
+    planner.svelte.js        weekly plan state + actions, last made / times made (Svelte runes)
+    recipes.svelte.js        live recipe list (samples + saved), save/delete/revert
+    tags.js                  tag normalizing, suggestions, colour rotation
+    tagColors.svelte.js      per-device tag colours
     grocery.svelte.js        grocery list model
     favorites.svelte.js
     toast.svelte.js
     dates.js
     format.js                quantity formatting (1/3, 3 1/2)
-    data/recipes.js          [Recipes] data, filters, tag metadata
-    data/slotPrompts.js      copy for open dinner slots
-    components/              AppHeader, DayCard, RecipeCard, ...
+    data/recipes.js          sample recipes (dev only)
+    components/              AppHeader, DayCard, RecipeCard, LastMade, ...
 ```
 
 ## Deploying
