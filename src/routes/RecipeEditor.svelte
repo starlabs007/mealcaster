@@ -28,7 +28,7 @@
     Servings: 'Servings',
     Prep_Minutes: 'Prep Time',
     Cook_Minutes: 'Cook Time',
-    Notes: 'Cook’s Notes',
+    Notes: 'Cook’s Secrets',
   };
 </script>
 
@@ -52,6 +52,7 @@
   import { href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { formatQty } from '../lib/format.js';
+  import { renderMarkdown } from '../lib/markdown.js';
   import { toISO } from '../lib/dates.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
 
@@ -99,9 +100,6 @@
     };
   }
 
-  /** Samples keep secret and pairing apart; the form edits them as one Notes field. */
-  const notesOf = (r) => [r.secret, r.pairing].filter(Boolean).join('\n\n');
-
   /** @param {import('../lib/data/recipes.js').Recipe} r @returns {Form} */
   function formFrom(r) {
     return {
@@ -132,7 +130,7 @@
         minutes: s.minutes ? String(s.minutes) : '',
         critical: s.critical,
       })),
-      notes: notesOf(r),
+      notes: r.notes ?? '',
     };
   }
 
@@ -160,6 +158,7 @@
   }
 
   const savedDraft = editing ? null : loadDraft();
+  let notesPreview = $state(false);
   let form = $state(editing ? formFrom(editing) : (savedDraft ?? blankForm()));
   let submitted = $state(false);
   let bulkOpen = $state(false);
@@ -321,7 +320,7 @@
       badge: { ...base.badge, label: form.category },
       stat: base.custom || !base.stat ? `Serves ${form.serves}` : base.stat,
       tags: [...form.tags],
-      ...(!editing || notes !== notesOf(editing) ? { secret: notes, pairing: '' } : {}),
+      notes,
       ingredients: groups,
       steps: form.steps
         .filter((s) => s.text.trim())
@@ -809,18 +808,40 @@
         <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
             <label for="recipe-notes" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="stylus_note" class="text-[20px] text-primary" /> Cook’s Secrets &amp; Wine Pairing
+              <Icon name="stylus_note" class="text-[20px] text-primary" /> Cook’s Secrets
             </label>
             <span class="text-label-caps uppercase text-outline">Optional · Column: Notes</span>
           </div>
-          <p class="mb-3 text-body-sm text-on-surface-variant">Family adjustments, the best brand of ricotta, or a side dish that always works.</p>
-          <textarea
-            id="recipe-notes"
-            rows="3"
-            bind:value={form.notes}
-            placeholder="e.g., Serve with a crisp chilled Vermentino. Don’t boil the ricotta directly or it may curdle."
-            class="{field} {border(false)} resize-y"
-          ></textarea>
+          <p class="mb-3 text-body-sm text-on-surface-variant">
+            Family adjustments, the best brand of ricotta, or a side dish that always works. Supports Markdown:
+            <code>**bold**</code>, <code>*italic*</code>, <code>- lists</code>, <code>## headings</code>, <code>[links](https://…)</code>.
+          </p>
+          <div class="mb-2 inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
+            {#each [[false, 'Write'], [true, 'Preview']] as [on, label] (label)}
+              <button
+                type="button"
+                class="rounded-md px-3 py-1 {notesPreview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}"
+                onclick={() => (notesPreview = on)}
+              >{label}</button>
+            {/each}
+          </div>
+          {#if notesPreview}
+            <div class="notes-md min-h-[6.5rem] rounded-lg bg-surface-container-low p-4 text-body-sm text-on-surface-variant">
+              {#if form.notes.trim()}
+                {@html renderMarkdown(form.notes)}
+              {:else}
+                <p class="text-outline">Nothing to preview yet.</p>
+              {/if}
+            </div>
+          {:else}
+            <textarea
+              id="recipe-notes"
+              rows="5"
+              bind:value={form.notes}
+              placeholder="e.g., Serve with a crisp chilled **Vermentino**. Don’t boil the ricotta directly or it may curdle."
+              class="{field} {border(false)} resize-y"
+            ></textarea>
+          {/if}
         </section>
       </div>
 

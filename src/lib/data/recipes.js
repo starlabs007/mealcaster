@@ -30,8 +30,7 @@ const IMG = 'https://lh3.googleusercontent.com/aida-public/';
  *   tags: string[],
  *   highlight?: string,
  *   prep?: PrepTip,
- *   secret: string,
- *   pairing: string,
+ *   notes: string,
  *   ingredients: IngredientGroup[],
  *   steps: Step[],
  *   custom?: boolean,
@@ -70,9 +69,8 @@ const pool = [
       icon: 'restaurant_menu',
       tone: 'tertiary',
     },
-    secret:
-      'Pat salmon skin thoroughly bone-dry with clean paper towels 15 minutes before cooking. Any surface moisture turns to steam, preventing the coveted glass-like crackling skin. Keep your broth at an active bare simmer right on the adjacent burner.',
-    pairing: 'A chilled Sancerre or dry Oregon Pinot Gris echoes the Meyer lemon without overpowering the salmon.',
+    notes:
+      'Pat salmon skin thoroughly bone-dry with clean paper towels 15 minutes before cooking. Any surface moisture turns to steam, preventing the coveted glass-like crackling skin. Keep your broth at an active bare simmer right on the adjacent burner.\n\n**Pairing:** A chilled Sancerre or dry Oregon Pinot Gris echoes the Meyer lemon without overpowering the salmon.',
     ingredients: [
       {
         title: 'The Crispy Wild Salmon',
@@ -162,9 +160,8 @@ const pool = [
       icon: 'skillet',
       tone: 'secondary',
     },
-    secret:
-      'Flash the tortillas in a hot dry skillet for 10 seconds per side before rolling — they turn pliable and won’t crack or go soggy under the salsa verde.',
-    pairing: 'A crisp Mexican lager with lime, or an agua fresca of cucumber and mint.',
+    notes:
+      'Flash the tortillas in a hot dry skillet for 10 seconds per side before rolling — they turn pliable and won’t crack or go soggy under the salsa verde.\n\n**Pairing:** A crisp Mexican lager with lime, or an agua fresca of cucumber and mint.',
     ingredients: [
       {
         title: 'Salsa Verde Suiza',
@@ -246,9 +243,8 @@ const pool = [
       icon: 'dinner_dining',
       tone: 'tertiary',
     },
-    secret:
-      'Reserve a full mug of starchy pasta water before draining. Tossing the rigatoni with the ragù and a splash of that water over high heat for one minute emulsifies the sauce so it coats every ridge.',
-    pairing: 'A Chianti Classico or Rosso di Montalcino — bright acidity to cut through the sausage.',
+    notes:
+      'Reserve a full mug of starchy pasta water before draining. Tossing the rigatoni with the ragù and a splash of that water over high heat for one minute emulsifies the sauce so it coats every ridge.\n\n**Pairing:** A Chianti Classico or Rosso di Montalcino — bright acidity to cut through the sausage.',
     ingredients: [
       {
         title: 'The Ragù',
@@ -323,9 +319,8 @@ const pool = [
       icon: 'local_fire_department',
       tone: 'secondary',
     },
-    secret:
-      'A full hour of preheating matters more than the recipe. The stone must be saturated with heat so the base puffs and chars in under 7 minutes.',
-    pairing: 'A lightly chilled Lambrusco, or sparkling blood-orange soda for the kids.',
+    notes:
+      'A full hour of preheating matters more than the recipe. The stone must be saturated with heat so the base puffs and chars in under 7 minutes.\n\n**Pairing:** A lightly chilled Lambrusco, or sparkling blood-orange soda for the kids.',
     ingredients: [
       {
         title: 'Dough & Sauce',
@@ -393,8 +388,8 @@ const pool = [
       icon: 'eco',
       tone: 'tertiary',
     },
-    secret: 'Score the eggplant flesh in a deep crosshatch so the miso glaze seeps in and caramelizes in every groove.',
-    pairing: 'A cold junmai sake or roasted barley tea.',
+    notes:
+      'Score the eggplant flesh in a deep crosshatch so the miso glaze seeps in and caramelizes in every groove.\n\n**Pairing:** A cold junmai sake or roasted barley tea.',
     ingredients: [
       {
         title: 'Glazed Eggplant',
@@ -459,8 +454,8 @@ const pool = [
       icon: 'soup_kitchen',
       tone: 'secondary',
     },
-    secret: 'Add the tadka at the very last second — the hiss of hot spiced ghee hitting the dal is where the aroma comes from.',
-    pairing: 'A salted mango lassi or an off-dry Riesling.',
+    notes:
+      'Add the tadka at the very last second — the hiss of hot spiced ghee hitting the dal is where the aroma comes from.\n\n**Pairing:** A salted mango lassi or an off-dry Riesling.',
     ingredients: [
       {
         title: 'The Dal',
@@ -528,8 +523,8 @@ const pool = [
       icon: 'restaurant_menu',
       tone: 'tertiary',
     },
-    secret: 'Start the salmon in a cold oiled pan skin-side down and bring it up to heat together — the fat renders slowly and the skin shatters.',
-    pairing: 'An Albariño or Vinho Verde for briny, citrus-friendly lift.',
+    notes:
+      'Start the salmon in a cold oiled pan skin-side down and bring it up to heat together — the fat renders slowly and the skin shatters.\n\n**Pairing:** An Albariño or Vinho Verde for briny, citrus-friendly lift.',
     ingredients: [
       {
         title: 'Salmon',
@@ -603,8 +598,8 @@ const pool = [
       icon: 'soup_kitchen',
       tone: 'tertiary',
     },
-    secret: 'Mash a ladleful of the beans against the side of the pot — it thickens the broth into something silky without any cream.',
-    pairing: 'A rustic Montepulciano d’Abruzzo.',
+    notes:
+      'Mash a ladleful of the beans against the side of the pot — it thickens the broth into something silky without any cream.\n\n**Pairing:** A rustic Montepulciano d’Abruzzo.',
     ingredients: [
       {
         title: 'The Stew',
@@ -672,8 +667,8 @@ const pool = [
       icon: 'restaurant_menu',
       tone: 'tertiary',
     },
-    secret: 'Give everything room on the pan. Crowded vegetables steam; spaced-out ones caramelize.',
-    pairing: 'An oaked Chardonnay or a crisp hard cider.',
+    notes:
+      'Give everything room on the pan. Crowded vegetables steam; spaced-out ones caramelize.\n\n**Pairing:** An oaked Chardonnay or a crisp hard cider.',
     ingredients: [
       {
         title: 'Chicken & Marinade',
@@ -740,8 +735,8 @@ const pool = [
       icon: 'eco',
       tone: 'tertiary',
     },
-    secret: 'Fry the sage leaves in the butter first, then use that sage-perfumed brown butter to finish the sauce.',
-    pairing: 'A Viognier or a soft, fruity Dolcetto.',
+    notes:
+      'Fry the sage leaves in the butter first, then use that sage-perfumed brown butter to finish the sauce.\n\n**Pairing:** A Viognier or a soft, fruity Dolcetto.',
     ingredients: [
       {
         title: 'Squash Sauce',
@@ -809,8 +804,8 @@ const pool = [
       icon: 'restaurant_menu',
       tone: 'tertiary',
     },
-    secret: 'Rinse the soba under cold water immediately after draining, rubbing gently — it removes surface starch so the noodles stay springy.',
-    pairing: 'Iced genmaicha or a dry Grüner Veltliner.',
+    notes:
+      'Rinse the soba under cold water immediately after draining, rubbing gently — it removes surface starch so the noodles stay springy.\n\n**Pairing:** Iced genmaicha or a dry Grüner Veltliner.',
     ingredients: [
       {
         title: 'Noodles & Vegetables',
@@ -879,8 +874,8 @@ const pool = [
       icon: 'local_fire_department',
       tone: 'secondary',
     },
-    secret: 'Braise a day ahead. Chill overnight, lift off the solidified fat, and reheat — the sauce becomes deeper and cleaner.',
-    pairing: 'The same Chianti you braised with, or a Barolo for a special Sunday.',
+    notes:
+      'Braise a day ahead. Chill overnight, lift off the solidified fat, and reheat — the sauce becomes deeper and cleaner.\n\n**Pairing:** The same Chianti you braised with, or a Barolo for a special Sunday.',
     ingredients: [
       {
         title: 'The Braise',
@@ -955,8 +950,8 @@ const pool = [
       icon: 'restaurant_menu',
       tone: 'tertiary',
     },
-    secret: 'Salt and drain the grated cucumber for 10 minutes before folding into the yogurt — your tzatziki stays thick instead of watery.',
-    pairing: 'A crisp Assyrtiko from Santorini.',
+    notes:
+      'Salt and drain the grated cucumber for 10 minutes before folding into the yogurt — your tzatziki stays thick instead of watery.\n\n**Pairing:** A crisp Assyrtiko from Santorini.',
     ingredients: [
       {
         title: 'Souvlaki',
@@ -1025,8 +1020,8 @@ const pool = [
       icon: 'eco',
       tone: 'tertiary',
     },
-    secret: 'Dry the chickpeas thoroughly and roast them before seasoning — spices burn, but a toss in cumin right out of the oven sticks perfectly.',
-    pairing: 'Sparkling water with cucumber and mint, or a dry rosé.',
+    notes:
+      'Dry the chickpeas thoroughly and roast them before seasoning — spices burn, but a toss in cumin right out of the oven sticks perfectly.\n\n**Pairing:** Sparkling water with cucumber and mint, or a dry rosé.',
     ingredients: [
       {
         title: 'Bowl Base',

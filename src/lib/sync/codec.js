@@ -142,8 +142,6 @@ export function parseIngredients(value) {
   return flat.length ? [{ title: 'Ingredients', category: `${flat.length} items`, items: flat }] : [];
 }
 
-const notesText = (r) => [r.secret, r.pairing && `Pairing: ${r.pairing}`].filter(Boolean).join('\n\n');
-
 /**
  * Per column: what a recipe writes, and how a changed cell updates a recipe.
  * `set` receives a draft copy of the recipe (or a blank one for new rows).
@@ -193,12 +191,8 @@ const RECIPE_COLUMNS = {
   Prep_Minutes: { get: (r) => r.prepMinutes, set: (r, v) => (r.prepMinutes = num(v)) },
   Cook_Minutes: { get: (r) => r.cookMinutes, set: (r, v) => (r.cookMinutes = num(v)) },
   Notes: {
-    get: notesText,
-    set: (r, v) => {
-      const [secret, pairing = ''] = str(v).split(/\n\nPairing: /);
-      r.secret = secret;
-      r.pairing = pairing;
-    },
+    get: (r) => r.notes ?? '',
+    set: (r, v) => (r.notes = str(v)),
   },
 };
 
@@ -226,8 +220,7 @@ function blankRecipe(id, today) {
     cookCount: 0,
     addedAt: today,
     tags: [],
-    secret: '',
-    pairing: '',
+    notes: '',
     ingredients: [],
     steps: [],
     custom: true,

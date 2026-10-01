@@ -5,6 +5,7 @@
 
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
+import { migrateNotes } from './markdown.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
 
@@ -28,10 +29,13 @@ const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes });
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) {
+      const box = JSON.parse(raw);
+      return { ...box, saved: box.saved.map(migrateNotes) };
+    }
     // Earlier builds stored only custom recipes, as a plain array.
     const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) return { saved: JSON.parse(legacy), deleted: [] };
+    if (legacy) return { saved: JSON.parse(legacy).map(migrateNotes), deleted: [] };
   } catch {
     // Start from the samples.
   }

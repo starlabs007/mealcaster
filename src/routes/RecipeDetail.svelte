@@ -8,6 +8,7 @@
 <script>
   import Icon from '../lib/components/Icon.svelte';
   import { formatQty } from '../lib/format.js';
+  import { renderMarkdown } from '../lib/markdown.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
   import { recipeById, formatMinutes, deleteRecipe, restoreRecipe } from '../lib/recipes.svelte.js';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
@@ -227,33 +228,20 @@
           </div>
         </figure>
 
-        {#if recipe.secret || recipe.pairing}
+        {#if recipe.notes?.trim()}
         <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card">
           <div class="mb-4 flex items-center gap-3">
             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-low text-primary">
               <Icon name="auto_awesome" class="text-[18px]" />
             </span>
             <div>
-              <h2 class="font-display text-headline-sm text-on-surface">Cook’s Secrets &amp; Wine Pairing</h2>
+              <h2 class="font-display text-headline-sm text-on-surface">Cook’s Secrets</h2>
               <p class="text-label-caps uppercase text-outline">Notes</p>
             </div>
           </div>
-          {#if recipe.secret}
-            <div class="rounded-r-lg border-l-4 border-secondary bg-surface-container-low p-4">
-              <p class="mb-1.5 flex items-center gap-1 text-label-caps uppercase text-secondary">
-                <Icon name="tips_and_updates" class="text-[14px]" /> {recipe.pairing ? 'Critical Culinary Secret' : 'Cook’s Notes'}
-              </p>
-              <p class="whitespace-pre-line text-body-sm text-on-surface-variant">{recipe.secret}</p>
-            </div>
-          {/if}
-          {#if recipe.pairing}
-            <div class="mt-3 rounded-r-lg border-l-4 border-primary-container bg-surface-container-low p-4">
-              <p class="mb-1.5 flex items-center gap-1 text-label-caps uppercase text-primary">
-                <Icon name="wine_bar" class="text-[14px]" /> Pairing
-              </p>
-              <p class="text-body-sm text-on-surface-variant">{recipe.pairing}</p>
-            </div>
-          {/if}
+          <div class="notes-md rounded-r-lg border-l-4 border-secondary bg-surface-container-low p-4 text-body-sm text-on-surface-variant">
+            {@html renderMarkdown(recipe.notes)}
+          </div>
         </section>
         {/if}
       </aside>
