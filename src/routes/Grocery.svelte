@@ -9,9 +9,9 @@
     addCustomItem,
     removeCustomItem,
   } from '../lib/grocery.svelte.js';
-  import { planner, currentWeek } from '../lib/planner.svelte.js';
+  import { planner, currentWeek, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
-  import { addDays, formatRange, formatWeekday, isoWeek } from '../lib/dates.js';
+  import { addDays, formatRange, formatShort, formatWeekday, isoWeek } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
   import { syncPhase, syncNow, connect } from '../lib/sync/sync.svelte.js';
@@ -29,6 +29,16 @@
   let showOnHand = $state(true);
   let adding = $state(false);
   let draft = $state({ name: '', note: '', dept: 'produce' });
+
+  const offset = $derived(weekOffset());
+  /** "this week", "next week", "last week" or "the week of Oct 10" */
+  const weekName = $derived(
+    offset === 0 ? 'this week' : offset === 1 ? 'next week' : offset === -1 ? 'last week' : `the week of ${formatShort(planner.weekStart)}`,
+  );
+  const weekChoices = [
+    { offset: 0, label: 'This Week' },
+    { offset: 1, label: 'Next Week' },
+  ];
 
   const lines = $derived(groceryLines());
   const shopping = $derived(lines.filter((l) => l.status !== 'owned'));
@@ -177,13 +187,38 @@
         Weekly Provisions &amp; Grocery List
       </h1>
       <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-        Auto-compiled from this week’s planned dinners <strong class="text-on-surface">({formatRange(planner.weekStart)})</strong>.
+        Auto-compiled from the planned dinners of {weekName} <strong class="text-on-surface">({formatRange(planner.weekStart)})</strong>.
         {#if sheets.spreadsheet && sheets.syncProvisions}
           Synced with the <code class="rounded bg-surface-container-high px-1 text-[12px]">[{sheets.tabs.provisions}]</code> tab of your Google Sheet.
         {:else}
           Saved on this device{sheets.spreadsheet ? '' : ' — connect a Google Sheet to keep it in a [Provisions] tab'}.
         {/if}
       </p>
+      <div class="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Grocery week">
+        <div class="inline-flex rounded-lg bg-surface-container-low p-1">
+          {#each weekChoices as choice (choice.offset)}
+            <button
+              type="button"
+              aria-pressed={offset === choice.offset}
+              class="rounded-md px-3 py-1.5 text-label-md transition-colors {offset === choice.offset
+                ? 'bg-primary-container text-on-primary shadow-sm'
+                : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}"
+              onclick={() => goToWeek(choice.offset)}
+            >
+              {choice.label}
+            </button>
+          {/each}
+        </div>
+        <div class="inline-flex items-center gap-1 rounded-lg bg-surface-container-low p-1">
+          <button type="button" aria-label="Earlier week" class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(-1)}>
+            <Icon name="chevron_left" class="text-[18px]" />
+          </button>
+          <span class="whitespace-nowrap px-1 text-label-md text-on-surface">{formatRange(planner.weekStart)}</span>
+          <button type="button" aria-label="Later week" class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(1)}>
+            <Icon name="chevron_right" class="text-[18px]" />
+          </button>
+        </div>
+      </div>
     </div>
     <div class="flex flex-wrap items-center gap-2 md:justify-end">
       <a href={href('/sheets-sync')} class="btn-outline">
@@ -266,7 +301,7 @@
       {#if !shopping.length}
         <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-14 text-center">
           <Icon name="shopping_basket" class="text-[36px] text-outline" />
-          <h2 class="font-display text-headline-sm text-on-surface">Nothing to buy this week</h2>
+          <h2 class="font-display text-headline-sm text-on-surface">Nothing to buy for {weekName}</h2>
           <p class="max-w-md text-body-sm text-on-surface-variant">
             Plan a few dinners and their ingredients will be compiled here automatically.
           </p>
@@ -411,7 +446,7 @@
             {/each}
           </ul>
         {:else}
-          <p class="text-body-sm text-on-surface-variant">No upcoming dinners planned for this week.</p>
+          <p class="text-body-sm text-on-surface-variant">No upcoming dinners planned for {weekName}.</p>
         {/if}
         <a href={href('/')} class="mt-3 inline-flex items-center gap-1 text-label-md text-primary hover:underline">
           Open weekly dinner schedule <Icon name="arrow_forward" class="text-[16px]" />
