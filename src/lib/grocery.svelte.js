@@ -42,15 +42,12 @@ export { departments };
 /** Ingredient tag → store department. */
 const TAG_DEPT = {
   Produce: 'produce',
-  Citrus: 'produce',
   Herbs: 'produce',
-  Garnish: 'produce',
   Fresh: 'meat',
   Dairy: 'dairy',
   Frozen: 'dairy',
   Pantry: 'pantry',
   Spices: 'pantry',
-  Broth: 'pantry',
   Bakery: 'pantry',
   Other: 'other',
 };

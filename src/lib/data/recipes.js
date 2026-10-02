@@ -69,11 +69,11 @@ const pool = [
         category: 'Grains & Dairy',
         items: [
           { qty: 1, unit: 'cup', text: 'premium Arborio or Carnaroli rice', tag: 'Pantry' },
-          { qty: 3.5, unit: 'cups', text: 'organic vegetable or light chicken broth', tag: 'Broth' },
+          { qty: 3.5, unit: 'cups', text: 'organic vegetable or light chicken broth', tag: 'Other' },
           { qty: 1, text: 'French shallot, finely minced', tag: 'Produce' },
           { qty: 2, text: 'cloves garlic, microplaned', tag: 'Produce' },
           { qty: 0.5, unit: 'cup', text: 'dry crisp white wine (Pinot Grigio or Sauvignon Blanc)', tag: 'Pantry' },
-          { qty: 1, text: 'organic Meyer lemon, zested and juiced', tag: 'Citrus' },
+          { qty: 1, text: 'organic Meyer lemon, zested and juiced', tag: 'Produce' },
           { qty: 1 / 3, unit: 'cup', text: 'freshly grated Parmigiano-Reggiano (24-month aged)', tag: 'Dairy' },
           { qty: 2, unit: 'tbsp', text: 'unsalted European butter, cubed and chilled', tag: 'Dairy' },
           { qty: 2, unit: 'tbsp', text: 'fresh dill & flat-leaf parsley, hand-torn', tag: 'Herbs' },
@@ -84,7 +84,7 @@ const pool = [
         category: 'Garden Greens',
         items: [
           { qty: 1, unit: 'bunch', text: 'slender green asparagus, woody ends snapped', tag: 'Produce' },
-          { qty: 1, unit: 'tbsp', text: 'extra virgin olive oil & grilled lemon halves', tag: 'Garnish', staple: true },
+          { qty: 1, unit: 'tbsp', text: 'extra virgin olive oil & grilled lemon halves', tag: 'Produce', staple: true },
         ],
       },
     ],
@@ -162,7 +162,7 @@ const pool = [
           { qty: 12, text: 'corn tortillas', tag: 'Bakery' },
           { qty: 2, unit: 'cups', text: 'shredded Monterey Jack', tag: 'Dairy' },
           { qty: 1, unit: 'bunch', text: 'fresh cilantro', tag: 'Herbs' },
-          { qty: 1, text: 'lime, cut into wedges', tag: 'Citrus' },
+          { qty: 1, text: 'lime, cut into wedges', tag: 'Produce' },
           { qty: 1, unit: 'roll', text: 'aluminum foil, to cover the baking dish', tag: 'Other' },
         ],
       },
@@ -455,7 +455,7 @@ const pool = [
         category: 'Protein',
         items: [
           { qty: 2, text: 'salmon fillets (6 oz each), skin-on', tag: 'Fresh' },
-          { qty: 1, text: 'lemon, zested and juiced', tag: 'Citrus' },
+          { qty: 1, text: 'lemon, zested and juiced', tag: 'Produce' },
         ],
       },
       {
@@ -580,7 +580,7 @@ const pool = [
         items: [
           { qty: 8, text: 'bone-in, skin-on chicken thighs', tag: 'Fresh' },
           { qty: 2, unit: 'tbsp', text: 'Dijon mustard', tag: 'Pantry' },
-          { qty: 2, text: 'lemons, one juiced and one sliced', tag: 'Citrus' },
+          { qty: 2, text: 'lemons, one juiced and one sliced', tag: 'Produce' },
           { qty: 1, unit: 'bunch', text: 'fresh thyme', tag: 'Herbs' },
         ],
       },
@@ -769,7 +769,7 @@ const pool = [
           { qty: 1.5, unit: 'cups', text: 'coarse polenta', tag: 'Pantry' },
           { qty: 0.5, unit: 'cup', text: 'mascarpone', tag: 'Dairy' },
           { qty: 1, unit: 'bunch', text: 'flat-leaf parsley', tag: 'Herbs' },
-          { qty: 1, text: 'lemon, zested', tag: 'Citrus' },
+          { qty: 1, text: 'lemon, zested', tag: 'Produce' },
         ],
       },
     ],
@@ -821,7 +821,7 @@ const pool = [
         category: 'Protein',
         items: [
           { qty: 1.5, unit: 'lb', text: 'chicken tenderloins', tag: 'Fresh' },
-          { qty: 2, text: 'lemons', tag: 'Citrus' },
+          { qty: 2, text: 'lemons', tag: 'Produce' },
           { qty: 4, text: 'cloves garlic, grated', tag: 'Produce' },
           { qty: 1, unit: 'tbsp', text: 'dried oregano', tag: 'Spices', staple: true },
         ],
@@ -893,7 +893,7 @@ const pool = [
         category: 'Sauce',
         items: [
           { qty: 0.25, unit: 'cup', text: 'tahini', tag: 'Pantry' },
-          { qty: 1, text: 'lemon, juiced', tag: 'Citrus' },
+          { qty: 1, text: 'lemon, juiced', tag: 'Produce' },
           { qty: 0.5, unit: 'bunch', text: 'flat-leaf parsley', tag: 'Herbs' },
         ],
       },

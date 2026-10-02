@@ -4,6 +4,12 @@
 /** Longest tag, in characters. */
 export const TAG_MAX = 100;
 
+// Ingredient aisles earlier sample recipes used that the editor doesn't offer.
+const LEGACY_AISLES = { Citrus: 'Produce', Garnish: 'Produce', Broth: 'Other' };
+
+/** Maps a retired ingredient aisle tag to the one that replaced it. @param {string} tag */
+export const normalizeAisle = (tag) => LEGACY_AISLES[tag] ?? tag;
+
 /** Offered in the editor and listed first among the catalog filters. */
 export const suggestedTags = ['Quick (<30m)', 'Vegetarian', 'Poultry & Meat', 'Gluten-Free'];
 
