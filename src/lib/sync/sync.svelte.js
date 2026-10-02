@@ -12,7 +12,7 @@ import { recipes, replaceRecipes, saveRecipe } from '../recipes.svelte.js';
 import { favorites, setFavorites } from '../favorites.svelte.js';
 import { planner, replacePlan, statusOf } from '../planner.svelte.js';
 import { grocery, groceryLines, replaceGrocery } from '../grocery.svelte.js';
-import { settings, replaceAisleMappings } from '../settings.svelte.js';
+import { settings, replaceSettings } from '../settings.svelte.js';
 import { weekStartOf, weekDates } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
 import { storageKey } from '../env.js';
@@ -185,7 +185,7 @@ const device = {
       }
       replacePlan(entries);
     } else if (tab === 'settings') {
-      replaceAisleMappings(settingsFromRows([...final.values()]).aisles);
+      replaceSettings(settingsFromRows([...final.values()]));
     } else {
       const isPlanned = (week, key) => {
         const recipeId = key.split(':')[0];
@@ -198,7 +198,7 @@ const device = {
 
 /** Everything a sync pass looks at, as one string — to notice edits. */
 const deviceFingerprint = () =>
-  JSON.stringify([recipes, favorites.ids, planner.entries, grocery.weeks, settings.aisles, syncedTabs(), sheets.direction]);
+  JSON.stringify([recipes, favorites.ids, planner.entries, grocery.weeks, settings, syncedTabs(), sheets.direction]);
 
 // ---- Sync passes ----------------------------------------------------------------
 

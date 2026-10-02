@@ -1,6 +1,7 @@
 // Profile settings that travel with the household and sync to the [Settings] tab of the
-// Google Sheet: today, the person's own ingredient → aisle mappings. (Per-device preferences
-// such as print options live in their own stores and are never synced.)
+// Google Sheet: the person's ingredient → aisle mappings, and whether choosing a meal in the
+// catalog returns to the planner. (Per-device preferences such as print options live in their
+// own stores and are never synced.)
 
 import { storageKey } from './env.js';
 import { mappingKey, tidyName, withMapping } from './aisleMap.js';
@@ -9,12 +10,13 @@ const STORAGE_KEY = storageKey('settings.v1');
 
 /** @typedef {import('./aisleMap.js').AisleMapping} AisleMapping */
 
-/** @returns {{ aisles: AisleMapping[] }} */
+/** @returns {{ aisles: AisleMapping[], returnToPlanner: boolean }} */
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
     if (saved && Array.isArray(saved.aisles)) {
       return {
+        returnToPlanner: saved.returnToPlanner !== false,
         aisles: saved.aisles
           .filter((m) => m && typeof m.name === 'string' && typeof m.tag === 'string' && tidyName(m.name))
           .map((m) => ({ name: tidyName(m.name), tag: m.tag })),
@@ -23,7 +25,7 @@ function load() {
   } catch {
     // Start empty.
   }
-  return { aisles: [] };
+  return { aisles: [], returnToPlanner: true };
 }
 
 export const settings = $state(load());
@@ -49,7 +51,13 @@ export function removeAisleMapping(name) {
   settings.aisles = settings.aisles.filter((m) => mappingKey(m.name) !== mappingKey(name));
 }
 
-/** Replaces every mapping (used by Google Sheets sync). @param {AisleMapping[]} aisles */
-export function replaceAisleMappings(aisles) {
-  settings.aisles = aisles;
+/** Whether choosing a meal in the catalog goes back to the planner (otherwise a toast confirms it). @param {boolean} on */
+export function setReturnToPlanner(on) {
+  settings.returnToPlanner = on;
+}
+
+/** Replaces the synced settings (used by Google Sheets sync). @param {{ aisles: AisleMapping[], returnToPlanner: boolean }} next */
+export function replaceSettings(next) {
+  settings.aisles = next.aisles;
+  settings.returnToPlanner = next.returnToPlanner;
 }

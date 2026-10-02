@@ -114,12 +114,12 @@ export const recipe = (id, title, extra = {}) => ({
  * On-device data plus the LocalAdapter runSync uses — the same shape as
  * sync.svelte.js, without Svelte. Provisions are kept as rows.
  */
-export function fakeDevice({ recipes = [], plan = {}, favorites = [], provisions = [], aisles = [] } = {}) {
+export function fakeDevice({ recipes = [], plan = {}, favorites = [], provisions = [], aisles = [], returnToPlanner = true } = {}) {
   const d = {
     recipes,
     plan,
     favorites: new Set(favorites),
-    settings: { aisles },
+    settings: { aisles, returnToPlanner },
     provisions: new Map(provisions.map((r) => [codec.provisionKey(r.Week_Of, r.Line_Key), r])),
   };
   /** @type {import('../src/lib/sync/run.js').LocalAdapter} */

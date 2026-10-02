@@ -400,13 +400,20 @@ export function parseAisle(v) {
   return aisles.find((a) => a.tag === tag || a.tag.toLowerCase() === t || a.label.toLowerCase() === t)?.tag ?? '';
 }
 
+/** [Settings] row for "go back to the planner after choosing a meal". */
+export const RETURN_TO_PLANNER = { Section: 'Preference', Name: 'Return to planner after choosing a meal' };
+
 /**
  * The [Settings] rows for the device's settings, keyed for sync.
- * @param {{ aisles: import('../aisleMap.js').AisleMapping[] }} settings
+ * @param {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner?: boolean }} settings
  * @returns {Map<string, Row>}
  */
 export function settingsToRows(settings) {
   const rows = new Map();
+  rows.set(settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name), {
+    ...RETURN_TO_PLANNER,
+    Value: settings.returnToPlanner ?? true,
+  });
   for (const m of settings.aisles) {
     const label = aisles.find((a) => a.tag === m.tag)?.label ?? m.tag;
     rows.set(settingKey('Aisle', m.name), { Section: 'Aisle', Name: m.name, Value: label });
@@ -416,18 +423,29 @@ export function settingsToRows(settings) {
 
 /**
  * Settings from [Settings] rows. Rows of a section MealCaster doesn't know, or with a value it
- * can't read, are ignored here and left alone in the sheet.
+ * can't read, are ignored here and left alone in the sheet; a preference with no readable row
+ * takes its default.
  * @param {Row[]} rows
- * @returns {{ aisles: import('../aisleMap.js').AisleMapping[] }}
+ * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner: boolean }}
  */
 export function settingsFromRows(rows) {
   /** @type {Map<string, import('../aisleMap.js').AisleMapping>} */
   const found = new Map();
+  let returnToPlanner = true;
+  const returnKey = settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name);
   for (const row of rows) {
-    if (str(row.Section).toLowerCase() !== 'aisle') continue;
+    const section = str(row.Section).toLowerCase();
+    if (section === 'preference') {
+      const value = str(row.Value).toLowerCase();
+      if (settingKey(row.Section, row.Name) === returnKey && /^(true|false|yes|no|y|n|1|0|on|off)$/.test(value)) {
+        returnToPlanner = /^(true|yes|y|1|on)$/.test(value);
+      }
+      continue;
+    }
+    if (section !== 'aisle') continue;
     const name = tidyName(str(row.Name));
     const tag = parseAisle(row.Value);
     if (name && tag && !found.has(mappingKey(name))) found.set(mappingKey(name), { name, tag });
   }
-  return { aisles: [...found.values()] };
+  return { aisles: [...found.values()], returnToPlanner };
 }

@@ -7,7 +7,7 @@
   import PrintOptionsFields from '../lib/components/PrintOptionsFields.svelte';
   import { aisles } from '../lib/data/aisles.js';
   import { aisleLabel } from '../lib/recipes.svelte.js';
-  import { settings, setAisleMapping, removeAisleMapping } from '../lib/settings.svelte.js';
+  import { settings, setAisleMapping, removeAisleMapping, setReturnToPlanner } from '../lib/settings.svelte.js';
   import { mappingKey } from '../lib/aisleMap.js';
   import { printOptions, setPrintOptions } from '../lib/printOptions.svelte.js';
   import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
@@ -73,11 +73,28 @@
   <div>
     <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">Profile &amp; Settings</h1>
     <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-      Settings in the first section are shared through your Google Sheet; the rest stay on this device.
+      Planning and Aisle Mappings are shared through your Google Sheet; the rest stay on this device.
     </p>
   </div>
 
   <!-- Shared through the sheet -->
+  <section class="flex flex-col gap-2 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="planning-heading">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 id="planning-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+        <Icon name="calendar_month" class="text-[20px] text-primary" /> Planning
+      </h2>
+      <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
+        {synced ? `Synced · [${sheets.tabs.settings}]` : 'Saved on this device'}
+      </span>
+    </div>
+    {@render switchRow(
+      settings.returnToPlanner,
+      'Return to the planner after choosing a meal',
+      'In the catalog, picking a meal (or Surprise Me) takes you back to the weekly plan. Switch off to stay in the catalog and see a confirmation instead.',
+      setReturnToPlanner,
+    )}
+  </section>
+
   <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="aisle-heading">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 id="aisle-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">

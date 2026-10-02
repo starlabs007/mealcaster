@@ -44,7 +44,7 @@ describe('settings rows', () => {
     { name: 'Chicken stock', tag: 'Fresh' },
   ];
   it('write the aisle by its name in the editor', () => {
-    const rows = [...codec.settingsToRows({ aisles }).values()];
+    const rows = [...codec.settingsToRows({ aisles }).values()].filter((r) => r.Section === 'Aisle');
     assert.deepEqual(rows, [
       { Section: 'Aisle', Name: 'Oat milk', Value: 'Dairy & Eggs' },
       { Section: 'Aisle', Name: 'Chicken stock', Value: 'Meat & Seafood' },
@@ -67,6 +67,19 @@ describe('settings rows', () => {
       { name: 'Salt', tag: 'Spices' },
     ]);
   });
+  it('carry the return-to-planner preference as TRUE/FALSE, on by default', () => {
+    const pref = (settings) => [...codec.settingsToRows(settings).values()].find((r) => r.Section === 'Preference');
+    assert.equal(pref({ aisles: [] }).Value, true);
+    assert.equal(pref({ aisles: [], returnToPlanner: false }).Value, false);
+    const row = (Value) => ({ ...codec.RETURN_TO_PLANNER, Value });
+    assert.equal(codec.settingsFromRows([row('FALSE')]).returnToPlanner, false);
+    assert.equal(codec.settingsFromRows([row(false)]).returnToPlanner, false);
+    assert.equal(codec.settingsFromRows([row('no')]).returnToPlanner, false);
+    assert.equal(codec.settingsFromRows([row('TRUE')]).returnToPlanner, true);
+    // Missing or unreadable: the default.
+    assert.equal(codec.settingsFromRows([]).returnToPlanner, true);
+    assert.equal(codec.settingsFromRows([row('maybe')]).returnToPlanner, true);
+  });
   it('are keyed by section and name, ignoring case', () => {
     assert.equal(codec.settingKey('Aisle', 'Oat  Milk'), codec.settingKey(' aisle', 'oat milk'));
   });
@@ -81,7 +94,7 @@ describe('syncing the Settings tab', () => {
     const result = await runSync(options(sheet, device, emptyBase('S1')));
     assert.equal(result.status, 'done');
     assert.deepEqual(sheet.find('Settings').grid[0], ['Section', 'Name', 'Value']);
-    assert.deepEqual(sheet.column('Settings', 'Value'), ['Dairy & Eggs']);
+    assert.deepEqual(sheet.column('Settings', 'Value'), [true, 'Dairy & Eggs']);
   });
 
   it('brings mappings added in the sheet to the device, and leaves rows it does not know alone', async () => {
@@ -100,7 +113,22 @@ describe('syncing the Settings tab', () => {
     const again = await runSync(options(sheet, device, pull.base));
     assert.equal(again.pushed, 0);
     assert.equal(sheet.calls.writes, writes);
-    assert.deepEqual(sheet.column('Settings', 'Name'), ['Oat milk', 'Quinoa', 'Mode']);
+    assert.deepEqual(sheet.column('Settings', 'Name').slice(1), ['Oat milk', 'Quinoa', 'Mode']);
+  });
+
+  it('syncs the return-to-planner preference both ways', async () => {
+    const sheet = fakeSheet();
+    const device = fakeDevice({ returnToPlanner: false });
+    let base = (await runSync(options(sheet, device, emptyBase('S1')))).base;
+    assert.deepEqual(sheet.column('Settings', 'Value'), [false]);
+
+    sheet.find('Settings').grid[1][2] = 'TRUE';
+    const pull = await runSync(options(sheet, device, base));
+    assert.equal(device.settings.returnToPlanner, true);
+
+    device.settings = { ...device.settings, returnToPlanner: false };
+    await runSync(options(sheet, device, pull.base));
+    assert.deepEqual(sheet.column('Settings', 'Value'), [false]);
   });
 
   it('pushes a mapping changed or removed on the device', async () => {
@@ -110,7 +138,7 @@ describe('syncing the Settings tab', () => {
 
     device.settings = { aisles: [{ name: 'Oat milk', tag: 'Pantry' }] };
     base = (await runSync(options(sheet, device, base))).base;
-    assert.deepEqual(sheet.column('Settings', 'Name'), ['Oat milk']);
-    assert.deepEqual(sheet.column('Settings', 'Value'), ['Pantry']);
+    assert.deepEqual(sheet.column('Settings', 'Name').slice(1), ['Oat milk']);
+    assert.deepEqual(sheet.column('Settings', 'Value').slice(1), ['Pantry']);
   });
 });
