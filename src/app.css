@@ -54,6 +54,9 @@
   .notes-md ol {
     @apply list-decimal pl-5;
   }
+  .notes-md li > ul {
+    @apply [list-style-type:circle];
+  }
   .notes-md strong {
     @apply font-semibold text-on-surface;
   }
