@@ -40,7 +40,7 @@ npm run preview    # http://localhost:4173
 
 ## What works on the home screen
 
-- Saturday → Friday day cards with **completed** (past), **today**, **planned** and **open** states,
+- Seven day cards (Saturday → Friday unless you change the start day in Profile & Settings) with **completed** (past), **today**, **planned** and **open** states,
   computed from the real current date.
 - Week stepper in the header (click the date range to jump back to this week).
 - **Auto-fill Remaining**, **Copy Last Week**, **Reset Week** — each with an Undo toast.
@@ -104,6 +104,8 @@ Reached from the avatar in the header (and the footer, on phones).
 
 - **Planning** — "Return to the planner after choosing a meal" (on by default; applies to Select and Surprise Me
   in the catalog). Synced as a `Preference` row in the `[Settings]` tab.
+- **Week starts on** — the first day of the weekly plan and the grocery week (Saturday by default). Synced as a
+  `Preference` row in `[Settings]`. Plan dates don't move; grocery lists are re-keyed onto the new weeks.
 - **Aisle Mappings** — your own ingredient → aisle pairs (e.g. "Oat milk" → Pantry). They're checked before the
   built-in word lists whenever an aisle is guessed: typing or pasting ingredients in the recipe editor, and the
   aisle pre-selected in the grocery **Add Item** form. A name matches as whole words anywhere in the ingredient
@@ -159,7 +161,7 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
 | `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
-| `mealcaster.settings.v1` | `[Settings]` tab: Profile aisle mappings |
+| `mealcaster.settings.v1` | `[Settings]` tab: Profile preferences and aisle mappings |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
 
