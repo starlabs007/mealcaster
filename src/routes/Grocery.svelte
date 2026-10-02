@@ -3,11 +3,13 @@
   import Icon from '../lib/components/Icon.svelte';
   import {
     departments,
+    deptOfTag,
     groceryLines,
     setLineStatus,
     addCustomItem,
     removeCustomItem,
   } from '../lib/grocery.svelte.js';
+  import { aisles } from '../lib/recipes.svelte.js';
   import { planner, currentWeek, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { addDays, formatRange, formatShort, formatWeekday, isoWeek } from '../lib/dates.js';
@@ -27,7 +29,7 @@
   let aisle = $state('all');
   let showOnHand = $state(true);
   let adding = $state(false);
-  let draft = $state({ name: '', note: '', dept: 'produce' });
+  let draft = $state({ name: '', note: '', aisle: 'Produce' });
 
   const offset = $derived(weekOffset());
   /** "this week", "next week", "last week" or "the week of Oct 10" */
@@ -70,9 +72,9 @@
     event.preventDefault();
     const name = draft.name.trim();
     if (!name) return;
-    addCustomItem({ name, note: draft.note.trim(), dept: draft.dept });
+    addCustomItem({ name, note: draft.note.trim(), dept: deptOfTag(draft.aisle) });
     showToast(`Added ${name} to your list.`);
-    draft = { name: '', note: '', dept: draft.dept };
+    draft = { name: '', note: '', aisle: draft.aisle };
   }
 
   function listAsText() {
@@ -257,10 +259,10 @@
       <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
         Aisle
         <select
-          bind:value={draft.dept}
+          bind:value={draft.aisle}
           class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         >
-          {#each departments as d (d.id)}<option value={d.id}>{d.short}</option>{/each}
+          {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
         </select>
       </label>
       <button type="submit" class="btn-primary py-2.5">Add to List</button>
