@@ -3,7 +3,7 @@
 // localStorage; sync.svelte.js keeps it in step with the connected sheet.
 
 import { recipes, recipeById } from './recipes.svelte.js';
-import { addDays, daysBetween, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
+import { addDays, daysBetween, formatLong, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
 import { showToast } from './toast.svelte.js';
 import { sampleData, storageKey } from './env.js';
 
@@ -219,19 +219,35 @@ const NO_RECIPES = 'Add a recipe to the catalog first.';
  * @returns {import('./data/recipes.js').Recipe | undefined} undefined when there are no recipes yet
  */
 export function surpriseMe(iso, pool) {
-  const recipe = pickRecipe(pool?.length ? pool : recipes);
+  const previous = planner.entries[iso] && { ...planner.entries[iso] };
+  // Replacing a meal never "surprises" with the same one, unless it's the only choice.
+  const candidates = (pool?.length ? pool : recipes).filter((r) => r.id !== previous?.recipeId);
+  const recipe = pickRecipe(candidates.length ? candidates : pool?.length ? pool : recipes);
   if (!recipe) {
     showToast(NO_RECIPES);
     return undefined;
   }
   planner.entries[iso] = { recipeId: recipe.id };
-  showToast(`Surprise! ${recipe.title}`);
+  showToast(`Surprise! ${recipe.title}`, previous?.recipeId ? undoDay(iso, previous) : undefined);
   return recipe;
+}
+
+/** Toast action that puts a day back as it was. @param {string} iso @param {object | undefined} previous */
+function undoDay(iso, previous) {
+  return {
+    label: 'Undo',
+    run: () => {
+      if (previous) planner.entries[iso] = previous;
+      else delete planner.entries[iso];
+    },
+  };
 }
 
 /** @param {string} iso */
 export function markDiningOut(iso) {
+  const previous = planner.entries[iso]?.recipeId ? { ...planner.entries[iso] } : undefined;
   planner.entries[iso] = { diningOut: true };
+  if (previous) showToast(`${formatLong(iso)} is now a night off.`, undoDay(iso, previous));
 }
 
 /** @param {string} iso */

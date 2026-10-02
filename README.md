@@ -45,7 +45,8 @@ npm run preview    # http://localhost:4173
 - Week stepper in the header (click the date range to jump back to this week).
 - **Auto-fill Remaining**, **Copy Last Week**, **Reset Week** — each with an Undo toast.
   Past days are kept as history and never overwritten.
-- **Choose a Meal**, **Surprise Me** and **Dining Out** on open slots. Surprise Me and Auto-fill prefer meals
+- **Choose a Meal**, **Surprise Me** and **Dining Out** on open slots; a planned meal offers **Swap Meal**,
+  **Surprise Me** and **Dining Out** too (the last two replace it, with an Undo toast). Surprise Me and Auto-fill prefer meals
   not already on the week's plan and not made in the last 7 days.
 - Grocery badge counts the ingredients of this week's upcoming dinners.
 

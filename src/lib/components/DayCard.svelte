@@ -82,7 +82,7 @@
       <div class="min-w-0 flex-1">
         <h3 class="font-display text-on-surface {emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
         <p class="mt-1 text-xs text-on-surface-variant">{[recipe.badge.label, `${recipe.prepMinutes + recipe.cookMinutes} min`, `Serves ${recipe.serves}`].filter(Boolean).join(' · ')}</p>
-        <div class="mt-3 flex items-center gap-4">
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <a
             href={href(`/recipe/${recipe.id}`, { day: day.iso })}
             class="inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday
@@ -100,6 +100,20 @@
             >
               <Icon name="sync_alt" class="text-[14px]" /> Swap Meal
             </a>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+              onclick={() => surpriseMe(day.iso)}
+            >
+              <Icon name="casino" class="text-[14px]" /> Surprise Me
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+              onclick={() => markDiningOut(day.iso)}
+            >
+              <Icon name="storefront" class="text-[14px]" /> Dining Out
+            </button>
           {/if}
         </div>
       </div>
