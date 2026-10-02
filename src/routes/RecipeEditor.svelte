@@ -682,7 +682,7 @@
 
           <fieldset>
             <legend class="mb-2 flex w-full items-baseline justify-between gap-2">
-              <span class="text-label-md text-on-surface">Pantry &amp; Dietary Tags</span>
+              <span class="text-label-md text-on-surface">Tags</span>
               <span class="text-body-sm text-outline">Column: Tags</span>
             </legend>
             <div class="flex flex-wrap gap-1.5">

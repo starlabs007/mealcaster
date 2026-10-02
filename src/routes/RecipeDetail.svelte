@@ -13,7 +13,7 @@
   import PrintOptionsDialog from '../lib/components/PrintOptionsDialog.svelte';
   import RecipePrintSimple from '../lib/components/RecipePrintSimple.svelte';
   import { printOptions, setPrintOptions, TEXT_DELTA } from '../lib/printOptions.svelte.js';
-  import { recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon } from '../lib/recipes.svelte.js';
+  import { recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon, aisleLabel } from '../lib/recipes.svelte.js';
   import { tagClass } from '../lib/tagColors.svelte.js';
   import LastMade from '../lib/components/LastMade.svelte';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
@@ -22,6 +22,7 @@
   import { href, navigate } from '../lib/router.svelte.js';
   import { formatLong, formatWeekday } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
+  import { sheetTabOf } from '../lib/sync/sync.svelte.js';
   import { tick } from 'svelte';
 
   /** @type {{ id: string, day?: string }} */
@@ -197,7 +198,11 @@
             <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> Scheduled: {formatLong(day)}
           </span>
         {/if}
-        {#if recipe.custom}
+        {#if recipe.custom && sheetTabOf('recipes', recipe.id)}
+          <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-label-sm text-on-surface-variant">
+            <Icon name="table_chart" class="text-[13px]" /> Custom recipe · in [{sheetTabOf('recipes', recipe.id)}] sheet
+          </span>
+        {:else if recipe.custom}
           <span class="inline-flex items-center gap-1 rounded-full bg-secondary-fixed/60 px-2.5 py-1 text-label-sm text-secondary">
             <Icon name="family_restroom" class="text-[13px]" /> Custom recipe · saved on this device
           </span>
@@ -348,7 +353,7 @@
                           {item.unit ?? ''} {item.text}
                         </span>
                         <span class="shrink-0 rounded bg-surface-container-highest px-1.5 py-0.5 text-label-caps text-on-surface-variant">
-                          {item.tag}
+                          {aisleLabel(item.tag)}
                         </span>
                       </label>
                     </li>

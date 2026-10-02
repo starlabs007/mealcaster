@@ -6,7 +6,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
 import { migrateNotes } from './markdown.js';
-import { normalizeCategory, normalizeTags } from './tags.js';
+import { normalizeAisle, normalizeCategory, normalizeTags } from './tags.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
 
@@ -31,7 +31,12 @@ const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes });
 const migrate = (r) => {
   // Mock-only sample fields, since removed (cook counts now come from the plan).
   const { highlight, prep, stat, rating, ratings, cookCount, ...rest } = migrateNotes(r);
-  return { ...rest, badge: { label: normalizeCategory(rest.badge?.label ?? 'Dinner') }, tags: normalizeTags(r.tags) };
+  return {
+    ...rest,
+    badge: { label: normalizeCategory(rest.badge?.label ?? 'Dinner') },
+    tags: normalizeTags(r.tags),
+    ingredients: (rest.ingredients ?? []).map((g) => ({ ...g, items: (g.items ?? []).map((i) => ({ ...i, tag: normalizeAisle(i.tag) })) })),
+  };
 };
 
 /** @returns {{ saved: SavedRecipe[], deleted: string[] }} */
@@ -213,6 +218,9 @@ export const aisles = [
   { tag: 'Frozen', label: 'Frozen' },
   { tag: 'Other', label: 'Other' },
 ];
+
+/** Display name for an ingredient tag; tags outside the aisle list show as-is. @param {string} tag */
+export const aisleLabel = (tag) => aisles.find((a) => a.tag === tag)?.label ?? tag;
 
 const AISLE_WORDS = [
   ['Herbs', /\b(basil|parsley|cilantro|coriander leaves|thyme|rosemary|dill|mint|sage|chives|tarragon|oregano leaves)\b/],

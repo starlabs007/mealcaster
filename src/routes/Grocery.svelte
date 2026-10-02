@@ -26,13 +26,13 @@
   };
 
   let aisle = $state('all');
-  let showPantry = $state(true);
+  let showOnHand = $state(true);
   let adding = $state(false);
   let draft = $state({ name: '', note: '', dept: 'produce' });
 
   const lines = $derived(groceryLines());
   const shopping = $derived(lines.filter((l) => l.status !== 'owned'));
-  const pantry = $derived(lines.filter((l) => l.status === 'owned'));
+  const onHand = $derived(lines.filter((l) => l.status === 'owned'));
   const toBuy = $derived(shopping.filter((l) => l.status === 'need').length);
   const bought = $derived(shopping.length - toBuy);
   const completion = $derived(shopping.length ? Math.round((bought / shopping.length) * 100) : 0);
@@ -66,7 +66,7 @@
 
   function clear() {
     const n = clearDone();
-    showToast(n ? `Moved ${n} bought ${n === 1 ? 'item' : 'items'} to the pantry ledger.` : 'Nothing checked off yet.');
+    showToast(n ? `Moved ${n} bought ${n === 1 ? 'item' : 'items'} to On Hand.` : 'Nothing checked off yet.');
   }
 
   function listAsText() {
@@ -91,14 +91,14 @@
   }
 </script>
 
-{#snippet line(item, inPantry)}
-  <li class="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-container-low/60 {inPantry ? 'opacity-70' : ''}">
+{#snippet line(item, isOnHand)}
+  <li class="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-container-low/60 {isOnHand ? 'opacity-70' : ''}">
     <button
       type="button"
       role="checkbox"
       aria-checked={item.status !== 'need'}
       aria-label="{item.status === 'bought' ? 'Unmark' : 'Mark'} {item.name} as bought"
-      disabled={inPantry}
+      disabled={isOnHand}
       onclick={() => setLineStatus(item.key, item.status === 'bought' ? 'need' : 'bought')}
       class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status !== 'need'
         ? 'border-primary-container bg-primary-container text-on-primary'
@@ -111,15 +111,15 @@
         {item.name}
       </p>
       <p class="text-body-sm text-on-surface-variant">
-        {item.detail}{inPantry ? ' • In pantry' : ''}
-        {#if !inPantry}<span class="sm:hidden">· {item.source.label}</span>{/if}
+        {item.detail}{isOnHand ? ' • On hand' : ''}
+        {#if !isOnHand}<span class="sm:hidden">· {item.source.label}</span>{/if}
       </p>
     </div>
-    <span class="hidden max-w-[45%] shrink-0 truncate rounded-full px-2 py-0.5 text-label-sm sm:inline {inPantry ? toneClass.neutral : toneClass[item.source.tone]}">
-      {inPantry ? 'Pantry stocked' : `• ${item.source.label}`}
+    <span class="hidden max-w-[45%] shrink-0 truncate rounded-full px-2 py-0.5 text-label-sm sm:inline {isOnHand ? toneClass.neutral : toneClass[item.source.tone]}">
+      {isOnHand ? 'On hand' : `• ${item.source.label}`}
     </span>
     <div class="flex shrink-0 items-center">
-      {#if inPantry}
+      {#if isOnHand}
         <button
           type="button"
           title="Need to buy after all"
@@ -142,8 +142,8 @@
       {:else}
         <button
           type="button"
-          title="Already have it — move to pantry"
-          aria-label="Move {item.name} to pantry"
+          title="Already have it — mark as on hand"
+          aria-label="Mark {item.name} as on hand"
           class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
           onclick={() => setLineStatus(item.key, 'owned')}
         >
@@ -259,7 +259,7 @@
           {/each}
         </div>
         <p class="mt-2 flex items-center gap-1 px-1 text-body-sm text-outline">
-          <Icon name="touch_app" class="text-[15px]" /> Tap the circle when bought, or the box icon if it’s already in your pantry
+          <Icon name="touch_app" class="text-[15px]" /> Tap the circle when bought, or the box icon if you already have it
         </p>
       </div>
 
@@ -296,28 +296,28 @@
         {/if}
       {/each}
 
-      {#if pantry.length}
-        <section class="rounded-2xl bg-surface-container-low" aria-labelledby="pantry-heading">
+      {#if onHand.length}
+        <section class="rounded-2xl bg-surface-container-low" aria-labelledby="on-hand-heading">
           <div class="flex items-center justify-between gap-2 px-4 py-3">
-            <h2 id="pantry-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+            <h2 id="on-hand-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
               <Icon name="inventory_2" class="text-[20px]" />
-              Already In Pantry / Acquired
+              Already On Hand / Acquired
               <span class="rounded-full bg-surface-container-high px-2 py-0.5 font-sans text-label-caps uppercase text-on-surface-variant">
-                {pantry.length} on hand
+                {onHand.length} on hand
               </span>
             </h2>
             <button
               type="button"
-              aria-expanded={showPantry}
-              onclick={() => (showPantry = !showPantry)}
+              aria-expanded={showOnHand}
+              onclick={() => (showOnHand = !showOnHand)}
               class="inline-flex items-center gap-0.5 text-label-md text-on-surface-variant hover:text-on-surface"
             >
-              {showPantry ? 'Hide' : 'Show'} <Icon name={showPantry ? 'expand_less' : 'expand_more'} class="text-[18px]" />
+              {showOnHand ? 'Hide' : 'Show'} <Icon name={showOnHand ? 'expand_less' : 'expand_more'} class="text-[18px]" />
             </button>
           </div>
-          {#if showPantry}
+          {#if showOnHand}
             <ul transition:slide={{ duration: 180 }} class="divide-y divide-surface-container-high border-t border-surface-container-high">
-              {#each pantry as item (item.key)}
+              {#each onHand as item (item.key)}
                 {@render line(item, true)}
               {/each}
             </ul>
@@ -338,7 +338,7 @@
             <span class="font-display text-[40px] leading-none">{toBuy}</span> items to buy
           </p>
           <p class="text-right text-body-sm text-on-surface-variant">
-            <span class="block text-body-lg text-on-surface">{pantry.length}</span> in pantry
+            <span class="block text-body-lg text-on-surface">{onHand.length}</span> on hand
           </p>
         </div>
 

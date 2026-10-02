@@ -10,7 +10,7 @@
 
 import { departments } from '../data/departments.js';
 import { formatWeekday } from '../dates.js';
-import { normalizeCategory, normalizeTags } from '../tags.js';
+import { normalizeAisle, normalizeCategory, normalizeTags } from '../tags.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -124,7 +124,7 @@ export function parseIngredients(value) {
       ...(Number.isFinite(qty) && qty > 0 && { qty }),
       ...(unit && { unit }),
       text: str(i.text ?? i.name ?? i.item),
-      tag: str(i.tag ?? i.dept ?? i.aisle) || 'Pantry',
+      tag: normalizeAisle(str(i.tag ?? i.dept ?? i.aisle)) || 'Pantry',
       ...(i.staple && { staple: true }),
     };
   };
@@ -303,13 +303,14 @@ export function planFromRow(row, existing, columns) {
 
 // ---- Provisions -------------------------------------------------------------
 
-const STATUS_LABEL = { need: 'To buy', bought: 'Bought', owned: 'In pantry' };
+const STATUS_LABEL = { need: 'To buy', bought: 'Bought', owned: 'On hand' };
 
 /** @returns {import('../grocery.svelte.js').LineStatus} */
 export function parseStatus(v) {
   const t = str(v).toLowerCase();
   if (v === true || /^(bought|done|got|checked|true|x|✓)/.test(t)) return 'bought';
-  if (/pantry|owned|have|stock/.test(t)) return 'owned';
+  // "In pantry" is what earlier builds wrote.
+  if (/on hand|pantry|owned|have|stock/.test(t)) return 'owned';
   return 'need';
 }
 

@@ -1,7 +1,7 @@
 <script>
   // The printed Kitchen Checklist: one column, plain text, a department per section
   // headed by a large bold title, an empty box to tick beside each item. Only what
-  // is still to buy; bought and pantry items stay off the paper. Never shown on screen.
+  // is still to buy; bought and on-hand items stay off the paper. Never shown on screen.
 
   /** @type {{ week: string, sections: { id: string, label: string, where: string, items: import('../grocery.svelte.js').GroceryLine[] }[], sources: string[] }} */
   let { week, sections, sources } = $props();

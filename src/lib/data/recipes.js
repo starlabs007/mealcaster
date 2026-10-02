@@ -69,11 +69,11 @@ const pool = [
         category: 'Grains & Dairy',
         items: [
           { qty: 1, unit: 'cup', text: 'premium Arborio or Carnaroli rice', tag: 'Pantry' },
-          { qty: 3.5, unit: 'cups', text: 'organic vegetable or light chicken broth', tag: 'Broth' },
+          { qty: 3.5, unit: 'cups', text: 'organic vegetable or light chicken broth', tag: 'Other' },
           { qty: 1, text: 'French shallot, finely minced', tag: 'Produce' },
           { qty: 2, text: 'cloves garlic, microplaned', tag: 'Produce' },
           { qty: 0.5, unit: 'cup', text: 'dry crisp white wine (Pinot Grigio or Sauvignon Blanc)', tag: 'Pantry' },
-          { qty: 1, text: 'organic Meyer lemon, zested and juiced', tag: 'Citrus' },
+          { qty: 1, text: 'organic Meyer lemon, zested and juiced', tag: 'Produce' },
           { qty: 1 / 3, unit: 'cup', text: 'freshly grated Parmigiano-Reggiano (24-month aged)', tag: 'Dairy' },
           { qty: 2, unit: 'tbsp', text: 'unsalted European butter, cubed and chilled', tag: 'Dairy' },
           { qty: 2, unit: 'tbsp', text: 'fresh dill & flat-leaf parsley, hand-torn', tag: 'Herbs' },
@@ -84,7 +84,7 @@ const pool = [
         category: 'Garden Greens',
         items: [
           { qty: 1, unit: 'bunch', text: 'slender green asparagus, woody ends snapped', tag: 'Produce' },
-          { qty: 1, unit: 'tbsp', text: 'extra virgin olive oil & grilled lemon halves', tag: 'Garnish', staple: true },
+          { qty: 1, unit: 'tbsp', text: 'extra virgin olive oil & grilled lemon halves', tag: 'Produce', staple: true },
         ],
       },
     ],
@@ -162,7 +162,7 @@ const pool = [
           { qty: 12, text: 'corn tortillas', tag: 'Bakery' },
           { qty: 2, unit: 'cups', text: 'shredded Monterey Jack', tag: 'Dairy' },
           { qty: 1, unit: 'bunch', text: 'fresh cilantro', tag: 'Herbs' },
-          { qty: 1, text: 'lime, cut into wedges', tag: 'Citrus' },
+          { qty: 1, text: 'lime, cut into wedges', tag: 'Produce' },
           { qty: 1, unit: 'roll', text: 'aluminum foil, to cover the baking dish', tag: 'Other' },
         ],
       },
@@ -455,7 +455,7 @@ const pool = [
         category: 'Protein',
         items: [
           { qty: 2, text: 'salmon fillets (6 oz each), skin-on', tag: 'Fresh' },
-          { qty: 1, text: 'lemon, zested and juiced', tag: 'Citrus' },
+          { qty: 1, text: 'lemon, zested and juiced', tag: 'Produce' },
         ],
       },
       {
@@ -580,7 +580,7 @@ const pool = [
         items: [
           { qty: 8, text: 'bone-in, skin-on chicken thighs', tag: 'Fresh' },
           { qty: 2, unit: 'tbsp', text: 'Dijon mustard', tag: 'Pantry' },
-          { qty: 2, text: 'lemons, one juiced and one sliced', tag: 'Citrus' },
+          { qty: 2, text: 'lemons, one juiced and one sliced', tag: 'Produce' },
           { qty: 1, unit: 'bunch', text: 'fresh thyme', tag: 'Herbs' },
         ],
       },
@@ -769,7 +769,7 @@ const pool = [
           { qty: 1.5, unit: 'cups', text: 'coarse polenta', tag: 'Pantry' },
           { qty: 0.5, unit: 'cup', text: 'mascarpone', tag: 'Dairy' },
           { qty: 1, unit: 'bunch', text: 'flat-leaf parsley', tag: 'Herbs' },
-          { qty: 1, text: 'lemon, zested', tag: 'Citrus' },
+          { qty: 1, text: 'lemon, zested', tag: 'Produce' },
         ],
       },
     ],
@@ -821,7 +821,7 @@ const pool = [
         category: 'Protein',
         items: [
           { qty: 1.5, unit: 'lb', text: 'chicken tenderloins', tag: 'Fresh' },
-          { qty: 2, text: 'lemons', tag: 'Citrus' },
+          { qty: 2, text: 'lemons', tag: 'Produce' },
           { qty: 4, text: 'cloves garlic, grated', tag: 'Produce' },
           { qty: 1, unit: 'tbsp', text: 'dried oregano', tag: 'Spices', staple: true },
         ],
@@ -893,7 +893,7 @@ const pool = [
         category: 'Sauce',
         items: [
           { qty: 0.25, unit: 'cup', text: 'tahini', tag: 'Pantry' },
-          { qty: 1, text: 'lemon, juiced', tag: 'Citrus' },
+          { qty: 1, text: 'lemon, juiced', tag: 'Produce' },
           { qty: 0.5, unit: 'bunch', text: 'flat-leaf parsley', tag: 'Herbs' },
         ],
       },
@@ -914,6 +914,74 @@ const pool = [
         title: 'Dress & Assemble',
         minutes: 5,
         text: 'Whisk tahini, lemon juice, chopped parsley and water until pourable. Build bowls of quinoa, arugula, peppers, shallots and chickpeas, then drizzle.',
+      },
+    ],
+  },
+  {
+    id: 'ny-cheesecake',
+    title: 'Classic New York Cheesecake with Graham Cracker Crust',
+    shortTitle: 'New York Cheesecake',
+    description:
+      'Dense, tall and creamy cream-cheese filling with a hint of lemon and vanilla on a buttery graham cracker crust, baked low and slow in a water bath.',
+    sheetRow: 14,
+    prepMinutes: 30,
+    cookMinutes: 75,
+    serves: 12,
+    badge: { label: 'Dessert' },
+    addedAt: '2026-09-27',
+    tags: ['Vegetarian'],
+    notes:
+      'Start a day ahead: the cheesecake needs at least **6 hours** (ideally overnight) in the fridge to set.\n\n- Let the cream cheese, eggs and sour cream come fully to room temperature — cold cream cheese makes lumps.\n- Mix on low speed so you don’t whip in air; air bubbles are what crack the top.\n- For clean slices, dip a sharp knife in hot water and wipe it between cuts.',
+    ingredients: [
+      {
+        title: 'Graham Cracker Crust',
+        category: 'Pantry & Dairy',
+        items: [
+          { qty: 1.75, unit: 'cups', text: 'graham cracker crumbs', tag: 'Pantry' },
+          { qty: 6, unit: 'tbsp', text: 'unsalted butter, melted', tag: 'Dairy' },
+          { qty: 2, unit: 'tbsp', text: 'granulated sugar', tag: 'Pantry', staple: true },
+        ],
+      },
+      {
+        title: 'Cheesecake Filling',
+        category: 'Dairy & Pantry',
+        items: [
+          { qty: 32, unit: 'oz', text: 'full-fat cream cheese, at room temperature', tag: 'Dairy' },
+          { qty: 1.25, unit: 'cups', text: 'granulated sugar', tag: 'Pantry', staple: true },
+          { qty: 1, unit: 'cup', text: 'sour cream, at room temperature', tag: 'Dairy' },
+          { qty: 4, text: 'large eggs, at room temperature', tag: 'Dairy' },
+          { qty: 2, unit: 'tsp', text: 'vanilla extract', tag: 'Pantry' },
+          { qty: 1, text: 'lemon, zested', tag: 'Produce' },
+          { qty: 2, unit: 'tbsp', text: 'all-purpose flour', tag: 'Pantry', staple: true },
+        ],
+      },
+      {
+        title: 'Water Bath',
+        category: 'Equipment',
+        items: [{ qty: 1, unit: 'roll', text: 'heavy-duty aluminum foil, to wrap the springform pan', tag: 'Other' }],
+      },
+    ],
+    steps: [
+      {
+        title: 'Press & Bake the Crust',
+        minutes: 15,
+        text: 'Heat the oven to 325°F. Mix the crumbs, melted butter and sugar, press firmly into the base of a 9-inch springform pan, and bake for 10 minutes. Let it cool while you make the filling.',
+      },
+      {
+        title: 'Mix the Filling',
+        minutes: 10,
+        text: 'Beat the cream cheese and sugar **on low** until smooth. Add the sour cream, vanilla, lemon zest and flour, then the eggs one at a time, mixing only until each disappears. Scrape the bowl often.',
+      },
+      {
+        title: 'Bake in a Water Bath',
+        minutes: 75,
+        critical: true,
+        text: 'Wrap the outside of the pan in two layers of foil, pour in the filling and set it in a roasting tin. Add hot water halfway up the sides and bake until the edges are set but the center still wobbles, 70–80 minutes.',
+      },
+      {
+        title: 'Cool Slowly & Chill',
+        minutes: 60,
+        text: 'Turn off the oven, crack the door and leave the cheesecake inside for 1 hour. Run a knife around the edge, cool to room temperature, then chill at least 6 hours before unmolding.',
       },
     ],
   },

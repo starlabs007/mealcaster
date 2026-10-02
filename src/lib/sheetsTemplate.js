@@ -9,7 +9,7 @@ import { formatWeekday } from './dates.js';
 import { SCHEMA } from './sheets.svelte.js';
 import { buildXlsx } from './xlsx.js';
 
-const STATUS_LABEL = { need: 'To buy', bought: 'Bought', owned: 'In pantry' };
+const STATUS_LABEL = { need: 'To buy', bought: 'Bought', owned: 'On hand' };
 
 /** @param {import('./sheets.svelte.js').SheetsSettings} settings */
 export function starterWorkbook(settings) {

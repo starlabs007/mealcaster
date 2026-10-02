@@ -55,7 +55,8 @@ describe('codec', () => {
     assert.equal(codec.isoDate('10/21/2026'), '2026-10-21');
     assert.equal(codec.isoDate(46300), '2026-10-05'); // Sheets serial: days since 1899-12-30
     assert.equal(codec.isoDate('soon'), '');
-    assert.equal(codec.parseStatus('In pantry'), 'owned');
+    assert.equal(codec.parseStatus('On hand'), 'owned');
+    assert.equal(codec.parseStatus('In pantry'), 'owned'); // earlier builds
     assert.equal(codec.parseStatus(true), 'bought');
     assert.equal(codec.parseStatus(''), 'need');
     assert.equal(codec.parseDept('Seafood & Meat'), 'meat');

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeTag, normalizeTags, tagChoices, assignTones, TONES, TAG_MAX, categoryChoices, normalizeCategory } from '../src/lib/tags.js';
+import { normalizeTag, normalizeTags, tagChoices, assignTones, TONES, TAG_MAX, categoryChoices, normalizeCategory, normalizeAisle } from '../src/lib/tags.js';
 
 test('normalizeTag capitalizes each word and tidies spacing', () => {
   assert.equal(normalizeTag('  date   night '), 'Date Night');
@@ -42,4 +42,12 @@ test('categoryChoices lists Dinner, Lunch, Dessert first, then others alphabetic
   assert.deepEqual(categoryChoices(['Snack', '', 'Dinner', 'Breakfast', 'Snack']), ['Dinner', 'Lunch', 'Dessert', 'Breakfast', 'Snack']);
   assert.equal(normalizeCategory('  sunday   brunch '), 'Sunday Brunch');
   assert.equal(normalizeCategory(undefined), '');
+});
+
+test('normalizeAisle maps retired aisles and keeps the rest', () => {
+  assert.equal(normalizeAisle('Citrus'), 'Produce');
+  assert.equal(normalizeAisle('Garnish'), 'Produce');
+  assert.equal(normalizeAisle('Broth'), 'Other');
+  assert.equal(normalizeAisle('Fresh'), 'Fresh');
+  assert.equal(normalizeAisle(''), '');
 });

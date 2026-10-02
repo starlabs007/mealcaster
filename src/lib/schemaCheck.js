@@ -37,7 +37,7 @@ export const COLUMN_INFO = {
     Item: { note: 'Ingredient or product to buy.', required: true, aliases: ['ingredient', 'name', 'product', 'item name'] },
     Detail: { note: 'Amount and notes, e.g. 450 g.', aliases: ['qty', 'quantity', 'amount', 'details'] },
     Department: { note: 'Store aisle the item is filed under.', aliases: ['aisle', 'section', 'dept'] },
-    Status: { note: 'To buy, Bought or In pantry.', aliases: ['state', 'bought', 'checked'] },
+    Status: { note: 'To buy, Bought or On hand.', aliases: ['state', 'bought', 'checked'] },
     Source: { note: 'Recipe the item is for, or “Added by you”.', aliases: ['recipe', 'for', 'from'] },
     Line_Key: { note: 'MealCaster’s ID for the line — leave it as is.', required: true, aliases: ['key', 'line id', 'id'] },
   },
