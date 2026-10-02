@@ -426,6 +426,7 @@
     });
   }
 
+  let showMapping = $state(false);
   const columnLetter = (i) => String.fromCharCode(65 + i);
 
   const field =
@@ -730,26 +731,41 @@
         </section>
 
         <section class="rounded-2xl bg-surface-container-low p-5">
-          <div class="mb-2 flex items-center justify-between gap-2">
+          <div class="flex items-center justify-between gap-2">
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
               <Icon name="view_column" class="text-[20px] text-primary" /> Sheet Column Mapping
             </h2>
-            <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">
-              [{sheets.tabs.recipes}]
-            </span>
+            <div class="flex items-center gap-3">
+              <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">
+                [{sheets.tabs.recipes}]
+              </span>
+              <button
+                type="button"
+                aria-expanded={showMapping}
+                aria-controls="column-mapping"
+                onclick={() => (showMapping = !showMapping)}
+                class="inline-flex items-center gap-0.5 text-label-md text-on-surface-variant hover:text-on-surface"
+              >
+                {showMapping ? 'Hide' : 'Show'} <Icon name={showMapping ? 'expand_less' : 'expand_more'} class="text-[18px]" />
+              </button>
+            </div>
           </div>
-          <p class="mb-3 text-body-sm text-on-surface-variant">Each field fills one column of your recipes tab:</p>
-          <dl class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-            {#each SCHEMA.recipes as column, i (column)}
-              <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-lowest px-3 py-2">
-                <dt class="flex min-w-0 items-center gap-2">
-                  <span class="text-label-sm text-outline">{columnLetter(i)}</span>
-                  <span class="truncate font-mono text-[12px] text-on-surface">{column}</span>
-                </dt>
-                <dd class="shrink-0 text-body-sm text-on-surface-variant">{COLUMN_SOURCE[column]}</dd>
-              </div>
-            {/each}
-          </dl>
+          {#if showMapping}
+            <div id="column-mapping" class="mt-2">
+              <p class="mb-3 text-body-sm text-on-surface-variant">Each field fills one column of your recipes tab:</p>
+              <dl class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                {#each SCHEMA.recipes as column, i (column)}
+                  <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-lowest px-3 py-2">
+                    <dt class="flex min-w-0 items-center gap-2">
+                      <span class="text-label-sm text-outline">{columnLetter(i)}</span>
+                      <span class="truncate font-mono text-[12px] text-on-surface">{column}</span>
+                    </dt>
+                    <dd class="shrink-0 text-body-sm text-on-surface-variant">{COLUMN_SOURCE[column]}</dd>
+                  </div>
+                {/each}
+              </dl>
+            </div>
+          {/if}
         </section>
       </div>
 
