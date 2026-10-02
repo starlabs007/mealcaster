@@ -180,13 +180,6 @@ export function setLineStatus(key, status) {
   weekList().status[key] = status;
 }
 
-/** Checked-off items move to the On Hand ledger as acquired. */
-export function clearDone() {
-  const done = groceryLines().filter((l) => l.status === 'bought');
-  for (const line of done) setLineStatus(line.key, 'owned');
-  return done.length;
-}
-
 /** @param {{ name: string, note: string, dept: Dept }} item */
 export function addCustomItem(item) {
   weekList().custom.push({ id: `custom:${Date.now()}`, ...item });
