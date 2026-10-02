@@ -48,6 +48,22 @@
   .notes-md h6 {
     @apply font-semibold text-on-surface;
   }
+  /* Tailwind's preflight flattens headings; size by level (relative to the surrounding text). */
+  .notes-md h3 {
+    font-size: 1.4em;
+    line-height: 1.25;
+  }
+  .notes-md h4 {
+    font-size: 1.2em;
+    line-height: 1.3;
+  }
+  .notes-md h5 {
+    font-size: 1.05em;
+  }
+  .notes-md h6 {
+    font-size: 0.9em;
+    @apply uppercase tracking-wide;
+  }
   .notes-md ul {
     @apply list-disc pl-5;
   }
