@@ -9,6 +9,13 @@ describe('renderMarkdown', () => {
     assert.equal(renderMarkdown('1. a\n2. b'), '<ol><li>a</li><li>b</li></ol>');
     assert.equal(renderMarkdown('one\n\ntwo'), '<p>one</p><p>two</p>');
   });
+  it('nests indented list items', () => {
+    assert.equal(renderMarkdown('- a\n  - b\n  - c\n- d'), '<ul><li>a<ul><li>b</li><li>c</li></ul></li><li>d</li></ul>');
+    assert.equal(renderMarkdown('1. a\n    - b\n2. c'), '<ol><li>a<ul><li>b</li></ul></li><li>c</li></ol>');
+    assert.equal(renderMarkdown('- a\n  - b\n    - c\n- d'), '<ul><li>a<ul><li>b<ul><li>c</li></ul></li></ul></li><li>d</li></ul>');
+    assert.equal(renderMarkdown('- a\n\t- b'), '<ul><li>a<ul><li>b</li></ul></li></ul>');
+    assert.equal(renderMarkdown('- a\n1. b'), '<ul><li>a</li></ul><ol><li>b</li></ol>');
+  });
   it('escapes HTML and unsafe links', () => {
     assert.equal(renderMarkdown('<script>alert(1)</script>'), '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>');
     assert.ok(!renderMarkdown('[x](javascript:alert(1))').includes('<a'));

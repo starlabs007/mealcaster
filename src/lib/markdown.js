@@ -16,6 +16,31 @@ function inline(text) {
   return s.replace(/\u0000(\d+)\u0000/g, (_, i) => codes[i]);
 }
 
+const LIST_ITEM = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+
+/**
+ * Nests list items by indentation: an item indented further than the one
+ * above it starts a sub-list inside that item.
+ * @param {{ indent: number, ordered: boolean, text: string }[]} items
+ */
+function renderList(items) {
+  let i = 0;
+  const list = () => {
+    const { indent, ordered } = items[i];
+    const entries = [];
+    while (i < items.length && items[i].indent >= indent) {
+      if (items[i].indent > indent) entries[entries.length - 1] += list();
+      else if (items[i].ordered !== ordered) break; // switching between - and 1. starts a new list
+      else entries.push(inline(items[i++].text));
+    }
+    const tag = ordered ? 'ol' : 'ul';
+    return `<${tag}>${entries.map((e) => `<li>${e}</li>`).join('')}</${tag}>`;
+  };
+  let html = '';
+  while (i < items.length) html += list();
+  return html;
+}
+
 /** @param {string} src @returns {string} */
 export function renderMarkdown(src) {
   const lines = String(src ?? '').replace(/\r\n?/g, '\n').split('\n');
@@ -39,13 +64,13 @@ export function renderMarkdown(src) {
       const block = [];
       while (i < lines.length && /^\s*>/.test(lines[i])) block.push(lines[i++].replace(/^\s*>\s?/, ''));
       out.push(`<blockquote>${renderMarkdown(block.join('\n'))}</blockquote>`);
-    } else if (/^\s*(?:[-*+]|\d+[.)])\s+/.test(line)) {
-      const ordered = /^\s*\d+[.)]/.test(line);
+    } else if (LIST_ITEM.test(line)) {
       const items = [];
-      while (i < lines.length && /^\s*(?:[-*+]|\d+[.)])\s+/.test(lines[i])) {
-        items.push(`<li>${inline(lines[i++].replace(/^\s*(?:[-*+]|\d+[.)])\s+/, ''))}</li>`);
+      while (i < lines.length && LIST_ITEM.test(lines[i])) {
+        const [, indent, marker, text] = /** @type {RegExpExecArray} */ (LIST_ITEM.exec(lines[i++]));
+        items.push({ indent: indent.replace(/\t/g, '    ').length, ordered: /\d/.test(marker), text });
       }
-      out.push(`<${ordered ? 'ol' : 'ul'}>${items.join('')}</${ordered ? 'ol' : 'ul'}>`);
+      out.push(renderList(items));
     } else {
       const para = [];
       while (
