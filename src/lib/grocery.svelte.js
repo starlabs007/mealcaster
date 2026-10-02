@@ -1,13 +1,13 @@
 // Quick Grocery & Provisions list, one per week (mirrors a [Provisions] sheet tab).
 //
 // Lines come from three sources:
-//  1. Automatic — every ingredient of the week's upcoming dinners. Pantry staples
-//     (oil, salt, spices) start out "owned" so they sit in the pantry ledger.
+//  1. Automatic — every ingredient of the week's upcoming dinners. Staples
+//     (oil, salt, spices) start out "owned" so they sit in the On Hand ledger.
 //  2. Pushed — ingredients sent from a Recipe Detail page ("Add to List" /
 //     "Push Unchecked to Grocery"), even for recipes not on the plan.
 //  3. Custom — free-text items added on the grocery screen.
 //
-// Each line is 'need' (to buy), 'bought' (checked off) or 'owned' (in the pantry).
+// Each line is 'need' (to buy), 'bought' (checked off) or 'owned' (already on hand).
 // Ingredient keys are `${recipeId}:${groupIndex}:${itemIndex}`.
 
 import { recipeById } from './recipes.svelte.js';
@@ -179,7 +179,7 @@ export function setLineStatus(key, status) {
   weekList().status[key] = status;
 }
 
-/** Checked-off items move to the pantry ledger as acquired. */
+/** Checked-off items move to the On Hand ledger as acquired. */
 export function clearDone() {
   const done = groceryLines().filter((l) => l.status === 'bought');
   for (const line of done) setLineStatus(line.key, 'owned');

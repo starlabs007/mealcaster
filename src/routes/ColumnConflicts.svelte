@@ -39,7 +39,7 @@
     provisions: [
       ['Week_Of', 'Item', 'Quantity', 'Aisle', 'Status'],
       ['2026-10-19', 'Salmon fillets', '2 × 180 g', 'Seafood', 'To buy'],
-      ['2026-10-19', 'Arborio rice', '300 g', 'Pantry', 'In pantry'],
+      ['2026-10-19', 'Arborio rice', '300 g', 'Pantry', 'On hand'],
     ],
   };
 

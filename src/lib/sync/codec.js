@@ -303,13 +303,14 @@ export function planFromRow(row, existing, columns) {
 
 // ---- Provisions -------------------------------------------------------------
 
-const STATUS_LABEL = { need: 'To buy', bought: 'Bought', owned: 'In pantry' };
+const STATUS_LABEL = { need: 'To buy', bought: 'Bought', owned: 'On hand' };
 
 /** @returns {import('../grocery.svelte.js').LineStatus} */
 export function parseStatus(v) {
   const t = str(v).toLowerCase();
   if (v === true || /^(bought|done|got|checked|true|x|✓)/.test(t)) return 'bought';
-  if (/pantry|owned|have|stock/.test(t)) return 'owned';
+  // "In pantry" is what earlier builds wrote.
+  if (/on hand|pantry|owned|have|stock/.test(t)) return 'owned';
   return 'need';
 }
 

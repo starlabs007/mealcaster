@@ -82,8 +82,8 @@ The `Category` column holds it; blank means none.
 
 - Auto-compiled from the viewed week's upcoming dinners, grouped into Produce, Meat & Seafood,
   Dairy and Pantry aisles (with aisle tabs). Each line shows which dinner needs it.
-- Tap the circle when bought; the box icon moves an item to the **Already In Pantry / Acquired**
-  ledger (pantry staples like oil and salt start there). **Clear Done** moves bought items to the ledger.
+- Tap the circle when bought; the box icon moves an item to the **Already On Hand / Acquired**
+  ledger (staples like oil and salt start there). **Clear Done** moves bought items to the ledger.
 - **Add Item** for anything extra, **Share** (native share sheet or clipboard), **Print Kitchen
   Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.
@@ -132,7 +132,7 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.recipeBox.v1` | `[Recipes]` tab (custom/edited recipes, deleted samples) |
 | `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
-| `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/pantry status, pushed and custom items |
+| `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
 
