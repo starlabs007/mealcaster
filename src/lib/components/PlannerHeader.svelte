@@ -1,11 +1,11 @@
 <script>
   import Icon from './Icon.svelte';
   import { planner, weekSummary, autoFillRemaining, copyLastWeek, resetWeek } from '../planner.svelte.js';
-  import { addDays, formatLong, formatShort, mondayOf } from '../dates.js';
+  import { addDays, formatLong, formatShort, weekStartOf } from '../dates.js';
 
   const summary = $derived(weekSummary());
   const weekOffset = $derived(
-    Math.round((Date.parse(planner.weekStart) - Date.parse(mondayOf(new Date()))) / (7 * 86_400_000)),
+    Math.round((Date.parse(planner.weekStart) - Date.parse(weekStartOf(new Date()))) / (7 * 86_400_000)),
   );
   const title = $derived(
     weekOffset === 0

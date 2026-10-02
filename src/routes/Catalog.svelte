@@ -7,7 +7,7 @@
   import { storageKey } from '../lib/env.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
-  import { formatLong, formatWeekday, mondayOf, fromISO, weekDates } from '../lib/dates.js';
+  import { formatLong, formatWeekday, weekStartOf, fromISO, weekDates } from '../lib/dates.js';
 
   const PAGE_SIZE = 9;
   const sorts = [
@@ -79,7 +79,7 @@
 
   // A day passed in the URL moves the week stepper to that day's week.
   $effect(() => {
-    if (route.query.day) planner.weekStart = mondayOf(fromISO(route.query.day));
+    if (route.query.day) planner.weekStart = weekStartOf(fromISO(route.query.day));
   });
 
   const plannable = $derived(weekDates(planner.weekStart).filter((iso) => iso >= planner.today));

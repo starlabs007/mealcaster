@@ -3,7 +3,7 @@
 // localStorage; sync.svelte.js keeps it in step with the connected sheet.
 
 import { recipes, recipeById } from './recipes.svelte.js';
-import { addDays, daysBetween, fromISO, mondayOf, toISO, weekDates } from './dates.js';
+import { addDays, daysBetween, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
 import { showToast } from './toast.svelte.js';
 import { sampleData, storageKey } from './env.js';
 
@@ -16,7 +16,7 @@ const STORAGE_KEY = storageKey('weeklyPlan.v1');
  */
 
 const today = toISO(new Date());
-const thisWeek = mondayOf(new Date());
+const thisWeek = weekStartOf(new Date());
 
 /** @returns {Record<string, PlanEntry>} */
 function seedEntries() {
@@ -142,7 +142,7 @@ export function dayOfRecipe(recipeId) {
 
 /** Next day after `iso` in its week that has a recipe assigned. */
 export function nextPlannedAfter(iso) {
-  return weekDates(mondayOf(fromISO(iso)))
+  return weekDates(weekStartOf(fromISO(iso)))
     .filter((d) => d > iso && recipeById.has(planner.entries[d]?.recipeId ?? ''))
     .map((d) => ({ iso: d, recipe: recipeById.get(planner.entries[d].recipeId) }))[0];
 }
@@ -184,7 +184,7 @@ export function shiftWeek(delta) {
 }
 
 export function goToThisWeek() {
-  planner.weekStart = mondayOf(new Date());
+  planner.weekStart = weekStartOf(new Date());
 }
 
 /** @param {string} iso @param {string} recipeId */
