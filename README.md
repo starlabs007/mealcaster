@@ -44,10 +44,18 @@ npm run preview    # http://localhost:4173
   computed from the real current date.
 - Week stepper in the header (click the date range to jump back to this week).
 - **Auto-fill Remaining**, **Copy Last Week**, **Reset Week** — each with an Undo toast.
-  Past days are kept as history and never overwritten.
-- **Choose a Meal**, **Surprise Me** and **Dining Out** on open slots; a planned meal offers **Swap Meal**,
-  **Surprise Me** and **Dining Out** too (the last two replace it, with an Undo toast). Surprise Me and Auto-fill prefer meals
-  not already on the week's plan and not made in the last 7 days.
+  Past days are kept as history and never overwritten. Auto-fill also prefers meals not already on the week's
+  plan and not made in the last 7 days.
+- Each day card offers actions for its state:
+  - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Dining Out**.
+  - **Planned meal** (including today): **View Recipe**, **Swap Meal** (opens the catalog), **Surprise Me** and
+    **Dining Out**.
+    - **Surprise Me** replaces the meal with a random one, preferring meals not already on the week's plan or
+      made recently. It skips the meal being replaced unless that is the only recipe available.
+    - **Dining Out** turns the evening into a night off.
+    - Replacing a planned meal with either shows an **Undo** toast.
+  - **Night off** (today or later): **Plan a Meal Instead** clears the night so it's open again.
+  - **Completed** and **not logged** past days only offer **View Recipe** where there is a meal.
 - Grocery badge counts the ingredients of this week's upcoming dinners.
 
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
