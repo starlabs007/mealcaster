@@ -9,7 +9,7 @@
 // Plain JS (no runes) so it can be tested outside Svelte.
 
 import { departments } from '../data/departments.js';
-import { formatWeekday, fromISO, weekStartOf } from '../dates.js';
+import { DEFAULT_WEEK_START_DAY, formatWeekday, fromISO, weekStartOf } from '../dates.js';
 import { normalizeAisle, normalizeCategory, normalizeTags } from '../tags.js';
 import { aisles } from '../data/aisles.js';
 import { mappingKey, tidyName } from '../aisleMap.js';
@@ -347,8 +347,8 @@ export function provisionToRow(week, line) {
 }
 
 /**
- * Moves lists keyed by another weekday (weeks used to start on Monday) onto the
- * Saturday their week now starts on, merging lists that land on the same week.
+ * Moves lists keyed by another weekday (the week start changed) onto the
+ * day their week now starts on, merging lists that land on the same week.
  * @param {Record<string, import('../grocery.svelte.js').WeekList>} weeks
  */
 export function rekeyGroceryWeeks(weeks) {
@@ -403,9 +403,20 @@ export function parseAisle(v) {
 /** [Settings] row for "go back to the planner after choosing a meal". */
 export const RETURN_TO_PLANNER = { Section: 'Preference', Name: 'Return to planner after choosing a meal' };
 
+/** [Settings] row for the weekday the planner's weeks start on. */
+export const WEEK_STARTS_ON = { Section: 'Preference', Name: 'Week starts on' };
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** Weekday number (0 Sunday … 6 Saturday) for "Monday" / "mon" in any case, or -1. */
+export const parseWeekday = (v) => {
+  const t = str(v).toLowerCase();
+  return t.length >= 3 ? WEEKDAYS.findIndex((d) => d.toLowerCase().startsWith(t)) : -1;
+};
+
 /**
  * The [Settings] rows for the device's settings, keyed for sync.
- * @param {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner?: boolean }} settings
+ * @param {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner?: boolean, weekStartDay?: number }} settings
  * @returns {Map<string, Row>}
  */
 export function settingsToRows(settings) {
@@ -413,6 +424,10 @@ export function settingsToRows(settings) {
   rows.set(settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name), {
     ...RETURN_TO_PLANNER,
     Value: settings.returnToPlanner ?? true,
+  });
+  rows.set(settingKey(WEEK_STARTS_ON.Section, WEEK_STARTS_ON.Name), {
+    ...WEEK_STARTS_ON,
+    Value: WEEKDAYS[settings.weekStartDay ?? DEFAULT_WEEK_START_DAY],
   });
   for (const m of settings.aisles) {
     const label = aisles.find((a) => a.tag === m.tag)?.label ?? m.tag;
@@ -426,12 +441,14 @@ export function settingsToRows(settings) {
  * can't read, are ignored here and left alone in the sheet; a preference with no readable row
  * takes its default.
  * @param {Row[]} rows
- * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner: boolean }}
+ * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner: boolean, weekStartDay: number }}
  */
 export function settingsFromRows(rows) {
   /** @type {Map<string, import('../aisleMap.js').AisleMapping>} */
   const found = new Map();
   let returnToPlanner = true;
+  let weekStartDay = DEFAULT_WEEK_START_DAY;
+  const weekKey = settingKey(WEEK_STARTS_ON.Section, WEEK_STARTS_ON.Name);
   const returnKey = settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name);
   for (const row of rows) {
     const section = str(row.Section).toLowerCase();
@@ -440,6 +457,7 @@ export function settingsFromRows(rows) {
       if (settingKey(row.Section, row.Name) === returnKey && /^(true|false|yes|no|y|n|1|0|on|off)$/.test(value)) {
         returnToPlanner = /^(true|yes|y|1|on)$/.test(value);
       }
+      if (settingKey(row.Section, row.Name) === weekKey && parseWeekday(row.Value) >= 0) weekStartDay = parseWeekday(row.Value);
       continue;
     }
     if (section !== 'aisle') continue;
@@ -447,5 +465,5 @@ export function settingsFromRows(rows) {
     const tag = parseAisle(row.Value);
     if (name && tag && !found.has(mappingKey(name))) found.set(mappingKey(name), { name, tag });
   }
-  return { aisles: [...found.values()], returnToPlanner };
+  return { aisles: [...found.values()], returnToPlanner, weekStartDay };
 }

@@ -43,14 +43,23 @@ export function formatLastMade(iso, today) {
   return 'Last made over a year ago';
 }
 
-/** Saturday of the week containing `date` — weeks run Saturday through Friday. */
-export function weekStartOf(date = new Date()) {
+export const DEFAULT_WEEK_START_DAY = 6;
+
+let weekStartDay = DEFAULT_WEEK_START_DAY;
+
+/** Weekday weeks start on (0 Sunday … 6 Saturday). Set from the profile setting. @param {number} day */
+export function setWeekStartDay(day) {
+  weekStartDay = Number.isInteger(day) && day >= 0 && day <= 6 ? day : DEFAULT_WEEK_START_DAY;
+}
+
+/** First day of the week containing `date` — the profile's start day (Saturday by default). */
+export function weekStartOf(date = new Date(), startDay = weekStartDay) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  d.setDate(d.getDate() - ((d.getDay() + 1) % 7));
+  d.setDate(d.getDate() - ((d.getDay() - startDay + 7) % 7));
   return toISO(d);
 }
 
-/** Seven ISO dates, Saturday through Friday. */
+/** Seven ISO dates from the week's first day. */
 export function weekDates(weekStart) {
   return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 }
@@ -75,6 +84,9 @@ export function formatRangeCompact(weekStart) {
   const sameMonth = fromISO(weekStart).getMonth() === fromISO(end).getMonth();
   return `${formatShort(weekStart)}–${sameMonth ? fromISO(end).getDate() : formatShort(end)}`;
 }
+
+/** The Monday inside the week that starts on `weekStart`. */
+export const mondayInWeek = (weekStart) => addDays(weekStart, (8 - fromISO(weekStart).getDay()) % 7);
 
 /** ISO-8601 week number of the week containing `iso`. */
 export function isoWeek(iso) {

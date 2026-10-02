@@ -68,7 +68,7 @@ describe('settings rows', () => {
     ]);
   });
   it('carry the return-to-planner preference as TRUE/FALSE, on by default', () => {
-    const pref = (settings) => [...codec.settingsToRows(settings).values()].find((r) => r.Section === 'Preference');
+    const pref = (settings) => [...codec.settingsToRows(settings).values()].find((r) => r.Name === codec.RETURN_TO_PLANNER.Name);
     assert.equal(pref({ aisles: [] }).Value, true);
     assert.equal(pref({ aisles: [], returnToPlanner: false }).Value, false);
     const row = (Value) => ({ ...codec.RETURN_TO_PLANNER, Value });
@@ -94,7 +94,7 @@ describe('syncing the Settings tab', () => {
     const result = await runSync(options(sheet, device, emptyBase('S1')));
     assert.equal(result.status, 'done');
     assert.deepEqual(sheet.find('Settings').grid[0], ['Section', 'Name', 'Value']);
-    assert.deepEqual(sheet.column('Settings', 'Value'), [true, 'Dairy & Eggs']);
+    assert.deepEqual(sheet.column('Settings', 'Value'), [true, 'Saturday', 'Dairy & Eggs']);
   });
 
   it('brings mappings added in the sheet to the device, and leaves rows it does not know alone', async () => {
@@ -113,22 +113,50 @@ describe('syncing the Settings tab', () => {
     const again = await runSync(options(sheet, device, pull.base));
     assert.equal(again.pushed, 0);
     assert.equal(sheet.calls.writes, writes);
-    assert.deepEqual(sheet.column('Settings', 'Name').slice(1), ['Oat milk', 'Quinoa', 'Mode']);
+    assert.deepEqual(sheet.column('Settings', 'Name').slice(1), ['Week starts on', 'Oat milk', 'Quinoa', 'Mode']);
+  });
+
+  it('carries the week start day as a weekday name, Saturday by default', () => {
+    const row = (settings) => [...codec.settingsToRows(settings).values()].find((r) => r.Name === 'Week starts on');
+    assert.equal(row({ aisles: [] }).Value, 'Saturday');
+    assert.equal(row({ aisles: [], weekStartDay: 1 }).Value, 'Monday');
+    const read = (Value) => codec.settingsFromRows([{ ...codec.WEEK_STARTS_ON, Value }]).weekStartDay;
+    assert.equal(read('Sunday'), 0);
+    assert.equal(read('monday'), 1);
+    assert.equal(read(' Wed '), 3);
+    assert.equal(read('Someday'), 6);
+    assert.equal(read(''), 6);
+  });
+
+  it('syncs the week start day both ways', async () => {
+    const sheet = fakeSheet();
+    const device = fakeDevice({ weekStartDay: 1 });
+    const base = (await runSync(options(sheet, device, emptyBase('S1')))).base;
+    const grid = sheet.find('Settings').grid;
+    const sheetRow = grid.find((r) => r[1] === 'Week starts on');
+    assert.equal(sheetRow[2], 'Monday');
+    sheetRow[2] = 'Sunday';
+    const pull = await runSync(options(sheet, device, base));
+    assert.equal(device.settings.weekStartDay, 0);
+    device.settings = { ...device.settings, weekStartDay: 3 };
+    await runSync(options(sheet, device, pull.base));
+    assert.equal(grid.find((r) => r[1] === 'Week starts on')[2], 'Wednesday');
   });
 
   it('syncs the return-to-planner preference both ways', async () => {
     const sheet = fakeSheet();
     const device = fakeDevice({ returnToPlanner: false });
     let base = (await runSync(options(sheet, device, emptyBase('S1')))).base;
-    assert.deepEqual(sheet.column('Settings', 'Value'), [false]);
+    const returnRow = () => sheet.find('Settings').grid.find((r) => r[0] === 'Preference' && r[1].startsWith('Return'));
+    assert.equal(returnRow()[2], false);
 
-    sheet.find('Settings').grid[1][2] = 'TRUE';
+    returnRow()[2] = 'TRUE';
     const pull = await runSync(options(sheet, device, base));
     assert.equal(device.settings.returnToPlanner, true);
 
     device.settings = { ...device.settings, returnToPlanner: false };
     await runSync(options(sheet, device, pull.base));
-    assert.deepEqual(sheet.column('Settings', 'Value'), [false]);
+    assert.equal(returnRow()[2], false);
   });
 
   it('pushes a mapping changed or removed on the device', async () => {
@@ -138,7 +166,7 @@ describe('syncing the Settings tab', () => {
 
     device.settings = { aisles: [{ name: 'Oat milk', tag: 'Pantry' }] };
     base = (await runSync(options(sheet, device, base))).base;
-    assert.deepEqual(sheet.column('Settings', 'Name').slice(1), ['Oat milk']);
-    assert.deepEqual(sheet.column('Settings', 'Value').slice(1), ['Pantry']);
+    assert.deepEqual(sheet.column('Settings', 'Name').slice(1), ['Week starts on', 'Oat milk']);
+    assert.deepEqual(sheet.column('Settings', 'Value').slice(1), ['Saturday', 'Pantry']);
   });
 });

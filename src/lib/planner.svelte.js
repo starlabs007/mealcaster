@@ -2,6 +2,7 @@
 // (Date_ISO → Recipe_ID_Assigned / Completed_Flag / Custom_Notes). Cached in
 // localStorage; sync.svelte.js keeps it in step with the connected sheet.
 
+import './settings.svelte.js'; // sets the week start day before the first week is computed
 import { recipes, recipeById } from './recipes.svelte.js';
 import { addDays, daysBetween, formatLong, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
 import { showToast } from './toast.svelte.js';

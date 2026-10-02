@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { daysBetween, formatLastMade, weekDates, weekStartOf } from '../src/lib/dates.js';
+import { daysBetween, formatLastMade, mondayInWeek, setWeekStartDay, weekDates, weekStartOf } from '../src/lib/dates.js';
 
 test('daysBetween counts calendar days', () => {
   assert.equal(daysBetween('2026-09-28', '2026-10-01'), 3);
@@ -30,4 +30,21 @@ test('weeks run Saturday through Friday', () => {
   assert.equal(weekStartOf(new Date(2026, 9, 2)), '2026-09-26'); // Friday
   assert.equal(weekStartOf(new Date(2026, 9, 4)), '2026-10-03'); // Sunday
   assert.deepEqual(weekDates('2026-09-26').map((iso) => new Date(iso + 'T12:00').getDay()), [6, 0, 1, 2, 3, 4, 5]);
+});
+
+test('the week start day is configurable', () => {
+  try {
+    setWeekStartDay(1); // Monday
+    assert.equal(weekStartOf(new Date(2026, 9, 4)), '2026-09-28'); // Sunday
+    assert.equal(weekStartOf(new Date(2026, 9, 5)), '2026-10-05'); // Monday
+    setWeekStartDay(0); // Sunday
+    assert.equal(weekStartOf(new Date(2026, 9, 4)), '2026-10-04');
+    assert.equal(weekStartOf(new Date(2026, 9, 3)), '2026-09-27');
+    assert.equal(weekStartOf(new Date(2026, 9, 3), 6), '2026-10-03');
+    assert.equal(mondayInWeek('2026-10-04'), '2026-10-05');
+    assert.equal(mondayInWeek('2026-10-03'), '2026-10-05');
+    assert.equal(mondayInWeek('2026-10-05'), '2026-10-05');
+  } finally {
+    setWeekStartDay(6);
+  }
 });

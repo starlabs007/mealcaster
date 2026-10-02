@@ -13,6 +13,7 @@ import { favorites, setFavorites } from '../favorites.svelte.js';
 import { planner, replacePlan, statusOf } from '../planner.svelte.js';
 import { grocery, groceryLines, replaceGrocery } from '../grocery.svelte.js';
 import { settings, replaceSettings } from '../settings.svelte.js';
+import { realignWeeks } from '../weekStart.svelte.js';
 import { weekStartOf, weekDates } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
 import { storageKey } from '../env.js';
@@ -185,7 +186,9 @@ const device = {
       }
       replacePlan(entries);
     } else if (tab === 'settings') {
+      const wasThisWeek = planner.weekStart === weekStartOf(new Date());
       replaceSettings(settingsFromRows([...final.values()]));
+      realignWeeks(wasThisWeek);
     } else {
       const isPlanned = (week, key) => {
         const recipeId = key.split(':')[0];
