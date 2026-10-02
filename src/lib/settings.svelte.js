@@ -5,18 +5,20 @@
 
 import { storageKey } from './env.js';
 import { mappingKey, tidyName, withMapping } from './aisleMap.js';
+import { DEFAULT_WEEK_START_DAY, setWeekStartDay as applyWeekStartDay } from './dates.js';
 
 const STORAGE_KEY = storageKey('settings.v1');
 
 /** @typedef {import('./aisleMap.js').AisleMapping} AisleMapping */
 
-/** @returns {{ aisles: AisleMapping[], returnToPlanner: boolean }} */
+/** @returns {{ aisles: AisleMapping[], returnToPlanner: boolean, weekStartDay: number }} */
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
     if (saved && Array.isArray(saved.aisles)) {
       return {
         returnToPlanner: saved.returnToPlanner !== false,
+        weekStartDay: validDay(saved.weekStartDay),
         aisles: saved.aisles
           .filter((m) => m && typeof m.name === 'string' && typeof m.tag === 'string' && tidyName(m.name))
           .map((m) => ({ name: tidyName(m.name), tag: m.tag })),
@@ -25,10 +27,13 @@ function load() {
   } catch {
     // Start empty.
   }
-  return { aisles: [], returnToPlanner: true };
+  return { aisles: [], returnToPlanner: true, weekStartDay: DEFAULT_WEEK_START_DAY };
 }
 
+const validDay = (d) => (Number.isInteger(d) && d >= 0 && d <= 6 ? d : DEFAULT_WEEK_START_DAY);
+
 export const settings = $state(load());
+applyWeekStartDay(settings.weekStartDay);
 
 $effect.root(() => {
   $effect(() => {
@@ -56,8 +61,15 @@ export function setReturnToPlanner(on) {
   settings.returnToPlanner = on;
 }
 
-/** Replaces the synced settings (used by Google Sheets sync). @param {{ aisles: AisleMapping[], returnToPlanner: boolean }} next */
+/** The weekday weeks start on, 0 (Sunday) – 6 (Saturday). Re-key the plan and grocery weeks afterwards (`weekStart.svelte.js`). @param {number} day */
+export function setWeekStartDay(day) {
+  settings.weekStartDay = validDay(day);
+  applyWeekStartDay(settings.weekStartDay);
+}
+
+/** Replaces the synced settings (used by Google Sheets sync). @param {{ aisles: AisleMapping[], returnToPlanner: boolean, weekStartDay: number }} next */
 export function replaceSettings(next) {
   settings.aisles = next.aisles;
   settings.returnToPlanner = next.returnToPlanner;
+  setWeekStartDay(next.weekStartDay);
 }

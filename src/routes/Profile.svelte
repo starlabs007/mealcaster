@@ -7,12 +7,14 @@
   import PrintOptionsFields from '../lib/components/PrintOptionsFields.svelte';
   import { aisles } from '../lib/data/aisles.js';
   import { aisleLabel } from '../lib/recipes.svelte.js';
-  import { settings, setAisleMapping, removeAisleMapping, setReturnToPlanner } from '../lib/settings.svelte.js';
+  import { settings, setAisleMapping, removeAisleMapping, setReturnToPlanner, setWeekStartDay } from '../lib/settings.svelte.js';
   import { mappingKey } from '../lib/aisleMap.js';
+  import { realignWeeks } from '../lib/weekStart.svelte.js';
   import { printOptions, setPrintOptions } from '../lib/printOptions.svelte.js';
   import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
   import { resetTagColors } from '../lib/tagColors.svelte.js';
-  import { RECENT_DAYS } from '../lib/planner.svelte.js';
+  import { RECENT_DAYS, planner } from '../lib/planner.svelte.js';
+  import { weekStartOf } from '../lib/dates.js';
   import WipeDataDialog from '../lib/components/WipeDataDialog.svelte';
   import { sheets } from '../lib/sheets.svelte.js';
   import { href } from '../lib/router.svelte.js';
@@ -34,6 +36,15 @@
     setAisleMapping(name, draft.tag);
     showToast(`${existing ? 'Updated' : 'Added'} ${name} → ${aisleLabel(draft.tag)}.`);
     draft = { name: '', tag: draft.tag };
+  }
+
+  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  function changeWeekStart(event) {
+    const wasThisWeek = planner.weekStart === weekStartOf(new Date());
+    setWeekStartDay(Number(event.currentTarget.value));
+    realignWeeks(wasThisWeek);
+    showToast(`Weeks now start on ${weekdays[settings.weekStartDay]}.`);
   }
 
   // Print defaults save as they change.
@@ -95,6 +106,17 @@
       'In the catalog, picking a meal (or Surprise Me) takes you back to the weekly plan. Switch off to stay in the catalog and see a confirmation instead.',
       setReturnToPlanner,
     )}
+    <label class="flex items-start justify-between gap-4 py-3">
+      <span class="flex flex-col">
+        <span class="text-label-md text-on-surface">Week starts on</span>
+        <span class="text-body-sm text-on-surface-variant">
+          The first day of the weekly plan and the grocery week. Your plan keeps its dates; grocery lists move to the new weeks.
+        </span>
+      </span>
+      <select value={settings.weekStartDay} onchange={changeWeekStart} class="{inputClass} shrink-0">
+        {#each weekdays as day, i (i)}<option value={i}>{day}</option>{/each}
+      </select>
+    </label>
   </section>
 
   <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="aisle-heading">

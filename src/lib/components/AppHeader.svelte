@@ -2,6 +2,7 @@
   import Icon from './Icon.svelte';
   import { syncPhase, PHASE_LOOK } from '../sync/sync.svelte.js';
   import { planner, shiftWeek, goToThisWeek } from '../planner.svelte.js';
+  import { settings } from '../settings.svelte.js';
   import { groceryCount } from '../grocery.svelte.js';
   import { route, href, navigate } from '../router.svelte.js';
   import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
@@ -43,7 +44,7 @@
   }
 
   const groceries = $derived(groceryCount());
-  const isThisWeek = $derived(planner.weekStart === weekStartOf(new Date()));
+  const isThisWeek = $derived(planner.weekStart === weekStartOf(new Date(), settings.weekStartDay));
 
   function submitSearch(event) {
     event.preventDefault();
