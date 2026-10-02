@@ -91,7 +91,8 @@ function loadBase() {
   return emptyBase(sheets.spreadsheet);
 }
 
-let base = loadBase();
+// Raw state so pages that ask what's on the sheet update after each pass.
+let base = $state.raw(loadBase());
 syncState.lastSyncedAt = base.lastSyncedAt ?? null;
 
 function saveBase(next) {
@@ -101,6 +102,16 @@ function saveBase(next) {
   } catch {
     // Without a saved base the next pass is a merge, which is still safe.
   }
+}
+
+/**
+ * Name of the tab that held this row at the last sync, or '' if it wasn't on
+ * the connected sheet. @param {TabKey} tab @param {string} key
+ */
+export function sheetTabOf(tab, key) {
+  if (!base.initialized || base.spreadsheetId !== sheets.spreadsheet) return '';
+  const synced = base.tabs[tab];
+  return synced && key in synced.rows ? synced.name : '';
 }
 
 // ---- The device side ----------------------------------------------------------
