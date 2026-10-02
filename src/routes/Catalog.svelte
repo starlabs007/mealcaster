@@ -10,6 +10,7 @@
   import { formatLong, formatWeekday, weekStartOf, fromISO, weekDates } from '../lib/dates.js';
 
   const PAGE_SIZE = 9;
+  const byTitle = (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
   const sorts = [
     {
       id: 'most-cooked',
@@ -21,6 +22,8 @@
         a.title.localeCompare(b.title),
     },
     { id: 'quickest', label: 'Quickest Prep Time', compare: (a, b) => a.minutes - b.minutes },
+    { id: 'name', label: 'Name (A–Z)', compare: byTitle },
+    { id: 'name-desc', label: 'Name (Z–A)', compare: (a, b) => byTitle(b, a) },
     { id: 'recent', label: 'Recently Added to Box', compare: (a, b) => b.addedAt.localeCompare(a.addedAt) },
   ];
 

@@ -54,7 +54,7 @@ npm run preview    # http://localhost:4173
 - Keyword search across titles, descriptions, categories, tags and ingredients (the header search lands here too).
 - Filters (combined with AND): Favorites, **Not made in 7 days** (remembered on the device) and one per
   recipe tag in use, plus one category at a time (Filter by Category). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
-  Recently Added to Box. Paging, 9 per page.
+  Name (A–Z or Z–A), Recently Added to Box. Paging, 9 per page.
 - Each card says when the meal was **last made** (from the plan): terracotta within 7 days, green otherwise.
 - **Select for {Day}** assigns the recipe to the chosen day (confirmed with a toast); "Planning for"
   switches the target day.
