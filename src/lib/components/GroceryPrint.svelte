@@ -37,6 +37,6 @@
       </ul>
     </section>
   {:else}
-    <p class="mt-[1.1em]">Nothing left to buy this week.</p>
+    <p class="mt-[1.1em]">Nothing left to buy.</p>
   {/each}
 </article>

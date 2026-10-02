@@ -179,6 +179,14 @@ function pickRecipe(pool = recipes) {
   return best[Math.floor(Math.random() * best.length)];
 }
 
+/** Weeks from this week to the viewed one: 0 this week, 1 next week, -1 last week. */
+export const weekOffset = () => Math.round(daysBetween(weekStartOf(new Date()), planner.weekStart) / 7);
+
+/** Jump to this week (0), next week (1) and so on. @param {number} offset */
+export function goToWeek(offset) {
+  planner.weekStart = addDays(weekStartOf(new Date()), offset * 7);
+}
+
 export function shiftWeek(delta) {
   planner.weekStart = addDays(planner.weekStart, delta * 7);
 }
