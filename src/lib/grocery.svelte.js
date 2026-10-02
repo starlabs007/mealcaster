@@ -53,6 +53,9 @@ const TAG_DEPT = {
   Other: 'other',
 };
 
+/** Store department for an ingredient aisle tag. @param {string} tag @returns {Dept} */
+export const deptOfTag = (tag) => TAG_DEPT[tag] ?? 'pantry';
+
 // Source-tag colors cycle by weekday so each dinner reads distinctly.
 const DAY_TONES = ['neutral', 'paprika', 'sage', 'saffron', 'paprika', 'sage', 'saffron'];
 
@@ -127,7 +130,7 @@ export function groceryLines(weekStart = planner.weekStart) {
       key,
       name: item.text.charAt(0).toUpperCase() + item.text.slice(1),
       detail: amount,
-      dept: TAG_DEPT[item.tag] ?? 'pantry',
+      dept: deptOfTag(item.tag),
       status: week.status[key] ?? (item.staple ? 'owned' : 'need'),
       source: day
         ? { label: `${formatWeekday(day.iso).slice(0, 3)}: ${recipe.shortTitle}`, tone: DAY_TONES[day.weekday] }
@@ -178,13 +181,6 @@ export function addToGrocery(keys) {
 /** @param {string} key @param {LineStatus} status */
 export function setLineStatus(key, status) {
   weekList().status[key] = status;
-}
-
-/** Checked-off items move to the On Hand ledger as acquired. */
-export function clearDone() {
-  const done = groceryLines().filter((l) => l.status === 'bought');
-  for (const line of done) setLineStatus(line.key, 'owned');
-  return done.length;
 }
 
 /** @param {{ name: string, note: string, dept: Dept }} item */

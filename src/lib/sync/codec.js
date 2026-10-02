@@ -11,6 +11,8 @@
 import { departments } from '../data/departments.js';
 import { formatWeekday, fromISO, weekStartOf } from '../dates.js';
 import { normalizeAisle, normalizeCategory, normalizeTags } from '../tags.js';
+import { aisles } from '../data/aisles.js';
+import { mappingKey, tidyName } from '../aisleMap.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -383,4 +385,67 @@ export function groceryFromRows(rows, isPlanned) {
     }
   }
   return weeks;
+}
+
+// ---- Settings ---------------------------------------------------------------
+
+/** Settings row key: one row per section and name. */
+export const settingKey = (section, name) => `${str(section).toLowerCase()}|${mappingKey(str(name))}`;
+
+/** Ingredient aisle tag for a cell: an aisle's tag or label ("Meat & Seafood"), or '' if unknown. */
+export function parseAisle(v) {
+  const t = str(v).toLowerCase();
+  if (!t) return '';
+  const tag = normalizeAisle(str(v));
+  return aisles.find((a) => a.tag === tag || a.tag.toLowerCase() === t || a.label.toLowerCase() === t)?.tag ?? '';
+}
+
+/** [Settings] row for "go back to the planner after choosing a meal". */
+export const RETURN_TO_PLANNER = { Section: 'Preference', Name: 'Return to planner after choosing a meal' };
+
+/**
+ * The [Settings] rows for the device's settings, keyed for sync.
+ * @param {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner?: boolean }} settings
+ * @returns {Map<string, Row>}
+ */
+export function settingsToRows(settings) {
+  const rows = new Map();
+  rows.set(settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name), {
+    ...RETURN_TO_PLANNER,
+    Value: settings.returnToPlanner ?? true,
+  });
+  for (const m of settings.aisles) {
+    const label = aisles.find((a) => a.tag === m.tag)?.label ?? m.tag;
+    rows.set(settingKey('Aisle', m.name), { Section: 'Aisle', Name: m.name, Value: label });
+  }
+  return rows;
+}
+
+/**
+ * Settings from [Settings] rows. Rows of a section MealCaster doesn't know, or with a value it
+ * can't read, are ignored here and left alone in the sheet; a preference with no readable row
+ * takes its default.
+ * @param {Row[]} rows
+ * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner: boolean }}
+ */
+export function settingsFromRows(rows) {
+  /** @type {Map<string, import('../aisleMap.js').AisleMapping>} */
+  const found = new Map();
+  let returnToPlanner = true;
+  const returnKey = settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name);
+  for (const row of rows) {
+    const section = str(row.Section).toLowerCase();
+    if (section === 'preference') {
+      const value = str(row.Value).toLowerCase();
+      if (settingKey(row.Section, row.Name) === returnKey && /^(true|false|yes|no|y|n|1|0|on|off)$/.test(value)) {
+        returnToPlanner = /^(true|yes|y|1|on)$/.test(value);
+      }
+      continue;
+    }
+    if (section !== 'aisle') continue;
+    const name = tidyName(str(row.Name));
+    const tag = parseAisle(row.Value);
+    if (name && tag && !found.has(mappingKey(name))) found.set(mappingKey(name), { name, tag });
+  }
+  return { aisles: [...found.values()], returnToPlanner };
 }

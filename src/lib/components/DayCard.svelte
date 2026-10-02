@@ -1,7 +1,7 @@
 <script>
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
-  import { surpriseMe, markDiningOut, clearDay } from '../planner.svelte.js';
+  import { surpriseMe, markDiningOut, clearDay, spotlight } from '../planner.svelte.js';
   import { formatShort, formatWeekday } from '../dates.js';
   import { href } from '../router.svelte.js';
 
@@ -34,8 +34,9 @@
 </script>
 
 <article
+  id="day-{day.iso}"
   aria-label="{weekdayName} {formatShort(day.iso)}{day.isToday ? ' (today)' : ''}"
-  class="flex flex-col gap-4 rounded-xl p-4 transition-all sm:flex-row md:p-5 {hasMeal ? '' : 'sm:items-center'} {cardClass}"
+  class="flex flex-col gap-4 rounded-xl p-4 transition-all sm:flex-row md:p-5 {hasMeal ? '' : 'sm:items-center'} {cardClass} {spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : ''}"
 >
   {#if day.isToday}
     <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
@@ -81,7 +82,7 @@
       <div class="min-w-0 flex-1">
         <h3 class="font-display text-on-surface {emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
         <p class="mt-1 text-xs text-on-surface-variant">{[recipe.badge.label, `${recipe.prepMinutes + recipe.cookMinutes} min`, `Serves ${recipe.serves}`].filter(Boolean).join(' · ')}</p>
-        <div class="mt-3 flex items-center gap-4">
+        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <a
             href={href(`/recipe/${recipe.id}`, { day: day.iso })}
             class="inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday
@@ -99,6 +100,20 @@
             >
               <Icon name="sync_alt" class="text-[14px]" /> Swap Meal
             </a>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+              onclick={() => surpriseMe(day.iso)}
+            >
+              <Icon name="casino" class="text-[14px]" /> Surprise Me
+            </button>
+            <button
+              type="button"
+              class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+              onclick={() => markDiningOut(day.iso)}
+            >
+              <Icon name="storefront" class="text-[14px]" /> Dining Out
+            </button>
           {/if}
         </div>
       </div>

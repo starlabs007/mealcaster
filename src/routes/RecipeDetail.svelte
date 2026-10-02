@@ -22,7 +22,8 @@
   import { href, navigate } from '../lib/router.svelte.js';
   import { formatLong, formatWeekday } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
-  import { sheetTabOf } from '../lib/sync/sync.svelte.js';
+  import { sheetTabOf, syncPhase, PHASE_LOOK } from '../lib/sync/sync.svelte.js';
+  import SyncStatus from '../lib/components/SyncStatus.svelte';
   import { tick } from 'svelte';
 
   /** @type {{ id: string, day?: string }} */
@@ -420,11 +421,11 @@
     <div class="flex flex-col gap-4 rounded-2xl bg-surface-container-low p-5 sm:flex-row sm:items-center sm:justify-between print:hidden">
       <div class="flex items-center gap-3">
         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-lowest text-on-surface-variant shadow-card">
-          <Icon name="cloud_off" class="text-[20px]" />
+          <Icon name={PHASE_LOOK[syncPhase()].icon} class="text-[20px]" />
         </span>
         <div>
-          <p class="text-label-md text-on-surface">Saved on this device</p>
-          <p class="text-body-sm text-outline">Google Sheets sync isn’t connected yet.</p>
+          <p class="text-label-md text-on-surface">Google Sheets sync</p>
+          <SyncStatus />
         </div>
       </div>
       <div class="flex flex-wrap gap-2">

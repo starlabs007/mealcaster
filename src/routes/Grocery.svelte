@@ -3,12 +3,13 @@
   import Icon from '../lib/components/Icon.svelte';
   import {
     departments,
+    deptOfTag,
     groceryLines,
     setLineStatus,
-    clearDone,
     addCustomItem,
     removeCustomItem,
   } from '../lib/grocery.svelte.js';
+  import { aisles, guessAisle } from '../lib/recipes.svelte.js';
   import { planner, currentWeek, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { addDays, formatRange, formatShort, formatWeekday, isoWeek } from '../lib/dates.js';
@@ -28,7 +29,12 @@
   let aisle = $state('all');
   let showOnHand = $state(true);
   let adding = $state(false);
-  let draft = $state({ name: '', note: '', dept: 'produce' });
+  let draft = $state({ name: '', note: '', aisle: 'Produce' });
+  // The aisle follows the item's name (your Profile mappings first) until you pick one yourself.
+  let aislePicked = false;
+  const guessDraftAisle = () => {
+    if (!aislePicked && draft.name.trim()) draft.aisle = guessAisle(draft.name);
+  };
 
   const offset = $derived(weekOffset());
   /** "this week", "next week", "last week" or "the week of Oct 10" */
@@ -41,11 +47,13 @@
   ];
 
   const lines = $derived(groceryLines());
-  const shopping = $derived(lines.filter((l) => l.status !== 'owned'));
+  // Bought and on-hand lines both leave the aisle lists for the Acquired ledger.
+  const shopping = $derived(lines.filter((l) => l.status === 'need'));
   const onHand = $derived(lines.filter((l) => l.status === 'owned'));
-  const toBuy = $derived(shopping.filter((l) => l.status === 'need').length);
-  const bought = $derived(shopping.length - toBuy);
-  const completion = $derived(shopping.length ? Math.round((bought / shopping.length) * 100) : 0);
+  const acquired = $derived(lines.filter((l) => l.status !== 'need'));
+  const toBuy = $derived(shopping.length);
+  const bought = $derived(acquired.length - onHand.length);
+  const completion = $derived(toBuy + bought ? Math.round((bought / (toBuy + bought)) * 100) : 0);
 
   const sections = $derived(
     departments.map((d) => ({ ...d, items: shopping.filter((l) => l.dept === d.id) })),
@@ -69,20 +77,16 @@
     event.preventDefault();
     const name = draft.name.trim();
     if (!name) return;
-    addCustomItem({ name, note: draft.note.trim(), dept: draft.dept });
+    addCustomItem({ name, note: draft.note.trim(), dept: deptOfTag(draft.aisle) });
     showToast(`Added ${name} to your list.`);
-    draft = { name: '', note: '', dept: draft.dept };
-  }
-
-  function clear() {
-    const n = clearDone();
-    showToast(n ? `Moved ${n} bought ${n === 1 ? 'item' : 'items'} to On Hand.` : 'Nothing checked off yet.');
+    draft = { name: '', note: '', aisle: draft.aisle };
+    aislePicked = false;
   }
 
   function listAsText() {
     const body = sections
       .filter((s) => s.items.length)
-      .map((s) => `${s.label}\n${s.items.map((l) => `${l.status === 'bought' ? '☑' : '☐'} ${l.name} — ${l.detail}`).join('\n')}`)
+      .map((s) => `${s.label}\n${s.items.map((l) => `${'☐'} ${l.name} — ${l.detail}`).join('\n')}`)
       .join('\n\n');
     return `MealCaster grocery list · ${formatRange(planner.weekStart)}\n\n${body}`;
   }
@@ -108,7 +112,7 @@
       role="checkbox"
       aria-checked={item.status !== 'need'}
       aria-label="{item.status === 'bought' ? 'Unmark' : 'Mark'} {item.name} as bought"
-      disabled={isOnHand}
+      disabled={item.status === 'owned'}
       onclick={() => setLineStatus(item.key, item.status === 'bought' ? 'need' : 'bought')}
       class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status !== 'need'
         ? 'border-primary-container bg-primary-container text-on-primary'
@@ -121,12 +125,12 @@
         {item.name}
       </p>
       <p class="text-body-sm text-on-surface-variant">
-        {item.detail}{isOnHand ? ' • On hand' : ''}
+        {item.detail}{isOnHand ? (item.status === 'bought' ? ' • Bought' : ' • On hand') : ''}
         {#if !isOnHand}<span class="sm:hidden">· {item.source.label}</span>{/if}
       </p>
     </div>
     <span class="hidden max-w-[45%] shrink-0 truncate rounded-full px-2 py-0.5 text-label-sm sm:inline {isOnHand ? toneClass.neutral : toneClass[item.source.tone]}">
-      {isOnHand ? 'On hand' : `• ${item.source.label}`}
+      {isOnHand ? (item.status === 'bought' ? 'Bought' : 'On hand') : `• ${item.source.label}`}
     </span>
     <div class="flex shrink-0 items-center">
       {#if isOnHand}
@@ -175,9 +179,7 @@
       <Icon name="shopping_basket" class="text-[16px] text-secondary" />
       <span class="text-on-surface" aria-current="page">Grocery &amp; Provisions List</span>
     </nav>
-    <span class="inline-flex items-center gap-1.5 rounded-full bg-surface-container-high px-3 py-1 text-label-sm text-on-surface-variant">
-      <span class="h-2 w-2 rounded-full bg-outline"></span> Saved on this device
-    </span>
+    <SyncStatus variant="badge" />
   </div>
 
   <!-- Title & actions -->
@@ -230,9 +232,6 @@
       <button type="button" class="btn-primary" aria-expanded={adding} onclick={() => (adding = !adding)}>
         <Icon name={adding ? 'close' : 'add'} class="text-[16px]" /> {adding ? 'Close' : 'Add Item'}
       </button>
-      <button type="button" class="btn text-on-surface-variant hover:bg-surface-container-high" onclick={clear}>
-        <Icon name="playlist_remove" class="text-[16px]" /> Clear Done
-      </button>
     </div>
   </div>
 
@@ -249,6 +248,7 @@
           required
           autofocus
           bind:value={draft.name}
+          oninput={guessDraftAisle}
           placeholder="e.g. Sparkling water"
           class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         />
@@ -264,10 +264,11 @@
       <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
         Aisle
         <select
-          bind:value={draft.dept}
+          bind:value={draft.aisle}
+          onchange={() => (aislePicked = true)}
           class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         >
-          {#each departments as d (d.id)}<option value={d.id}>{d.short}</option>{/each}
+          {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
         </select>
       </label>
       <button type="submit" class="btn-primary py-2.5">Add to List</button>
@@ -298,7 +299,7 @@
         </p>
       </div>
 
-      {#if !shopping.length}
+      {#if !shopping.length && !acquired.length}
         <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-14 text-center">
           <Icon name="shopping_basket" class="text-[36px] text-outline" />
           <h2 class="font-display text-headline-sm text-on-surface">Nothing to buy for {weekName}</h2>
@@ -331,14 +332,14 @@
         {/if}
       {/each}
 
-      {#if onHand.length}
+      {#if acquired.length}
         <section class="rounded-2xl bg-surface-container-low" aria-labelledby="on-hand-heading">
           <div class="flex items-center justify-between gap-2 px-4 py-3">
             <h2 id="on-hand-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
               <Icon name="inventory_2" class="text-[20px]" />
               Already On Hand / Acquired
               <span class="rounded-full bg-surface-container-high px-2 py-0.5 font-sans text-label-caps uppercase text-on-surface-variant">
-                {onHand.length} on hand
+                {acquired.length} acquired
               </span>
             </h2>
             <button
@@ -352,7 +353,7 @@
           </div>
           {#if showOnHand}
             <ul transition:slide={{ duration: 180 }} class="divide-y divide-surface-container-high border-t border-surface-container-high">
-              {#each onHand as item (item.key)}
+              {#each acquired as item (item.key)}
                 {@render line(item, true)}
               {/each}
             </ul>

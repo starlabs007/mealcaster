@@ -21,6 +21,7 @@ const DEVICE_DATA = [
   'weeklyPlan.v1',
   'favorites.v1',
   'grocery.v2',
+  'settings.v1',
   'groceryExtras.v1',
   'recipeDraft.v1',
   'syncBase.v1',

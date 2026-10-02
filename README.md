@@ -44,9 +44,18 @@ npm run preview    # http://localhost:4173
   computed from the real current date.
 - Week stepper in the header (click the date range to jump back to this week).
 - **Auto-fill Remaining**, **Copy Last Week**, **Reset Week** — each with an Undo toast.
-  Past days are kept as history and never overwritten.
-- **Choose a Meal**, **Surprise Me** and **Dining Out** on open slots. Surprise Me and Auto-fill prefer meals
-  not already on the week's plan and not made in the last 7 days.
+  Past days are kept as history and never overwritten. Auto-fill also prefers meals not already on the week's
+  plan and not made in the last 7 days.
+- Each day card offers actions for its state:
+  - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Dining Out**.
+  - **Planned meal** (including today): **View Recipe**, **Swap Meal** (opens the catalog), **Surprise Me** and
+    **Dining Out**.
+    - **Surprise Me** replaces the meal with a random one, preferring meals not already on the week's plan or
+      made recently. It skips the meal being replaced unless that is the only recipe available.
+    - **Dining Out** turns the evening into a night off.
+    - Replacing a planned meal with either shows an **Undo** toast.
+  - **Night off** (today or later): **Plan a Meal Instead** clears the night so it's open again.
+  - **Completed** and **not logged** past days only offer **View Recipe** where there is a meal.
 - Grocery badge counts the ingredients of this week's upcoming dinners.
 
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
@@ -54,10 +63,11 @@ npm run preview    # http://localhost:4173
 - Keyword search across titles, descriptions, categories, tags and ingredients (the header search lands here too).
 - Filters (combined with AND): Favorites, **Not made in 7 days** (remembered on the device) and one per
   recipe tag in use, plus one category at a time (Filter by Category). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
-  Recently Added to Box. Paging, 9 per page.
+  Name (A–Z or Z–A), Recently Added to Box. Paging, 9 per page.
 - Each card says when the meal was **last made** (from the plan): terracotta within 7 days, green otherwise.
-- **Select for {Day}** assigns the recipe to the chosen day (confirmed with a toast); "Planning for"
-  switches the target day.
+- **Select for {Day}** assigns the recipe to the chosen day and returns to the weekly plan, scrolled to that day and briefly
+  highlighting it (or, with that
+  switched off in Profile, stays and confirms with a toast); "Planning for" switches the target day.
 - **Surprise Me & Assign** picks at random from the current results, preferring meals not made recently.
 
 ## Recipe Detail (`#/recipe/:id?day=YYYY-MM-DD`)
@@ -82,11 +92,27 @@ The `Category` column holds it; blank means none.
 
 - Auto-compiled from the viewed week's upcoming dinners, grouped into Produce, Meat & Seafood,
   Dairy and Pantry aisles (with aisle tabs). Each line shows which dinner needs it.
-- Tap the circle when bought; the box icon moves an item to the **Already On Hand / Acquired**
-  ledger (staples like oil and salt start there). **Clear Done** moves bought items to the ledger.
+- Tap the circle when bought and the box icon if you already have it; either way the item moves to the
+  **Already On Hand / Acquired** ledger and the aisle counters update (staples like oil and salt start there).
 - **Add Item** for anything extra, **Share** (native share sheet or clipboard), **Print Kitchen
   Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.
+
+## Profile & Settings (`#/profile`)
+
+Reached from the avatar in the header (and the footer, on phones).
+
+- **Planning** — "Return to the planner after choosing a meal" (on by default; applies to Select and Surprise Me
+  in the catalog). Synced as a `Preference` row in the `[Settings]` tab.
+- **Aisle Mappings** — your own ingredient → aisle pairs (e.g. "Oat milk" → Pantry). They're checked before the
+  built-in word lists whenever an aisle is guessed: typing or pasting ingredients in the recipe editor, and the
+  aisle pre-selected in the grocery **Add Item** form. A name matches as whole words anywhere in the ingredient
+  ("oat milk" also matches "2 cups oat milk"), and the longest match wins. Explicit aisles already saved on a
+  recipe are never changed. Synced to the optional `[Settings]` tab.
+- **This Device** — print defaults for the Print Options dialog, the catalog's "Not made in 7 days" default and
+  a Reset Colours button for tag colours. Never synced.
+- **Danger Zone** — *Disconnect & Erase*: after a confirmation dialog, signs out of Google, removes every
+  `mealcaster.*` key from this browser and reloads fresh. The Google Sheet is never changed. Handy for testing.
 
 ## Google Sheets sync (`#/sheets-sync`)
 
@@ -108,7 +134,7 @@ In dev they come from `.env.local` (git-ignored); in CI from the repo's `product
 **How sync behaves**
 
 - The Google Sheet is the source of truth; `localStorage` is a cache plus edits waiting to be pushed.
-- Row-level three-way sync keyed by `Recipe_ID`, `Date_ISO`, and `Week_Of` + `Line_Key`: if a row
+- Row-level three-way sync keyed by `Recipe_ID`, `Date_ISO`, `Week_Of` + `Line_Key`, and `Section` + `Name`: if a row
   changed in the sheet since the last sync the sheet wins; otherwise this device's edit is pushed.
   Rows are updated in place and only MealCaster's columns are written, so extra columns stay put.
 - First sync with data on both sides asks: **Merge** (device-only rows are added, the sheet wins on
@@ -133,6 +159,7 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
 | `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
+| `mealcaster.settings.v1` | `[Settings]` tab: Profile aisle mappings |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
 
@@ -151,6 +178,7 @@ src/
     Catalog.svelte           #/catalog
     RecipeDetail.svelte      #/recipe/:id
     Grocery.svelte           #/grocery
+    Profile.svelte           #/profile
     RecipeEditor.svelte      #/recipe/new, #/recipe/:id/edit
     SheetsSettings.svelte    #/sheets-sync
     ColumnConflicts.svelte   #/sheets-sync/columns
@@ -165,6 +193,8 @@ src/
     tags.js                  tag & category normalizing, suggestions, colour rotation
     tagColors.svelte.js      per-device tag colours
     grocery.svelte.js        grocery list model
+    settings.svelte.js       Profile settings (aisle mappings) + aisleMap.js matching
+    devicePrefs.svelte.js    small per-device display preferences
     favorites.svelte.js
     toast.svelte.js
     dates.js
@@ -185,3 +215,4 @@ The build job runs in the `production` environment to read the three `GOOGLE_*` 
 - **Dinner picks ignore the category.** Auto-fill and Surprise Me choose from every recipe, so a Lunch or
   Dessert recipe (e.g. the New York Cheesecake sample) can land on a dinner day. Limit both to recipes in the
   Dinner category or with no category.
+- **Customized aisle mapping.** Allow for additional ingredients to automatically map to aisle. These would be merged into the existing mappings. These can exist as profile settings (settings not implemented yet either)

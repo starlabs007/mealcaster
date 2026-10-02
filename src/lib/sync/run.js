@@ -22,7 +22,7 @@ import { a1, fingerprint, readTable, reconcile, resolveColumns, rowCells } from 
  *
  * @typedef {{ spreadsheetId: string, initialized: boolean, tabs: Partial<Record<TabKey, { name: string, rows: import('./engine.js').TabBase }>> }} SyncBase
  *
- * @typedef {{ recipes: number, weeklyPlan: number, provisions: number }} Counts
+ * @typedef {{ recipes: number, weeklyPlan: number, provisions: number, settings: number }} Counts
  *
  * @typedef {
  *   | { status: 'done', base: SyncBase, title: string, pushed: number, pulled: number }
@@ -67,8 +67,8 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
 
   // First sync with both sides holding data: the person decides.
   if (!base.initialized && direction === 'bidirectional' && !choice) {
-    const sheet = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0 });
-    const device = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0 });
+    const sheet = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
+    const device = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
     for (const { key } of tabs) {
       sheet[key] = tables[key].rows.size;
       device[key] = local.localRows(key).size;

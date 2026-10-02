@@ -7,6 +7,9 @@ import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
 import { migrateNotes } from './markdown.js';
 import { normalizeAisle, normalizeCategory, normalizeTags } from './tags.js';
+import { aisles } from './data/aisles.js';
+import { findAisleMapping } from './aisleMap.js';
+import { settings } from './settings.svelte.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
 
@@ -206,18 +209,7 @@ export function parseQty(text) {
   return total > 0 ? total : NaN;
 }
 
-/** Store aisle options; values are the ingredient tags the grocery list maps to departments. */
-export const aisles = [
-  { tag: 'Produce', label: 'Produce' },
-  { tag: 'Herbs', label: 'Herbs' },
-  { tag: 'Fresh', label: 'Meat & Seafood' },
-  { tag: 'Dairy', label: 'Dairy & Eggs' },
-  { tag: 'Pantry', label: 'Pantry' },
-  { tag: 'Spices', label: 'Spices' },
-  { tag: 'Bakery', label: 'Bakery' },
-  { tag: 'Frozen', label: 'Frozen' },
-  { tag: 'Other', label: 'Other' },
-];
+export { aisles };
 
 /** Display name for an ingredient tag; tags outside the aisle list show as-is. @param {string} tag */
 export const aisleLabel = (tag) => aisles.find((a) => a.tag === tag)?.label ?? tag;
@@ -232,8 +224,10 @@ const AISLE_WORDS = [
   ['Produce', /\b(onions?|shallots?|garlic|lemons?|limes?|oranges?|tomato(es)?|potato(es)?|carrots?|celery|peppers?|zucchini|courgettes?|squash|spinach|kale|lettuce|arugula|rocket|cabbage|broccoli|cauliflower|mushrooms?|eggplant|aubergine|asparagus|peas|beans|corn|avocados?|ginger|leeks?|fennel|cucumbers?|apples?|pears?|berries|chil(e|i|li)s?|jalapeños?|scallions?|green onions?)\b/],
 ];
 
-/** Best-guess aisle for an ingredient description. @param {string} text */
+/** Best-guess aisle for an ingredient description: the person's own aisle mappings first. @param {string} text */
 export function guessAisle(text) {
+  const mapped = findAisleMapping(settings.aisles, text);
+  if (mapped) return mapped;
   const t = text.toLowerCase();
   return AISLE_WORDS.find(([, re]) => re.test(t))?.[0] ?? 'Pantry';
 }

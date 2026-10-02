@@ -114,11 +114,12 @@ export const recipe = (id, title, extra = {}) => ({
  * On-device data plus the LocalAdapter runSync uses — the same shape as
  * sync.svelte.js, without Svelte. Provisions are kept as rows.
  */
-export function fakeDevice({ recipes = [], plan = {}, favorites = [], provisions = [] } = {}) {
+export function fakeDevice({ recipes = [], plan = {}, favorites = [], provisions = [], aisles = [], returnToPlanner = true } = {}) {
   const d = {
     recipes,
     plan,
     favorites: new Set(favorites),
+    settings: { aisles, returnToPlanner },
     provisions: new Map(provisions.map((r) => [codec.provisionKey(r.Week_Of, r.Line_Key), r])),
   };
   /** @type {import('../src/lib/sync/run.js').LocalAdapter} */
@@ -132,6 +133,7 @@ export function fakeDevice({ recipes = [], plan = {}, favorites = [], provisions
             .map(([iso, e]) => [iso, codec.planToRow(iso, e)]),
         );
       }
+      if (tab === 'settings') return codec.settingsToRows(d.settings);
       return new Map(d.provisions);
     },
     apply(tab, final, fromSheet, columns) {
@@ -155,7 +157,8 @@ export function fakeDevice({ recipes = [], plan = {}, favorites = [], provisions
           if (entry) next[iso] = entry;
         }
         d.plan = next;
-      } else d.provisions = new Map(final);
+      } else if (tab === 'settings') d.settings = codec.settingsFromRows([...final.values()]);
+      else d.provisions = new Map(final);
     },
   };
   return d;
@@ -166,6 +169,8 @@ export const TABS = /** @type {const} */ ([
   { key: 'weeklyPlan', name: 'WeeklyPlan' },
   { key: 'provisions', name: 'Provisions' },
 ]);
+
+export const SETTINGS_TAB = /** @type {const} */ ({ key: 'settings', name: 'Settings' });
 
 /** runSync options with test defaults. */
 export const syncOptions = (sheet, device, base, extra = {}) => ({

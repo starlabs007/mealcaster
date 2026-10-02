@@ -3,13 +3,15 @@
   import RecipeCard from '../lib/components/RecipeCard.svelte';
   import { recipes, recipeById, tagChoices, tagIcon, normalizeTags, categoryChoices, normalizeCategory } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
-  import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe, madeRecently, timesMade, lastMadeOn, RECENT_DAYS } from '../lib/planner.svelte.js';
-  import { storageKey } from '../lib/env.js';
+  import { planner, statusOf, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, madeRecently, timesMade, lastMadeOn, RECENT_DAYS } from '../lib/planner.svelte.js';
+  import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
+  import { settings } from '../lib/settings.svelte.js';
   import { formatLong, formatWeekday, weekStartOf, fromISO, weekDates } from '../lib/dates.js';
 
   const PAGE_SIZE = 9;
+  const byTitle = (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
   const sorts = [
     {
       id: 'most-cooked',
@@ -21,6 +23,8 @@
         a.title.localeCompare(b.title),
     },
     { id: 'quickest', label: 'Quickest Prep Time', compare: (a, b) => a.minutes - b.minutes },
+    { id: 'name', label: 'Name (A–Z)', compare: byTitle },
+    { id: 'name-desc', label: 'Name (Z–A)', compare: (a, b) => byTitle(b, a) },
     { id: 'recent', label: 'Recently Added to Box', compare: (a, b) => b.addedAt.localeCompare(a.addedAt) },
   ];
 
@@ -28,27 +32,13 @@
   let sort = $state('most-cooked');
   let favoritesOnly = $state(false);
 
-  // "Not made in 7 days" is remembered on this device: skipping repeats is a standing preference.
-  const HIDE_RECENT_KEY = storageKey('catalogHideRecent.v1');
-  let hideRecent = $state(readHideRecent());
-
-  function readHideRecent() {
-    try {
-      return localStorage.getItem(HIDE_RECENT_KEY) === 'true';
-    } catch {
-      return false;
-    }
-  }
+  // "Not made in 7 days" is remembered on this device (see Profile): skipping repeats is a standing preference.
+  const hideRecent = $derived(devicePrefs.hideRecent);
 
   /** @param {boolean} on */
-  function setHideRecent(on) {
-    hideRecent = on;
+  function toggleHideRecent(on) {
+    setHideRecent(on);
     pages = 1;
-    try {
-      localStorage.setItem(HIDE_RECENT_KEY, String(on));
-    } catch {
-      // In-memory only.
-    }
   }
   /** @type {string[]} */
   let active = $state([]);
@@ -152,8 +142,16 @@
     if (recipe) announce(iso, recipe, 'Surprise! ');
   }
 
-  /** Toast rather than a banner, so it's seen wherever the catalog is scrolled to. */
+  /**
+   * Back to the planner (the default; see Profile), or a toast rather than a banner so it's seen
+   * wherever the catalog is scrolled to.
+   */
   function announce(iso, recipe, prefix = '') {
+    if (settings.returnToPlanner) {
+      spotlightDay(iso);
+      navigate('/');
+      return;
+    }
     showToast(`${prefix}${recipe.shortTitle} added to ${formatLong(iso)} dinner and your grocery basket was updated.`, {
       label: 'Go to Weekly View',
       run: () => navigate('/'),
@@ -267,7 +265,7 @@
     {/snippet}
     <div class="flex flex-wrap gap-2">
       {@render pill(favoritesOnly, 'Favorites', 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
-      {@render pill(hideRecent, `Not made in ${RECENT_DAYS} days`, 'history', () => setHideRecent(!hideRecent))}
+      {@render pill(hideRecent, `Not made in ${RECENT_DAYS} days`, 'history', () => toggleHideRecent(!hideRecent))}
       {#each filters as tag (tag)}
         {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
       {/each}
