@@ -13,6 +13,7 @@
   import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
   import { resetTagColors } from '../lib/tagColors.svelte.js';
   import { RECENT_DAYS } from '../lib/planner.svelte.js';
+  import WipeDataDialog from '../lib/components/WipeDataDialog.svelte';
   import { sheets } from '../lib/sheets.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -20,6 +21,7 @@
   const inputClass =
     'rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container';
 
+  let confirmingWipe = $state(false);
   let draft = $state({ name: '', tag: 'Pantry' });
   const mappings = $derived([...settings.aisles].sort((a, b) => a.name.localeCompare(b.name)));
   const synced = $derived(Boolean(sheets.spreadsheet) && sheets.syncSettings);
@@ -204,4 +206,25 @@
       </div>
     </div>
   </section>
+
+  <!-- Danger zone -->
+  <section class="flex flex-col gap-3 rounded-2xl border-2 border-secondary/40 bg-surface-container-lowest p-5" aria-labelledby="danger-heading">
+    <h2 id="danger-heading" class="flex items-center gap-2 font-display text-headline-sm text-secondary">
+      <Icon name="warning" class="text-[20px]" /> Danger Zone
+    </h2>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <p class="max-w-xl text-body-sm text-on-surface-variant">
+        <strong class="text-on-surface">Disconnect and erase all local data.</strong> Signs out of Google and permanently removes
+        every recipe, plan, grocery list and setting saved in this browser, then starts MealCaster fresh. Your Google Sheet is not
+        changed. This can’t be undone — handy for testing a clean start.
+      </p>
+      <button type="button" class="btn shrink-0 bg-secondary py-2.5 text-on-secondary hover:bg-[#b34728]" onclick={() => (confirmingWipe = true)}>
+        <Icon name="delete_forever" class="text-[16px]" /> Disconnect &amp; Erase…
+      </button>
+    </div>
+  </section>
 </div>
+
+{#if confirmingWipe}
+  <WipeDataDialog onclose={() => (confirmingWipe = false)} />
+{/if}

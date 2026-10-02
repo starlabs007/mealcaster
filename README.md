@@ -103,6 +103,8 @@ Reached from the avatar in the header (and the footer, on phones).
   recipe are never changed. Synced to the optional `[Settings]` tab.
 - **This Device** — print defaults for the Print Options dialog, the catalog's "Not made in 7 days" default and
   a Reset Colours button for tag colours. Never synced.
+- **Danger Zone** — *Disconnect & Erase*: after a confirmation dialog, signs out of Google, removes every
+  `mealcaster.*` key from this browser and reloads fresh. The Google Sheet is never changed. Handy for testing.
 
 ## Google Sheets sync (`#/sheets-sync`)
 
