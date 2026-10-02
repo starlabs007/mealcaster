@@ -9,7 +9,7 @@
 // Plain JS (no runes) so it can be tested outside Svelte.
 
 import { departments } from '../data/departments.js';
-import { formatWeekday } from '../dates.js';
+import { formatWeekday, fromISO, weekStartOf } from '../dates.js';
 import { normalizeAisle, normalizeCategory, normalizeTags } from '../tags.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
@@ -345,6 +345,23 @@ export function provisionToRow(week, line) {
 }
 
 /**
+ * Moves lists keyed by another weekday (weeks used to start on Monday) onto the
+ * Saturday their week now starts on, merging lists that land on the same week.
+ * @param {Record<string, import('../grocery.svelte.js').WeekList>} weeks
+ */
+export function rekeyGroceryWeeks(weeks) {
+  /** @type {Record<string, import('../grocery.svelte.js').WeekList>} */
+  const out = {};
+  for (const [week, list] of Object.entries(weeks).sort(([a], [b]) => a.localeCompare(b))) {
+    const into = (out[weekStartOf(fromISO(week))] ??= { extras: [], status: {}, custom: [] });
+    for (const key of list.extras ?? []) if (!into.extras.includes(key)) into.extras.push(key);
+    Object.assign(into.status, list.status);
+    for (const item of list.custom ?? []) if (!into.custom.some((c) => c.id === item.id)) into.custom.push(item);
+  }
+  return out;
+}
+
+/**
  * Rebuilds the per-week grocery state from provisions rows.
  * @param {Row[]} rows
  * @param {(week: string, key: string) => boolean} isPlanned whether a line comes from that week's planned dinners
@@ -354,7 +371,7 @@ export function groceryFromRows(rows, isPlanned) {
   /** @type {Record<string, import('../grocery.svelte.js').WeekList>} */
   const weeks = {};
   for (const row of rows) {
-    const week = isoDate(row.Week_Of);
+    const week = isoDate(row.Week_Of) && weekStartOf(fromISO(isoDate(row.Week_Of)));
     const key = str(row.Line_Key);
     if (!week || !key) continue;
     const list = (weeks[week] ??= { extras: [], status: {}, custom: [] });

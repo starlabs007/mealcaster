@@ -121,18 +121,37 @@ describe('codec', () => {
 
   it('rebuilds grocery weeks from provisions rows', () => {
     const rows = [
-      { Week_Of: '2026-10-05', Item: 'Basil', Detail: '1 bunch', Department: 'Produce', Status: 'Bought', Line_Key: 'pesto:0:1' },
-      { Week_Of: '2026-10-05', Item: 'Lemons', Detail: '3', Department: 'Produce', Status: 'To buy', Line_Key: 'tart:0:0' },
+      { Week_Of: '2026-10-03', Item: 'Basil', Detail: '1 bunch', Department: 'Produce', Status: 'Bought', Line_Key: 'pesto:0:1' },
+      { Week_Of: '2026-10-03', Item: 'Lemons', Detail: '3', Department: 'Produce', Status: 'To buy', Line_Key: 'tart:0:0' },
       { Week_Of: '2026-10-05', Item: 'Milk', Detail: '1 l', Department: 'Dairy', Status: 'In pantry', Line_Key: 'custom:1' },
     ];
     const planned = (week, key) => key.startsWith('pesto:');
     assert.deepEqual(codec.groceryFromRows(rows, planned), {
-      '2026-10-05': {
+      '2026-10-03': { // the Monday-dated Milk row lands on its week's Saturday
         extras: ['tart:0:0'], // not from a planned dinner, so it was added by hand from a recipe
         status: { 'pesto:0:1': 'bought', 'tart:0:0': 'need', 'custom:1': 'owned' },
         custom: [{ id: 'custom:1', name: 'Milk', note: '1 l', dept: 'dairy' }],
       },
     });
+  });
+
+  it('moves Monday-keyed grocery weeks onto their Saturday', () => {
+    const milk = { id: 'custom:1', name: 'Milk', note: '', dept: 'dairy' };
+    assert.deepEqual(
+      codec.rekeyGroceryWeeks({
+        '2026-09-28': { extras: ['tart:0:0'], status: { 'tart:0:0': 'bought' }, custom: [milk] },
+        '2026-09-26': { extras: ['tart:0:0', 'pesto:0:1'], status: { 'pesto:0:1': 'need' }, custom: [milk] },
+        '2026-10-03': { extras: [], status: {}, custom: [] },
+      }),
+      {
+        '2026-09-26': {
+          extras: ['tart:0:0', 'pesto:0:1'],
+          status: { 'pesto:0:1': 'need', 'tart:0:0': 'bought' },
+          custom: [milk],
+        },
+        '2026-10-03': { extras: [], status: {}, custom: [] },
+      },
+    );
   });
 });
 

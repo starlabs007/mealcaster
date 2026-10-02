@@ -12,7 +12,7 @@ import { recipes, replaceRecipes, saveRecipe } from '../recipes.svelte.js';
 import { favorites, setFavorites } from '../favorites.svelte.js';
 import { planner, replacePlan, statusOf } from '../planner.svelte.js';
 import { grocery, groceryLines, replaceGrocery } from '../grocery.svelte.js';
-import { mondayOf, weekDates } from '../dates.js';
+import { weekStartOf, weekDates } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
 import { storageKey } from '../env.js';
 import {
@@ -126,7 +126,7 @@ const syncedTabs = () =>
   );
 
 /** Weeks whose grocery list is synced: any with saved changes, plus this week. */
-const groceryWeeks = () => [...new Set([...Object.keys(grocery.weeks), mondayOf(new Date())])].sort();
+const groceryWeeks = () => [...new Set([...Object.keys(grocery.weeks), weekStartOf(new Date())])].sort();
 
 const today = () => planner.today;
 

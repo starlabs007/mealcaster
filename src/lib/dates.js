@@ -43,14 +43,14 @@ export function formatLastMade(iso, today) {
   return 'Last made over a year ago';
 }
 
-/** Monday of the week containing `date`. */
-export function mondayOf(date = new Date()) {
+/** Saturday of the week containing `date` — weeks run Saturday through Friday. */
+export function weekStartOf(date = new Date()) {
   const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  d.setDate(d.getDate() - ((d.getDay() + 1) % 7));
   return toISO(d);
 }
 
-/** Seven ISO dates, Monday through Sunday. */
+/** Seven ISO dates, Saturday through Friday. */
 export function weekDates(weekStart) {
   return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 }

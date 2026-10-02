@@ -4,7 +4,7 @@
   import { planner, shiftWeek, goToThisWeek } from '../planner.svelte.js';
   import { groceryCount } from '../grocery.svelte.js';
   import { route, href, navigate } from '../router.svelte.js';
-  import { formatRange, formatRangeCompact, mondayOf } from '../dates.js';
+  import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
   import { comingSoon } from '../toast.svelte.js';
 
   const tabs = [
@@ -44,7 +44,7 @@
   }
 
   const groceries = $derived(groceryCount());
-  const isThisWeek = $derived(planner.weekStart === mondayOf(new Date()));
+  const isThisWeek = $derived(planner.weekStart === weekStartOf(new Date()));
 
   function submitSearch(event) {
     event.preventDefault();

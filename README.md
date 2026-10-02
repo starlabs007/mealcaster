@@ -40,7 +40,7 @@ npm run preview    # http://localhost:4173
 
 ## What works on the home screen
 
-- Monday → Sunday day cards with **completed** (past), **today**, **planned** and **open** states,
+- Saturday → Friday day cards with **completed** (past), **today**, **planned** and **open** states,
   computed from the real current date.
 - Week stepper in the header (click the date range to jump back to this week).
 - **Auto-fill Remaining**, **Copy Last Week**, **Reset Week** — each with an Undo toast.

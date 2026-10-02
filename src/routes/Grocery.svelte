@@ -11,7 +11,7 @@
   } from '../lib/grocery.svelte.js';
   import { planner, currentWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
-  import { formatRange, formatWeekday, isoWeek } from '../lib/dates.js';
+  import { addDays, formatRange, formatWeekday, isoWeek } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
   import { syncPhase, syncNow, connect } from '../lib/sync/sync.svelte.js';
@@ -331,7 +331,7 @@
       <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card">
         <div class="flex items-center justify-between text-label-caps uppercase text-on-surface-variant">
           <span>Shopping Overview</span>
-          <span class="normal-case tracking-normal text-body-sm">Week {isoWeek(planner.weekStart)}</span>
+          <span class="normal-case tracking-normal text-body-sm">Week {isoWeek(addDays(planner.weekStart, 2))}</span>
         </div>
         <div class="mt-3 flex items-end justify-between">
           <p class="flex items-baseline gap-2 text-body-md text-on-surface">

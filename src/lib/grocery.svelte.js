@@ -16,6 +16,7 @@ import { formatQty } from './format.js';
 import { formatWeekday } from './dates.js';
 import { departments } from './data/departments.js';
 import { storageKey } from './env.js';
+import { rekeyGroceryWeeks } from './sync/codec.js';
 
 const STORAGE_KEY = storageKey('grocery.v2');
 const LEGACY_KEY = storageKey('groceryExtras.v1');
@@ -58,7 +59,7 @@ const DAY_TONES = ['neutral', 'paprika', 'sage', 'saffron', 'paprika', 'sage', '
 function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (raw) return rekeyGroceryWeeks(JSON.parse(raw));
     // Migrate v1 (a flat list of pushed keys) into the current week.
     const legacy = localStorage.getItem(LEGACY_KEY);
     if (legacy) {
