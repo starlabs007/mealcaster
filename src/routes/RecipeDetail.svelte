@@ -13,7 +13,7 @@
   import PrintOptionsDialog from '../lib/components/PrintOptionsDialog.svelte';
   import RecipePrintSimple from '../lib/components/RecipePrintSimple.svelte';
   import { printOptions, setPrintOptions, TEXT_DELTA } from '../lib/printOptions.svelte.js';
-  import { recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon } from '../lib/recipes.svelte.js';
+  import { recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon, aisleLabel } from '../lib/recipes.svelte.js';
   import { tagClass } from '../lib/tagColors.svelte.js';
   import LastMade from '../lib/components/LastMade.svelte';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
@@ -353,7 +353,7 @@
                           {item.unit ?? ''} {item.text}
                         </span>
                         <span class="shrink-0 rounded bg-surface-container-highest px-1.5 py-0.5 text-label-caps text-on-surface-variant">
-                          {item.tag}
+                          {aisleLabel(item.tag)}
                         </span>
                       </label>
                     </li>

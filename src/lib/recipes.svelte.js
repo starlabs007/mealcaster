@@ -214,6 +214,9 @@ export const aisles = [
   { tag: 'Other', label: 'Other' },
 ];
 
+/** Display name for an ingredient tag; tags outside the aisle list show as-is. @param {string} tag */
+export const aisleLabel = (tag) => aisles.find((a) => a.tag === tag)?.label ?? tag;
+
 const AISLE_WORDS = [
   ['Herbs', /\b(basil|parsley|cilantro|coriander leaves|thyme|rosemary|dill|mint|sage|chives|tarragon|oregano leaves)\b/],
   ['Spices', /\b(salt|peppercorns?|black pepper|cumin|paprika|turmeric|cinnamon|chili flakes|chilli flakes|red pepper flakes|nutmeg|spice|garam masala|curry powder|oregano|bay lea(f|ves))\b/],
