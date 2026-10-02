@@ -13,7 +13,7 @@
 
 import { SCHEMA } from '../schema.js';
 import { COLUMN_INFO, sameHeader, statusOf, suggestMapping } from '../schemaCheck.js';
-import { cellText, isBlankRow, isoDate, newRecipeIdFor, provisionKey } from './codec.js';
+import { cellText, isBlankRow, isoDate, newRecipeIdFor, provisionKey, settingKey } from './codec.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
 /** @typedef {import('./codec.js').Row} Row */
@@ -110,6 +110,7 @@ export function resolveColumns(tab, headers, { saved, autoAppendOptional, hasDat
 export function rowKey(tab, row) {
   if (tab === 'recipes') return cellText(row.Recipe_ID).trim();
   if (tab === 'weeklyPlan') return isoDate(row.Date_ISO);
+  if (tab === 'settings') return cellText(row.Section).trim() && cellText(row.Name).trim() ? settingKey(row.Section, row.Name) : '';
   const week = isoDate(row.Week_Of);
   const line = cellText(row.Line_Key).trim();
   return week && line ? provisionKey(week, line) : '';

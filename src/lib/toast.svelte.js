@@ -23,6 +23,3 @@ export function dismissToast() {
   toast.message = '';
   toast.action = null;
 }
-
-/** Placeholder for screens that are not built yet. */
-export const comingSoon = (screen) => showToast(`${screen} is coming soon.`);

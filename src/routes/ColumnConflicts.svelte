@@ -22,7 +22,7 @@
   /** @typedef {import('../lib/schemaCheck.js').Resolution} Resolution */
   /** @typedef {{ headers: string[], rows: string[][], resolution: Record<string, Resolution> | null }} TabCheck */
 
-  const TAB_ICON = { recipes: 'menu_book', weeklyPlan: 'calendar_month', provisions: 'shopping_basket' };
+  const TAB_ICON = { recipes: 'menu_book', weeklyPlan: 'calendar_month', provisions: 'shopping_basket', settings: 'tune' };
 
   // Header rows that show off each kind of conflict, for trying the screen out.
   const EXAMPLES = {
@@ -41,10 +41,20 @@
       ['2026-10-17', 'Salmon fillets', '2 × 180 g', 'Seafood', 'To buy'],
       ['2026-10-17', 'Arborio rice', '300 g', 'Pantry', 'On hand'],
     ],
+    settings: [
+      ['Type', 'Ingredient', 'Aisle'],
+      ['Aisle', 'Quinoa', 'Pantry'],
+      ['Aisle', 'Oat milk', 'Dairy & Eggs'],
+    ],
   };
 
   const tabKeys = /** @type {TabKey[]} */ (
-    sheets.syncProvisions ? ['recipes', 'weeklyPlan', 'provisions'] : ['recipes', 'weeklyPlan']
+    [
+      'recipes',
+      'weeklyPlan',
+      ...(sheets.syncProvisions ? ['provisions'] : []),
+      ...(sheets.syncSettings ? ['settings'] : []),
+    ]
   );
 
   /** Rebuilds a tab's check from what was saved last time. @param {TabKey} key @returns {TabCheck} */

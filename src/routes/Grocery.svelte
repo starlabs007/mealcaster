@@ -9,7 +9,7 @@
     addCustomItem,
     removeCustomItem,
   } from '../lib/grocery.svelte.js';
-  import { aisles } from '../lib/recipes.svelte.js';
+  import { aisles, guessAisle } from '../lib/recipes.svelte.js';
   import { planner, currentWeek, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { addDays, formatRange, formatShort, formatWeekday, isoWeek } from '../lib/dates.js';
@@ -30,6 +30,11 @@
   let showOnHand = $state(true);
   let adding = $state(false);
   let draft = $state({ name: '', note: '', aisle: 'Produce' });
+  // The aisle follows the item's name (your Profile mappings first) until you pick one yourself.
+  let aislePicked = false;
+  const guessDraftAisle = () => {
+    if (!aislePicked && draft.name.trim()) draft.aisle = guessAisle(draft.name);
+  };
 
   const offset = $derived(weekOffset());
   /** "this week", "next week", "last week" or "the week of Oct 10" */
@@ -75,6 +80,7 @@
     addCustomItem({ name, note: draft.note.trim(), dept: deptOfTag(draft.aisle) });
     showToast(`Added ${name} to your list.`);
     draft = { name: '', note: '', aisle: draft.aisle };
+    aislePicked = false;
   }
 
   function listAsText() {
@@ -244,6 +250,7 @@
           required
           autofocus
           bind:value={draft.name}
+          oninput={guessDraftAisle}
           placeholder="e.g. Sparkling water"
           class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         />
@@ -260,6 +267,7 @@
         Aisle
         <select
           bind:value={draft.aisle}
+          onchange={() => (aislePicked = true)}
           class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         >
           {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}

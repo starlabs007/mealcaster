@@ -41,6 +41,11 @@ export const COLUMN_INFO = {
     Source: { note: 'Recipe the item is for, or “Added by you”.', aliases: ['recipe', 'for', 'from'] },
     Line_Key: { note: 'MealCaster’s ID for the line — leave it as is.', required: true, aliases: ['key', 'line id', 'id'] },
   },
+  settings: {
+    Section: { note: 'What kind of setting the row is, e.g. Aisle.', required: true, aliases: ['group', 'type', 'category', 'kind'] },
+    Name: { note: 'The setting’s name — for Aisle rows, the ingredient.', required: true, aliases: ['key', 'setting', 'item', 'ingredient'] },
+    Value: { note: 'The setting’s value — for Aisle rows, the store aisle.', required: true, aliases: ['setting value', 'aisle', 'val'] },
+  },
 };
 
 /** Weakest similarity still offered as a suggestion. */

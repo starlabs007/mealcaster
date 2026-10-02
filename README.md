@@ -88,6 +88,18 @@ The `Category` column holds it; blank means none.
   Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.
 
+## Profile & Settings (`#/profile`)
+
+Reached from the avatar in the header (and the footer, on phones).
+
+- **Aisle Mappings** — your own ingredient → aisle pairs (e.g. "Oat milk" → Pantry). They're checked before the
+  built-in word lists whenever an aisle is guessed: typing or pasting ingredients in the recipe editor, and the
+  aisle pre-selected in the grocery **Add Item** form. A name matches as whole words anywhere in the ingredient
+  ("oat milk" also matches "2 cups oat milk"), and the longest match wins. Explicit aisles already saved on a
+  recipe are never changed. Synced to the optional `[Settings]` tab.
+- **This Device** — print defaults for the Print Options dialog, the catalog's "Not made in 7 days" default and
+  a Reset Colours button for tag colours. Never synced.
+
 ## Google Sheets sync (`#/sheets-sync`)
 
 Browser-only: Google Identity Services for sign-in, the Sheets and Drive REST APIs, and the Google
@@ -108,7 +120,7 @@ In dev they come from `.env.local` (git-ignored); in CI from the repo's `product
 **How sync behaves**
 
 - The Google Sheet is the source of truth; `localStorage` is a cache plus edits waiting to be pushed.
-- Row-level three-way sync keyed by `Recipe_ID`, `Date_ISO`, and `Week_Of` + `Line_Key`: if a row
+- Row-level three-way sync keyed by `Recipe_ID`, `Date_ISO`, `Week_Of` + `Line_Key`, and `Section` + `Name`: if a row
   changed in the sheet since the last sync the sheet wins; otherwise this device's edit is pushed.
   Rows are updated in place and only MealCaster's columns are written, so extra columns stay put.
 - First sync with data on both sides asks: **Merge** (device-only rows are added, the sheet wins on
@@ -133,6 +145,7 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
 | `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
+| `mealcaster.settings.v1` | `[Settings]` tab: Profile aisle mappings |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
 
@@ -151,6 +164,7 @@ src/
     Catalog.svelte           #/catalog
     RecipeDetail.svelte      #/recipe/:id
     Grocery.svelte           #/grocery
+    Profile.svelte           #/profile
     RecipeEditor.svelte      #/recipe/new, #/recipe/:id/edit
     SheetsSettings.svelte    #/sheets-sync
     ColumnConflicts.svelte   #/sheets-sync/columns
@@ -165,6 +179,8 @@ src/
     tags.js                  tag & category normalizing, suggestions, colour rotation
     tagColors.svelte.js      per-device tag colours
     grocery.svelte.js        grocery list model
+    settings.svelte.js       Profile settings (aisle mappings) + aisleMap.js matching
+    devicePrefs.svelte.js    small per-device display preferences
     favorites.svelte.js
     toast.svelte.js
     dates.js

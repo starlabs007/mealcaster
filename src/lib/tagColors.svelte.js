@@ -66,3 +66,15 @@ export function tagClasses(tags) {
   assignTones(preview, tags);
   return new Map(tags.map((tag) => [tag, toneClass[preview.tones[tag]] ?? NEUTRAL]));
 }
+
+/** Forgets every tag's colour; they're handed out again, round-robin, from the first tag in use. */
+export function resetTagColors() {
+  colors.next = 0;
+  colors.tones = {};
+  assignInUse();
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(colors));
+  } catch {
+    // In-memory only.
+  }
+}

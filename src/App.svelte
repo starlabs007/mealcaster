@@ -6,6 +6,7 @@
   import Catalog from './routes/Catalog.svelte';
   import RecipeDetail from './routes/RecipeDetail.svelte';
   import Grocery from './routes/Grocery.svelte';
+  import Profile from './routes/Profile.svelte';
   import SheetsSettings from './routes/SheetsSettings.svelte';
   import RecipeEditor from './routes/RecipeEditor.svelte';
   import ColumnConflicts from './routes/ColumnConflicts.svelte';
@@ -24,6 +25,8 @@
     <Catalog />
   {:else if route.path === '/grocery'}
     <Grocery />
+  {:else if route.path === '/profile'}
+    <Profile />
   {:else if route.path === '/recipe/new'}
     {#key route.path}<RecipeEditor />{/key}
   {:else if editId}

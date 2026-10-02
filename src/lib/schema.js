@@ -10,6 +10,8 @@ export const SCHEMA = {
   ],
   // Line_Key ties a row back to its grocery line so edits round-trip.
   provisions: ['Week_Of', 'Item', 'Detail', 'Department', 'Status', 'Source', 'Line_Key'],
+  // One row per setting: Section groups them ("Aisle" today), Name identifies the row within it.
+  settings: ['Section', 'Name', 'Value'],
 };
 
 /** @typedef {keyof typeof SCHEMA} TabKey */

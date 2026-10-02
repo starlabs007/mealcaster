@@ -16,6 +16,7 @@
       { key: 'recipes', label: 'Recipes', icon: 'menu_book' },
       { key: 'weeklyPlan', label: 'Planned dinners', icon: 'calendar_month' },
       sheets.syncProvisions && { key: 'provisions', label: 'Grocery lines', icon: 'shopping_basket' },
+      sheets.syncSettings && { key: 'settings', label: 'Settings', icon: 'tune' },
     ].filter(Boolean),
   );
 

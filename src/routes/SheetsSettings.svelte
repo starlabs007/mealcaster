@@ -31,7 +31,7 @@
 
   // The form edits a draft of these fields; Save commits it, Cancel / close discards it.
   // Connection details (account, spreadsheet) change immediately and aren't part of it.
-  const EDITABLE = ['tabs', 'syncProvisions', 'direction', 'instantPush'];
+  const EDITABLE = ['tabs', 'syncProvisions', 'syncSettings', 'direction', 'instantPush'];
   const pick = (from) => structuredClone(Object.fromEntries(EDITABLE.map((k) => [k, $state.snapshot(from[k])])));
   let draft = $state(pick(sheets));
   /** @type {HTMLElement} */
@@ -44,9 +44,12 @@
   const firefox = /firefox/i.test(navigator.userAgent);
 
   const tabKeys = $derived(
-    /** @type {('weeklyPlan' | 'recipes' | 'provisions')[]} */ (
-      draft.syncProvisions ? ['weeklyPlan', 'recipes', 'provisions'] : ['weeklyPlan', 'recipes']
-    ),
+    /** @type {('weeklyPlan' | 'recipes' | 'provisions' | 'settings')[]} */ ([
+      'weeklyPlan',
+      'recipes',
+      ...(draft.syncProvisions ? ['provisions'] : []),
+      ...(draft.syncSettings ? ['settings'] : []),
+    ]),
   );
   const tabErrors = $derived(
     Object.fromEntries(
@@ -60,6 +63,14 @@
     ),
   );
   const tabsValid = $derived(Object.values(tabErrors).every((e) => !e));
+
+  /** "15 recipes, planned dinners, grocery list and settings" */
+  const contents = $derived(
+    [`${recipes.length} recipes`, 'planned dinners', draft.syncProvisions && 'grocery list', draft.syncSettings && 'settings']
+      .filter(Boolean)
+      .join(', ')
+      .replace(/, ([^,]*)$/, ' and $1'),
+  );
 
   const dirty = $derived(JSON.stringify(pick(draft)) !== JSON.stringify(pick(sheets)));
   const checkedTabs = $derived(Object.keys(sheets.schemaCheck ?? {}).length);
@@ -373,7 +384,7 @@
                 <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">Offline copy</span>
               </div>
               <p class="text-body-sm text-on-surface-variant">
-                Download your {recipes.length} recipes, planned dinners{draft.syncProvisions ? ' and grocery list' : ''} as an .xlsx workbook with
+                Download your {contents} as an .xlsx workbook with
                 MealCaster’s tabs — a backup, or something to open in Excel or Numbers.
               </p>
             </div>
@@ -418,6 +429,24 @@
             <div class="grid gap-3 md:grid-cols-2">
               {@render tabInput('provisions', 'Grocery List Tab')}
               {@render headerChips(SCHEMA.provisions)}
+            </div>
+          {/if}
+        </div>
+        <div class="flex flex-col gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-card">
+          <label class="flex cursor-pointer items-start gap-3">
+            <input type="checkbox" bind:checked={draft.syncSettings} class="mt-0.5 h-4 w-4 rounded accent-primary" />
+            <span class="flex flex-col">
+              <span class="flex items-center gap-2 text-label-md text-on-surface">
+                <Icon name="tune" class="text-[18px] text-secondary" /> Settings Tab
+                <span class="rounded-md bg-surface-container-high px-2 py-0.5 text-label-sm text-on-surface-variant">Optional</span>
+              </span>
+              <span class="text-body-sm text-on-surface-variant">Also keep your Profile settings (such as aisle mappings) in a tab, so every device shares them.</span>
+            </span>
+          </label>
+          {#if draft.syncSettings}
+            <div class="grid gap-3 md:grid-cols-2">
+              {@render tabInput('settings', 'Settings Tab')}
+              {@render headerChips(SCHEMA.settings)}
             </div>
           {/if}
         </div>

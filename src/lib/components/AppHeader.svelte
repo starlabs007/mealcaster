@@ -5,7 +5,6 @@
   import { groceryCount } from '../grocery.svelte.js';
   import { route, href, navigate } from '../router.svelte.js';
   import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
-  import { comingSoon } from '../toast.svelte.js';
 
   const tabs = [
     { id: 'weekly-menu', label: 'Weekly Menu', path: '/' },
@@ -125,14 +124,14 @@
         <span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">{groceries}</span>
       </a>
 
-      <button
-        type="button"
-        aria-label="Profile"
-        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-primary ring-2 ring-surface-container-high sm:flex"
-        onclick={() => comingSoon('Profile settings')}
+      <a
+        href={href('/profile')}
+        aria-label="Profile & Settings"
+        aria-current={route.path === '/profile' ? 'page' : undefined}
+        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-primary ring-2 sm:flex {route.path === '/profile' ? 'ring-primary' : 'ring-surface-container-high'}"
       >
         <Icon name="person" class="text-[18px]" />
-      </button>
+      </a>
     </div>
   </div>
 

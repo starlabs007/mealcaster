@@ -12,6 +12,7 @@ import { recipes, replaceRecipes, saveRecipe } from '../recipes.svelte.js';
 import { favorites, setFavorites } from '../favorites.svelte.js';
 import { planner, replacePlan, statusOf } from '../planner.svelte.js';
 import { grocery, groceryLines, replaceGrocery } from '../grocery.svelte.js';
+import { settings, replaceAisleMappings } from '../settings.svelte.js';
 import { weekStartOf, weekDates } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
 import { storageKey } from '../env.js';
@@ -24,6 +25,8 @@ import {
   provisionToRow,
   recipeFromRow,
   recipeToRow,
+  settingsFromRows,
+  settingsToRows,
 } from './codec.js';
 import { emptyBase, runSync } from './run.js';
 
@@ -122,6 +125,7 @@ const syncedTabs = () =>
       { key: 'recipes', name: sheets.tabs.recipes.trim() },
       { key: 'weeklyPlan', name: sheets.tabs.weeklyPlan.trim() },
       sheets.syncProvisions && { key: 'provisions', name: sheets.tabs.provisions.trim() },
+      sheets.syncSettings && { key: 'settings', name: sheets.tabs.settings.trim() },
     ].filter(Boolean)
   );
 
@@ -145,6 +149,7 @@ const device = {
           .map(([iso, e]) => [iso, planToRow(iso, e)]),
       );
     }
+    if (tab === 'settings') return settingsToRows($state.snapshot(settings));
     const rows = new Map();
     for (const week of groceryWeeks()) {
       for (const line of groceryLines(week)) rows.set(provisionKey(week, line.key), provisionToRow(week, line));
@@ -179,6 +184,8 @@ const device = {
         if (entry) entries[iso] = $state.snapshot(entry);
       }
       replacePlan(entries);
+    } else if (tab === 'settings') {
+      replaceAisleMappings(settingsFromRows([...final.values()]).aisles);
     } else {
       const isPlanned = (week, key) => {
         const recipeId = key.split(':')[0];
@@ -191,7 +198,7 @@ const device = {
 
 /** Everything a sync pass looks at, as one string — to notice edits. */
 const deviceFingerprint = () =>
-  JSON.stringify([recipes, favorites.ids, planner.entries, grocery.weeks, syncedTabs(), sheets.direction]);
+  JSON.stringify([recipes, favorites.ids, planner.entries, grocery.weeks, settings.aisles, syncedTabs(), sheets.direction]);
 
 // ---- Sync passes ----------------------------------------------------------------
 
