@@ -1,7 +1,7 @@
 <script>
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
-  import { surpriseMe, markDiningOut, clearDay } from '../planner.svelte.js';
+  import { surpriseMe, markDiningOut, clearDay, spotlight } from '../planner.svelte.js';
   import { formatShort, formatWeekday } from '../dates.js';
   import { href } from '../router.svelte.js';
 
@@ -34,8 +34,9 @@
 </script>
 
 <article
+  id="day-{day.iso}"
   aria-label="{weekdayName} {formatShort(day.iso)}{day.isToday ? ' (today)' : ''}"
-  class="flex flex-col gap-4 rounded-xl p-4 transition-all sm:flex-row md:p-5 {hasMeal ? '' : 'sm:items-center'} {cardClass}"
+  class="flex flex-col gap-4 rounded-xl p-4 transition-all sm:flex-row md:p-5 {hasMeal ? '' : 'sm:items-center'} {cardClass} {spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : ''}"
 >
   {#if day.isToday}
     <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>

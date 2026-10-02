@@ -56,8 +56,9 @@ npm run preview    # http://localhost:4173
   recipe tag in use, plus one category at a time (Filter by Category). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
   Name (A–Z or Z–A), Recently Added to Box. Paging, 9 per page.
 - Each card says when the meal was **last made** (from the plan): terracotta within 7 days, green otherwise.
-- **Select for {Day}** assigns the recipe to the chosen day (confirmed with a toast); "Planning for"
-  switches the target day.
+- **Select for {Day}** assigns the recipe to the chosen day and returns to the weekly plan, scrolled to that day and briefly
+  highlighting it (or, with that
+  switched off in Profile, stays and confirms with a toast); "Planning for" switches the target day.
 - **Surprise Me & Assign** picks at random from the current results, preferring meals not made recently.
 
 ## Recipe Detail (`#/recipe/:id?day=YYYY-MM-DD`)
@@ -92,6 +93,8 @@ The `Category` column holds it; blank means none.
 
 Reached from the avatar in the header (and the footer, on phones).
 
+- **Planning** — "Return to the planner after choosing a meal" (on by default; applies to Select and Surprise Me
+  in the catalog). Synced as a `Preference` row in the `[Settings]` tab.
 - **Aisle Mappings** — your own ingredient → aisle pairs (e.g. "Oat milk" → Pantry). They're checked before the
   built-in word lists whenever an aisle is guessed: typing or pasting ingredients in the recipe editor, and the
   aisle pre-selected in the grocery **Add Item** form. A name matches as whole words anywhere in the ingredient

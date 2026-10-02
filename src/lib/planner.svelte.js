@@ -106,6 +106,18 @@ export function madeRecently(recipeId) {
   return !!iso && daysBetween(iso, planner.today) <= RECENT_DAYS;
 }
 
+/** The day the planner should scroll to and briefly highlight (after a meal is picked in the catalog). */
+export const spotlight = $state({ iso: '' });
+const SPOTLIGHT_MS = 3000;
+let spotlightTimer;
+
+/** @param {string} iso */
+export function spotlightDay(iso) {
+  spotlight.iso = iso;
+  clearTimeout(spotlightTimer);
+  spotlightTimer = setTimeout(() => (spotlight.iso = ''), SPOTLIGHT_MS);
+}
+
 /** Days of the viewed week (or of `weekStart`). */
 export function currentWeek(weekStart = planner.weekStart) {
   return weekDates(weekStart).map((iso, weekday) => {

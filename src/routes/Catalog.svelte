@@ -3,10 +3,11 @@
   import RecipeCard from '../lib/components/RecipeCard.svelte';
   import { recipes, recipeById, tagChoices, tagIcon, normalizeTags, categoryChoices, normalizeCategory } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
-  import { planner, statusOf, firstOpenDay, assignRecipe, surpriseMe, madeRecently, timesMade, lastMadeOn, RECENT_DAYS } from '../lib/planner.svelte.js';
+  import { planner, statusOf, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, madeRecently, timesMade, lastMadeOn, RECENT_DAYS } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
+  import { settings } from '../lib/settings.svelte.js';
   import { formatLong, formatWeekday, weekStartOf, fromISO, weekDates } from '../lib/dates.js';
 
   const PAGE_SIZE = 9;
@@ -141,8 +142,16 @@
     if (recipe) announce(iso, recipe, 'Surprise! ');
   }
 
-  /** Toast rather than a banner, so it's seen wherever the catalog is scrolled to. */
+  /**
+   * Back to the planner (the default; see Profile), or a toast rather than a banner so it's seen
+   * wherever the catalog is scrolled to.
+   */
   function announce(iso, recipe, prefix = '') {
+    if (settings.returnToPlanner) {
+      spotlightDay(iso);
+      navigate('/');
+      return;
+    }
     showToast(`${prefix}${recipe.shortTitle} added to ${formatLong(iso)} dinner and your grocery basket was updated.`, {
       label: 'Go to Weekly View',
       run: () => navigate('/'),
