@@ -179,9 +179,7 @@
       <Icon name="shopping_basket" class="text-[16px] text-secondary" />
       <span class="text-on-surface" aria-current="page">Grocery &amp; Provisions List</span>
     </nav>
-    <span class="inline-flex items-center gap-1.5 rounded-full bg-surface-container-high px-3 py-1 text-label-sm text-on-surface-variant">
-      <span class="h-2 w-2 rounded-full bg-outline"></span> Saved on this device
-    </span>
+    <SyncStatus variant="badge" />
   </div>
 
   <!-- Title & actions -->
