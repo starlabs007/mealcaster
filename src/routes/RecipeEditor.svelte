@@ -210,6 +210,16 @@
   const valid = $derived(Object.values(errors).every((e) => !e));
   const show = (key) => submitted && errors[key];
 
+  // Ingredient descriptions already used in any recipe, offered as autocomplete (sorted, de-duplicated by case).
+  const ingredientNames = $derived.by(() => {
+    const seen = new Map();
+    for (const r of recipes) for (const g of r.ingredients ?? []) for (const ing of g.items ?? []) {
+      const t = (ing.text ?? '').trim();
+      if (t && !seen.has(t.toLowerCase())) seen.set(t.toLowerCase(), t);
+    }
+    return [...seen.values()].sort((a, b) => a.localeCompare(b));
+  });
+
   const groupNames = $derived([...new Set(form.ingredients.map((r) => r.group.trim()).filter(Boolean))]);
 
   // ---- Ingredients ---------------------------------------------------------
@@ -802,6 +812,9 @@
             </div>
           {/if}
 
+          <datalist id="ingredient-names">
+            {#each ingredientNames as n (n)}<option value={n}></option>{/each}
+          </datalist>
           <datalist id="ingredient-groups">
             {#each groupNames as g (g)}<option value={g}></option>{/each}
           </datalist>
@@ -817,6 +830,7 @@
                     type="text"
                     aria-label="Ingredient, row {i + 1}"
                     placeholder="Ingredient description"
+                    list="ingredient-names"
                     bind:value={row.text}
                     oninput={() => onIngredientText(row)}
                     aria-invalid={show('ingredients') && i === 0 ? 'true' : undefined}
