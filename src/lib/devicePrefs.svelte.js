@@ -17,6 +17,8 @@ export const devicePrefs = $state({
   hideRecent: readHideRecent(),
   /** Planner: minimal view. Kept while the app is open (survives switching tabs), not saved. */
   plannerMinimal: false,
+  /** Grocery list: minimal view (no On Hand section or sidebar). Same lifetime as plannerMinimal. */
+  groceryMinimal: false,
 });
 
 /** @param {boolean} on */
