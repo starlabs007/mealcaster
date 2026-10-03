@@ -14,4 +14,10 @@ export const SCHEMA = {
   settings: ['Section', 'Name', 'Value'],
 };
 
+/**
+ * Version of the sheet layout and stored data, written to the [Settings] tab (`Schema | Version`).
+ * Bump it when a change needs existing sheets or device data migrated.
+ */
+export const SCHEMA_VERSION = 1;
+
 /** @typedef {keyof typeof SCHEMA} TabKey */

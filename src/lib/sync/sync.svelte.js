@@ -126,7 +126,7 @@ const syncedTabs = () =>
       { key: 'recipes', name: sheets.tabs.recipes.trim() },
       { key: 'weeklyPlan', name: sheets.tabs.weeklyPlan.trim() },
       sheets.syncProvisions && { key: 'provisions', name: sheets.tabs.provisions.trim() },
-      sheets.syncSettings && { key: 'settings', name: sheets.tabs.settings.trim() },
+      { key: 'settings', name: sheets.tabs.settings.trim() },
     ].filter(Boolean)
   );
 

@@ -31,7 +31,7 @@
 
   // The form edits a draft of these fields; Save commits it, Cancel / close discards it.
   // Connection details (account, spreadsheet) change immediately and aren't part of it.
-  const EDITABLE = ['tabs', 'syncProvisions', 'syncSettings', 'direction', 'instantPush'];
+  const EDITABLE = ['tabs', 'syncProvisions', 'direction', 'instantPush'];
   const pick = (from) => structuredClone(Object.fromEntries(EDITABLE.map((k) => [k, $state.snapshot(from[k])])));
   let draft = $state(pick(sheets));
   /** @type {HTMLElement} */
@@ -48,7 +48,7 @@
       'weeklyPlan',
       'recipes',
       ...(draft.syncProvisions ? ['provisions'] : []),
-      ...(draft.syncSettings ? ['settings'] : []),
+      'settings',
     ]),
   );
   const tabErrors = $derived(
@@ -66,7 +66,7 @@
 
   /** "15 recipes, planned dinners, grocery list and settings" */
   const contents = $derived(
-    [`${recipes.length} recipes`, 'planned dinners', draft.syncProvisions && 'grocery list', draft.syncSettings && 'settings']
+    [`${recipes.length} recipes`, 'planned dinners', draft.syncProvisions && 'grocery list', 'settings']
       .filter(Boolean)
       .join(', ')
       .replace(/, ([^,]*)$/, ' and $1'),
@@ -239,7 +239,7 @@
             <SyncStatus variant="badge" />
           </div>
           <p id="sheets-dialog-subtitle" class="text-body-md text-on-surface-variant">
-            Configure the two-sheet database for your weekly meal plans and custom recipes.
+            Configure the three-sheet database for your weekly meal plans, custom recipes and settings.
           </p>
         </div>
       </div>
@@ -407,12 +407,13 @@
       <!-- 02 Tab mapping -->
       <section class="flex flex-col gap-3" aria-label="Tab mapping">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h3 class="text-label-caps uppercase tracking-wider text-primary">02. Two-Sheet Tab Mapping</h3>
+          <h3 class="text-label-caps uppercase tracking-wider text-primary">02. Three-Sheet Tab Mapping</h3>
           <span class="text-label-sm text-outline">MealCaster adds a tab if it’s missing</span>
         </div>
-        <div class="grid gap-3 md:grid-cols-2">
+        <div class="grid gap-3 md:grid-cols-3">
           {@render tabCard('weeklyPlan', 'calendar_month', 'Weekly Meals Tab')}
           {@render tabCard('recipes', 'menu_book', 'Recipe Catalog Tab')}
+          {@render tabCard('settings', 'tune', 'Settings Tab')}
         </div>
         <div class="flex flex-col gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-card">
           <label class="flex cursor-pointer items-start gap-3">
@@ -429,24 +430,6 @@
             <div class="grid gap-3 md:grid-cols-2">
               {@render tabInput('provisions', 'Grocery List Tab')}
               {@render headerChips(SCHEMA.provisions)}
-            </div>
-          {/if}
-        </div>
-        <div class="flex flex-col gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-card">
-          <label class="flex cursor-pointer items-start gap-3">
-            <input type="checkbox" bind:checked={draft.syncSettings} class="mt-0.5 h-4 w-4 rounded accent-primary" />
-            <span class="flex flex-col">
-              <span class="flex items-center gap-2 text-label-md text-on-surface">
-                <Icon name="tune" class="text-[18px] text-secondary" /> Settings Tab
-                <span class="rounded-md bg-surface-container-high px-2 py-0.5 text-label-sm text-on-surface-variant">Optional</span>
-              </span>
-              <span class="text-body-sm text-on-surface-variant">Also keep your Profile settings (such as aisle mappings) in a tab, so every device shares them.</span>
-            </span>
-          </label>
-          {#if draft.syncSettings}
-            <div class="grid gap-3 md:grid-cols-2">
-              {@render tabInput('settings', 'Settings Tab')}
-              {@render headerChips(SCHEMA.settings)}
             </div>
           {/if}
         </div>

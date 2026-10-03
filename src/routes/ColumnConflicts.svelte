@@ -53,7 +53,7 @@
       'recipes',
       'weeklyPlan',
       ...(sheets.syncProvisions ? ['provisions'] : []),
-      ...(sheets.syncSettings ? ['settings'] : []),
+      'settings',
     ]
   );
 
