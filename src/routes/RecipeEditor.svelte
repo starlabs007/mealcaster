@@ -993,7 +993,8 @@
       <!-- Action bar -->
       <div class="sticky bottom-4 z-10 flex flex-col gap-3 rounded-2xl bg-surface-container-lowest/95 px-4 py-3 shadow-lift backdrop-blur lg:col-span-12 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <button type="button" class="text-body-md text-on-surface-variant hover:text-secondary" onclick={discard}>
+          <button type="button" class="btn whitespace-nowrap border border-secondary/50 bg-transparent px-4 py-2 text-body-md text-secondary hover:bg-secondary/10" onclick={discard}>
+            <Icon name="delete_sweep" class="text-[18px]" />
             {editing ? 'Discard Changes' : 'Discard Draft'}
           </button>
           {#if editing?.edited}
