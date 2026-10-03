@@ -40,7 +40,7 @@ const pool = [
     serves: 2,
     badge: { label: 'Dinner' },
     addedAt: '2026-03-02',
-    tags: ['Gluten-Free'],
+    tags: ['Gluten-Free', 'Date Night', 'Seafood', 'Spring'],
     notes:
       '### Crispy skin, every time\n\nPat the salmon skin **bone-dry** with clean paper towels 15 minutes before cooking. Surface moisture turns to steam and prevents that glass-like crackle.\n\n- Keep the broth at an *active bare simmer* on the adjacent burner.\n- Press each fillet down for the first 10 seconds so the skin stays flat.\n\n**Pairing:** A chilled Sancerre or dry Oregon Pinot Gris echoes the Meyer lemon without overpowering the salmon.',
     ingredients: [
@@ -188,7 +188,7 @@ const pool = [
     serves: 4,
     badge: { label: 'Dinner' },
     addedAt: '2025-10-04',
-    tags: ['Poultry & Meat'],
+    tags: ['Poultry & Meat', 'Comfort Food', 'Make-Ahead', 'Italian'],
     notes:
       '### Silky sauce, no cream\n\nReserve **a full mug of starchy pasta water** before draining. Toss the rigatoni with the ragù and a splash of that water over high heat for one minute; it emulsifies the sauce so it coats every ridge.\n\n1. Drain the pasta *2 minutes early*.\n2. Finish it in the pan with the ragù and pasta water.\n3. Off the heat, stir in the pecorino.\n\n**Pairing:** A Chianti Classico or Rosso di Montalcino. Bright acidity cuts through the sausage.',
     ingredients: [
@@ -363,7 +363,7 @@ const pool = [
     serves: 4,
     badge: { label: 'Dinner' },
     addedAt: '2025-12-01',
-    tags: ['Quick (<30m)', 'Vegetarian'],
+    tags: ['Quick (<30m)', 'Vegetarian', 'Vegan', 'Spicy', 'Weeknight'],
     notes:
       '### The tadka is everything\n\nAdd the tadka at the **very last second**. The hiss of hot spiced ghee hitting the dal is where the aroma comes from.\n\n- Heat the ghee until the cumin seeds *dance*, then add garlic and chilli.\n- Pour straight over the dal and cover for 30 seconds.\n- Leftovers thicken overnight; loosen with a splash of water.\n\n**Pairing:** A salted mango lassi or an off-dry Riesling.',
     ingredients: [
@@ -816,7 +816,7 @@ const pool = [
     serves: 2,
     badge: { label: 'Lunch' },
     addedAt: '2026-08-22',
-    tags: ['Vegetarian', 'Gluten-Free', 'Quick (<30m)'],
+    tags: ['Vegetarian', 'Gluten-Free', 'Quick (<30m)', 'Mediterranean', 'Meal Prep'],
     notes:
       'Dry the chickpeas thoroughly and roast them before seasoning — spices burn, but a toss in cumin right out of the oven sticks perfectly.\n\n**Pairing:** Sparkling water with cucumber and mint, or a dry rosé.',
     ingredients: [

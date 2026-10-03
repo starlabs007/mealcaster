@@ -69,7 +69,7 @@
 
     <div class="flex flex-col gap-3 p-5">
       <div class="flex flex-wrap gap-1.5">
-        {#each recipe.tags.slice(0, 3) as tag (tag)}
+        {#each recipe.tags as tag (tag)}
           <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
         {/each}
       </div>

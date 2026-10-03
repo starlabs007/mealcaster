@@ -4,6 +4,7 @@
   import { surpriseMe, markDiningOut, clearDay, spotlight } from '../planner.svelte.js';
   import { formatShort, formatWeekday } from '../dates.js';
   import { href } from '../router.svelte.js';
+  import { tagClass } from '../tagColors.svelte.js';
 
   /**
    * @type {{ day: {
@@ -82,6 +83,13 @@
       <div class="min-w-0 flex-1">
         <h3 class="font-display text-on-surface {emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
         <p class="mt-1 text-xs text-on-surface-variant">{[recipe.badge.label, `${recipe.prepMinutes + recipe.cookMinutes} min`, `Serves ${recipe.serves}`].filter(Boolean).join(' · ')}</p>
+        {#if recipe.tags.length}
+          <div class="mt-2 flex flex-wrap gap-1.5">
+            {#each recipe.tags as tag (tag)}
+              <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
+            {/each}
+          </div>
+        {/if}
         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <a
             href={href(`/recipe/${recipe.id}`, { day: day.iso })}
