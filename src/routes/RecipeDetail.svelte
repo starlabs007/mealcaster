@@ -1,10 +1,3 @@
-<script module>
-  // Mise-en-place check state per recipe, kept for the session so it survives
-  // hopping between recipes and the weekly plan.
-  /** @type {Record<string, string[]>} */
-  const checkedByRecipe = $state({});
-</script>
-
 <script>
   import Icon from '../lib/components/Icon.svelte';
   import { formatQty } from '../lib/format.js';
@@ -17,7 +10,8 @@
   import { tagClass } from '../lib/tagColors.svelte.js';
   import LastMade from '../lib/components/LastMade.svelte';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
-  import { groceryKeys, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
+  import { groceryKeys, isHaveKey, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
+  import { setHave } from '../lib/settings.svelte.js';
   import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe } from '../lib/planner.svelte.js';
   import { href, navigate } from '../lib/router.svelte.js';
   import { formatLong, formatWeekday } from '../lib/dates.js';
@@ -33,7 +27,6 @@
   // svelte-ignore state_referenced_locally
   const recipe = recipeById.get(id);
   let servings = $state(recipe?.serves ?? 2);
-  if (recipe) checkedByRecipe[recipe.id] ??= [];
 
   const day = $derived(
     recipe && dayParam && planner.entries[dayParam]?.recipeId === recipe.id ? dayParam : recipe && dayOfRecipe(recipe.id),
@@ -45,18 +38,25 @@
   const scale = $derived(recipe ? servings / recipe.serves : 1);
 
   const allKeys = recipe ? ingredientKeys(recipe.id) : [];
-  const checked = $derived(recipe ? checkedByRecipe[recipe.id] : []);
+  // A checked ingredient is one you always have: its name goes on the "ingredients I have" list
+  // (Profile), and it stays off every week's grocery list until unchecked.
+  const checked = $derived(allKeys.filter(isHaveKey));
   const onList = $derived(groceryKeys());
   const notOnList = $derived(allKeys.filter((k) => !onList.has(k)));
   const uncheckedToPush = $derived(notOnList.filter((k) => !checked.includes(k)));
 
+  const setChecked = (key, on) => {
+    const [, g, i] = key.split(':');
+    setHave(recipe.ingredients[+g].items[+i].text, on);
+  };
+
   function toggleCheck(key) {
-    const list = checkedByRecipe[recipe.id];
-    checkedByRecipe[recipe.id] = list.includes(key) ? list.filter((k) => k !== key) : [...list, key];
+    setChecked(key, !isHaveKey(key));
   }
 
   function toggleAll() {
-    checkedByRecipe[recipe.id] = checked.length === allKeys.length ? [] : [...allKeys];
+    const on = checked.length !== allKeys.length;
+    for (const key of allKeys) setChecked(key, on);
   }
 
   function push(keys, what) {
@@ -318,12 +318,12 @@
               <Icon name="receipt_long" class="mt-0.5 text-[22px] text-secondary" />
               <div>
                 <h2 class="font-display text-headline-sm text-on-surface">Mise en Place Ingredients</h2>
-                <p class="text-body-sm text-on-surface-variant print:hidden">Check items as you prep or push directly to grocery</p>
+                <p class="text-body-sm text-on-surface-variant print:hidden">Check what you always have to keep it off your grocery list</p>
               </div>
             </div>
             <button type="button" class="inline-flex shrink-0 items-center gap-1 text-label-sm text-on-surface-variant hover:text-primary print:hidden" onclick={toggleAll}>
               <Icon name={checked.length === allKeys.length ? 'remove_done' : 'done_all'} class="text-[16px]" />
-              {checked.length === allKeys.length ? 'Clear all' : 'Select all'}
+              {checked.length === allKeys.length ? 'Clear all' : 'Checkmark all'}
             </button>
           </div>
 

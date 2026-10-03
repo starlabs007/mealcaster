@@ -4,7 +4,7 @@
 const IMG = 'https://lh3.googleusercontent.com/aida-public/';
 
 /**
- * @typedef {{ qty?: number, unit?: string, text: string, tag: string, staple?: boolean }} Ingredient
+ * @typedef {{ qty?: number, unit?: string, text: string, tag: string }} Ingredient
  * @typedef {{ title: string, category: string, items: Ingredient[] }} IngredientGroup
  * @typedef {{ title: string, minutes: number, text: string, critical?: boolean }} Step
  * @typedef {{
@@ -59,8 +59,8 @@ const pool = [
         category: 'Protein',
         items: [
           { qty: 2, text: 'fresh wild salmon fillets (6 oz each), skin-on & thoroughly scaled', tag: 'Fresh' },
-          { qty: 1, unit: 'tbsp', text: 'high-smoke point avocado oil or clarified butter', tag: 'Pantry', staple: true },
-          { text: 'Flaky Maldon sea salt & freshly cracked black peppercorns', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tbsp', text: 'high-smoke point avocado oil or clarified butter', tag: 'Pantry' },
+          { text: 'Flaky Maldon sea salt & freshly cracked black peppercorns', tag: 'Spices' },
           { qty: 1, unit: 'pack', text: 'bamboo skewers or kitchen twine, for trussing & turning', tag: 'Other' },
         ],
       },
@@ -84,7 +84,7 @@ const pool = [
         category: 'Garden Greens',
         items: [
           { qty: 1, unit: 'bunch', text: 'slender green asparagus, woody ends snapped', tag: 'Produce' },
-          { qty: 1, unit: 'tbsp', text: 'extra virgin olive oil & grilled lemon halves', tag: 'Produce', staple: true },
+          { qty: 1, unit: 'tbsp', text: 'extra virgin olive oil & grilled lemon halves', tag: 'Produce' },
         ],
       },
     ],
@@ -152,7 +152,7 @@ const pool = [
           { qty: 3, text: 'poblano peppers', tag: 'Produce' },
           { qty: 1, unit: 'can', text: 'black beans, drained', tag: 'Pantry' },
           { qty: 1, unit: 'cup', text: 'sweet corn kernels', tag: 'Frozen' },
-          { qty: 1, unit: 'tsp', text: 'ground cumin', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tsp', text: 'ground cumin', tag: 'Spices' },
         ],
       },
       {
@@ -219,7 +219,7 @@ const pool = [
           { qty: 3, text: 'cloves garlic, sliced', tag: 'Produce' },
           { qty: 1, unit: 'can', text: 'San Marzano tomatoes (28 oz)', tag: 'Pantry' },
           { qty: 1, unit: 'can', text: 'cannellini beans, drained', tag: 'Pantry' },
-          { qty: 0.5, unit: 'tsp', text: 'red pepper flakes', tag: 'Spices', staple: true },
+          { qty: 0.5, unit: 'tsp', text: 'red pepper flakes', tag: 'Spices' },
         ],
       },
       {
@@ -281,7 +281,7 @@ const pool = [
         items: [
           { qty: 2, text: 'balls sourdough pizza dough (ready-made or home proofed)', tag: 'Bakery' },
           { qty: 1, unit: 'can', text: 'crushed San Marzano tomatoes', tag: 'Pantry' },
-          { qty: 2, unit: 'tbsp', text: 'semolina for dusting', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'semolina for dusting', tag: 'Pantry' },
         ],
       },
       {
@@ -342,7 +342,7 @@ const pool = [
           { qty: 2, text: 'Japanese eggplants, halved lengthwise', tag: 'Produce' },
           { qty: 3, unit: 'tbsp', text: 'white miso', tag: 'Pantry' },
           { qty: 1, unit: 'tbsp', text: 'mirin', tag: 'Pantry' },
-          { qty: 1, unit: 'tsp', text: 'toasted sesame oil', tag: 'Pantry', staple: true },
+          { qty: 1, unit: 'tsp', text: 'toasted sesame oil', tag: 'Pantry' },
         ],
       },
       {
@@ -351,7 +351,7 @@ const pool = [
         items: [
           { qty: 1, unit: 'cup', text: 'jasmine rice', tag: 'Pantry' },
           { qty: 2, text: 'Persian cucumbers, thinly sliced', tag: 'Produce' },
-          { qty: 0.25, unit: 'cup', text: 'rice vinegar', tag: 'Pantry', staple: true },
+          { qty: 0.25, unit: 'cup', text: 'rice vinegar', tag: 'Pantry' },
           { qty: 2, text: 'scallions, sliced', tag: 'Produce' },
         ],
       },
@@ -398,7 +398,7 @@ const pool = [
           { qty: 1, unit: 'cup', text: 'red lentils, rinsed', tag: 'Pantry' },
           { qty: 1, unit: 'can', text: 'full-fat coconut milk', tag: 'Pantry' },
           { qty: 1, unit: 'inch', text: 'fresh ginger, grated', tag: 'Produce' },
-          { qty: 1, unit: 'tsp', text: 'ground turmeric', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tsp', text: 'ground turmeric', tag: 'Spices' },
         ],
       },
       {
@@ -406,7 +406,7 @@ const pool = [
         category: 'Aromatics & Bakery',
         items: [
           { qty: 2, unit: 'tbsp', text: 'ghee', tag: 'Dairy' },
-          { qty: 1, unit: 'tsp', text: 'cumin seeds', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tsp', text: 'cumin seeds', tag: 'Spices' },
           { qty: 4, text: 'garlic naan', tag: 'Bakery' },
           { qty: 1, unit: 'bunch', text: 'cilantro', tag: 'Herbs' },
         ],
@@ -464,7 +464,7 @@ const pool = [
         items: [
           { qty: 0.75, unit: 'lb', text: 'baby red potatoes, halved', tag: 'Produce' },
           { qty: 1, unit: 'bunch', text: 'tenderstem asparagus or broccolini', tag: 'Produce' },
-          { qty: 2, unit: 'tbsp', text: 'olive oil', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'olive oil', tag: 'Pantry' },
         ],
       },
       {
@@ -532,7 +532,7 @@ const pool = [
         category: 'Bakery',
         items: [
           { qty: 4, text: 'thick slices country sourdough', tag: 'Bakery' },
-          { qty: 3, unit: 'tbsp', text: 'extra virgin olive oil', tag: 'Pantry', staple: true },
+          { qty: 3, unit: 'tbsp', text: 'extra virgin olive oil', tag: 'Pantry' },
         ],
       },
     ],
@@ -590,7 +590,7 @@ const pool = [
         items: [
           { qty: 1.5, unit: 'lb', text: 'fingerling potatoes, halved', tag: 'Produce' },
           { qty: 1, unit: 'head', text: 'broccoli, cut into florets', tag: 'Produce' },
-          { qty: 3, unit: 'tbsp', text: 'olive oil', tag: 'Pantry', staple: true },
+          { qty: 3, unit: 'tbsp', text: 'olive oil', tag: 'Pantry' },
         ],
       },
     ],
@@ -639,7 +639,7 @@ const pool = [
           { qty: 1, text: 'medium butternut squash, peeled and cubed', tag: 'Produce' },
           { qty: 1, text: 'shallot, sliced', tag: 'Produce' },
           { qty: 0.5, unit: 'cup', text: 'grated aged pecorino', tag: 'Dairy' },
-          { qty: 0.25, unit: 'tsp', text: 'freshly grated nutmeg', tag: 'Spices', staple: true },
+          { qty: 0.25, unit: 'tsp', text: 'freshly grated nutmeg', tag: 'Spices' },
         ],
       },
       {
@@ -706,7 +706,7 @@ const pool = [
         category: 'Sauce',
         items: [
           { qty: 3, unit: 'tbsp', text: 'tamari', tag: 'Pantry' },
-          { qty: 2, unit: 'tbsp', text: 'toasted sesame oil', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'toasted sesame oil', tag: 'Pantry' },
           { qty: 1, unit: 'tbsp', text: 'fresh ginger, grated', tag: 'Produce' },
           { qty: 1, unit: 'tsp', text: 'chili crisp', tag: 'Pantry' },
         ],
@@ -823,7 +823,7 @@ const pool = [
           { qty: 1.5, unit: 'lb', text: 'chicken tenderloins', tag: 'Fresh' },
           { qty: 2, text: 'lemons', tag: 'Produce' },
           { qty: 4, text: 'cloves garlic, grated', tag: 'Produce' },
-          { qty: 1, unit: 'tbsp', text: 'dried oregano', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tbsp', text: 'dried oregano', tag: 'Spices' },
         ],
       },
       {
@@ -885,7 +885,7 @@ const pool = [
           { qty: 1, unit: 'jar', text: 'roasted red peppers', tag: 'Pantry' },
           { qty: 2, unit: 'cups', text: 'baby arugula', tag: 'Produce' },
           { qty: 1, text: 'shallot, thinly sliced', tag: 'Produce' },
-          { qty: 1, unit: 'tsp', text: 'ground cumin', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tsp', text: 'ground cumin', tag: 'Spices' },
         ],
       },
       {
@@ -939,7 +939,7 @@ const pool = [
         items: [
           { qty: 1.75, unit: 'cups', text: 'graham cracker crumbs', tag: 'Pantry' },
           { qty: 6, unit: 'tbsp', text: 'unsalted butter, melted', tag: 'Dairy' },
-          { qty: 2, unit: 'tbsp', text: 'granulated sugar', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'granulated sugar', tag: 'Pantry' },
         ],
       },
       {
@@ -947,12 +947,12 @@ const pool = [
         category: 'Dairy & Pantry',
         items: [
           { qty: 32, unit: 'oz', text: 'full-fat cream cheese, at room temperature', tag: 'Dairy' },
-          { qty: 1.25, unit: 'cups', text: 'granulated sugar', tag: 'Pantry', staple: true },
+          { qty: 1.25, unit: 'cups', text: 'granulated sugar', tag: 'Pantry' },
           { qty: 1, unit: 'cup', text: 'sour cream, at room temperature', tag: 'Dairy' },
           { qty: 4, text: 'large eggs, at room temperature', tag: 'Dairy' },
           { qty: 2, unit: 'tsp', text: 'vanilla extract', tag: 'Pantry' },
           { qty: 1, text: 'lemon, zested', tag: 'Produce' },
-          { qty: 2, unit: 'tbsp', text: 'all-purpose flour', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'all-purpose flour', tag: 'Pantry' },
         ],
       },
       {

@@ -7,7 +7,7 @@
   import PrintOptionsFields from '../lib/components/PrintOptionsFields.svelte';
   import { aisles } from '../lib/data/aisles.js';
   import { aisleLabel } from '../lib/recipes.svelte.js';
-  import { settings, setAisleMapping, removeAisleMapping, setReturnToPlanner, setWeekStartDay } from '../lib/settings.svelte.js';
+  import { settings, setAisleMapping, removeAisleMapping, setReturnToPlanner, setWeekStartDay, setHave } from '../lib/settings.svelte.js';
   import { mappingKey } from '../lib/aisleMap.js';
   import { realignWeeks } from '../lib/weekStart.svelte.js';
   import { printOptions, setPrintOptions } from '../lib/printOptions.svelte.js';
@@ -25,6 +25,17 @@
 
   let confirmingWipe = $state(false);
   let draft = $state({ name: '', tag: 'Pantry' });
+  const haveList = $derived([...settings.have].sort((a, b) => a.localeCompare(b)));
+  let haveDraft = $state('');
+  function addHave(e) {
+    e.preventDefault();
+    const name = haveDraft.trim();
+    if (!name) return;
+    setHave(name, true);
+    haveDraft = '';
+    showToast(`${name} will stay off your grocery list.`);
+  }
+
   const mappings = $derived([...settings.aisles].sort((a, b) => a.name.localeCompare(b.name)));
   const synced = $derived(Boolean(sheets.spreadsheet) && sheets.syncSettings);
 
@@ -86,7 +97,7 @@
   <div>
     <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">Profile &amp; Settings</h1>
     <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-      Planning and Aisle Mappings are shared through your Google Sheet; the rest stay on this device.
+      Planning, Aisle Mappings and Ingredients I Have are shared through your Google Sheet; the rest stay on this device.
     </p>
   </div>
 
@@ -190,6 +201,51 @@
     {:else}
       <p class="rounded-xl border border-dashed border-outline-variant px-4 py-6 text-center text-body-sm text-outline">
         No custom mappings yet.
+      </p>
+    {/if}
+  </section>
+
+  <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="have-heading">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 id="have-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+        <Icon name="inventory_2" class="text-[20px] text-primary" /> Ingredients I Have
+      </h2>
+      <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
+        {synced ? `Synced · [${sheets.tabs.settings}]` : 'Saved on this device'}
+      </span>
+    </div>
+    <p class="max-w-2xl text-body-sm text-on-surface-variant">
+      These never appear on your grocery list, in any week, until you remove them. Check an ingredient on a recipe to
+      add it here. A name matches an ingredient exactly (any case, plural ok): “noodles” won’t hide “egg noodles”.
+    </p>
+
+    <form onsubmit={addHave} class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+      <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
+        Ingredient
+        <input required bind:value={haveDraft} placeholder="e.g. Egg noodles" class={inputClass} />
+      </label>
+      <button type="submit" class="btn-primary py-2.5">Add</button>
+    </form>
+
+    {#if haveList.length}
+      <ul class="divide-y divide-surface-container-high overflow-hidden rounded-xl border border-surface-container-high">
+        {#each haveList as name (name)}
+          <li class="flex items-center gap-3 px-4 py-2.5">
+            <span class="min-w-0 flex-1 truncate text-body-md text-on-surface">{name}</span>
+            <button
+              type="button"
+              aria-label="Remove {name}"
+              class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
+              onclick={() => setHave(name, false)}
+            >
+              <Icon name="delete" class="text-[18px]" />
+            </button>
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <p class="rounded-xl border border-dashed border-outline-variant px-4 py-6 text-center text-body-sm text-outline">
+        Nothing here yet.
       </p>
     {/if}
   </section>

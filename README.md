@@ -93,7 +93,7 @@ The `Category` column holds it; blank means none.
 - Auto-compiled from the viewed week's upcoming dinners, grouped into Produce, Meat & Seafood,
   Dairy and Pantry aisles (with aisle tabs). Each line shows which dinner needs it.
 - Tap the circle when bought and the box icon if you already have it; either way the item moves to the
-  **Already On Hand / Acquired** ledger and the aisle counters update (staples like oil and salt start there).
+  **Already On Hand / Acquired** ledger and the aisle counters update.
 - **Add Item** for anything extra, **Share** (native share sheet or clipboard), **Print Kitchen
   Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.

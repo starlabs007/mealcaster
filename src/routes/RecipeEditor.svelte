@@ -62,8 +62,8 @@
   const missing = !!id && !editing;
 
   /**
-   * Rows carry `staple` / `critical` through untouched so editing a sample doesn't lose them.
-   * @typedef {{ key: number, qty: string, unit: string, text: string, group: string, aisle: string, aisleSet: boolean, staple?: boolean }} IngredientRow
+   * Rows carry `critical` through untouched so editing a sample doesn't lose them.
+   * @typedef {{ key: number, qty: string, unit: string, text: string, group: string, aisle: string, aisleSet: boolean }} IngredientRow
    * @typedef {{ key: number, title: string, text: string, minutes: string, critical?: boolean }} StepRow
    * @typedef {{
    *   title: string, description: string, image: string, category: string,
@@ -116,7 +116,6 @@
           group: g.title,
           aisle: item.tag,
           aisleSet: true,
-          staple: item.staple,
         })),
       ),
       steps: r.steps.map((s) => ({
@@ -316,7 +315,6 @@
         ...(row.unit.trim() && { unit: row.unit.trim() }),
         text: row.text.trim(),
         tag: row.aisle,
-        ...(row.staple && { staple: true }),
       });
     }
     for (const g of groups) {
