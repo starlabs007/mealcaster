@@ -14,7 +14,6 @@ const IMG = 'https://lh3.googleusercontent.com/aida-public/';
  *   description: string,
  *   image?: string,
  *   hero?: string,
- *   sheetRow?: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
  *   minutes: number,
@@ -44,7 +43,6 @@ const pool = [
     hero:
       IMG +
       'AB6AXuAvBKYVeYGf6JFmw8eAE9SekijZGeQatTSKCpBUsaGwcKukceDVD2bWngchUv8jQsI9eqtcTdoSsbnkeJSs066KS_3JNd7Bnbu-UBK5tRuAOLo98_pEnZaxRtSjiqzexDY4_YjWiHU2jWGa5oZlxjmQlsK3xA2u0q4OSjKKp6Mphjk3iNj5sWzGsO1FhZZHfXl9YHySDVzPyD_F7gXcyP8QYKSA0S7_5EPqgwweFS6-Fj7RMoJKPiwBzw',
-    sheetRow: 14,
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 2,
@@ -126,7 +124,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuCq_54vcTmNQhCP1GDafEzHXlPupPvRKxznsr8Ai-mEGyAkfObBuuEdHC23pjGUyky3_XtN9CA2Sze6_h2DD7iZ2v6iFg5HXqkAe4MRgVRbY41JbJk-3Pz7Hc3LWHVeGLqz-LaGQsvT9xAW7S7mlkNaAx5lI-YDCoPv6A5UMeAtygcJ1NdD_Gf1HUxvmf1tAFQ2Ob-ivXYuDSado4x3Joc0lIEkf0XNtaJmiWtNyuiReq3F8EP4mmOubw',
-    sheetRow: 7,
     prepMinutes: 20,
     cookMinutes: 30,
     serves: 4,
@@ -200,7 +197,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuAjnHCvCZ1KHDX2bYRtljnnj-h9H0wtBS7Z0w-PYbdgoTNtArbCCbee7qH7AL_ebLR2AlqIRnt55e2k469ljCylJqRFdedFXS7PO7GYnKpDIY2FQwLzFpH1AZ3Mrp1-EgldY_21EhcDTiGVUQmRZovxje1ieCxzY7LbESZZfZwfG6o1O6hVAAsYlhfMQWk3Ts78dqzuBTQgL4PablnZbY5xvVdu9K_9vQ1X0_dbButXpFrThrK79ahu9A',
-    sheetRow: 9,
     prepMinutes: 15,
     cookMinutes: 45,
     serves: 4,
@@ -265,7 +261,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuDZrdwAMIUnNdJWP4NUDAlhB5IRvL-w432Tn5QIPJSP3cb_CvCrDrw1qH1gQU0o1yoJkUy_fmdS2FojFxmvYLfhpOSMJR7dSIV21v31grvShMRxyH8WD5cChvOMQZae09a8y7sKKwhKXUYk7_vh2EE_8MIVk46_v4RYm_LfDTOoOKhG3kGe4QEI7KHg9-argAqeIUyKQXFXKSs9oxFXNUNwEHrKdHnwOwPjkE0AqXOBxEPILT7AgbbNmQ',
-    sheetRow: 11,
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 4,
@@ -325,7 +320,6 @@ const pool = [
     shortTitle: 'Miso-Glazed Eggplant',
     description:
       'Silky broiled eggplant lacquered in a sweet-savory white miso glaze over sesame jasmine rice with crunchy quick-pickled cucumbers.',
-    sheetRow: 15,
     prepMinutes: 15,
     cookMinutes: 20,
     serves: 2,
@@ -381,7 +375,6 @@ const pool = [
     shortTitle: 'Coconut Red Lentil Dal',
     description:
       'A golden, velvety one-pot dal simmered with coconut milk and ginger, finished with a sizzling cumin-seed tadka and warm garlic naan.',
-    sheetRow: 8,
     prepMinutes: 5,
     cookMinutes: 20,
     serves: 4,
@@ -440,7 +433,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuBV2R4JTx_C0JAkbBFstUoviqtqEXHWwYVCVuA45jTL4UM-rD0CUdiaZ6mjjcdM1lJaj2BX9bc54v8lvJ5y2s5C8Igku0iScoVtEacFWxzY-aF5ZBul9Hzajx5auHGj57Trd7y_zgp1kwzdF_CGz4Zr1YEtIJHKdLrQaaFDPCgzIGhG4LyHesX-x2ec924I2piPIuLoKUpfrMkoDyZadv3MpN26BGtTr3UTZa0brwtAyZBtTsM4P9LSTw',
-    sheetRow: 2,
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 2,
@@ -505,7 +497,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuCWGT4YiNDNcLfb9KUsInGBedSVgQodcezlR-_OptV7YvLzD0I7JOe3T8TMRxc6JtQAGD5wjErbLYoa1xGxYraSJsc3E3r6mmaNAR3NHd_kb8Mjeb2Cv_i_QBln6c7b6WD5s832zTDzDPUgBfnST57LJuxQsdDP-9L5-qidLwFoT8uModjBC4kG0wztg1Wpbm9yFAD3_ttPTJ5BdwBpXWQHr82ve1cYikMOsBZ6cVwbplSSoTgq2h5BEQ',
-    sheetRow: 3,
     prepMinutes: 10,
     cookMinutes: 25,
     serves: 4,
@@ -564,7 +555,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuAVQEvEyIImBiVfUTd3ZPK0lgU-Gua04l93Pul3jnzI2ixnjb_GGqvf7B11ou9sXOozOKzRv7pEp7idAk_5SBN2KhkaYvlD6YoB8yMf6dZFypcz0qxU1GGpMaTcgc3LZEQKlR-xfGYky1-f5Zc6QjJ9u0yuWyAoedG_XQw3AJs7AXCzX8iO2Z8Rv2B3oEo4jGhsP5mIyqyT5ywB8Ns4cdzW0_SLFZLMsRrFSF6Ngi3WuIaLw412jFqpNQ',
-    sheetRow: 4,
     prepMinutes: 10,
     cookMinutes: 30,
     serves: 4,
@@ -622,7 +612,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuC1MdaKTop1BXw-1g8ynSuYGA7EP7470LfWyfgcdyNEERnw82OJg1pWbDsv-oEdfbB1IgQ0rWlC8rPqy_2-1DeyrZjdSQkKry6YaIIm4cofvcNA_0t908N4sccUhxGYtMCU8jy-62RPt3fvrMjZZVK5k2a_RTNV1lldNBF8dGHpgzRsvVQzv3HbC1JeRmosOpVr8yLg4xMBHbeoN2eKvZ45TQwLjOUty6k5NOZIwOa1ew4p2TEEXXYygQ',
-    sheetRow: 5,
     prepMinutes: 10,
     cookMinutes: 20,
     serves: 4,
@@ -681,7 +670,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuD87xdGZvsmB7bn3s9a0FerKSCUWlBmzD_-_q4hslI-7I6N8YYl1exycVc8nQ8Z8vaG8MTKKLoRFyJLzXeKV-aGoNLYHGMkFSfLegGcWmdS_4WUvlpNatyskLYT0Nvm8AD9-axU9pcRndCUNfuu-CWgyy6ITHe2t-TfWpKifawhmFfH-XqjM6fohzfBbAfS5mH9UnqH4ejUBUb0ikgMO_CiRho2rhZtoz6gZcb3tOFePmcni6rmb5E88A',
-    sheetRow: 6,
     prepMinutes: 7,
     cookMinutes: 8,
     serves: 2,
@@ -740,7 +728,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuDl9HZHI_vVtZ22gQDXPUEmBnTokd1K6VuXakeS7RbLJ1cVYLv70O2g11l4H5xk4XumuCtYWw1cDMEDF5uZpgjvI324A-5ZqYvw2KV2kMR09CLOeTiOTWREXDzxoRoqZ7aoiFxxZ7fZ9XmT-fPDzLAiFigarPWSTCof8-MnIWiv2owokob58CZVp-KIaJ7nb4CsZxTEm4g8FC3pt4jnx2nKJZcFZMSadhNnzGVylcJpWX6SOOnL8l8WcQ',
-    sheetRow: 10,
     prepMinutes: 30,
     cookMinutes: 180,
     serves: 6,
@@ -806,7 +793,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuCKrT0UtRuQ3c0Y4Pehla-LYc-uoB4eK1cdfj9TV9qEtZV6Z4Jjz_5IFhxJ711dzvF9FPIh6qFwci7SNyM6i5rA0u-i1zKGVNv5ue303mffeyVMrdeRLYAgQBhlrHKl5_bU_w8EzXt0Jnz9cke4yDNRIoorO7LplJ791TzKIwtbT1tvP00Hj1pFmY9gCmylMfV-6SWj9eK5ElzmJHb1XlddPLcecJD9aOhh7yI3n3WCyXcxWFGa3hFZyQ',
-    sheetRow: 12,
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 4,
@@ -866,7 +852,6 @@ const pool = [
     image:
       IMG +
       'AB6AXuAaF7pRS__Vn3GRbjdYm90zU6HDLak4-gUJx_w03PdpaeMTM6F5VLJ9_Kw-F0nzy1gCVvFzilQRbUNBSZqRAj8k4QMIiwQcIIpSDDJ03jz9pUdNPERLYKKv8zoC2G8FeaBRQuZ3vgqtyoLl0pU_xFJw41dyShzCm9p-OOPDnIbAcLPy5GQeDhsV0rwOcsXeTWffLxKQqCCa7AwAvyPvpUX0j5yj-erYuRJEQGZkegQ9usn3oyp0mpBSkA',
-    sheetRow: 13,
     prepMinutes: 5,
     cookMinutes: 15,
     serves: 2,
@@ -923,7 +908,6 @@ const pool = [
     shortTitle: 'New York Cheesecake',
     description:
       'Dense, tall and creamy cream-cheese filling with a hint of lemon and vanilla on a buttery graham cracker crust, baked low and slow in a water bath.',
-    sheetRow: 14,
     prepMinutes: 30,
     cookMinutes: 75,
     serves: 12,
