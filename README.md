@@ -84,7 +84,9 @@ npm run preview    # http://localhost:4173
 
 Tags are free text: the editor offers Quick (<30m), Vegetarian, Poultry & Meat, Gluten-Free and every tag
 already in use, and takes new ones (each word capitalized, at most 100 characters, commas separate tags).
-Each tag gets the next colour in a fixed rotation the first time it appears and keeps it (per device).
+Each tag gets the least-used of five colours the first time it appears and keeps it; colours sync as
+`Tag Colour` rows in `[Settings]` and are dropped once no recipe uses the tag. Your own tags (not the four
+built-ins) can be recoloured, renamed or deleted under Profile & Settings → Recipe Tags.
 The `Tags` column holds them as comma-separated text.
 
 A recipe has at most one **category** (optional; shown on the cards, the detail hero and the planner day card).
@@ -125,8 +127,12 @@ Reached from the avatar in the header (and the footer, on phones).
 - **Ingredients I Have** — names that never reach the grocery list, in any week. Checking an ingredient on a recipe
   adds it here; you can also add or remove names by hand. A name matches an ingredient's full text, ignoring case
   and plurals ("noodles" won't hide "egg noodles"). Synced as `Have` rows in the `[Settings]` tab.
-- **This Device** — print defaults for the Print Options dialog, the catalog's "Not made in 7 days" default and
-  a Reset Colours button for tag colours. Never synced.
+- **Recipe Tags** — every tag in use with its recipe count. Your own tags get a colour picker (five tones), Rename
+  and Delete; both change every recipe with the tag (samples become edited), renaming onto a tag in use merges
+  them, and an Undo toast follows. The four built-ins can't be changed. Reset Colours hands colours out again.
+  Colours sync as `Tag Colour` rows (`Section | Name | Value` = `Tag Colour | Date Night | Plum`) in `[Settings]`.
+- **This Device** — print defaults for the Print Options dialog and the catalog's "Not made in 7 days" default.
+  Never synced.
 - **Danger Zone** — *Disconnect & Erase*: after a confirmation dialog, signs out of Google, removes every
   `mealcaster.*` key from this browser and reloads fresh. The Google Sheet is never changed. Handy for testing.
 
@@ -176,12 +182,12 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
 | `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
 | `mealcaster.groceryGlobal.v1` | Standing items: `global:` rows in `[Provisions]`, one per week they show in |
-| `mealcaster.settings.v1` | `[Settings]` tab: Profile preferences, aisle mappings and ingredients I have |
+| `mealcaster.settings.v1` | `[Settings]` tab: Profile preferences, aisle mappings, ingredients I have, tag colours |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
 
-Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.tagColors.v1`,
-`mealcaster.catalogHideRecent.v1`; an unsaved new recipe is kept in `mealcaster.recipeDraft.v1`.
+Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`
+(`mealcaster.tagColors.v1`, the old per-device tag colours, is moved into settings once and removed); an unsaved new recipe is kept in `mealcaster.recipeDraft.v1`.
 
 The grocery badge counts items still to buy for the viewed week.
 
@@ -208,7 +214,7 @@ src/
     planner.svelte.js        weekly plan state + actions, last made / times made (Svelte runes)
     recipes.svelte.js        live recipe list (samples + saved), save/delete/revert
     tags.js                  tag & category normalizing, suggestions, colour rotation
-    tagColors.svelte.js      per-device tag colours
+    tagColors.svelte.js      tag colours (synced) and renaming / deleting tags
     grocery.svelte.js        grocery list model
     settings.svelte.js       Profile settings (aisle mappings, ingredients I have) + aisleMap.js / haveList.js matching
     devicePrefs.svelte.js    small per-device display preferences

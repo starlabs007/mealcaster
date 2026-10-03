@@ -1,18 +1,19 @@
 <script>
-  // Profile & Settings. Aisle mappings belong to the household and sync to the [Settings] tab
-  // of the Google Sheet; everything under "This device" is remembered here only.
+  // Profile & Settings. Planning, aisle mappings, ingredients I have and recipe tags belong to the
+  // household and sync to the [Settings] tab of the Google Sheet (tag names live on the recipes);
+  // everything under "This device" is remembered here only.
   import { untrack } from 'svelte';
   import Icon from '../lib/components/Icon.svelte';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
   import PrintOptionsFields from '../lib/components/PrintOptionsFields.svelte';
   import { aisles } from '../lib/data/aisles.js';
-  import { aisleLabel } from '../lib/recipes.svelte.js';
+  import { aisleLabel, recipes, isSample, isSuggestedTag, normalizeTag, tagChoices, TAG_MAX } from '../lib/recipes.svelte.js';
   import { settings, setAisleMapping, removeAisleMapping, setReturnToPlanner, setWeekStartDay, setHave } from '../lib/settings.svelte.js';
   import { mappingKey } from '../lib/aisleMap.js';
   import { realignWeeks } from '../lib/weekStart.svelte.js';
   import { printOptions, setPrintOptions } from '../lib/printOptions.svelte.js';
   import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
-  import { resetTagColors } from '../lib/tagColors.svelte.js';
+  import { TONES, tagClass, toneClassOf, setTagTone, renameTag, deleteTag, resetTagColors } from '../lib/tagColors.svelte.js';
   import { RECENT_DAYS, planner } from '../lib/planner.svelte.js';
   import { weekStartOf } from '../lib/dates.js';
   import WipeDataDialog from '../lib/components/WipeDataDialog.svelte';
@@ -69,6 +70,44 @@
     resetTagColors();
     showToast('Tag colours reset.');
   }
+
+  // Recipe tags: every tag in use, built-in suggestions first. Only the person's own can change.
+  const tagRows = $derived(
+    tagChoices(recipes.flatMap((r) => r.tags))
+      .map((tag) => ({ tag, count: recipes.filter((r) => r.tags.includes(tag)).length }))
+      .filter((t) => t.count),
+  );
+  const samplesShown = $derived(recipes.some((r) => isSample(r.id)));
+  const recipeCount = (n) => `${n} recipe${n === 1 ? '' : 's'}`;
+  /** @type {{ from: string, text: string } | null} */
+  let renaming = $state(null);
+
+  function rename(event) {
+    event.preventDefault();
+    if (!renaming) return;
+    const { from, text } = renaming;
+    const count = recipes.filter((r) => r.tags.includes(from)).length;
+    const merging = tagRows.find((t) => t.tag !== from && t.tag === normalizeTag(text));
+    try {
+      const undo = renameTag(from, text);
+      renaming = null;
+      if (!undo) return;
+      const message = merging ? `Merged “${from}” into “${merging.tag}”.` : `Renamed “${from}” to “${normalizeTag(text)}” on ${recipeCount(count)}.`;
+      showToast(message, { label: 'Undo', run: undo });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Couldn’t rename the tag.');
+    }
+  }
+
+  function remove(tag, count) {
+    if (renaming?.from === tag) renaming = null;
+    try {
+      const undo = deleteTag(tag);
+      if (undo) showToast(`Removed “${tag}” from ${recipeCount(count)}.`, { label: 'Undo', run: undo });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Couldn’t delete the tag.');
+    }
+  }
 </script>
 
 {#snippet switchRow(checked, title, description, onchange)}
@@ -97,7 +136,8 @@
   <div>
     <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">Profile &amp; Settings</h1>
     <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-      Planning, Aisle Mappings and Ingredients I Have are shared through your Google Sheet; the rest stay on this device.
+      Planning, Aisle Mappings, Ingredients I Have and Recipe Tags are shared through your Google Sheet; the rest stay on this
+      device.
     </p>
   </div>
 
@@ -246,6 +286,102 @@
     {/if}
   </section>
 
+  <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="tags-heading">
+    <div class="flex flex-wrap items-center justify-between gap-2">
+      <h2 id="tags-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+        <Icon name="sell" class="text-[20px] text-primary" /> Recipe Tags
+      </h2>
+      <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
+        {synced ? `Synced · [${sheets.tabs.settings}]` : 'Saved on this device'}
+      </span>
+    </div>
+    <p class="max-w-2xl text-body-sm text-on-surface-variant">
+      Every tag your recipes use. Pick a colour for your own tags, or rename or delete them: renaming or deleting changes every
+      recipe with that tag{samplesShown ? ', sample recipes included (their editor then offers Revert to Original)' : ''}, and renaming to a
+      tag you already use merges the two. The built-in tags can’t be changed. New tags get a colour as they appear.
+    </p>
+
+    {#if tagRows.length}
+      <ul class="divide-y divide-surface-container-high overflow-hidden rounded-xl border border-surface-container-high">
+        {#each tagRows as { tag, count } (tag)}
+          {@const builtIn = isSuggestedTag(tag)}
+          <li class="flex min-h-[52px] flex-wrap items-center gap-x-3 gap-y-2 px-4 py-2.5">
+            {#if renaming?.from === tag}
+              <form onsubmit={rename} class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                <!-- svelte-ignore a11y_autofocus -->
+                <input
+                  aria-label="New name for {tag}"
+                  required
+                  autofocus
+                  maxlength={TAG_MAX}
+                  bind:value={renaming.text}
+                  onkeydown={(e) => e.key === 'Escape' && (renaming = null)}
+                  class="{inputClass} min-w-0 flex-1 py-1.5"
+                />
+                <button type="submit" class="btn-primary py-1.5">Rename</button>
+                <button type="button" class="btn-outline py-1.5" onclick={() => (renaming = null)}>Cancel</button>
+              </form>
+            {:else}
+              <span class="flex min-w-0 flex-1 items-center gap-2">
+                <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
+                <span class="shrink-0 text-body-sm text-outline">{recipeCount(count)}</span>
+              </span>
+              {#if builtIn}
+                <span class="text-label-sm text-outline">Built-in</span>
+              {:else}
+                <span role="radiogroup" aria-label="Colour for {tag}" class="flex items-center gap-1.5">
+                  {#each TONES as tone (tone)}
+                    {@const on = settings.tagColors[tag] === tone}
+                    <button
+                      type="button"
+                      role="radio"
+                      aria-checked={on}
+                      aria-label={tone[0].toUpperCase() + tone.slice(1)}
+                      title={tone[0].toUpperCase() + tone.slice(1)}
+                      class="flex h-6 w-6 items-center justify-center rounded-full border border-outline-variant {toneClassOf(tone)} {on
+                        ? 'ring-2 ring-primary ring-offset-1'
+                        : ''}"
+                      onclick={() => setTagTone(tag, tone)}
+                    >
+                      <span class="h-2.5 w-2.5 rounded-full bg-current"></span>
+                    </button>
+                  {/each}
+                </span>
+                <span class="flex items-center">
+                  <button
+                    type="button"
+                    aria-label="Rename {tag}"
+                    class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
+                    onclick={() => (renaming = { from: tag, text: tag })}
+                  >
+                    <Icon name="edit" class="text-[18px]" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Delete {tag}"
+                    class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
+                    onclick={() => remove(tag, count)}
+                  >
+                    <Icon name="delete" class="text-[18px]" />
+                  </button>
+                </span>
+              {/if}
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    {:else}
+      <p class="rounded-xl border border-dashed border-outline-variant px-4 py-6 text-center text-body-sm text-outline">
+        No recipe uses a tag yet.
+      </p>
+    {/if}
+
+    <div class="flex items-start justify-between gap-4">
+      <span class="text-body-sm text-on-surface-variant">Reset hands every tag a colour again, from scratch, for everyone sharing the sheet.</span>
+      <button type="button" class="btn-outline shrink-0 py-2" onclick={resetColors}>Reset Colours</button>
+    </div>
+  </section>
+
   <!-- This device only -->
   <section class="flex flex-col gap-2 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="device-heading">
     <div class="flex flex-wrap items-center justify-between gap-2">
@@ -270,14 +406,6 @@
         `Starts the catalog with “Not made in ${RECENT_DAYS} days” switched on.`,
         setHideRecent,
       )}
-
-      <div class="flex items-start justify-between gap-4 py-3">
-        <span class="flex flex-col">
-          <span class="text-label-md text-on-surface">Tag colours</span>
-          <span class="text-body-sm text-on-surface-variant">Colours are handed out as tags appear. Reset to hand them out again from scratch.</span>
-        </span>
-        <button type="button" class="btn-outline shrink-0 py-2" onclick={resetColors}>Reset Colours</button>
-      </div>
     </div>
   </section>
 

@@ -13,8 +13,11 @@ export const normalizeAisle = (tag) => LEGACY_AISLES[tag] ?? tag;
 /** Offered in the editor and listed first among the catalog filters. */
 export const suggestedTags = ['Quick (<30m)', 'Vegetarian', 'Poultry & Meat', 'Gluten-Free'];
 
-/** Tag colours, handed out in this order (see assignTones). */
+/** Tag colours, in the order they're handed out (see assignTones). */
 export const TONES = ['saffron', 'sage', 'paprika', 'slate', 'plum'];
+
+/** True for the built-in suggestions, which can't be renamed, recoloured or deleted. @param {string} tag */
+export const isSuggestedTag = (tag) => suggestedTags.includes(tag);
 
 /** @param {string} tag */
 export const tagIcon = (tag) => (tag === 'Quick (<30m)' ? 'timer' : undefined);
@@ -73,21 +76,32 @@ export function tagChoices(inUse) {
 }
 
 /**
- * Round-robin colours: each tag not seen before takes the next colour in TONES and keeps
- * it, so colours never shift and stay evenly spread. Mutates `colors`; true if any were added.
- * @param {{ next: number, tones: Record<string, string> }} colors
+ * Gives each tag without a colour the least-used one (ties go to the earliest in TONES), so a
+ * fresh list gets them round-robin and colours stay evenly spread after tags are deleted. A tag
+ * keeps its colour once it has one. Mutates `tones` (tag → tone); true if any were added.
+ * @param {Record<string, string>} tones
  * @param {Iterable<string>} tags
  */
-export function assignTones(colors, tags) {
+export function assignTones(tones, tags) {
+  const used = new Map(TONES.map((t) => [t, 0]));
+  for (const tone of Object.values(tones)) if (used.has(tone)) used.set(tone, used.get(tone) + 1);
   let added = false;
   for (const tag of tags) {
-    if (Object.hasOwn(colors.tones, tag)) continue;
-    colors.tones[tag] = TONES[colors.next % TONES.length];
-    colors.next += 1;
+    if (Object.hasOwn(tones, tag)) continue;
+    const tone = TONES.reduce((best, t) => (used.get(t) < used.get(best) ? t : best));
+    tones[tag] = tone;
+    used.set(tone, used.get(tone) + 1);
     added = true;
   }
   return added;
 }
+
+/**
+ * A recipe's tags with one renamed (merging into the new name if the recipe already has it),
+ * or removed when `to` is ''.
+ * @param {string[]} tags @param {string} from @param {string} to
+ */
+export const retag = (tags, from, to) => normalizeTags(tags.flatMap((t) => (t === from ? (to ? [to] : []) : [t])));
 
 // ---- Categories ------------------------------------------------------------------
 // One optional category per recipe (stored as `badge.label`, '' = none). Free text like

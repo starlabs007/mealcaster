@@ -1,12 +1,12 @@
-// Tag pill colours, remembered on this device (a preference, not recipe data). Tags get
-// colours round-robin the first time they appear in the recipe list; see assignTones.
+// Tag pill colours. They belong to the household and sync with the other settings (the
+// [Settings] tab's "Tag Colour" rows); a tag gets the least-used colour the first time it
+// appears in the recipe list (see assignTones), and colours of tags no recipe uses are dropped.
+// Also renaming, recolouring and deleting the person's own tags.
 
 import { untrack } from 'svelte';
-import { storageKey } from './env.js';
-import { recipes } from './recipes.svelte.js';
-import { TONES, assignTones, tagChoices } from './tags.js';
-
-const STORAGE_KEY = storageKey('tagColors.v1');
+import { recipes, retagRecipes, restoreTagged } from './recipes.svelte.js';
+import { settings } from './settings.svelte.js';
+import { TONES, assignTones, isSuggestedTag, normalizeTag, tagChoices } from './tags.js';
 
 /** @type {Record<string, string>} */
 const toneClass = {
@@ -18,42 +18,32 @@ const toneClass = {
 };
 const NEUTRAL = 'bg-surface-container-high text-on-surface-variant';
 
-/** @returns {{ next: number, tones: Record<string, string> }} */
-function load() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
-    if (saved && Number.isInteger(saved.next) && saved.tones && typeof saved.tones === 'object') {
-      const tones = Object.fromEntries(Object.entries(saved.tones).filter(([, tone]) => TONES.includes(tone)));
-      return { next: saved.next, tones };
-    }
-  } catch {
-    // Start over.
-  }
-  return { next: 0, tones: {} };
+/** Tags in use, suggestions first (so a fresh household starts the same way). */
+const tagsInUse = () => tagChoices(recipes.flatMap((r) => r.tags));
+
+/** Gives every tag in use a colour and forgets the colours of tags no longer in use. */
+function tidyColors() {
+  const inUse = tagsInUse();
+  const tones = Object.fromEntries(Object.entries(settings.tagColors).filter(([tag]) => inUse.includes(tag)));
+  const added = assignTones(tones, inUse);
+  if (added || Object.keys(tones).length !== Object.keys(settings.tagColors).length) settings.tagColors = tones;
 }
 
-const colors = $state(load());
-
-/** Gives every tag in use a colour (suggested tags first, so a fresh device starts the same way). */
-function assignInUse() {
-  if (!assignTones(colors, tagChoices(recipes.flatMap((r) => r.tags)))) return;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(colors));
-  } catch {
-    // In-memory only.
-  }
-}
-
-assignInUse();
 $effect.root(() => {
   $effect(() => {
-    recipes.flatMap((r) => r.tags);
-    untrack(assignInUse);
+    tagsInUse();
+    Object.keys(settings.tagColors);
+    untrack(tidyColors);
   });
 });
 
 /** Colour classes for a tag pill. @param {string} tag */
-export const tagClass = (tag) => toneClass[colors.tones[tag]] ?? NEUTRAL;
+export const tagClass = (tag) => toneClass[settings.tagColors[tag]] ?? NEUTRAL;
+
+/** Colour classes for a tone (a swatch). @param {string} tone */
+export const toneClassOf = (tone) => toneClass[tone] ?? NEUTRAL;
+
+export { TONES };
 
 /**
  * Colour classes for a list of tags, where tags without a colour yet (typed in the editor,
@@ -62,19 +52,60 @@ export const tagClass = (tag) => toneClass[colors.tones[tag]] ?? NEUTRAL;
  * @returns {Map<string, string>}
  */
 export function tagClasses(tags) {
-  const preview = { next: colors.next, tones: { ...colors.tones } };
+  const preview = { ...settings.tagColors };
   assignTones(preview, tags);
-  return new Map(tags.map((tag) => [tag, toneClass[preview.tones[tag]] ?? NEUTRAL]));
+  return new Map(tags.map((tag) => [tag, toneClass[preview[tag]] ?? NEUTRAL]));
 }
 
-/** Forgets every tag's colour; they're handed out again, round-robin, from the first tag in use. */
+/** Forgets every tag's colour; they're handed out again from the first tag in use. */
 export function resetTagColors() {
-  colors.next = 0;
-  colors.tones = {};
-  assignInUse();
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(colors));
-  } catch {
-    // In-memory only.
-  }
+  settings.tagColors = {};
+  tidyColors();
 }
+
+/** @param {string} tag @param {string} tone one of TONES */
+export function setTagTone(tag, tone) {
+  if (isSuggestedTag(tag) || !TONES.includes(tone)) return;
+  settings.tagColors = { ...settings.tagColors, [tag]: tone };
+}
+
+/**
+ * Renames one of the person's own tags on every recipe. Renaming to a tag that's already in use
+ * merges the two (keeping that tag's colour); otherwise the colour moves to the new name.
+ * @param {string} from @param {string} text the new name, tidied like any tag
+ * @returns {(() => void) | undefined} undo, or undefined if nothing changed
+ */
+export function renameTag(from, text) {
+  const to = normalizeTag(text);
+  if (isSuggestedTag(from) || !to || to === from) return undefined;
+  const tone = settings.tagColors[from];
+  const colors = { ...settings.tagColors };
+  if (!Object.hasOwn(colors, to) && tone) colors[to] = tone;
+  delete colors[from];
+  const before = retagRecipes(from, to);
+  settings.tagColors = colors;
+  return undoer(before, from, tone);
+}
+
+/**
+ * Removes one of the person's own tags from every recipe.
+ * @param {string} tag
+ * @returns {(() => void) | undefined} undo
+ */
+export function deleteTag(tag) {
+  if (isSuggestedTag(tag)) return undefined;
+  const { [tag]: tone, ...colors } = settings.tagColors;
+  const before = retagRecipes(tag, '');
+  settings.tagColors = colors;
+  return undoer(before, tag, tone);
+}
+
+/**
+ * Undo: puts the recipes back and gives the old tag its colour again (a renamed tag's new name
+ * loses its colour once no recipe uses it).
+ * @param {import('./recipes.svelte.js').Recipe[]} before @param {string} tag @param {string | undefined} tone
+ */
+const undoer = (before, tag, tone) => () => {
+  restoreTagged(before);
+  if (tone) settings.tagColors = { ...settings.tagColors, [tag]: tone };
+};

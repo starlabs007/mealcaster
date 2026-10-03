@@ -84,6 +84,30 @@ describe('settings rows', () => {
     assert.equal(codec.settingKey('Aisle', 'Oat  Milk'), codec.settingKey(' aisle', 'oat milk'));
   });
 });
+describe('tag colour rows', () => {
+  const tagColors = { 'Date Night': 'plum', Vegetarian: 'sage' };
+  it('write one row per tag with the colour by name, and round-trip', () => {
+    const rows = [...codec.settingsToRows({ aisles: [], tagColors }).values()].filter((r) => r.Section === 'Tag Colour');
+    assert.deepEqual(rows, [
+      { Section: 'Tag Colour', Name: 'Date Night', Value: 'Plum' },
+      { Section: 'Tag Colour', Name: 'Vegetarian', Value: 'Sage' },
+    ]);
+    assert.deepEqual(codec.settingsFromRows(rows).tagColors, tagColors);
+  });
+  it('read names and colours in any case, keep the first row per tag, and skip unknown colours', () => {
+    const { tagColors: read } = codec.settingsFromRows([
+      { Section: 'tag colour', Name: '  date night ', Value: 'SAFFRON' },
+      { Section: 'Tag Colour', Name: 'Date Night', Value: 'Plum' },
+      { Section: 'Tag Colour', Name: 'Spicy', Value: 'Red' },
+      { Section: 'Tag Colour', Name: '', Value: 'Sage' },
+    ]);
+    assert.deepEqual(read, { 'Date Night': 'saffron' });
+  });
+  it('default to none', () => {
+    assert.deepEqual(codec.settingsFromRows([]).tagColors, {});
+  });
+});
+
 
 describe('syncing the Settings tab', () => {
   const options = (sheet, device, base) => syncOptions(sheet, device, base, { tabs: [...TABS, SETTINGS_TAB] });
