@@ -15,6 +15,7 @@
   import { planner, currentWeek, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { addDays, formatRange, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
+  import { devicePrefs } from '../lib/devicePrefs.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
   import { syncPhase, syncNow, connect } from '../lib/sync/sync.svelte.js';
@@ -236,12 +237,13 @@
             <Icon name="chevron_right" class="text-[18px]" />
           </button>
         </div>
+        <label class="flex cursor-pointer items-center gap-2 px-1 text-label-md text-on-surface-variant">
+          <input type="checkbox" bind:checked={devicePrefs.groceryMinimal} class="h-4 w-4 rounded accent-primary" />
+          Minimal view
+        </label>
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-2 md:justify-end">
-      <a href={href('/sheets-sync')} class="btn-outline">
-        <Icon name="sync" class="text-[16px]" /> Sheets Settings
-      </a>
       <button type="button" class="btn-outline" onclick={share}>
         <Icon name="share" class="text-[16px]" /> Share
       </button>
@@ -309,7 +311,8 @@
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
     <!-- Left: the list -->
-    <div class="flex flex-col gap-6 lg:col-span-8">
+    <div class="flex flex-col gap-6 {devicePrefs.groceryMinimal ? 'lg:col-span-12' : 'lg:col-span-8'}">
+      {#if !devicePrefs.groceryMinimal}
       <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-card">
         <div class="flex flex-wrap gap-1" role="tablist" aria-label="Filter by aisle">
           {#each [{ id: 'all', short: 'All Aisles', count: shopping.length }, ...sections.map((s) => ({ id: s.id, short: s.short, count: s.items.length }))] as tab (tab.id)}
@@ -330,6 +333,7 @@
           <Icon name="touch_app" class="text-[15px]" /> Tap the circle when bought, or the box icon if you already have it
         </p>
       </div>
+      {/if}
 
       {#if !shopping.length && !acquired.length}
         <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-14 text-center">
@@ -343,7 +347,7 @@
       {/if}
 
       {#each sections as section (section.id)}
-        {#if section.items.length && (aisle === 'all' || aisle === section.id)}
+        {#if section.items.length && (devicePrefs.groceryMinimal || aisle === 'all' || aisle === section.id)}
           <section aria-labelledby="dept-{section.id}">
             <div class="mb-2 flex items-center justify-between gap-2 px-1">
               <h2 id="dept-{section.id}" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
@@ -364,7 +368,7 @@
         {/if}
       {/each}
 
-      {#if haveHidden.length}
+      {#if haveHidden.length && !devicePrefs.groceryMinimal}
         <details class="group rounded-xl bg-surface-container-low text-body-sm text-on-surface-variant">
           <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
             <Icon name="visibility_off" class="text-[16px] text-outline" />
@@ -387,7 +391,7 @@
         </details>
       {/if}
 
-      {#if acquired.length}
+      {#if acquired.length && !devicePrefs.groceryMinimal}
         <section class="rounded-2xl bg-surface-container-low" aria-labelledby="on-hand-heading">
           <div class="flex items-center justify-between gap-2 px-4 py-3">
             <h2 id="on-hand-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
@@ -418,6 +422,7 @@
     </div>
 
     <!-- Right: overview, sources, sync -->
+    {#if !devicePrefs.groceryMinimal}
     <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-4">
       <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card">
         <div class="flex items-center justify-between text-label-caps uppercase text-on-surface-variant">
@@ -547,6 +552,7 @@
         {/if}
       </section>
     </aside>
+    {/if}
   </div>
 </div>
 

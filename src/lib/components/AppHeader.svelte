@@ -1,6 +1,6 @@
 <script>
   import Icon from './Icon.svelte';
-  import { syncPhase, PHASE_LOOK } from '../sync/sync.svelte.js';
+  import { syncPhase, connect, PHASE_LOOK } from '../sync/sync.svelte.js';
   import { planner, shiftWeek, goToThisWeek } from '../planner.svelte.js';
   import { settings } from '../settings.svelte.js';
   import { groceryCount } from '../grocery.svelte.js';
@@ -43,6 +43,20 @@
     return 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
   }
 
+  /**
+   * Signed out (e.g. after a reload): the Sheets tab reconnects in place, like the grocery list's
+   * Reconnect button, instead of opening the settings page. If that fails, open the page.
+   * @param {MouseEvent} event
+   * @param {{ id: string, path: string }} tab
+   */
+  async function onTabClick(event, tab) {
+    if (tab.id !== 'sheets-sync' || syncPhase() !== 'signedOut') return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button) return;
+    event.preventDefault();
+    await connect();
+    if (syncPhase() === 'signedOut') navigate(tab.path);
+  }
+
   const groceries = $derived(groceryCount());
   const isThisWeek = $derived(planner.weekStart === weekStartOf(new Date(), settings.weekStartDay));
 
@@ -57,6 +71,7 @@
     {#each tabs as tab (tab.id)}
       <a
         href={href(tab.path)}
+        onclick={(event) => onTabClick(event, tab)}
         aria-current={tab.id === active ? 'page' : undefined}
         title={tab.id === 'sheets-sync' ? `Google Sheets: ${sheetsLook.short}` : undefined}
         class="whitespace-nowrap rounded-lg px-4 py-2 text-label-md transition-all {tabClass(tab)}"
