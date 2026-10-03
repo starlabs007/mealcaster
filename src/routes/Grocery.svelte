@@ -5,6 +5,7 @@
     departments,
     deptOfTag,
     groceryLines,
+    haveHiddenLines,
     setLineStatus,
     addCustomItem,
     removeCustomItem,
@@ -47,6 +48,7 @@
   ];
 
   const lines = $derived(groceryLines());
+  const haveHidden = $derived(haveHiddenLines());
   // Bought and on-hand lines both leave the aisle lists for the Acquired ledger.
   const shopping = $derived(lines.filter((l) => l.status === 'need'));
   const onHand = $derived(lines.filter((l) => l.status === 'owned'));
@@ -331,6 +333,29 @@
           </section>
         {/if}
       {/each}
+
+      {#if haveHidden.length}
+        <details class="group rounded-xl bg-surface-container-low text-body-sm text-on-surface-variant">
+          <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
+            <Icon name="visibility_off" class="text-[16px] text-outline" />
+            <span class="flex-1">
+              {haveHidden.length} {haveHidden.length === 1 ? 'ingredient is' : 'ingredients are'} left off because you have {haveHidden.length === 1 ? 'it' : 'them'}.
+            </span>
+            <Icon name="expand_more" class="text-[18px] text-outline transition-transform group-open:rotate-180" />
+          </summary>
+          <ul class="divide-y divide-surface-container-high border-t border-surface-container-high px-3">
+            {#each haveHidden as h (h.key)}
+              <li class="flex items-baseline gap-2 py-1.5">
+                <span class="min-w-0 flex-1 truncate text-on-surface">{h.name}</span>
+                <span class="shrink-0 text-outline">{h.detail} · {h.source}</span>
+              </li>
+            {/each}
+          </ul>
+          <p class="border-t border-surface-container-high px-3 py-2">
+            Manage these in <a href={href('/profile')} class="text-primary underline">Profile</a>.
+          </p>
+        </details>
+      {/if}
 
       {#if acquired.length}
         <section class="rounded-2xl bg-surface-container-low" aria-labelledby="on-hand-heading">

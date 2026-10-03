@@ -40,7 +40,7 @@ npm run preview    # http://localhost:4173
 
 ## What works on the home screen
 
-- Saturday → Friday day cards with **completed** (past), **today**, **planned** and **open** states,
+- Seven day cards (Saturday → Friday unless you change the start day in Profile & Settings) with **completed** (past), **today**, **planned** and **open** states,
   computed from the real current date.
 - Week stepper in the header (click the date range to jump back to this week).
 - **Auto-fill Remaining**, **Copy Last Week**, **Reset Week** — each with an Undo toast.
@@ -74,7 +74,10 @@ npm run preview    # http://localhost:4173
 
 - Breadcrumb back to the plan, favorite toggle, Swap Meal, serving scaler (quantities rescale).
 - Tags (each links to the catalog filtered by it) and when the meal was last made.
-- Mise-en-place checklist grouped by component; **Push Unchecked to Grocery** and **Add to List**.
+- Mise-en-place checklist grouped by component. Checking an ingredient means you always have it: it goes on your
+  **Ingredients I Have** list (see Profile & Settings) and stays off the grocery list, in every week, until you
+  uncheck it. **Checkmark all** / **Clear all** act on the whole recipe. **Push Unchecked to Grocery** and
+  **Add to List** skip checked ingredients.
 - Numbered method steps with durations; "Next: {Day} {Recipe}" walks through the week's dinners.
 
 ## Recipe tags
@@ -92,8 +95,10 @@ The `Category` column holds it; blank means none.
 
 - Auto-compiled from the viewed week's upcoming dinners, grouped into Produce, Meat & Seafood,
   Dairy and Pantry aisles (with aisle tabs). Each line shows which dinner needs it.
+- Ingredients on your **Ingredients I Have** list are left off; an expandable note (closed by default) says how many
+  and lists them with the dinner they belong to.
 - Tap the circle when bought and the box icon if you already have it; either way the item moves to the
-  **Already On Hand / Acquired** ledger and the aisle counters update (staples like oil and salt start there).
+  **Already On Hand / Acquired** ledger and the aisle counters update.
 - **Add Item** for anything extra, **Share** (native share sheet or clipboard), **Print Kitchen
   Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.
@@ -104,11 +109,16 @@ Reached from the avatar in the header (and the footer, on phones).
 
 - **Planning** — "Return to the planner after choosing a meal" (on by default; applies to Select and Surprise Me
   in the catalog). Synced as a `Preference` row in the `[Settings]` tab.
+- **Week starts on** — the first day of the weekly plan and the grocery week (Saturday by default). Synced as a
+  `Preference` row in `[Settings]`. Plan dates don't move; grocery lists are re-keyed onto the new weeks.
 - **Aisle Mappings** — your own ingredient → aisle pairs (e.g. "Oat milk" → Pantry). They're checked before the
   built-in word lists whenever an aisle is guessed: typing or pasting ingredients in the recipe editor, and the
   aisle pre-selected in the grocery **Add Item** form. A name matches as whole words anywhere in the ingredient
   ("oat milk" also matches "2 cups oat milk"), and the longest match wins. Explicit aisles already saved on a
   recipe are never changed. Synced to the optional `[Settings]` tab.
+- **Ingredients I Have** — names that never reach the grocery list, in any week. Checking an ingredient on a recipe
+  adds it here; you can also add or remove names by hand. A name matches an ingredient's full text, ignoring case
+  and plurals ("noodles" won't hide "egg noodles"). Synced as `Have` rows in the optional `[Settings]` tab.
 - **This Device** — print defaults for the Print Options dialog, the catalog's "Not made in 7 days" default and
   a Reset Colours button for tag colours. Never synced.
 - **Danger Zone** — *Disconnect & Erase*: after a confirmation dialog, signs out of Google, removes every
@@ -159,7 +169,7 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
 | `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
-| `mealcaster.settings.v1` | `[Settings]` tab: Profile aisle mappings |
+| `mealcaster.settings.v1` | `[Settings]` tab: Profile preferences, aisle mappings and ingredients I have |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
 
@@ -193,7 +203,7 @@ src/
     tags.js                  tag & category normalizing, suggestions, colour rotation
     tagColors.svelte.js      per-device tag colours
     grocery.svelte.js        grocery list model
-    settings.svelte.js       Profile settings (aisle mappings) + aisleMap.js matching
+    settings.svelte.js       Profile settings (aisle mappings, ingredients I have) + aisleMap.js / haveList.js matching
     devicePrefs.svelte.js    small per-device display preferences
     favorites.svelte.js
     toast.svelte.js

@@ -13,6 +13,7 @@ import { DEFAULT_WEEK_START_DAY, formatWeekday, fromISO, weekStartOf } from '../
 import { normalizeAisle, normalizeCategory, normalizeTags } from '../tags.js';
 import { aisles } from '../data/aisles.js';
 import { mappingKey, tidyName } from '../aisleMap.js';
+import { haveKey } from '../haveList.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -127,7 +128,6 @@ export function parseIngredients(value) {
       ...(unit && { unit }),
       text: str(i.text ?? i.name ?? i.item),
       tag: normalizeAisle(str(i.tag ?? i.dept ?? i.aisle)) || 'Pantry',
-      ...(i.staple && { staple: true }),
     };
   };
   // Hand-edited cells can hold nulls or bare values; skip them rather than fail the sync.
@@ -416,7 +416,7 @@ export const parseWeekday = (v) => {
 
 /**
  * The [Settings] rows for the device's settings, keyed for sync.
- * @param {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner?: boolean, weekStartDay?: number }} settings
+ * @param {{ aisles: import('../aisleMap.js').AisleMapping[], have?: string[], returnToPlanner?: boolean, weekStartDay?: number }} settings
  * @returns {Map<string, Row>}
  */
 export function settingsToRows(settings) {
@@ -433,6 +433,7 @@ export function settingsToRows(settings) {
     const label = aisles.find((a) => a.tag === m.tag)?.label ?? m.tag;
     rows.set(settingKey('Aisle', m.name), { Section: 'Aisle', Name: m.name, Value: label });
   }
+  for (const name of settings.have ?? []) rows.set(settingKey('Have', name), { Section: 'Have', Name: name, Value: true });
   return rows;
 }
 
@@ -441,11 +442,13 @@ export function settingsToRows(settings) {
  * can't read, are ignored here and left alone in the sheet; a preference with no readable row
  * takes its default.
  * @param {Row[]} rows
- * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], returnToPlanner: boolean, weekStartDay: number }}
+ * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], have: string[], returnToPlanner: boolean, weekStartDay: number }}
  */
 export function settingsFromRows(rows) {
   /** @type {Map<string, import('../aisleMap.js').AisleMapping>} */
   const found = new Map();
+  /** @type {Map<string, string>} */
+  const have = new Map();
   let returnToPlanner = true;
   let weekStartDay = DEFAULT_WEEK_START_DAY;
   const weekKey = settingKey(WEEK_STARTS_ON.Section, WEEK_STARTS_ON.Name);
@@ -460,10 +463,16 @@ export function settingsFromRows(rows) {
       if (settingKey(row.Section, row.Name) === weekKey && parseWeekday(row.Value) >= 0) weekStartDay = parseWeekday(row.Value);
       continue;
     }
+    if (section === 'have') {
+      const name = tidyName(str(row.Name));
+      if (!name) continue;
+      if (!/^(false|no|n|0|off)$/.test(str(row.Value).toLowerCase())) have.set(haveKey(name), name);
+      continue;
+    }
     if (section !== 'aisle') continue;
     const name = tidyName(str(row.Name));
     const tag = parseAisle(row.Value);
     if (name && tag && !found.has(mappingKey(name))) found.set(mappingKey(name), { name, tag });
   }
-  return { aisles: [...found.values()], returnToPlanner, weekStartDay };
+  return { aisles: [...found.values()], have: [...have.values()], returnToPlanner, weekStartDay };
 }

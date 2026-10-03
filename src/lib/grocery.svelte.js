@@ -1,8 +1,8 @@
 // Quick Grocery & Provisions list, one per week (mirrors a [Provisions] sheet tab).
 //
 // Lines come from three sources:
-//  1. Automatic — every ingredient of the week's upcoming dinners. Staples
-//     (oil, salt, spices) start out "owned" so they sit in the On Hand ledger.
+//  1. Automatic — every ingredient of the week's upcoming dinners, except ones on the
+//     "ingredients I have" list (settings).
 //  2. Pushed — ingredients sent from a Recipe Detail page ("Add to List" /
 //     "Push Unchecked to Grocery"), even for recipes not on the plan.
 //  3. Custom — free-text items added on the grocery screen.
@@ -17,6 +17,8 @@ import { formatWeekday } from './dates.js';
 import { departments } from './data/departments.js';
 import { storageKey } from './env.js';
 import { rekeyGroceryWeeks } from './sync/codec.js';
+import { settings } from './settings.svelte.js';
+import { isHave } from './haveList.js';
 
 const STORAGE_KEY = storageKey('grocery.v2');
 const LEGACY_KEY = storageKey('groceryExtras.v1');
@@ -113,28 +115,45 @@ export function ingredientKeys(recipeId) {
 }
 
 /** Lines of the viewed week's list (or of `weekStart`'s). @returns {GroceryLine[]} */
-export function groceryLines(weekStart = planner.weekStart) {
+export const groceryLines = (weekStart = planner.weekStart) => buildWeek(weekStart).lines;
+
+/** The week's ingredients the "ingredients I have" list keeps off it. @returns {{ key: string, name: string, detail: string, source: string }[]} */
+export const haveHiddenLines = (weekStart = planner.weekStart) => buildWeek(weekStart).hidden;
+
+/** Whether a recipe ingredient is on the "ingredients I have" list. @param {string} key */
+export function isHaveKey(key) {
+  const item = lookup(key)?.item;
+  return Boolean(item) && isHave(settings.have, item.text);
+}
+
+/** @returns {{ lines: GroceryLine[], hidden: { key: string, name: string, detail: string, source: string }[] }} */
+function buildWeek(weekStart) {
   const week = readWeek(weekStart);
+  const hidden = [];
   /** @type {Map<string, GroceryLine>} */
   const lines = new Map();
 
   /** @param {string} key @param {{ iso: string, weekday: number }} [day] */
   const addIngredient = (key, day) => {
-    if (lines.has(key)) return;
+    if (lines.has(key) || hidden.some((h) => h.key === key)) return;
     const found = lookup(key);
     if (!found) return;
     const { recipe, item } = found;
     const amount =
       item.qty == null ? 'To taste' : item.unit ? `${formatQty(item.qty)} ${item.unit}` : `Qty ${formatQty(item.qty)}`;
+    const name = item.text.charAt(0).toUpperCase() + item.text.slice(1);
+    const source = day ? `${formatWeekday(day.iso).slice(0, 3)}: ${recipe.shortTitle}` : recipe.shortTitle;
+    if (isHave(settings.have, item.text)) {
+      hidden.push({ key, name, detail: amount, source });
+      return;
+    }
     lines.set(key, {
       key,
-      name: item.text.charAt(0).toUpperCase() + item.text.slice(1),
+      name,
       detail: amount,
       dept: deptOfTag(item.tag),
-      status: week.status[key] ?? (item.staple ? 'owned' : 'need'),
-      source: day
-        ? { label: `${formatWeekday(day.iso).slice(0, 3)}: ${recipe.shortTitle}`, tone: DAY_TONES[day.weekday] }
-        : { label: recipe.shortTitle, tone: 'neutral' },
+      status: week.status[key] ?? 'need',
+      source: { label: source, tone: day ? DAY_TONES[day.weekday] : 'neutral' },
       recipeId: recipe.id,
     });
   };
@@ -154,7 +173,7 @@ export function groceryLines(weekStart = planner.weekStart) {
       custom: true,
     });
   }
-  return [...lines.values()];
+  return { lines: [...lines.values()], hidden };
 }
 
 /** Keys currently on the shopping list (to buy or already bought). */

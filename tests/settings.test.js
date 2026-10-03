@@ -170,3 +170,20 @@ describe('syncing the Settings tab', () => {
     assert.deepEqual(sheet.column('Settings', 'Value').slice(1), ['Saturday', 'Pantry']);
   });
 });
+
+describe('ingredients I have', () => {
+  it('matches a name ignoring case, spacing and plurals, but not other ingredients', async () => {
+    const { isHave, withHave, withoutHave } = await import('../src/lib/haveList.js');
+    const have = withHave(withHave([], ' Egg  Noodles'), 'egg noodles');
+    assert.deepEqual(have, ['Egg Noodles']);
+    assert.equal(isHave(have, 'egg noodle'), true);
+    assert.equal(isHave(have, 'noodles'), false);
+    assert.deepEqual(withoutHave(have, 'EGG NOODLES'), []);
+  });
+  it('round-trips through [Settings] rows and ignores false rows', () => {
+    const rows = [...codec.settingsToRows({ aisles: [], have: ['Noodles', 'Rice'] }).values()];
+    assert.deepEqual(codec.settingsFromRows(rows).have, ['Noodles', 'Rice']);
+    assert.deepEqual(codec.settingsFromRows([{ Section: 'Have', Name: 'Rice', Value: 'FALSE' }]).have, []);
+    assert.deepEqual(codec.settingsFromRows([]).have, []);
+  });
+});

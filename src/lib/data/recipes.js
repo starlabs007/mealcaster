@@ -1,10 +1,8 @@
 // Sample recipe pool mirroring the Google Sheets [Recipes] tab. The live list
 // (samples + the user's custom recipes) is in ../recipes.svelte.js.
 
-const IMG = 'https://lh3.googleusercontent.com/aida-public/';
-
 /**
- * @typedef {{ qty?: number, unit?: string, text: string, tag: string, staple?: boolean }} Ingredient
+ * @typedef {{ qty?: number, unit?: string, text: string, tag: string }} Ingredient
  * @typedef {{ title: string, category: string, items: Ingredient[] }} IngredientGroup
  * @typedef {{ title: string, minutes: number, text: string, critical?: boolean }} Step
  * @typedef {{
@@ -14,7 +12,6 @@ const IMG = 'https://lh3.googleusercontent.com/aida-public/';
  *   description: string,
  *   image?: string,
  *   hero?: string,
- *   sheetRow?: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
  *   minutes: number,
@@ -38,13 +35,6 @@ const pool = [
     shortTitle: 'Pan-Seared Crispy Salmon',
     description:
       'A restaurant-caliber weeknight centerpiece featuring golden, crackling wild salmon resting on a creamy arborio risotto brightened with fresh Meyer lemon zest and finished with blistered spring asparagus.',
-    image:
-      IMG +
-      'AB6AXuC5Mw9oNxGTcNbnUVAixH0ErLg4cBO6c3mBGe3MnfobETp9MYuU7Ip-v3n5YKN1v2lLuUid77qctMNBH6wARrmls3S9qBnlAuckUFPs47B6Q-l7464smcqrXr8QG3CgOcraVfUyVSUv1jnzcWKq1mfd4beAM8mImGl_NHwhRCj151bCR49RmCBorSNP93YHJJZbCucCe5xvLtzY1CacQKlOxHj4xqrzs9pzBwxJ3eMf98th5uftEcEwBw',
-    hero:
-      IMG +
-      'AB6AXuAvBKYVeYGf6JFmw8eAE9SekijZGeQatTSKCpBUsaGwcKukceDVD2bWngchUv8jQsI9eqtcTdoSsbnkeJSs066KS_3JNd7Bnbu-UBK5tRuAOLo98_pEnZaxRtSjiqzexDY4_YjWiHU2jWGa5oZlxjmQlsK3xA2u0q4OSjKKp6Mphjk3iNj5sWzGsO1FhZZHfXl9YHySDVzPyD_F7gXcyP8QYKSA0S7_5EPqgwweFS6-Fj7RMoJKPiwBzw',
-    sheetRow: 14,
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 2,
@@ -59,8 +49,8 @@ const pool = [
         category: 'Protein',
         items: [
           { qty: 2, text: 'fresh wild salmon fillets (6 oz each), skin-on & thoroughly scaled', tag: 'Fresh' },
-          { qty: 1, unit: 'tbsp', text: 'high-smoke point avocado oil or clarified butter', tag: 'Pantry', staple: true },
-          { text: 'Flaky Maldon sea salt & freshly cracked black peppercorns', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tbsp', text: 'high-smoke point avocado oil or clarified butter', tag: 'Pantry' },
+          { text: 'Flaky Maldon sea salt & freshly cracked black peppercorns', tag: 'Spices' },
           { qty: 1, unit: 'pack', text: 'bamboo skewers or kitchen twine, for trussing & turning', tag: 'Other' },
         ],
       },
@@ -84,7 +74,7 @@ const pool = [
         category: 'Garden Greens',
         items: [
           { qty: 1, unit: 'bunch', text: 'slender green asparagus, woody ends snapped', tag: 'Produce' },
-          { qty: 1, unit: 'tbsp', text: 'extra virgin olive oil & grilled lemon halves', tag: 'Produce', staple: true },
+          { qty: 1, unit: 'tbsp', text: 'extra virgin olive oil & grilled lemon halves', tag: 'Produce' },
         ],
       },
     ],
@@ -123,10 +113,6 @@ const pool = [
     shortTitle: 'Poblano Enchiladas',
     description:
       'Rolled corn tortillas with black beans, fire-roasted poblanos, and tangy tomatillo salsa verde, finished with lime cilantro crema.',
-    image:
-      IMG +
-      'AB6AXuCq_54vcTmNQhCP1GDafEzHXlPupPvRKxznsr8Ai-mEGyAkfObBuuEdHC23pjGUyky3_XtN9CA2Sze6_h2DD7iZ2v6iFg5HXqkAe4MRgVRbY41JbJk-3Pz7Hc3LWHVeGLqz-LaGQsvT9xAW7S7mlkNaAx5lI-YDCoPv6A5UMeAtygcJ1NdD_Gf1HUxvmf1tAFQ2Ob-ivXYuDSado4x3Joc0lIEkf0XNtaJmiWtNyuiReq3F8EP4mmOubw',
-    sheetRow: 7,
     prepMinutes: 20,
     cookMinutes: 30,
     serves: 4,
@@ -152,7 +138,7 @@ const pool = [
           { qty: 3, text: 'poblano peppers', tag: 'Produce' },
           { qty: 1, unit: 'can', text: 'black beans, drained', tag: 'Pantry' },
           { qty: 1, unit: 'cup', text: 'sweet corn kernels', tag: 'Frozen' },
-          { qty: 1, unit: 'tsp', text: 'ground cumin', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tsp', text: 'ground cumin', tag: 'Spices' },
         ],
       },
       {
@@ -197,10 +183,6 @@ const pool = [
     shortTitle: 'Tuscan Sausage Ragù',
     description:
       'A rustic, slow-simmered ragù of fennel sausage, creamy cannellini beans and San Marzano tomatoes clinging to ridged rigatoni under a snowfall of pecorino.',
-    image:
-      IMG +
-      'AB6AXuAjnHCvCZ1KHDX2bYRtljnnj-h9H0wtBS7Z0w-PYbdgoTNtArbCCbee7qH7AL_ebLR2AlqIRnt55e2k469ljCylJqRFdedFXS7PO7GYnKpDIY2FQwLzFpH1AZ3Mrp1-EgldY_21EhcDTiGVUQmRZovxje1ieCxzY7LbESZZfZwfG6o1O6hVAAsYlhfMQWk3Ts78dqzuBTQgL4PablnZbY5xvVdu9K_9vQ1X0_dbButXpFrThrK79ahu9A',
-    sheetRow: 9,
     prepMinutes: 15,
     cookMinutes: 45,
     serves: 4,
@@ -219,7 +201,7 @@ const pool = [
           { qty: 3, text: 'cloves garlic, sliced', tag: 'Produce' },
           { qty: 1, unit: 'can', text: 'San Marzano tomatoes (28 oz)', tag: 'Pantry' },
           { qty: 1, unit: 'can', text: 'cannellini beans, drained', tag: 'Pantry' },
-          { qty: 0.5, unit: 'tsp', text: 'red pepper flakes', tag: 'Spices', staple: true },
+          { qty: 0.5, unit: 'tsp', text: 'red pepper flakes', tag: 'Spices' },
         ],
       },
       {
@@ -262,10 +244,6 @@ const pool = [
     shortTitle: 'Sourdough Pizza Night',
     description:
       'Blistered, chewy sourdough crusts topped with bright crushed tomato, torn burrata, basil and a drizzle of chili-spiked hot honey.',
-    image:
-      IMG +
-      'AB6AXuDZrdwAMIUnNdJWP4NUDAlhB5IRvL-w432Tn5QIPJSP3cb_CvCrDrw1qH1gQU0o1yoJkUy_fmdS2FojFxmvYLfhpOSMJR7dSIV21v31grvShMRxyH8WD5cChvOMQZae09a8y7sKKwhKXUYk7_vh2EE_8MIVk46_v4RYm_LfDTOoOKhG3kGe4QEI7KHg9-argAqeIUyKQXFXKSs9oxFXNUNwEHrKdHnwOwPjkE0AqXOBxEPILT7AgbbNmQ',
-    sheetRow: 11,
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 4,
@@ -281,7 +259,7 @@ const pool = [
         items: [
           { qty: 2, text: 'balls sourdough pizza dough (ready-made or home proofed)', tag: 'Bakery' },
           { qty: 1, unit: 'can', text: 'crushed San Marzano tomatoes', tag: 'Pantry' },
-          { qty: 2, unit: 'tbsp', text: 'semolina for dusting', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'semolina for dusting', tag: 'Pantry' },
         ],
       },
       {
@@ -325,7 +303,6 @@ const pool = [
     shortTitle: 'Miso-Glazed Eggplant',
     description:
       'Silky broiled eggplant lacquered in a sweet-savory white miso glaze over sesame jasmine rice with crunchy quick-pickled cucumbers.',
-    sheetRow: 15,
     prepMinutes: 15,
     cookMinutes: 20,
     serves: 2,
@@ -342,7 +319,7 @@ const pool = [
           { qty: 2, text: 'Japanese eggplants, halved lengthwise', tag: 'Produce' },
           { qty: 3, unit: 'tbsp', text: 'white miso', tag: 'Pantry' },
           { qty: 1, unit: 'tbsp', text: 'mirin', tag: 'Pantry' },
-          { qty: 1, unit: 'tsp', text: 'toasted sesame oil', tag: 'Pantry', staple: true },
+          { qty: 1, unit: 'tsp', text: 'toasted sesame oil', tag: 'Pantry' },
         ],
       },
       {
@@ -351,7 +328,7 @@ const pool = [
         items: [
           { qty: 1, unit: 'cup', text: 'jasmine rice', tag: 'Pantry' },
           { qty: 2, text: 'Persian cucumbers, thinly sliced', tag: 'Produce' },
-          { qty: 0.25, unit: 'cup', text: 'rice vinegar', tag: 'Pantry', staple: true },
+          { qty: 0.25, unit: 'cup', text: 'rice vinegar', tag: 'Pantry' },
           { qty: 2, text: 'scallions, sliced', tag: 'Produce' },
         ],
       },
@@ -381,7 +358,6 @@ const pool = [
     shortTitle: 'Coconut Red Lentil Dal',
     description:
       'A golden, velvety one-pot dal simmered with coconut milk and ginger, finished with a sizzling cumin-seed tadka and warm garlic naan.',
-    sheetRow: 8,
     prepMinutes: 5,
     cookMinutes: 20,
     serves: 4,
@@ -398,7 +374,7 @@ const pool = [
           { qty: 1, unit: 'cup', text: 'red lentils, rinsed', tag: 'Pantry' },
           { qty: 1, unit: 'can', text: 'full-fat coconut milk', tag: 'Pantry' },
           { qty: 1, unit: 'inch', text: 'fresh ginger, grated', tag: 'Produce' },
-          { qty: 1, unit: 'tsp', text: 'ground turmeric', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tsp', text: 'ground turmeric', tag: 'Spices' },
         ],
       },
       {
@@ -406,7 +382,7 @@ const pool = [
         category: 'Aromatics & Bakery',
         items: [
           { qty: 2, unit: 'tbsp', text: 'ghee', tag: 'Dairy' },
-          { qty: 1, unit: 'tsp', text: 'cumin seeds', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tsp', text: 'cumin seeds', tag: 'Spices' },
           { qty: 4, text: 'garlic naan', tag: 'Bakery' },
           { qty: 1, unit: 'bunch', text: 'cilantro', tag: 'Herbs' },
         ],
@@ -437,10 +413,6 @@ const pool = [
     shortTitle: 'Lemon Herb Salmon',
     description:
       'Crisp golden-crusted fillet with tenderstem asparagus, caper-dill emulsion, and sea-salt roasted baby red potatoes.',
-    image:
-      IMG +
-      'AB6AXuBV2R4JTx_C0JAkbBFstUoviqtqEXHWwYVCVuA45jTL4UM-rD0CUdiaZ6mjjcdM1lJaj2BX9bc54v8lvJ5y2s5C8Igku0iScoVtEacFWxzY-aF5ZBul9Hzajx5auHGj57Trd7y_zgp1kwzdF_CGz4Zr1YEtIJHKdLrQaaFDPCgzIGhG4LyHesX-x2ec924I2piPIuLoKUpfrMkoDyZadv3MpN26BGtTr3UTZa0brwtAyZBtTsM4P9LSTw',
-    sheetRow: 2,
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 2,
@@ -464,7 +436,7 @@ const pool = [
         items: [
           { qty: 0.75, unit: 'lb', text: 'baby red potatoes, halved', tag: 'Produce' },
           { qty: 1, unit: 'bunch', text: 'tenderstem asparagus or broccolini', tag: 'Produce' },
-          { qty: 2, unit: 'tbsp', text: 'olive oil', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'olive oil', tag: 'Pantry' },
         ],
       },
       {
@@ -502,10 +474,6 @@ const pool = [
     shortTitle: 'Tomato & White Bean Stew',
     description:
       'Slow-simmered San Marzano tomatoes, buttery cannellini beans, wilted Tuscan kale, and fresh rosemary with garlic-rubbed toast.',
-    image:
-      IMG +
-      'AB6AXuCWGT4YiNDNcLfb9KUsInGBedSVgQodcezlR-_OptV7YvLzD0I7JOe3T8TMRxc6JtQAGD5wjErbLYoa1xGxYraSJsc3E3r6mmaNAR3NHd_kb8Mjeb2Cv_i_QBln6c7b6WD5s832zTDzDPUgBfnST57LJuxQsdDP-9L5-qidLwFoT8uModjBC4kG0wztg1Wpbm9yFAD3_ttPTJ5BdwBpXWQHr82ve1cYikMOsBZ6cVwbplSSoTgq2h5BEQ',
-    sheetRow: 3,
     prepMinutes: 10,
     cookMinutes: 25,
     serves: 4,
@@ -532,7 +500,7 @@ const pool = [
         category: 'Bakery',
         items: [
           { qty: 4, text: 'thick slices country sourdough', tag: 'Bakery' },
-          { qty: 3, unit: 'tbsp', text: 'extra virgin olive oil', tag: 'Pantry', staple: true },
+          { qty: 3, unit: 'tbsp', text: 'extra virgin olive oil', tag: 'Pantry' },
         ],
       },
     ],
@@ -561,10 +529,6 @@ const pool = [
     shortTitle: 'Sheet-Pan Lemon Chicken',
     description:
       'Crispy bone-in chicken thighs roasted alongside fingerling potatoes, blistered broccoli florets, and Dijon-herb marinade.',
-    image:
-      IMG +
-      'AB6AXuAVQEvEyIImBiVfUTd3ZPK0lgU-Gua04l93Pul3jnzI2ixnjb_GGqvf7B11ou9sXOozOKzRv7pEp7idAk_5SBN2KhkaYvlD6YoB8yMf6dZFypcz0qxU1GGpMaTcgc3LZEQKlR-xfGYky1-f5Zc6QjJ9u0yuWyAoedG_XQw3AJs7AXCzX8iO2Z8Rv2B3oEo4jGhsP5mIyqyT5ywB8Ns4cdzW0_SLFZLMsRrFSF6Ngi3WuIaLw412jFqpNQ',
-    sheetRow: 4,
     prepMinutes: 10,
     cookMinutes: 30,
     serves: 4,
@@ -590,7 +554,7 @@ const pool = [
         items: [
           { qty: 1.5, unit: 'lb', text: 'fingerling potatoes, halved', tag: 'Produce' },
           { qty: 1, unit: 'head', text: 'broccoli, cut into florets', tag: 'Produce' },
-          { qty: 3, unit: 'tbsp', text: 'olive oil', tag: 'Pantry', staple: true },
+          { qty: 3, unit: 'tbsp', text: 'olive oil', tag: 'Pantry' },
         ],
       },
     ],
@@ -619,10 +583,6 @@ const pool = [
     shortTitle: 'Butternut Squash Rigatoni',
     description:
       'Velvety roasted squash sauce, fragrant fried mountain sage, freshly cracked nutmeg, toasted walnuts, and aged sheep’s milk pecorino.',
-    image:
-      IMG +
-      'AB6AXuC1MdaKTop1BXw-1g8ynSuYGA7EP7470LfWyfgcdyNEERnw82OJg1pWbDsv-oEdfbB1IgQ0rWlC8rPqy_2-1DeyrZjdSQkKry6YaIIm4cofvcNA_0t908N4sccUhxGYtMCU8jy-62RPt3fvrMjZZVK5k2a_RTNV1lldNBF8dGHpgzRsvVQzv3HbC1JeRmosOpVr8yLg4xMBHbeoN2eKvZ45TQwLjOUty6k5NOZIwOa1ew4p2TEEXXYygQ',
-    sheetRow: 5,
     prepMinutes: 10,
     cookMinutes: 20,
     serves: 4,
@@ -639,7 +599,7 @@ const pool = [
           { qty: 1, text: 'medium butternut squash, peeled and cubed', tag: 'Produce' },
           { qty: 1, text: 'shallot, sliced', tag: 'Produce' },
           { qty: 0.5, unit: 'cup', text: 'grated aged pecorino', tag: 'Dairy' },
-          { qty: 0.25, unit: 'tsp', text: 'freshly grated nutmeg', tag: 'Spices', staple: true },
+          { qty: 0.25, unit: 'tsp', text: 'freshly grated nutmeg', tag: 'Spices' },
         ],
       },
       {
@@ -678,10 +638,6 @@ const pool = [
     shortTitle: 'Sesame Ginger Soba',
     description:
       'Buckwheat noodles in toasted sesame tamari emulsion, tossed with snap peas, julienned radishes, fresh cilantro, and chili oil.',
-    image:
-      IMG +
-      'AB6AXuD87xdGZvsmB7bn3s9a0FerKSCUWlBmzD_-_q4hslI-7I6N8YYl1exycVc8nQ8Z8vaG8MTKKLoRFyJLzXeKV-aGoNLYHGMkFSfLegGcWmdS_4WUvlpNatyskLYT0Nvm8AD9-axU9pcRndCUNfuu-CWgyy6ITHe2t-TfWpKifawhmFfH-XqjM6fohzfBbAfS5mH9UnqH4ejUBUb0ikgMO_CiRho2rhZtoz6gZcb3tOFePmcni6rmb5E88A',
-    sheetRow: 6,
     prepMinutes: 7,
     cookMinutes: 8,
     serves: 2,
@@ -706,7 +662,7 @@ const pool = [
         category: 'Sauce',
         items: [
           { qty: 3, unit: 'tbsp', text: 'tamari', tag: 'Pantry' },
-          { qty: 2, unit: 'tbsp', text: 'toasted sesame oil', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'toasted sesame oil', tag: 'Pantry' },
           { qty: 1, unit: 'tbsp', text: 'fresh ginger, grated', tag: 'Produce' },
           { qty: 1, unit: 'tsp', text: 'chili crisp', tag: 'Pantry' },
         ],
@@ -737,10 +693,6 @@ const pool = [
     shortTitle: 'Red Wine Short Ribs',
     description:
       'Melt-in-your-mouth bone-in beef braised with mirepoix and Chianti, served over mascarpone corn polenta with zest gremolata.',
-    image:
-      IMG +
-      'AB6AXuDl9HZHI_vVtZ22gQDXPUEmBnTokd1K6VuXakeS7RbLJ1cVYLv70O2g11l4H5xk4XumuCtYWw1cDMEDF5uZpgjvI324A-5ZqYvw2KV2kMR09CLOeTiOTWREXDzxoRoqZ7aoiFxxZ7fZ9XmT-fPDzLAiFigarPWSTCof8-MnIWiv2owokob58CZVp-KIaJ7nb4CsZxTEm4g8FC3pt4jnx2nKJZcFZMSadhNnzGVylcJpWX6SOOnL8l8WcQ',
-    sheetRow: 10,
     prepMinutes: 30,
     cookMinutes: 180,
     serves: 6,
@@ -803,10 +755,6 @@ const pool = [
     shortTitle: 'Chicken Souvlaki Bowls',
     description:
       'Oregano grilled chicken tenderloins with cooling cucumber-dill tzatziki, Kalamata olives, sumac-pickled onions, and warm pita.',
-    image:
-      IMG +
-      'AB6AXuCKrT0UtRuQ3c0Y4Pehla-LYc-uoB4eK1cdfj9TV9qEtZV6Z4Jjz_5IFhxJ711dzvF9FPIh6qFwci7SNyM6i5rA0u-i1zKGVNv5ue303mffeyVMrdeRLYAgQBhlrHKl5_bU_w8EzXt0Jnz9cke4yDNRIoorO7LplJ791TzKIwtbT1tvP00Hj1pFmY9gCmylMfV-6SWj9eK5ElzmJHb1XlddPLcecJD9aOhh7yI3n3WCyXcxWFGa3hFZyQ',
-    sheetRow: 12,
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 4,
@@ -823,7 +771,7 @@ const pool = [
           { qty: 1.5, unit: 'lb', text: 'chicken tenderloins', tag: 'Fresh' },
           { qty: 2, text: 'lemons', tag: 'Produce' },
           { qty: 4, text: 'cloves garlic, grated', tag: 'Produce' },
-          { qty: 1, unit: 'tbsp', text: 'dried oregano', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tbsp', text: 'dried oregano', tag: 'Spices' },
         ],
       },
       {
@@ -863,10 +811,6 @@ const pool = [
     shortTitle: 'Crispy Chickpea Bowl',
     description:
       'Cumin-roasted chickpeas on fluffy quinoa with roasted red peppers, baby arugula, pickled shallots, and lemon-parsley tahini dressing.',
-    image:
-      IMG +
-      'AB6AXuAaF7pRS__Vn3GRbjdYm90zU6HDLak4-gUJx_w03PdpaeMTM6F5VLJ9_Kw-F0nzy1gCVvFzilQRbUNBSZqRAj8k4QMIiwQcIIpSDDJ03jz9pUdNPERLYKKv8zoC2G8FeaBRQuZ3vgqtyoLl0pU_xFJw41dyShzCm9p-OOPDnIbAcLPy5GQeDhsV0rwOcsXeTWffLxKQqCCa7AwAvyPvpUX0j5yj-erYuRJEQGZkegQ9usn3oyp0mpBSkA',
-    sheetRow: 13,
     prepMinutes: 5,
     cookMinutes: 15,
     serves: 2,
@@ -885,7 +829,7 @@ const pool = [
           { qty: 1, unit: 'jar', text: 'roasted red peppers', tag: 'Pantry' },
           { qty: 2, unit: 'cups', text: 'baby arugula', tag: 'Produce' },
           { qty: 1, text: 'shallot, thinly sliced', tag: 'Produce' },
-          { qty: 1, unit: 'tsp', text: 'ground cumin', tag: 'Spices', staple: true },
+          { qty: 1, unit: 'tsp', text: 'ground cumin', tag: 'Spices' },
         ],
       },
       {
@@ -923,7 +867,6 @@ const pool = [
     shortTitle: 'New York Cheesecake',
     description:
       'Dense, tall and creamy cream-cheese filling with a hint of lemon and vanilla on a buttery graham cracker crust, baked low and slow in a water bath.',
-    sheetRow: 14,
     prepMinutes: 30,
     cookMinutes: 75,
     serves: 12,
@@ -939,7 +882,7 @@ const pool = [
         items: [
           { qty: 1.75, unit: 'cups', text: 'graham cracker crumbs', tag: 'Pantry' },
           { qty: 6, unit: 'tbsp', text: 'unsalted butter, melted', tag: 'Dairy' },
-          { qty: 2, unit: 'tbsp', text: 'granulated sugar', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'granulated sugar', tag: 'Pantry' },
         ],
       },
       {
@@ -947,12 +890,12 @@ const pool = [
         category: 'Dairy & Pantry',
         items: [
           { qty: 32, unit: 'oz', text: 'full-fat cream cheese, at room temperature', tag: 'Dairy' },
-          { qty: 1.25, unit: 'cups', text: 'granulated sugar', tag: 'Pantry', staple: true },
+          { qty: 1.25, unit: 'cups', text: 'granulated sugar', tag: 'Pantry' },
           { qty: 1, unit: 'cup', text: 'sour cream, at room temperature', tag: 'Dairy' },
           { qty: 4, text: 'large eggs, at room temperature', tag: 'Dairy' },
           { qty: 2, unit: 'tsp', text: 'vanilla extract', tag: 'Pantry' },
           { qty: 1, text: 'lemon, zested', tag: 'Produce' },
-          { qty: 2, unit: 'tbsp', text: 'all-purpose flour', tag: 'Pantry', staple: true },
+          { qty: 2, unit: 'tbsp', text: 'all-purpose flour', tag: 'Pantry' },
         ],
       },
       {
