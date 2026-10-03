@@ -10,7 +10,7 @@
 
 import { departments } from '../data/departments.js';
 import { DEFAULT_WEEK_START_DAY, formatWeekday, fromISO, weekStartOf } from '../dates.js';
-import { normalizeAisle, normalizeCategory, normalizeTags } from '../tags.js';
+import { TONES, normalizeAisle, normalizeCategory, normalizeTag, normalizeTags } from '../tags.js';
 import { aisles } from '../data/aisles.js';
 import { mappingKey, tidyName } from '../aisleMap.js';
 import { haveKey } from '../haveList.js';
@@ -446,6 +446,9 @@ export const SCHEMA_VERSION_ROW = { Section: 'Schema', Name: 'Version' };
 /** [Settings] row for the weekday the planner's weeks start on. */
 export const WEEK_STARTS_ON = { Section: 'Preference', Name: 'Week starts on' };
 
+/** [Settings] section for tag colours: one row per tag, Value = the colour's name ("Saffron"). */
+export const TAG_COLOUR_SECTION = 'Tag Colour';
+
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /** Weekday number (0 Sunday … 6 Saturday) for "Monday" / "mon" in any case, or -1. */
@@ -456,7 +459,7 @@ export const parseWeekday = (v) => {
 
 /**
  * The [Settings] rows for the device's settings, keyed for sync.
- * @param {{ aisles: import('../aisleMap.js').AisleMapping[], have?: string[], returnToPlanner?: boolean, weekStartDay?: number }} settings
+ * @param {{ aisles: import('../aisleMap.js').AisleMapping[], have?: string[], tagColors?: Record<string, string>, returnToPlanner?: boolean, weekStartDay?: number }} settings
  * @returns {Map<string, Row>}
  */
 export function settingsToRows(settings) {
@@ -475,6 +478,9 @@ export function settingsToRows(settings) {
     rows.set(settingKey('Aisle', m.name), { Section: 'Aisle', Name: m.name, Value: label });
   }
   for (const name of settings.have ?? []) rows.set(settingKey('Have', name), { Section: 'Have', Name: name, Value: true });
+  for (const [tag, tone] of Object.entries(settings.tagColors ?? {})) {
+    rows.set(settingKey(TAG_COLOUR_SECTION, tag), { Section: TAG_COLOUR_SECTION, Name: tag, Value: tone[0].toUpperCase() + tone.slice(1) });
+  }
   return rows;
 }
 
@@ -485,13 +491,15 @@ export function settingsToRows(settings) {
  * @param {Row[]} rows
  * The sheet's `Schema | Version` comes back as `schemaVersion` (0 when missing or unreadable) so a migration can
  * tell how old the sheet is; the device never overwrites it.
- * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], have: string[], returnToPlanner: boolean, weekStartDay: number, schemaVersion: number }}
+ * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], have: string[], tagColors: Record<string, string>, returnToPlanner: boolean, weekStartDay: number, schemaVersion: number }}
  */
 export function settingsFromRows(rows) {
   /** @type {Map<string, import('../aisleMap.js').AisleMapping>} */
   const found = new Map();
   /** @type {Map<string, string>} */
   const have = new Map();
+  /** @type {Record<string, string>} */
+  const tagColors = {};
   let returnToPlanner = true;
   let weekStartDay = DEFAULT_WEEK_START_DAY;
   let schemaVersion = 0;
@@ -520,10 +528,16 @@ export function settingsFromRows(rows) {
       if (!/^(false|no|n|0|off)$/.test(str(row.Value).toLowerCase())) have.set(haveKey(name), name);
       continue;
     }
+    if (section === TAG_COLOUR_SECTION.toLowerCase()) {
+      const tag = normalizeTag(str(row.Name));
+      const tone = str(row.Value).toLowerCase();
+      if (tag && TONES.includes(tone) && !Object.hasOwn(tagColors, tag)) tagColors[tag] = tone;
+      continue;
+    }
     if (section !== 'aisle') continue;
     const name = tidyName(str(row.Name));
     const tag = parseAisle(row.Value);
     if (name && tag && !found.has(mappingKey(name))) found.set(mappingKey(name), { name, tag });
   }
-  return { aisles: [...found.values()], have: [...have.values()], returnToPlanner, weekStartDay, schemaVersion };
+  return { aisles: [...found.values()], have: [...have.values()], tagColors, returnToPlanner, weekStartDay, schemaVersion };
 }

@@ -6,7 +6,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
 import { migrateNotes } from './markdown.js';
-import { normalizeAisle, normalizeCategory, normalizeTags } from './tags.js';
+import { normalizeAisle, normalizeCategory, normalizeTags, retag } from './tags.js';
 import { aisles } from './data/aisles.js';
 import { findAisleMapping } from './aisleMap.js';
 import { settings } from './settings.svelte.js';
@@ -14,7 +14,7 @@ import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
 
 export { formatMinutes } from './data/recipes.js';
-export { suggestedTags, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX, normalizeCategory, categoryChoices } from './tags.js';
+export { suggestedTags, isSuggestedTag, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX, normalizeCategory, categoryChoices } from './tags.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */
@@ -137,6 +137,46 @@ export function restoreRecipe({ recipe, index }) {
   const at = Math.min(index, recipes.length);
   recipes.splice(at, 0, recipe);
   recipeById.set(recipe.id, recipes[at]);
+  persist();
+}
+
+/**
+ * Renames a tag on every recipe that has it, or removes it when `to` is ''. Samples it touches
+ * are marked edited.
+ * @param {string} from @param {string} to
+ * @returns {Recipe[]} the recipes as they were, for `restoreTagged`
+ */
+export function retagRecipes(from, to) {
+  const before = [];
+  for (const [i, r] of recipes.entries()) {
+    if (!r.tags.includes(from)) continue;
+    before.push($state.snapshot(r));
+    recipes[i] = { ...r, tags: retag(r.tags, from, to), ...(isSample(r.id) && { edited: true }) };
+    recipeById.set(r.id, recipes[i]);
+  }
+  try {
+    persist();
+  } catch (error) {
+    // Roll back so memory matches what's stored.
+    putBack(before);
+    throw error;
+  }
+  return before;
+}
+
+/** @param {Recipe[]} before */
+function putBack(before) {
+  for (const old of before) {
+    const i = recipes.findIndex((r) => r.id === old.id);
+    if (i < 0) continue;
+    recipes[i] = old;
+    recipeById.set(old.id, recipes[i]);
+  }
+}
+
+/** Undo for `retagRecipes` (recipes deleted since are left out). @param {Recipe[]} before */
+export function restoreTagged(before) {
+  putBack(before);
   persist();
 }
 

@@ -1,18 +1,23 @@
 // Profile settings that travel with the household and sync to the [Settings] tab of the
-// Google Sheet: the person's ingredient → aisle mappings, and whether choosing a meal in the
-// catalog returns to the planner. (Per-device preferences such as print options live in their
-// own stores and are never synced.)
+// Google Sheet: the person's ingredient → aisle mappings, ingredients they always have, tag
+// colours, the week start day and whether choosing a meal in the catalog returns to the planner.
+// (Per-device preferences such as print options live in their own stores and are never synced.)
 
 import { storageKey } from './env.js';
 import { mappingKey, tidyName, withMapping } from './aisleMap.js';
 import { withHave, withoutHave } from './haveList.js';
 import { DEFAULT_WEEK_START_DAY, setWeekStartDay as applyWeekStartDay } from './dates.js';
+import { TONES } from './tags.js';
 
 const STORAGE_KEY = storageKey('settings.v1');
+// Tag colours used to be a per-device preference; a device adopts its old ones once.
+const OLD_TAG_COLORS_KEY = storageKey('tagColors.v1');
 
 /** @typedef {import('./aisleMap.js').AisleMapping} AisleMapping */
 
-/** @returns {{ aisles: AisleMapping[], have: string[], returnToPlanner: boolean, weekStartDay: number }} */
+/** @typedef {{ aisles: AisleMapping[], have: string[], tagColors: Record<string, string>, returnToPlanner: boolean, weekStartDay: number }} Settings */
+
+/** @returns {Settings} */
 function load() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null');
@@ -21,6 +26,7 @@ function load() {
         returnToPlanner: saved.returnToPlanner !== false,
         weekStartDay: validDay(saved.weekStartDay),
         have: names(saved.have),
+        tagColors: saved.tagColors ? tones(saved.tagColors) : oldTagColors(),
         aisles: saved.aisles
           .filter((m) => m && typeof m.name === 'string' && typeof m.tag === 'string' && tidyName(m.name))
           .map((m) => ({ name: tidyName(m.name), tag: m.tag })),
@@ -29,7 +35,21 @@ function load() {
   } catch {
     // Start empty.
   }
-  return { aisles: [], have: [], returnToPlanner: true, weekStartDay: DEFAULT_WEEK_START_DAY };
+  return { aisles: [], have: [], tagColors: oldTagColors(), returnToPlanner: true, weekStartDay: DEFAULT_WEEK_START_DAY };
+}
+
+/** Keeps the entries with a known tone. @param {unknown} map @returns {Record<string, string>} */
+const tones = (map) =>
+  map && typeof map === 'object' ? Object.fromEntries(Object.entries(map).filter(([tag, tone]) => tag && TONES.includes(tone))) : {};
+
+function oldTagColors() {
+  try {
+    const old = tones(JSON.parse(localStorage.getItem(OLD_TAG_COLORS_KEY) ?? 'null')?.tones);
+    localStorage.removeItem(OLD_TAG_COLORS_KEY);
+    return old;
+  } catch {
+    return {};
+  }
 }
 
 const names = (list) => (Array.isArray(list) ? list.filter((n) => typeof n === 'string' && tidyName(n)).map(tidyName) : []);
@@ -77,10 +97,11 @@ export function setWeekStartDay(day) {
   applyWeekStartDay(settings.weekStartDay);
 }
 
-/** Replaces the synced settings (used by Google Sheets sync). @param {{ aisles: AisleMapping[], have?: string[], returnToPlanner: boolean, weekStartDay: number }} next */
+/** Replaces the synced settings (used by Google Sheets sync). @param {Omit<Settings, 'have' | 'tagColors'> & Partial<Settings>} next */
 export function replaceSettings(next) {
   settings.aisles = next.aisles;
   settings.have = next.have ?? [];
+  settings.tagColors = next.tagColors ?? {};
   settings.returnToPlanner = next.returnToPlanner;
   setWeekStartDay(next.weekStartDay);
 }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeTag, normalizeTags, tagChoices, assignTones, TONES, TAG_MAX, categoryChoices, normalizeCategory, normalizeAisle } from '../src/lib/tags.js';
+import { normalizeTag, normalizeTags, tagChoices, assignTones, retag, isSuggestedTag, TONES, TAG_MAX, categoryChoices, normalizeCategory, normalizeAisle } from '../src/lib/tags.js';
 
 test('normalizeTag capitalizes each word and tidies spacing', () => {
   assert.equal(normalizeTag('  date   night '), 'Date Night');
@@ -28,14 +28,34 @@ test('tagChoices lists suggestions first, then other tags alphabetically', () =>
 });
 
 test('assignTones hands out colours round-robin and keeps them', () => {
-  const colors = { next: 0, tones: {} };
-  assert.equal(assignTones(colors, ['A', 'B', 'C', 'D', 'E', 'F']), true);
-  assert.deepEqual(Object.values(colors.tones), [...TONES, TONES[0]]);
-  assert.equal(assignTones(colors, ['F', 'A']), false);
-  assignTones(colors, ['Aa']); // sorts before the others but doesn't reshuffle them
-  assert.equal(colors.tones.Aa, TONES[1]);
-  assert.equal(colors.tones.B, TONES[1]);
-  assert.equal(colors.next, 7);
+  const tones = {};
+  assert.equal(assignTones(tones, ['A', 'B', 'C', 'D', 'E', 'F']), true);
+  assert.deepEqual(Object.values(tones), [...TONES, TONES[0]]);
+  assert.equal(assignTones(tones, ['F', 'A']), false);
+  assignTones(tones, ['Aa']); // sorts before the others but doesn't reshuffle them
+  assert.equal(tones.Aa, TONES[1]);
+  assert.equal(tones.B, TONES[1]);
+});
+
+test('assignTones fills the least-used colour after tags are deleted', () => {
+  const tones = { A: 'saffron', B: 'sage', C: 'paprika', D: 'slate', E: 'plum', F: 'saffron', G: 'sage' };
+  delete tones.C;
+  delete tones.E;
+  assignTones(tones, ['X', 'Y', 'Z']);
+  assert.deepEqual([tones.X, tones.Y, tones.Z], ['paprika', 'plum', 'paprika']);
+});
+
+test('retag renames a tag, merges into one already there, or removes it', () => {
+  assert.deepEqual(retag(['Spicy', 'Vegetarian'], 'Spicy', 'Hot'), ['Hot', 'Vegetarian']);
+  assert.deepEqual(retag(['Spicy', 'Hot'], 'Spicy', 'Hot'), ['Hot']);
+  assert.deepEqual(retag(['Hot', 'Spicy'], 'Spicy', 'Hot'), ['Hot']);
+  assert.deepEqual(retag(['Spicy', 'Vegetarian'], 'Spicy', ''), ['Vegetarian']);
+  assert.deepEqual(retag(['Vegetarian'], 'Spicy', 'Hot'), ['Vegetarian']);
+});
+
+test('isSuggestedTag is true only for the built-in tags', () => {
+  assert.equal(isSuggestedTag('Vegetarian'), true);
+  assert.equal(isSuggestedTag('Date Night'), false);
 });
 
 test('categoryChoices lists Dinner, Lunch, Dessert first, then others alphabetically, skipping blanks', () => {
