@@ -377,6 +377,7 @@ export function groceryFromRows(rows, isPlanned) {
     const week = isoDate(row.Week_Of) && weekStartOf(fromISO(isoDate(row.Week_Of)));
     const key = str(row.Line_Key);
     if (!week || !key) continue;
+    if (isGlobalKey(key)) continue;
     const list = (weeks[week] ??= { extras: [], status: {}, custom: [] });
     list.status[key] = parseStatus(row.Status);
     if (isIngredientKey(key)) {
@@ -386,6 +387,41 @@ export function groceryFromRows(rows, isPlanned) {
     }
   }
   return weeks;
+}
+
+/** Global (every-week) custom items have keys like `global:<id>`. */
+export const isGlobalKey = (key) => key.startsWith('global:');
+
+/**
+ * Rebuilds the every-week items from provisions rows. A global item has a row in each week it shows in; one
+ * that is bought / on hand in a row's week was acquired there.
+ * @param {Row[]} rows
+ * @returns {import('../grocery.svelte.js').GlobalItem[]}
+ */
+export function globalFromRows(rows) {
+  /** @type {Map<string, import('../grocery.svelte.js').GlobalItem>} */
+  const items = new Map();
+  for (const row of rows) {
+    const week = isoDate(row.Week_Of) && weekStartOf(fromISO(isoDate(row.Week_Of)));
+    const key = str(row.Line_Key);
+    if (!week || !isGlobalKey(key)) continue;
+    const status = parseStatus(row.Status);
+    const item = items.get(key);
+    if (!item) {
+      items.set(key, {
+        id: key,
+        name: str(row.Item) || 'Item',
+        note: str(row.Detail),
+        dept: parseDept(row.Department),
+        status,
+        doneWeek: status === 'need' ? '' : week,
+      });
+    } else if (status !== 'need' && item.status === 'need') {
+      item.status = status;
+      item.doneWeek = week;
+    }
+  }
+  return [...items.values()];
 }
 
 // ---- Settings ---------------------------------------------------------------

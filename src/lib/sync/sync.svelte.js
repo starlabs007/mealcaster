@@ -19,6 +19,7 @@ import { showToast } from '../toast.svelte.js';
 import { storageKey } from '../env.js';
 import {
   groceryFromRows,
+  globalFromRows,
   planEntryHasContent,
   planFromRow,
   planToRow,
@@ -194,14 +195,14 @@ const device = {
         const recipeId = key.split(':')[0];
         return weekDates(week).some((iso) => planner.entries[iso]?.recipeId === recipeId && statusOf(iso) === 'planned');
       };
-      replaceGrocery(groceryFromRows([...final.values()], isPlanned));
+      replaceGrocery(groceryFromRows([...final.values()], isPlanned), globalFromRows([...final.values()]));
     }
   },
 };
 
 /** Everything a sync pass looks at, as one string — to notice edits. */
 const deviceFingerprint = () =>
-  JSON.stringify([recipes, favorites.ids, planner.entries, grocery.weeks, settings, syncedTabs(), sheets.direction]);
+  JSON.stringify([recipes, favorites.ids, planner.entries, grocery.weeks, grocery.global, settings, syncedTabs(), sheets.direction]);
 
 // ---- Sync passes ----------------------------------------------------------------
 

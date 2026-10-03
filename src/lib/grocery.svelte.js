@@ -5,7 +5,9 @@
 //     "ingredients I have" list (settings).
 //  2. Pushed — ingredients sent from a Recipe Detail page ("Add to List" /
 //     "Push Unchecked to Grocery"), even for recipes not on the plan.
-//  3. Custom — free-text items added on the grocery screen.
+//  3. Custom — free-text items added on the grocery screen, for one week or (global) for every week.
+//     A global item shows in every week until it is bought / marked on hand; from then on it shows only in
+//     the week it was acquired in (as acquired) and disappears from the other weeks.
 //
 // Each line is 'need' (to buy), 'bought' (checked off) or 'owned' (already on hand).
 // Ingredient keys are `${recipeId}:${groupIndex}:${itemIndex}`.
@@ -22,11 +24,13 @@ import { isHave } from './haveList.js';
 
 const STORAGE_KEY = storageKey('grocery.v2');
 const LEGACY_KEY = storageKey('groceryExtras.v1');
+const GLOBAL_KEY = storageKey('groceryGlobal.v1');
 
 /**
  * @typedef {'need' | 'bought' | 'owned'} LineStatus
  * @typedef {'produce' | 'meat' | 'dairy' | 'pantry' | 'other'} Dept
  * @typedef {{ id: string, name: string, note: string, dept: Dept }} CustomItem
+ * @typedef {CustomItem & { status: LineStatus, doneWeek: string }} GlobalItem  `doneWeek` is the week it was acquired in ('' while still to buy)
  * @typedef {{ extras: string[], status: Record<string, LineStatus>, custom: CustomItem[] }} WeekList
  * @typedef {{
  *   key: string,
@@ -37,6 +41,7 @@ const LEGACY_KEY = storageKey('groceryExtras.v1');
  *   source: { label: string, tone: string },
  *   recipeId?: string,
  *   custom?: boolean,
+ *   global?: boolean,
  * }} GroceryLine
  */
 
@@ -78,14 +83,26 @@ function load() {
   return {};
 }
 
-/** @type {{ weeks: Record<string, WeekList> }} */
-export const grocery = $state({ weeks: load() });
+function loadGlobal() {
+  try {
+    const raw = localStorage.getItem(GLOBAL_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    // Start empty.
+  }
+  return [];
+}
+
+/** @type {{ weeks: Record<string, WeekList>, global: GlobalItem[] }} */
+export const grocery = $state({ weeks: load(), global: loadGlobal() });
 
 $effect.root(() => {
   $effect(() => {
     const json = JSON.stringify(grocery.weeks);
+    const globalJson = JSON.stringify(grocery.global);
     try {
       localStorage.setItem(STORAGE_KEY, json);
+      localStorage.setItem(GLOBAL_KEY, globalJson);
     } catch {
       // In-memory only.
     }
@@ -173,6 +190,20 @@ function buildWeek(weekStart) {
       custom: true,
     });
   }
+  for (const g of grocery.global) {
+    // Acquired in another week: gone from this one.
+    if (g.status !== 'need' && g.doneWeek !== weekStart) continue;
+    lines.set(g.id, {
+      key: g.id,
+      name: g.name,
+      detail: g.note,
+      dept: g.dept,
+      status: g.status,
+      source: { label: 'Standing item', tone: 'neutral' },
+      custom: true,
+      global: true,
+    });
+  }
   return { lines: [...lines.values()], hidden };
 }
 
@@ -199,22 +230,34 @@ export function addToGrocery(keys) {
 
 /** @param {string} key @param {LineStatus} status */
 export function setLineStatus(key, status) {
+  const g = grocery.global.find((i) => i.id === key);
+  if (g) {
+    g.status = status;
+    g.doneWeek = status === 'need' ? '' : planner.weekStart;
+    return;
+  }
   weekList().status[key] = status;
 }
 
-/** @param {{ name: string, note: string, dept: Dept }} item */
-export function addCustomItem(item) {
-  weekList().custom.push({ id: `custom:${Date.now()}`, ...item });
+/** @param {{ name: string, note: string, dept: Dept }} item @param {boolean} [everyWeek] show it in every week, not just the viewed one */
+export function addCustomItem(item, everyWeek = false) {
+  if (everyWeek) grocery.global.push({ id: `global:${Date.now()}`, ...item, status: 'need', doneWeek: '' });
+  else weekList().custom.push({ id: `custom:${Date.now()}`, ...item });
 }
 
 /** @param {string} id */
 export function removeCustomItem(id) {
+  if (id.startsWith('global:')) {
+    grocery.global = grocery.global.filter((g) => g.id !== id);
+    return;
+  }
   const week = weekList();
   week.custom = week.custom.filter((c) => c.id !== id);
   delete week.status[id];
 }
 
-/** Replaces every week's list (used by Google Sheets sync). @param {Record<string, WeekList>} weeks */
-export function replaceGrocery(weeks) {
+/** Replaces every week's list (used by Google Sheets sync). @param {Record<string, WeekList>} weeks @param {GlobalItem[]} [global] */
+export function replaceGrocery(weeks, global = grocery.global) {
   grocery.weeks = weeks;
+  grocery.global = global;
 }

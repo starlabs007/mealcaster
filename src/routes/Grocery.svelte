@@ -30,7 +30,7 @@
   let aisle = $state('all');
   let showOnHand = $state(true);
   let adding = $state(false);
-  let draft = $state({ name: '', note: '', aisle: 'Produce' });
+  let draft = $state({ name: '', note: '', aisle: 'Produce', everyWeek: false });
   // The aisle follows the item's name (your Profile mappings first) until you pick one yourself.
   let aislePicked = false;
   const guessDraftAisle = () => {
@@ -79,9 +79,9 @@
     event.preventDefault();
     const name = draft.name.trim();
     if (!name) return;
-    addCustomItem({ name, note: draft.note.trim(), dept: deptOfTag(draft.aisle) });
+    addCustomItem({ name, note: draft.note.trim(), dept: deptOfTag(draft.aisle) }, draft.everyWeek);
     showToast(`Added ${name} to your list.`);
-    draft = { name: '', note: '', aisle: draft.aisle };
+    draft = { name: '', note: '', aisle: draft.aisle, everyWeek: draft.everyWeek };
     aislePicked = false;
   }
 
@@ -274,6 +274,17 @@
         </select>
       </label>
       <button type="submit" class="btn-primary py-2.5">Add to List</button>
+      <fieldset class="flex flex-wrap gap-x-5 gap-y-1 text-body-sm text-on-surface sm:col-span-full">
+        <legend class="sr-only">Which weeks</legend>
+        <label class="flex items-center gap-2">
+          <input type="radio" name="item-weeks" checked={!draft.everyWeek} onchange={() => (draft.everyWeek = false)} class="accent-primary-container" />
+          Just {weekName}
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="radio" name="item-weeks" checked={draft.everyWeek} onchange={() => (draft.everyWeek = true)} class="accent-primary-container" />
+          Standing item <span class="text-on-surface-variant">— until you buy it or mark it on hand</span>
+        </label>
+      </fieldset>
     </form>
   {/if}
 

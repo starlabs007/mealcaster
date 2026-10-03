@@ -99,7 +99,8 @@ The `Category` column holds it; blank means none.
   and lists them with the dinner they belong to.
 - Tap the circle when bought and the box icon if you already have it; either way the item moves to the
   **Already On Hand / Acquired** ledger and the aisle counters update.
-- **Add Item** for anything extra, **Share** (native share sheet or clipboard), **Print Kitchen
+- **Add Item** for anything extra, for just the viewed week or as a **Standing item** shown in every week until it is
+  bought or marked on hand (then it stays only in that week's Acquired list), **Share** (native share sheet or clipboard), **Print Kitchen
   Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.
 
@@ -174,6 +175,7 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
 | `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
+| `mealcaster.groceryGlobal.v1` | Standing items: `global:` rows in `[Provisions]`, one per week they show in |
 | `mealcaster.settings.v1` | `[Settings]` tab: Profile preferences, aisle mappings and ingredients I have |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
