@@ -9,8 +9,9 @@
     setLineStatus,
     addCustomItem,
     removeCustomItem,
+    grocery,
   } from '../lib/grocery.svelte.js';
-  import { aisles, guessAisle } from '../lib/recipes.svelte.js';
+  import { aisles, guessAisle, recipes } from '../lib/recipes.svelte.js';
   import { planner, currentWeek, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { addDays, formatRange, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
@@ -36,6 +37,19 @@
   const guessDraftAisle = () => {
     if (!aislePicked && draft.name.trim()) draft.aisle = guessAisle(draft.name);
   };
+
+  // Autocomplete for the Item field: items added before (any week, standing ones too), then every recipe ingredient.
+  const itemNames = $derived.by(() => {
+    const seen = new Map();
+    const add = (t) => {
+      const name = (t ?? '').trim();
+      if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name);
+    };
+    for (const w of Object.values(grocery.weeks)) for (const c of w.custom) add(c.name);
+    for (const g of grocery.global) add(g.name);
+    for (const r of recipes) for (const grp of r.ingredients ?? []) for (const i of grp.items ?? []) add(i.text);
+    return [...seen.values()].sort((a, b) => a.localeCompare(b));
+  });
 
   const offset = $derived(weekOffset());
   /** "this week", "next week", "last week" or "the week of Oct 10" */
@@ -243,6 +257,9 @@
       onsubmit={addItem}
       class="grid grid-cols-1 gap-3 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 shadow-card sm:grid-cols-[2fr_2fr_1.3fr_auto] sm:items-end"
     >
+      <datalist id="grocery-item-names">
+        {#each itemNames as n (n)}<option value={n}></option>{/each}
+      </datalist>
       <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
         Item
         <!-- svelte-ignore a11y_autofocus -->
@@ -251,6 +268,8 @@
           autofocus
           bind:value={draft.name}
           oninput={guessDraftAisle}
+          list="grocery-item-names"
+          autocomplete="off"
           placeholder="e.g. Sparkling water"
           class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         />
