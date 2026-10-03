@@ -207,15 +207,10 @@
           <span class="inline-flex items-center gap-1 rounded-full bg-secondary-fixed/60 px-2.5 py-1 text-label-sm text-secondary">
             <Icon name="family_restroom" class="text-[13px]" /> Custom recipe · saved on this device
           </span>
-        {:else}
-          <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-label-sm text-on-surface-variant">
-            <Icon name="table_chart" class="text-[13px]" /> Row {recipe.sheetRow} in [Recipes] sheet
+        {:else if recipe.edited}
+          <span class="inline-flex items-center gap-1 rounded-full bg-secondary-fixed/60 px-2.5 py-1 text-label-sm text-secondary">
+            <Icon name="edit" class="text-[13px]" /> Edited on this device
           </span>
-          {#if recipe.edited}
-            <span class="inline-flex items-center gap-1 rounded-full bg-secondary-fixed/60 px-2.5 py-1 text-label-sm text-secondary">
-              <Icon name="edit" class="text-[13px]" /> Edited on this device
-            </span>
-          {/if}
         {/if}
       </div>
       <h1 class="max-w-4xl font-display text-headline-xl-mobile text-primary md:text-headline-xl">{recipe.title}</h1>

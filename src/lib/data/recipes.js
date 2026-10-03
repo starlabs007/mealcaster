@@ -12,7 +12,6 @@
  *   description: string,
  *   image?: string,
  *   hero?: string,
- *   sheetRow?: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
  *   minutes: number,
@@ -36,7 +35,6 @@ const pool = [
     shortTitle: 'Pan-Seared Crispy Salmon',
     description:
       'A restaurant-caliber weeknight centerpiece featuring golden, crackling wild salmon resting on a creamy arborio risotto brightened with fresh Meyer lemon zest and finished with blistered spring asparagus.',
-    sheetRow: 14,
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 2,
@@ -115,7 +113,6 @@ const pool = [
     shortTitle: 'Poblano Enchiladas',
     description:
       'Rolled corn tortillas with black beans, fire-roasted poblanos, and tangy tomatillo salsa verde, finished with lime cilantro crema.',
-    sheetRow: 7,
     prepMinutes: 20,
     cookMinutes: 30,
     serves: 4,
@@ -186,7 +183,6 @@ const pool = [
     shortTitle: 'Tuscan Sausage Ragù',
     description:
       'A rustic, slow-simmered ragù of fennel sausage, creamy cannellini beans and San Marzano tomatoes clinging to ridged rigatoni under a snowfall of pecorino.',
-    sheetRow: 9,
     prepMinutes: 15,
     cookMinutes: 45,
     serves: 4,
@@ -248,7 +244,6 @@ const pool = [
     shortTitle: 'Sourdough Pizza Night',
     description:
       'Blistered, chewy sourdough crusts topped with bright crushed tomato, torn burrata, basil and a drizzle of chili-spiked hot honey.',
-    sheetRow: 11,
     prepMinutes: 15,
     cookMinutes: 25,
     serves: 4,
@@ -308,7 +303,6 @@ const pool = [
     shortTitle: 'Miso-Glazed Eggplant',
     description:
       'Silky broiled eggplant lacquered in a sweet-savory white miso glaze over sesame jasmine rice with crunchy quick-pickled cucumbers.',
-    sheetRow: 15,
     prepMinutes: 15,
     cookMinutes: 20,
     serves: 2,
@@ -364,7 +358,6 @@ const pool = [
     shortTitle: 'Coconut Red Lentil Dal',
     description:
       'A golden, velvety one-pot dal simmered with coconut milk and ginger, finished with a sizzling cumin-seed tadka and warm garlic naan.',
-    sheetRow: 8,
     prepMinutes: 5,
     cookMinutes: 20,
     serves: 4,
@@ -420,7 +413,6 @@ const pool = [
     shortTitle: 'Lemon Herb Salmon',
     description:
       'Crisp golden-crusted fillet with tenderstem asparagus, caper-dill emulsion, and sea-salt roasted baby red potatoes.',
-    sheetRow: 2,
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 2,
@@ -482,7 +474,6 @@ const pool = [
     shortTitle: 'Tomato & White Bean Stew',
     description:
       'Slow-simmered San Marzano tomatoes, buttery cannellini beans, wilted Tuscan kale, and fresh rosemary with garlic-rubbed toast.',
-    sheetRow: 3,
     prepMinutes: 10,
     cookMinutes: 25,
     serves: 4,
@@ -538,7 +529,6 @@ const pool = [
     shortTitle: 'Sheet-Pan Lemon Chicken',
     description:
       'Crispy bone-in chicken thighs roasted alongside fingerling potatoes, blistered broccoli florets, and Dijon-herb marinade.',
-    sheetRow: 4,
     prepMinutes: 10,
     cookMinutes: 30,
     serves: 4,
@@ -593,7 +583,6 @@ const pool = [
     shortTitle: 'Butternut Squash Rigatoni',
     description:
       'Velvety roasted squash sauce, fragrant fried mountain sage, freshly cracked nutmeg, toasted walnuts, and aged sheep’s milk pecorino.',
-    sheetRow: 5,
     prepMinutes: 10,
     cookMinutes: 20,
     serves: 4,
@@ -649,7 +638,6 @@ const pool = [
     shortTitle: 'Sesame Ginger Soba',
     description:
       'Buckwheat noodles in toasted sesame tamari emulsion, tossed with snap peas, julienned radishes, fresh cilantro, and chili oil.',
-    sheetRow: 6,
     prepMinutes: 7,
     cookMinutes: 8,
     serves: 2,
@@ -705,7 +693,6 @@ const pool = [
     shortTitle: 'Red Wine Short Ribs',
     description:
       'Melt-in-your-mouth bone-in beef braised with mirepoix and Chianti, served over mascarpone corn polenta with zest gremolata.',
-    sheetRow: 10,
     prepMinutes: 30,
     cookMinutes: 180,
     serves: 6,
@@ -768,7 +755,6 @@ const pool = [
     shortTitle: 'Chicken Souvlaki Bowls',
     description:
       'Oregano grilled chicken tenderloins with cooling cucumber-dill tzatziki, Kalamata olives, sumac-pickled onions, and warm pita.',
-    sheetRow: 12,
     prepMinutes: 10,
     cookMinutes: 15,
     serves: 4,
@@ -825,7 +811,6 @@ const pool = [
     shortTitle: 'Crispy Chickpea Bowl',
     description:
       'Cumin-roasted chickpeas on fluffy quinoa with roasted red peppers, baby arugula, pickled shallots, and lemon-parsley tahini dressing.',
-    sheetRow: 13,
     prepMinutes: 5,
     cookMinutes: 15,
     serves: 2,
@@ -882,7 +867,6 @@ const pool = [
     shortTitle: 'New York Cheesecake',
     description:
       'Dense, tall and creamy cream-cheese filling with a hint of lemon and vanilla on a buttery graham cracker crust, baked low and slow in a water bath.',
-    sheetRow: 14,
     prepMinutes: 30,
     cookMinutes: 75,
     serves: 12,
