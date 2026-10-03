@@ -988,18 +988,18 @@
       </div>
 
       <!-- Action bar -->
-      <div class="sticky bottom-4 z-10 flex flex-col gap-3 rounded-2xl bg-surface-container-lowest/95 px-4 py-3 shadow-lift backdrop-blur lg:col-span-12 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <button type="button" class="btn whitespace-nowrap border border-secondary/50 bg-transparent px-4 py-2 text-body-md text-secondary hover:bg-secondary/10" onclick={discard}>
+      <div class="z-10 grid grid-cols-2 gap-3 sm:sticky sm:bottom-4 sm:flex sm:flex-row sm:items-center sm:justify-between rounded-2xl bg-surface-container-lowest/95 px-4 py-3 shadow-lift backdrop-blur lg:col-span-12 sm:px-6">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1 max-sm:contents">
+          <button type="button" class="btn justify-center whitespace-nowrap max-sm:order-2 {editing?.edited ? '' : 'max-sm:col-span-2'} border border-secondary/50 bg-transparent px-4 py-2 text-body-md text-secondary hover:bg-secondary/10" onclick={discard}>
             <Icon name="delete_sweep" class="text-[18px]" />
             {editing ? 'Discard Changes' : 'Discard Draft'}
           </button>
           {#if editing?.edited}
-            <button type="button" class="inline-flex items-center gap-1 text-body-md text-on-surface-variant hover:text-secondary" onclick={revert}>
+            <button type="button" class="inline-flex items-center justify-center gap-1 text-body-md text-on-surface-variant hover:text-secondary max-sm:order-2 max-sm:rounded-full max-sm:border max-sm:border-outline-variant max-sm:px-4 max-sm:py-2" onclick={revert}>
               <Icon name="restore" class="text-[18px]" /> Revert to Original
             </button>
           {/if}
-          <span class="flex items-center gap-1.5 text-body-sm text-outline">
+          <span class="flex items-center gap-1.5 text-body-sm text-outline max-sm:order-3 max-sm:col-span-2 max-sm:justify-center">
             <Icon name="cloud_off" class="text-[16px]" />
             {#if editing}
               Changes are saved on this device
@@ -1008,13 +1008,13 @@
             {/if}
           </span>
         </div>
-        <div class="flex items-center justify-end gap-2">
+        <div class="flex items-center justify-end gap-2 max-sm:order-1 max-sm:col-span-2">
           {#if !editing}
-            <button type="button" class="btn whitespace-nowrap bg-surface-container-high px-4 py-2 text-body-md text-on-surface hover:bg-surface-dim" onclick={saveDraft}>
+            <button type="button" class="btn justify-center whitespace-nowrap max-sm:flex-1 bg-surface-container-high px-4 py-2 text-body-md text-on-surface hover:bg-surface-dim" onclick={saveDraft}>
               Save Draft
             </button>
           {/if}
-          <button type="submit" class="btn-primary whitespace-nowrap px-5 py-2 text-body-md">
+          <button type="submit" class="btn-primary justify-center whitespace-nowrap max-sm:flex-1 px-5 py-2 text-body-md">
             <Icon name="save" class="text-[18px]" /> {editing ? 'Save Changes' : 'Save Recipe'}
           </button>
         </div>

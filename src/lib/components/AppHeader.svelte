@@ -74,13 +74,13 @@
         onclick={(event) => onTabClick(event, tab)}
         aria-current={tab.id === active ? 'page' : undefined}
         title={tab.id === 'sheets-sync' ? `Google Sheets: ${sheetsLook.short}` : undefined}
-        class="whitespace-nowrap rounded-lg px-4 py-2 text-label-md transition-all {tabClass(tab)}"
+        class="whitespace-nowrap rounded-lg py-2 text-label-md transition-all {tab.id === 'sheets-sync' ? 'px-3 sm:px-4' : 'px-4'} {tabClass(tab)}"
       >
         <span class="inline-flex items-center gap-1.5">
           {#if tab.id === 'sheets-sync'}
-            <Icon name={sheetsLook.icon} class="text-[16px] {sheetsLook.tone === 'busy' ? 'animate-spin' : ''}" />
+            <Icon name={sheetsLook.icon} class="text-[16px] max-sm:text-[20px] {sheetsLook.tone === 'busy' ? 'animate-spin' : ''}" />
           {/if}
-          {tab.label}
+          <span class={tab.id === 'sheets-sync' ? 'max-sm:sr-only' : ''}>{tab.label}</span>
           {#if tab.id === 'sheets-sync'}<span class="sr-only">({sheetsLook.short})</span>{/if}
         </span>
       </a>
