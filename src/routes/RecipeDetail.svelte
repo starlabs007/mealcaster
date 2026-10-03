@@ -377,6 +377,7 @@
           </div>
         </section>
 
+        {#if recipe.steps.length}
         <section>
           <div class="mb-4 flex items-center justify-between">
             <h2 class="flex items-center gap-2 font-display text-headline-md text-on-surface">
@@ -409,6 +410,7 @@
             {/each}
           </ol>
         </section>
+        {/if}
       </div>
     </div>
 
