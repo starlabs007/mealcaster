@@ -17,7 +17,6 @@ export { SCHEMA };
  *   photosFolderId: string,
  *   tabs: { weeklyPlan: string, recipes: string, provisions: string, settings: string },
  *   syncProvisions: boolean,
- *   syncSettings: boolean,
  *   autoDetect: boolean,
  *   direction: SyncDirection,
  *   instantPush: boolean,
@@ -50,7 +49,6 @@ export const defaultSettings = () => ({
   photosFolderId: '',
   tabs: { weeklyPlan: 'WeeklyPlan', recipes: 'Recipes', provisions: 'Provisions', settings: 'Settings' },
   syncProvisions: true,
-  syncSettings: true,
   autoDetect: true,
   direction: 'bidirectional',
   instantPush: true,
@@ -66,7 +64,7 @@ function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
-      const saved = JSON.parse(raw);
+      const { syncSettings: _retired, ...saved } = JSON.parse(raw); // the Settings tab is no longer optional
       return { ...defaults, ...saved, tabs: { ...defaults.tabs, ...saved.tabs } };
     }
   } catch {

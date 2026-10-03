@@ -14,6 +14,7 @@ import { normalizeAisle, normalizeCategory, normalizeTags } from '../tags.js';
 import { aisles } from '../data/aisles.js';
 import { mappingKey, tidyName } from '../aisleMap.js';
 import { haveKey } from '../haveList.js';
+import { SCHEMA_VERSION } from '../schema.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -376,6 +377,7 @@ export function groceryFromRows(rows, isPlanned) {
     const week = isoDate(row.Week_Of) && weekStartOf(fromISO(isoDate(row.Week_Of)));
     const key = str(row.Line_Key);
     if (!week || !key) continue;
+    if (isGlobalKey(key)) continue;
     const list = (weeks[week] ??= { extras: [], status: {}, custom: [] });
     list.status[key] = parseStatus(row.Status);
     if (isIngredientKey(key)) {
@@ -385,6 +387,41 @@ export function groceryFromRows(rows, isPlanned) {
     }
   }
   return weeks;
+}
+
+/** Global (every-week) custom items have keys like `global:<id>`. */
+export const isGlobalKey = (key) => key.startsWith('global:');
+
+/**
+ * Rebuilds the every-week items from provisions rows. A global item has a row in each week it shows in; one
+ * that is bought / on hand in a row's week was acquired there.
+ * @param {Row[]} rows
+ * @returns {import('../grocery.svelte.js').GlobalItem[]}
+ */
+export function globalFromRows(rows) {
+  /** @type {Map<string, import('../grocery.svelte.js').GlobalItem>} */
+  const items = new Map();
+  for (const row of rows) {
+    const week = isoDate(row.Week_Of) && weekStartOf(fromISO(isoDate(row.Week_Of)));
+    const key = str(row.Line_Key);
+    if (!week || !isGlobalKey(key)) continue;
+    const status = parseStatus(row.Status);
+    const item = items.get(key);
+    if (!item) {
+      items.set(key, {
+        id: key,
+        name: str(row.Item) || 'Item',
+        note: str(row.Detail),
+        dept: parseDept(row.Department),
+        status,
+        doneWeek: status === 'need' ? '' : week,
+      });
+    } else if (status !== 'need' && item.status === 'need') {
+      item.status = status;
+      item.doneWeek = week;
+    }
+  }
+  return [...items.values()];
 }
 
 // ---- Settings ---------------------------------------------------------------
@@ -402,6 +439,9 @@ export function parseAisle(v) {
 
 /** [Settings] row for "go back to the planner after choosing a meal". */
 export const RETURN_TO_PLANNER = { Section: 'Preference', Name: 'Return to planner after choosing a meal' };
+
+/** [Settings] row holding the schema version the sheet was written with. */
+export const SCHEMA_VERSION_ROW = { Section: 'Schema', Name: 'Version' };
 
 /** [Settings] row for the weekday the planner's weeks start on. */
 export const WEEK_STARTS_ON = { Section: 'Preference', Name: 'Week starts on' };
@@ -421,6 +461,7 @@ export const parseWeekday = (v) => {
  */
 export function settingsToRows(settings) {
   const rows = new Map();
+  rows.set(settingKey(SCHEMA_VERSION_ROW.Section, SCHEMA_VERSION_ROW.Name), { ...SCHEMA_VERSION_ROW, Value: SCHEMA_VERSION });
   rows.set(settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name), {
     ...RETURN_TO_PLANNER,
     Value: settings.returnToPlanner ?? true,
@@ -442,7 +483,9 @@ export function settingsToRows(settings) {
  * can't read, are ignored here and left alone in the sheet; a preference with no readable row
  * takes its default.
  * @param {Row[]} rows
- * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], have: string[], returnToPlanner: boolean, weekStartDay: number }}
+ * The sheet's `Schema | Version` comes back as `schemaVersion` (0 when missing or unreadable) so a migration can
+ * tell how old the sheet is; the device never overwrites it.
+ * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], have: string[], returnToPlanner: boolean, weekStartDay: number, schemaVersion: number }}
  */
 export function settingsFromRows(rows) {
   /** @type {Map<string, import('../aisleMap.js').AisleMapping>} */
@@ -451,6 +494,7 @@ export function settingsFromRows(rows) {
   const have = new Map();
   let returnToPlanner = true;
   let weekStartDay = DEFAULT_WEEK_START_DAY;
+  let schemaVersion = 0;
   const weekKey = settingKey(WEEK_STARTS_ON.Section, WEEK_STARTS_ON.Name);
   const returnKey = settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name);
   for (const row of rows) {
@@ -461,6 +505,13 @@ export function settingsFromRows(rows) {
         returnToPlanner = /^(true|yes|y|1|on)$/.test(value);
       }
       if (settingKey(row.Section, row.Name) === weekKey && parseWeekday(row.Value) >= 0) weekStartDay = parseWeekday(row.Value);
+      continue;
+    }
+    if (section === 'schema') {
+      if (settingKey(row.Section, row.Name) === settingKey(SCHEMA_VERSION_ROW.Section, SCHEMA_VERSION_ROW.Name)) {
+        const n = Number.parseInt(str(row.Value), 10);
+        if (n > 0) schemaVersion = n;
+      }
       continue;
     }
     if (section === 'have') {
@@ -474,5 +525,5 @@ export function settingsFromRows(rows) {
     const tag = parseAisle(row.Value);
     if (name && tag && !found.has(mappingKey(name))) found.set(mappingKey(name), { name, tag });
   }
-  return { aisles: [...found.values()], have: [...have.values()], returnToPlanner, weekStartDay };
+  return { aisles: [...found.values()], have: [...have.values()], returnToPlanner, weekStartDay, schemaVersion };
 }

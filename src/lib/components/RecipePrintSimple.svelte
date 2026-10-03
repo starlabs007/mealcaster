@@ -44,6 +44,7 @@
     {/each}
   </section>
 
+  {#if recipe.steps.length}
   <section>
     <h2 class="mb-[0.4em] mt-[1.1em] break-after-avoid font-display text-[1.6em] font-bold leading-tight">Method</h2>
     <ol>
@@ -57,6 +58,7 @@
       {/each}
     </ol>
   </section>
+  {/if}
 
   {#if recipe.notes?.trim()}
     <section class="break-inside-avoid">

@@ -14,9 +14,9 @@
    *   isPast: boolean,
    *   status: import('../planner.svelte.js').DayStatus,
    *   recipe?: import('../data/recipes.js').Recipe,
-   * } }}
+   * }, minimal?: boolean }}
    */
-  let { day } = $props();
+  let { day, minimal = false } = $props();
 
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
@@ -37,14 +37,14 @@
 <article
   id="day-{day.iso}"
   aria-label="{weekdayName} {formatShort(day.iso)}{day.isToday ? ' (today)' : ''}"
-  class="flex flex-col gap-4 rounded-xl p-4 transition-all sm:flex-row md:p-5 {hasMeal ? '' : 'sm:items-center'} {cardClass} {spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : ''}"
+  class="flex flex-col rounded-xl transition-all sm:flex-row {minimal ? 'gap-3 p-3 sm:items-center' : 'gap-4 p-4'} {minimal ? '' : 'md:p-5'} {hasMeal && !minimal ? '' : 'sm:items-center'} {cardClass} {spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : ''}"
 >
   {#if day.isToday}
     <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
   {/if}
 
   <!-- Day label column -->
-  <div class="flex flex-shrink-0 items-start justify-between gap-1 sm:w-36 sm:flex-col sm:self-stretch {day.isToday ? 'pl-1' : ''}">
+  <div class="flex flex-shrink-0 items-start justify-between gap-1 sm:w-36 sm:flex-col {minimal ? '' : 'sm:self-stretch'} {day.isToday ? 'pl-1' : ''}">
     <div>
       <div
         class="text-sm uppercase tracking-wide {day.isToday
@@ -53,10 +53,14 @@
       >
         {weekdayName}
       </div>
-      <div class="font-display text-on-surface {day.isToday ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</div>
+      {#if !minimal}
+        <div class="font-display text-on-surface {day.isToday ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</div>
+      {/if}
     </div>
 
-    {#if day.isToday}
+    {#if minimal}
+      <!-- Minimal view: just the weekday, image, title and tags. -->
+    {:else if day.isToday}
       <span class="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-label-sm text-on-primary shadow-sm">• TODAY</span>
     {:else if day.status === 'completed'}
       <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
@@ -74,22 +78,23 @@
   {#if hasMeal && day.recipe}
     {@const recipe = day.recipe}
     {@const emphasized = day.isToday || day.status === 'planned'}
-    <div class="flex flex-1 flex-col items-start gap-4 sm:flex-row sm:items-center">
+    <div class="flex flex-1 {minimal ? 'flex-row items-center gap-3' : 'flex-col items-start gap-4 sm:flex-row sm:items-center'}">
       <RecipeImage
         src={recipe.image}
         alt={recipe.title}
-        class="w-full flex-shrink-0 rounded-lg {emphasized ? 'h-40 shadow-sm sm:h-28 sm:w-32' : 'h-32 sm:h-24 sm:w-28'}"
+        class="flex-shrink-0 rounded-lg {minimal ? 'h-12 w-12' : 'w-full'} {minimal ? '' : emphasized ? 'h-40 shadow-sm sm:h-28 sm:w-32' : 'h-32 sm:h-24 sm:w-28'}"
       />
       <div class="min-w-0 flex-1">
-        <h3 class="font-display text-on-surface {emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
-        <p class="mt-1 text-xs text-on-surface-variant">{[recipe.badge.label, `${recipe.prepMinutes + recipe.cookMinutes} min`, `Serves ${recipe.serves}`].filter(Boolean).join(' · ')}</p>
+        <h3 class="font-display text-on-surface {minimal ? 'truncate text-sm' : emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
+        {#if !minimal}<p class="mt-1 text-xs text-on-surface-variant">{[recipe.badge.label, `${recipe.prepMinutes + recipe.cookMinutes} min`, `Serves ${recipe.serves}`].filter(Boolean).join(' · ')}</p>{/if}
         {#if recipe.tags.length}
-          <div class="mt-2 flex flex-wrap gap-1.5">
+          <div class="flex flex-wrap gap-1.5 {minimal ? 'mt-1' : 'mt-2'}">
             {#each recipe.tags as tag (tag)}
               <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
             {/each}
           </div>
         {/if}
+        {#if !minimal}
         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <a
             href={href(`/recipe/${recipe.id}`, { day: day.iso })}
@@ -124,7 +129,22 @@
             </button>
           {/if}
         </div>
+        {/if}
       </div>
+      {#if minimal}
+        <a
+          href={href(`/recipe/${recipe.id}`, { day: day.iso })}
+          aria-label="View recipe: {recipe.title}"
+          title="View Recipe"
+          class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md transition-all {day.isToday
+            ? 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'
+            : day.status === 'planned'
+              ? 'bg-surface-container-high text-on-surface hover:bg-surface-dim'
+              : 'text-primary hover:bg-primary-fixed/50'}"
+        >
+          <Icon name="arrow_forward" class="text-[20px]" />
+        </a>
+      {/if}
     </div>
   {:else}
     <div class="flex w-full flex-1 flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
@@ -134,19 +154,21 @@
         </div>
         <div>
           {#if day.status === 'diningOut'}
-            <h3 class="font-display text-base text-on-surface">Dining out or leftovers</h3>
-            <p class="mt-0.5 text-xs text-on-surface-variant">A night off from the stove — nothing to prep or shop for.</p>
+            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">Dining out or leftovers</h3>
+            {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">A night off from the stove — nothing to prep or shop for.</p>{/if}
           {:else if day.status === 'missed'}
-            <h3 class="font-display text-base text-on-surface">No dinner was logged</h3>
-            <p class="mt-0.5 text-xs text-on-surface-variant">This evening has passed without a planned meal.</p>
+            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">No dinner was logged</h3>
+            {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">This evening has passed without a planned meal.</p>{/if}
           {:else}
-            <h3 class="font-display text-base text-on-surface">No dinner planned yet for {weekdayName}</h3>
-            <p class="mt-0.5 text-xs text-on-surface-variant">Choose a meal, let the app pick one, or take the night off.</p>
+            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">No dinner planned yet for {weekdayName}</h3>
+            {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">Choose a meal, let the app pick one, or take the night off.</p>{/if}
           {/if}
         </div>
       </div>
 
-      {#if day.status === 'open'}
+      {#if minimal}
+        <!-- No actions in the minimal view. -->
+      {:else if day.status === 'open'}
         <div class="flex w-full flex-shrink-0 flex-wrap items-center gap-2 pt-2 sm:w-auto sm:flex-nowrap sm:pt-0">
           <a href={href('/catalog', { day: day.iso })} class="btn-primary basis-full py-2 sm:basis-auto">
             <Icon name="add" class="text-[15px]" /> Choose a Meal

@@ -205,10 +205,19 @@
     cookMinutes: Number.isInteger(form.cookMinutes) && form.cookMinutes >= 0 ? '' : 'Enter whole minutes.',
     ingredients: filledIngredients.length ? '' : 'Add at least one ingredient.',
     qty: qtyInvalid.size ? 'Use amounts like 2, 1.5, 1/2 or 1 1/2 — or leave blank for “to taste”.' : '',
-    steps: form.steps.some((s) => s.text.trim()) ? '' : 'Describe at least one step.',
   });
   const valid = $derived(Object.values(errors).every((e) => !e));
   const show = (key) => submitted && errors[key];
+
+  // Ingredient descriptions already used in any recipe, offered as autocomplete (sorted, de-duplicated by case).
+  const ingredientNames = $derived.by(() => {
+    const seen = new Map();
+    for (const r of recipes) for (const g of r.ingredients ?? []) for (const ing of g.items ?? []) {
+      const t = (ing.text ?? '').trim();
+      if (t && !seen.has(t.toLowerCase())) seen.set(t.toLowerCase(), t);
+    }
+    return [...seen.values()].sort((a, b) => a.localeCompare(b));
+  });
 
   const groupNames = $derived([...new Set(form.ingredients.map((r) => r.group.trim()).filter(Boolean))]);
 
@@ -436,7 +445,7 @@
 
 {#snippet fieldLabel(text, column, forId = undefined, required = false)}
   <label for={forId} class="mb-1.5 flex items-baseline justify-between gap-2">
-    <span class="text-label-md text-on-surface">{text}{#if required}<span class="text-secondary"> *</span>{/if}</span>
+    <span class="text-label-md text-on-surface">{text}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-outline">&nbsp;(optional)</span>{/if}</span>
     {#if column}<span class="text-body-sm text-outline">Column: {column}</span>{/if}
   </label>
 {/snippet}
@@ -448,7 +457,7 @@
 {#snippet numberField(key, label, icon, unit)}
   <div>
     <label for="recipe-{key}" class="mb-1.5 flex items-center gap-1 text-label-md text-on-surface">
-      {#if icon}<Icon name={icon} class="text-[16px] text-secondary" />{/if}{label}
+      {#if icon}<Icon name={icon} class="text-[16px] text-secondary" />{/if}{label}<span class="text-secondary">&nbsp;*</span>
     </label>
     <div class="flex items-center gap-2">
       <input
@@ -541,6 +550,7 @@
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
               <Icon name="restaurant_menu" class="text-[20px] text-primary" /> Recipe Essentials
             </h2>
+            <span class="text-body-sm text-outline"><span class="text-secondary">*</span> Required</span>
           </div>
 
           <div>
@@ -681,7 +691,7 @@
 
           <fieldset>
             <legend class="mb-2 flex w-full items-baseline justify-between gap-2">
-              <span class="text-label-md text-on-surface">Tags</span>
+              <span class="text-label-md text-on-surface">Tags <span class="text-outline">(optional)</span></span>
               <span class="text-body-sm text-outline">Column: Tags</span>
             </legend>
             <div class="flex flex-wrap gap-1.5">
@@ -774,7 +784,7 @@
           <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-                <Icon name="grocery" class="text-[20px] text-primary" /> Ingredients &amp; Mise en Place
+                <Icon name="grocery" class="text-[20px] text-primary" /> <span>Ingredients &amp; Mise en Place<span class="text-secondary">&nbsp;*</span></span>
               </h2>
               <p class="text-body-sm text-on-surface-variant">Qty · Unit · Item · Component group · Store aisle (for the grocery list)</p>
             </div>
@@ -802,6 +812,9 @@
             </div>
           {/if}
 
+          <datalist id="ingredient-names">
+            {#each ingredientNames as n (n)}<option value={n}></option>{/each}
+          </datalist>
           <datalist id="ingredient-groups">
             {#each groupNames as g (g)}<option value={g}></option>{/each}
           </datalist>
@@ -817,6 +830,7 @@
                     type="text"
                     aria-label="Ingredient, row {i + 1}"
                     placeholder="Ingredient description"
+                    list="ingredient-names"
                     bind:value={row.text}
                     oninput={() => onIngredientText(row)}
                     aria-invalid={show('ingredients') && i === 0 ? 'true' : undefined}
@@ -850,7 +864,7 @@
         <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="skillet" class="text-[20px] text-primary" /> Preparation &amp; Method
+              <Icon name="skillet" class="text-[20px] text-primary" /> <span>Preparation &amp; Method <span class="font-sans text-label-md text-outline">(optional)</span></span>
             </h2>
             <span class="text-label-caps uppercase text-outline">Column: Method_Steps</span>
           </div>
@@ -874,7 +888,6 @@
 
           <ol class="flex flex-col gap-3">
             {#each form.steps as step, i (step.key)}
-              {@const badStep = show('steps') && i === 0}
               <li class="flex flex-col gap-2 rounded-xl bg-surface-container-low p-4">
                 <div class="flex items-center gap-2">
                   <span class="font-display text-headline-sm text-primary">{String(i + 1).padStart(2, '0')}.</span>
@@ -911,8 +924,7 @@
                     aria-label="Step {i + 1} directions"
                     placeholder="Describe the technique, temperatures and timing… (Markdown supported)"
                     bind:value={step.text}
-                    aria-invalid={badStep ? 'true' : undefined}
-                    class="{field} {border(badStep)} resize-y"
+                    class="{field} {border(false)} resize-y"
                   ></textarea>
                 {/if}
                 <label class="flex items-center gap-2 self-end text-body-sm text-outline">
@@ -923,7 +935,6 @@
               </li>
             {/each}
           </ol>
-          {@render error('steps')}
 
           <button
             type="button"
@@ -938,9 +949,9 @@
         <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
             <label for="recipe-notes" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="stylus_note" class="text-[20px] text-primary" /> Cook’s Secrets
+              <Icon name="stylus_note" class="text-[20px] text-primary" /> <span>Cook’s Secrets <span class="font-sans text-label-md text-outline">(optional)</span></span>
             </label>
-            <span class="text-label-caps uppercase text-outline">Optional · Column: Notes</span>
+            <span class="text-label-caps uppercase text-outline">Column: Notes</span>
           </div>
           <p class="mb-1 text-body-sm text-on-surface-variant">Family adjustments, the best brand of ricotta, or a side dish that always works.</p>
           <p class="mb-3 text-body-sm text-on-surface-variant">
@@ -979,7 +990,8 @@
       <!-- Action bar -->
       <div class="sticky bottom-4 z-10 flex flex-col gap-3 rounded-2xl bg-surface-container-lowest/95 px-4 py-3 shadow-lift backdrop-blur lg:col-span-12 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
-          <button type="button" class="text-body-md text-on-surface-variant hover:text-secondary" onclick={discard}>
+          <button type="button" class="btn whitespace-nowrap border border-secondary/50 bg-transparent px-4 py-2 text-body-md text-secondary hover:bg-secondary/10" onclick={discard}>
+            <Icon name="delete_sweep" class="text-[18px]" />
             {editing ? 'Discard Changes' : 'Discard Draft'}
           </button>
           {#if editing?.edited}

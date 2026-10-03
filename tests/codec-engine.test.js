@@ -135,6 +135,17 @@ describe('codec', () => {
     });
   });
 
+  it('rebuilds every-week grocery items from provisions rows', () => {
+    const row = (week, status) => ({ Week_Of: week, Item: 'Salt', Detail: '1 box', Department: 'Pantry', Status: status, Line_Key: 'global:1' });
+    assert.deepEqual(codec.globalFromRows([row('2026-10-03', 'To buy'), row('2026-10-10', 'To buy')]), [
+      { id: 'global:1', name: 'Salt', note: '1 box', dept: 'pantry', status: 'need', doneWeek: '' },
+    ]);
+    assert.deepEqual(codec.globalFromRows([row('2026-10-03', 'On hand')]), [
+      { id: 'global:1', name: 'Salt', note: '1 box', dept: 'pantry', status: 'owned', doneWeek: '2026-10-03' },
+    ]);
+    assert.deepEqual(codec.groceryFromRows([row('2026-10-03', 'To buy')], () => false), {}, 'not a per-week item');
+  });
+
   it('moves Monday-keyed grocery weeks onto their Saturday', () => {
     const milk = { id: 'custom:1', name: 'Milk', note: '', dept: 'dairy' };
     assert.deepEqual(

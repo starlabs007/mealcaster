@@ -37,7 +37,7 @@
   }
 
   const mappings = $derived([...settings.aisles].sort((a, b) => a.name.localeCompare(b.name)));
-  const synced = $derived(Boolean(sheets.spreadsheet) && sheets.syncSettings);
+  const synced = $derived(Boolean(sheets.spreadsheet));
 
   function addMapping(event) {
     event.preventDefault();
@@ -148,11 +148,7 @@
       <p class="flex items-start gap-2 text-body-sm text-on-surface-variant">
         <Icon name="cloud_off" class="mt-0.5 text-[16px] text-outline" />
         <span>
-          {#if sheets.spreadsheet}
-            Syncing the Settings tab is switched off.
-          {:else}
-            Connect a Google Sheet to share these with your other devices.
-          {/if}
+          Connect a Google Sheet to share these with your other devices.
           <a href={href('/sheets-sync')} class="text-primary underline">Sheets settings</a>
         </span>
       </p>

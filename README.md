@@ -99,11 +99,17 @@ The `Category` column holds it; blank means none.
   and lists them with the dinner they belong to.
 - Tap the circle when bought and the box icon if you already have it; either way the item moves to the
   **Already On Hand / Acquired** ledger and the aisle counters update.
-- **Add Item** for anything extra, **Share** (native share sheet or clipboard), **Print Kitchen
+- **Add Item** for anything extra, for just the viewed week or as a **Standing item** shown in every week until it is
+  bought or marked on hand (then it stays only in that week's Acquired list), **Share** (native share sheet or clipboard), **Print Kitchen
   Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.
 
 ## Profile & Settings (`#/profile`)
+
+The `[Settings]` tab is required (it can be renamed, not switched off). Besides the preferences below it holds a
+`Schema | Version` row — the schema version the sheet was written with (currently 1, `SCHEMA_VERSION` in
+`src/lib/schema.js`). Bump it when a change needs existing sheets migrated; a sheet's older number is kept so a
+migration can see it.
 
 Reached from the avatar in the header (and the footer, on phones).
 
@@ -115,10 +121,10 @@ Reached from the avatar in the header (and the footer, on phones).
   built-in word lists whenever an aisle is guessed: typing or pasting ingredients in the recipe editor, and the
   aisle pre-selected in the grocery **Add Item** form. A name matches as whole words anywhere in the ingredient
   ("oat milk" also matches "2 cups oat milk"), and the longest match wins. Explicit aisles already saved on a
-  recipe are never changed. Synced to the optional `[Settings]` tab.
+  recipe are never changed. Synced to the `[Settings]` tab.
 - **Ingredients I Have** — names that never reach the grocery list, in any week. Checking an ingredient on a recipe
   adds it here; you can also add or remove names by hand. A name matches an ingredient's full text, ignoring case
-  and plurals ("noodles" won't hide "egg noodles"). Synced as `Have` rows in the optional `[Settings]` tab.
+  and plurals ("noodles" won't hide "egg noodles"). Synced as `Have` rows in the `[Settings]` tab.
 - **This Device** — print defaults for the Print Options dialog, the catalog's "Not made in 7 days" default and
   a Reset Colours button for tag colours. Never synced.
 - **Danger Zone** — *Disconnect & Erase*: after a confirmation dialog, signs out of Google, removes every
@@ -169,6 +175,7 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
 | `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
+| `mealcaster.groceryGlobal.v1` | Standing items: `global:` rows in `[Provisions]`, one per week they show in |
 | `mealcaster.settings.v1` | `[Settings]` tab: Profile preferences, aisle mappings and ingredients I have |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |

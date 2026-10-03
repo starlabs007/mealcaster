@@ -15,6 +15,8 @@ function readHideRecent() {
 export const devicePrefs = $state({
   /** Catalog: hide recipes made in the last week ("Not made in 7 days"). */
   hideRecent: readHideRecent(),
+  /** Planner: minimal view. Kept while the app is open (survives switching tabs), not saved. */
+  plannerMinimal: false,
 });
 
 /** @param {boolean} on */

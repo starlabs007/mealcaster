@@ -94,7 +94,7 @@ describe('syncing the Settings tab', () => {
     const result = await runSync(options(sheet, device, emptyBase('S1')));
     assert.equal(result.status, 'done');
     assert.deepEqual(sheet.find('Settings').grid[0], ['Section', 'Name', 'Value']);
-    assert.deepEqual(sheet.column('Settings', 'Value'), [true, 'Saturday', 'Dairy & Eggs']);
+    assert.deepEqual(sheet.column('Settings', 'Value'), [1, true, 'Saturday', 'Dairy & Eggs']);
   });
 
   it('brings mappings added in the sheet to the device, and leaves rows it does not know alone', async () => {
@@ -113,7 +113,21 @@ describe('syncing the Settings tab', () => {
     const again = await runSync(options(sheet, device, pull.base));
     assert.equal(again.pushed, 0);
     assert.equal(sheet.calls.writes, writes);
-    assert.deepEqual(sheet.column('Settings', 'Name').slice(1), ['Week starts on', 'Oat milk', 'Quinoa', 'Mode']);
+    assert.deepEqual(sheet.column('Settings', 'Name').slice(2), ['Week starts on', 'Oat milk', 'Quinoa', 'Mode']);
+  });
+
+  it('writes the schema version and reads the sheet version back without overwriting it', async () => {
+    const sheet = fakeSheet();
+    const device = fakeDevice({});
+    const base = (await runSync(options(sheet, device, emptyBase('S1')))).base;
+    const row = sheet.find('Settings').grid.find((r) => r[0] === 'Schema');
+    assert.deepEqual(row, ['Schema', 'Version', 1]);
+    assert.equal(codec.settingsFromRows([{ Section: 'Schema', Name: 'Version', Value: '1' }]).schemaVersion, 1);
+    assert.equal(codec.settingsFromRows([]).schemaVersion, 0);
+    assert.equal(codec.settingsFromRows([{ Section: 'Schema', Name: 'Version', Value: 'x' }]).schemaVersion, 0);
+    row[2] = 2; // a newer sheet keeps its version
+    await runSync(options(sheet, device, base));
+    assert.equal(sheet.find('Settings').grid.find((r) => r[0] === 'Schema')[2], 2);
   });
 
   it('carries the week start day as a weekday name, Saturday by default', () => {
@@ -166,8 +180,8 @@ describe('syncing the Settings tab', () => {
 
     device.settings = { aisles: [{ name: 'Oat milk', tag: 'Pantry' }] };
     base = (await runSync(options(sheet, device, base))).base;
-    assert.deepEqual(sheet.column('Settings', 'Name').slice(1), ['Week starts on', 'Oat milk']);
-    assert.deepEqual(sheet.column('Settings', 'Value').slice(1), ['Saturday', 'Pantry']);
+    assert.deepEqual(sheet.column('Settings', 'Name').slice(2), ['Week starts on', 'Oat milk']);
+    assert.deepEqual(sheet.column('Settings', 'Value').slice(2), ['Saturday', 'Pantry']);
   });
 });
 
