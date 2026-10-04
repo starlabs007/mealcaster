@@ -99,8 +99,9 @@ function loadBase() {
 }
 
 // Raw state so pages that ask what's on the sheet update after each pass.
-let base = $state.raw(loadBase());
-syncState.lastSyncedAt = base.lastSyncedAt ?? null;
+const initialBase = loadBase();
+let base = $state.raw(initialBase);
+syncState.lastSyncedAt = initialBase.lastSyncedAt ?? null;
 
 function saveBase(next) {
   base = { ...next, lastSyncedAt: syncState.lastSyncedAt };
