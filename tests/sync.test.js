@@ -3,7 +3,8 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyBase, runSync } from '../src/lib/sync/run.js';
-import { TABS, fakeDevice, fakeSheet, recipe, syncOptions } from './fakes.js';
+import { SCHEMA_VERSION } from '../src/lib/schema.js';
+import { SETTINGS_TAB, TABS, fakeDevice, fakeSheet, recipe, syncOptions } from './fakes.js';
 
 const RECIPE_HEADERS = ['Recipe_ID', 'Title', 'Ingredients_JSON', 'Method_Steps'];
 
@@ -243,5 +244,88 @@ describe('sheet layout and options', () => {
     const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [{ key: 'recipes', name: "Mum's Recipes" }] }));
     assert.equal(result.status, 'done');
     assert.deepEqual(sheet.column("Mum's Recipes", 'Title'), ['Pasta']);
+  });
+});
+
+describe('mirror mode (push-only)', () => {
+  const push = { tabs: [TABS[0]], direction: 'pushOnly' };
+
+  it('confirms before emptying a spreadsheet that has data into an empty device', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Sheet A', '[]', '']] });
+    const device = fakeDevice();
+
+    const ask = await runSync(syncOptions(sheet, device, emptyBase('S1'), push));
+    assert.equal(ask.status, 'choose');
+    assert.equal(ask.mirror, true);
+    assert.equal(ask.sheet.recipes, 1);
+    assert.equal(ask.device.recipes, 0);
+    assert.equal(sheet.calls.writes + sheet.calls.batch, 0, 'nothing is changed before the confirmation');
+
+    const done = await runSync(syncOptions(sheet, device, emptyBase('S1'), { ...push, choice: 'confirm' }));
+    assert.equal(done.status, 'done');
+    assert.deepEqual(sheet.column('Recipes', 'Title'), []);
+  });
+
+  it('restoring switches to bidirectional and fills the empty device from the sheet', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Sheet A', '[]', '']] });
+    const device = fakeDevice();
+    // What restoreFromSheet() does: direction → bidirectional, choice → sheetOnly.
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [TABS[0]], choice: 'sheetOnly' }));
+    assert.equal(result.status, 'done');
+    assert.deepEqual(device.recipes.map((r) => r.title), ['Sheet A']);
+    assert.deepEqual(sheet.column('Recipes', 'Title'), ['Sheet A']);
+  });
+
+  it('ignores the always-present settings rows when checking the device is empty', async () => {
+    const sheet = fakeSheet({
+      Recipes: [RECIPE_HEADERS, ['a', 'Sheet A', '[]', '']],
+      Settings: [['Section', 'Name', 'Value']],
+    });
+    const options = { ...push, tabs: [TABS[0], SETTINGS_TAB] };
+    const ask = await runSync(syncOptions(sheet, fakeDevice(), emptyBase('S1'), options));
+    assert.equal(ask.status, 'choose');
+    assert.equal(ask.mirror, true);
+  });
+
+  it('does not ask when the device has data, or the spreadsheet is empty', async () => {
+    const full = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Sheet A', '[]', '']] });
+    const pushed = await runSync(syncOptions(full, fakeDevice({ recipes: [recipe('b', 'Device B')] }), emptyBase('S1'), push));
+    assert.equal(pushed.status, 'done');
+    assert.deepEqual(full.column('Recipes', 'Title'), ['Device B']);
+
+    const empty = fakeSheet({ Recipes: [RECIPE_HEADERS] });
+    const none = await runSync(syncOptions(empty, fakeDevice(), emptyBase('S1'), push));
+    assert.equal(none.status, 'done');
+  });
+
+  it('does not ask again after the first sync', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Sheet A', '[]', '']] });
+    const device = fakeDevice();
+    const first = await runSync(syncOptions(sheet, device, emptyBase('S1'), { ...push, choice: 'confirm' }));
+    sheet.find('Recipes').grid.push(['x', 'Added later', '[]', '']);
+    const next = await runSync(syncOptions(sheet, device, first.base, push));
+    assert.equal(next.status, 'done');
+    assert.deepEqual(sheet.column('Recipes', 'Title'), []);
+  });
+
+  it('overwrites sheet edits, never pulls, and removes rows the device lacks', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Edited in sheet', '[]', ''], ['x', 'Only in sheet', '[]', '']] });
+    const device = fakeDevice({ recipes: [recipe('a', 'From device')] });
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), push));
+    assert.equal(result.pulled, 0);
+    assert.deepEqual(sheet.column('Recipes', 'Title'), ['From device']);
+    assert.deepEqual(device.recipes.map((r) => r.title), ['From device']);
+  });
+
+  it('removes unknown [Settings] rows and stamps the device schema version', async () => {
+    const sheet = fakeSheet({
+      Settings: [['Section', 'Name', 'Value'], ['Schema', 'Version', 0], ['Preference', 'Someone else', 'TRUE']],
+    });
+    const device = fakeDevice();
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [SETTINGS_TAB], direction: 'pushOnly' }));
+    assert.equal(result.status, 'done');
+    assert.ok(!sheet.column('Settings', 'Name').includes('Someone else'));
+    const version = sheet.column('Settings', 'Value')[sheet.column('Settings', 'Name').indexOf('Version')];
+    assert.equal(Number(version), SCHEMA_VERSION);
   });
 });

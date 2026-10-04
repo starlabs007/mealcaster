@@ -486,7 +486,7 @@ export function settingsToRows(settings) {
 
 /**
  * Settings from [Settings] rows. Rows of a section MealCaster doesn't know, or with a value it
- * can't read, are ignored here and left alone in the sheet; a preference with no readable row
+ * can't read, are ignored here and left alone in the sheet (bidirectional mode; mirror mode removes them); a preference with no readable row
  * takes its default.
  * @param {Row[]} rows
  * The sheet's `Schema | Version` comes back as `schemaVersion` (0 when missing or unreadable) so a migration can

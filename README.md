@@ -161,6 +161,11 @@ In dev they come from `.env.local` (git-ignored); in CI from the repo's `product
   Rows are updated in place and only MealCaster's columns are written, so extra columns stay put.
 - First sync with data on both sides asks: **Merge** (device-only rows are added, the sheet wins on
   overlaps) or **Use the spreadsheet only**.
+- **MealCaster → Sheets** (mirror mode, Sheets Settings → Sync Strategy) makes the sheet a backup of this device: the
+  device wins every row, nothing is pulled, and rows only in the sheet (including unknown `[Settings]` rows) are deleted;
+  the sheet's schema version is overwritten with the app's. If this device is empty but the spreadsheet has data, the
+  first sync asks first: **Empty Spreadsheet**, **Restore From Spreadsheet** (switches to Bidirectional and takes the
+  sheet's data) or **Don't Connect**.
 - Runs on connect, when the app regains focus, ~1.5 s after edits (Instant Push), and on Sync Now.
 - Renamed/missing columns pause sync until resolved on `#/sheets-sync/columns`.
 - Uploaded recipe photos go to a "MealCaster Photos" Drive folder, shared as anyone-with-the-link.
