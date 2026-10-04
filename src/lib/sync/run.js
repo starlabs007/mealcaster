@@ -65,10 +65,11 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
   }
   const tables = Object.fromEntries(tabs.map(({ key }) => [key, readTable(key, valuesOf.get(key) ?? [], plans[key])]));
 
-  // First sync of this spreadsheet: ask before anything is lost. Bidirectional with data on both
-  // sides: merge or replace the device. Backup sync (push-only) with an empty device and a
-  // spreadsheet that has data: the sheet would be emptied, so confirm. The always-present
-  // settings rows don't count as data in the backup check.
+  // First sync of this spreadsheet: ask before anything is lost. Only recipes, plan and grocery
+  // rows count as data: the device always has settings rows (defaults), so they say nothing.
+  // Bidirectional with data on both sides: merge or replace the device. Backup sync (push-only)
+  // with a spreadsheet that has data: the sheet's rows would be overwritten or deleted to match
+  // the device, so confirm.
   if (!base.initialized && !choice) {
     const sheet = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
     const device = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
@@ -76,10 +77,9 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
       sheet[key] = tables[key].rows.size;
       device[key] = local.localRows(key).size;
     }
-    const any = (c) => Object.values(c).some(Boolean);
     const userData = (c) => c.recipes + c.weeklyPlan + c.provisions > 0;
-    if (direction === 'bidirectional' && any(sheet) && any(device)) return { status: 'choose', sheet, device, title: meta.title, backup: false };
-    if (direction === 'pushOnly' && userData(sheet) && !userData(device)) return { status: 'choose', sheet, device, title: meta.title, backup: true };
+    if (direction === 'bidirectional' && userData(sheet) && userData(device)) return { status: 'choose', sheet, device, title: meta.title, backup: false };
+    if (direction === 'pushOnly' && userData(sheet)) return { status: 'choose', sheet, device, title: meta.title, backup: true };
   }
 
   /** @type {Strategy} */
