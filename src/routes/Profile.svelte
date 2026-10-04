@@ -20,6 +20,8 @@
   import { sheets } from '../lib/sheets.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
+  import { NEARLY_FULL, STORAGE_BUDGET, protectStorage, storageState, storageUsed } from '../lib/storage.svelte.js';
+  import { isPhotoDataUrl } from '../lib/google/api.js';
 
   const inputClass =
     'rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container';
@@ -47,6 +49,21 @@
     const next = $state.snapshot(print);
     untrack(() => setPrintOptions(next));
   });
+
+  // Storage on this device: localStorage holds everything, photos waiting for Drive included.
+  const used = $derived((storageState.saves, storageUsed()));
+  // Some browsers allow more than the usual 5 MB; past it, the estimate says nothing useful.
+  const overBudget = $derived(used > STORAGE_BUDGET);
+  const usedShare = $derived(Math.min(1, used / STORAGE_BUDGET));
+  const pendingPhotos = $derived(recipes.filter((r) => isPhotoDataUrl(r.image)));
+  const pendingPhotoSize = $derived(pendingPhotos.reduce((n, r) => n + r.image.length, 0));
+  const mb = (chars) => (chars < 1_000_000 ? `${Math.max(1, Math.round(chars / 1000))} KB` : `${(chars / 1_000_000).toFixed(1)} MB`);
+
+  async function askToKeep() {
+    await protectStorage({ ask: true });
+    if (storageState.persisted) showToast('This browser will keep MealCaster’s data.');
+    else showToast('The browser said no. Browsers decide this themselves, often by how much you use a site.');
+  }
 
   function resetColors() {
     resetTagColors();
@@ -324,6 +341,51 @@
         <div class="mt-1 max-w-md">
           <PrintOptionsFields bind:draft={print} />
         </div>
+      </div>
+
+      <div class="flex flex-col gap-2 py-3" id="storage">
+        <h3 class="flex items-center gap-2 text-label-md text-on-surface"><Icon name="storage" class="text-[16px] text-outline" /> Storage</h3>
+        {#if overBudget}
+          <p class="text-body-sm text-on-surface-variant">
+            About {mb(used)} used, shared with other apps on the same site. This browser allows more than the usual {mb(STORAGE_BUDGET)}.
+          </p>
+        {:else}
+          <p class="text-body-sm text-on-surface-variant">
+            About {mb(used)} of the roughly {mb(STORAGE_BUDGET)} this browser allows the site (other apps on the same site share it).
+          </p>
+          <div class="h-2 max-w-md overflow-hidden rounded-full bg-surface-container-high" role="meter" aria-label="Storage used" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(usedShare * 100)}>
+            <div class="h-full rounded-full {storageState.unsaved || usedShare >= NEARLY_FULL ? 'bg-secondary' : 'bg-primary'}" style="width: {Math.max(2, usedShare * 100)}%"></div>
+          </div>
+        {/if}
+        {#if storageState.unsaved}
+          <p class="flex items-start gap-2 text-body-sm text-secondary">
+            <Icon name="warning" class="mt-0.5 text-[16px]" />
+            <span>
+              <strong class="font-bold">Out of space:</strong> recent changes aren’t saved on this device and are lost if the page
+              reloads{synced ? ' (apart from what has synced to your Google Sheet)' : ''}. Free up space by removing uploaded photos or
+              data from other apps on this site.
+            </span>
+          </p>
+        {:else if usedShare >= NEARLY_FULL && !overBudget}
+          <p class="flex items-start gap-2 text-body-sm text-secondary">
+            <Icon name="warning" class="mt-0.5 text-[16px]" />
+            <span><strong class="font-bold">Nearly full.</strong> New changes may soon stop saving on this device.</span>
+          </p>
+        {/if}
+        {#if pendingPhotos.length}
+          <p class="text-body-sm text-on-surface-variant">
+            {pendingPhotos.length} uploaded photo{pendingPhotos.length === 1 ? ' is' : 's are'} waiting for Google Drive ({mb(pendingPhotoSize)}).
+            {synced ? 'They upload on the next sync.' : `Connect a Google Sheet to move ${pendingPhotos.length === 1 ? 'it' : 'them'} off this device.`}
+          </p>
+        {/if}
+        {#if storageState.persisted === true}
+          <p class="text-body-sm text-on-surface-variant">The browser keeps this data rather than clearing it to free up space.</p>
+        {:else if storageState.persisted === false}
+          <div class="flex items-start justify-between gap-4">
+            <span class="text-body-sm text-on-surface-variant">The browser may clear this data when the device runs low on space.</span>
+            <button type="button" class="btn-outline shrink-0 py-2" onclick={askToKeep}>Ask to Keep It</button>
+          </div>
+        {/if}
       </div>
 
       {@render switchRow(

@@ -133,7 +133,9 @@ Reached from the avatar in the header (and the footer, on phones).
   them, and an Undo toast follows. The four built-ins can't be changed. Reset Colours hands colours out again.
   Colours sync as `Tag Colour` rows (`Section | Name | Value` = `Tag Colour | Date Night | Plum`) in `[Settings]`.
 - **This Device** — print defaults for the Print Options dialog and the catalog's "Not made in 7 days" default.
-  Never synced.
+  Never synced. **Storage** shows how much of the roughly 5 MB a browser allows the site is used (shared with other
+  apps on the same domain), uploaded photos still waiting for Google Drive, a warning when the device is nearly full or
+  a save didn't fit, and **Ask to Keep It** while the browser may clear the data to free space.
 - **Danger Zone** — *Disconnect & Erase*: after a confirmation dialog, signs out of Google, removes every
   `mealcaster.*` key from this browser and reloads fresh. The Google Sheet is never changed. Handy for testing.
 
@@ -197,6 +199,11 @@ Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.
 
 The grocery badge counts items still to buy for the viewed week.
 
+Saves go through `saveItem` (`storage.svelte.js`), which notes saves that didn't fit and shows a toast. Until every
+store is saved again, sync keeps the new `syncBase.v1` in memory only, so a reload can't push older data over the
+sheet. At startup the app asks the browser to keep its data (`navigator.storage.persist()`; Firefox only from the
+Profile button, as it asks the person) and warns at 80% of 5 MB.
+
 ## Project layout
 
 ```
@@ -226,6 +233,7 @@ src/
     devicePrefs.svelte.js    small per-device display preferences
     favorites.svelte.js
     toast.svelte.js
+    storage.svelte.js        localStorage saves that note failures, storage use, persist() request
     dates.js
     format.js                quantity formatting (1/3, 3 1/2)
     data/recipes.js          sample recipes (dev only)
