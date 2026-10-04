@@ -7,6 +7,7 @@ import { recipes, recipeById } from './recipes.svelte.js';
 import { addDays, daysBetween, formatLong, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
 import { showToast } from './toast.svelte.js';
 import { sampleData, storageKey } from './env.js';
+import { saveItem } from './storage.svelte.js';
 
 const STORAGE_KEY = storageKey('weeklyPlan.v1');
 
@@ -56,12 +57,8 @@ export const planner = $state({
 
 $effect.root(() => {
   $effect(() => {
-    const json = JSON.stringify(planner.entries);
-    try {
-      localStorage.setItem(STORAGE_KEY, json);
-    } catch {
-      // Ignore quota / private-mode errors; the plan still works in memory.
-    }
+    // Quota / private-mode errors leave the plan working in memory (storage.svelte.js notes it).
+    saveItem(STORAGE_KEY, JSON.stringify(planner.entries));
   });
 });
 

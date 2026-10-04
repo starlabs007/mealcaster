@@ -12,6 +12,7 @@ import { findAisleMapping } from './aisleMap.js';
 import { settings } from './settings.svelte.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
+import { saveItem } from './storage.svelte.js';
 
 export { formatMinutes } from './data/recipes.js';
 export { suggestedTags, isSuggestedTag, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX, normalizeCategory, categoryChoices } from './tags.js';
@@ -75,15 +76,21 @@ export const recipeById = new SvelteMap(recipes.map((r) => [r.id, r]));
 
 export const customRecipeCount = () => recipes.filter((r) => r.custom).length;
 
-function persist() {
+/** @returns {boolean} whether the recipes fit on this device */
+function store() {
   const saved = recipes.filter((r) => r.custom || r.edited).map(({ minutes, ...r }) => r);
+  if (!saveItem(STORAGE_KEY, JSON.stringify({ saved, deleted: [...deleted] }))) return false;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ saved, deleted: [...deleted] }));
     localStorage.removeItem(LEGACY_KEY);
-  } catch (error) {
-    // Most likely the quota — large uploaded photos are the usual culprit.
-    throw new Error('This device ran out of space for saved recipes. Try a smaller photo or an image link.', { cause: error });
+  } catch {
+    // Harmless leftover.
   }
+  return true;
+}
+
+function persist() {
+  // Most likely the quota — large uploaded photos are the usual culprit.
+  if (!store()) throw new Error('This device ran out of space for saved recipes. Try a smaller photo or an image link.');
 }
 
 /**
@@ -206,7 +213,9 @@ export function replaceRecipes(list) {
   recipes.splice(0, recipes.length, ...next);
   recipeById.clear();
   for (const r of recipes) recipeById.set(r.id, r);
-  persist();
+  // A sync shows the sheet's recipes even when they don't fit; it holds back the sync base
+  // until they're stored (sync.svelte.js), so the next pass still sees them as unsaved.
+  store();
 }
 
 /** @param {string} title */
