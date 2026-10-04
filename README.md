@@ -103,7 +103,8 @@ The `Category` column holds it; blank means none.
   **Already On Hand / Acquired** ledger and the aisle counters update.
 - **Add Item** for anything extra, for just the viewed week or as a **Standing item** shown in every week until it is
   bought or marked on hand (then it stays only in that week's Acquired list), **Share** (native share sheet or clipboard), **Print Kitchen
-  Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab.
+  Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab: this week, the 7 before it and any
+  future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.
 
 ## Profile & Settings (`#/profile`)

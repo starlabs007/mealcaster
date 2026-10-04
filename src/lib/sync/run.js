@@ -2,6 +2,7 @@
 // on-device stores are passed in, so this runs (and is tested) without either.
 
 import { a1, fingerprint, readTable, reconcile, resolveColumns, rowCells } from './engine.js';
+import { isoDate } from './codec.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
 /** @typedef {import('./codec.js').Row} Row */
@@ -44,10 +45,13 @@ export const emptyBase = (spreadsheetId) => ({ spreadsheetId, initialized: false
  *   base: SyncBase,
  *   choice?: 'merge' | 'sheetOnly' | 'confirm',
  *   local: LocalAdapter,
+ *   provisionsSince?: string,
  * }} options
+ * `provisionsSince` (ISO date): grocery rows of weeks before it aren't synced — they are neither
+ * read nor changed in the sheet, and the device leaves them out of its rows too.
  * @returns {Promise<SyncResult>}
  */
-export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppendOptional, direction, base, choice, local }) {
+export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppendOptional, direction, base, choice, local, provisionsSince }) {
   const meta = await api.getMeta(spreadsheetId);
   const existing = new Map(meta.tabs.map((t) => [t.title, t]));
   const present = tabs.filter((t) => existing.has(t.name));
@@ -64,6 +68,11 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
     plans[key] = plan;
   }
   const tables = Object.fromEntries(tabs.map(({ key }) => [key, readTable(key, valuesOf.get(key) ?? [], plans[key])]));
+  if (provisionsSince && tables.provisions) {
+    const old = (row) => isoDate(row.Week_Of) < provisionsSince;
+    for (const [key, { row }] of tables.provisions.rows) if (old(row)) tables.provisions.rows.delete(key);
+    tables.provisions.keyFixes = tables.provisions.keyFixes.filter((fix) => !old(fix.row));
+  }
 
   // First sync of this spreadsheet: ask before anything is lost. Only recipes, plan and grocery
   // rows count as data: the device always has settings rows (defaults), so they say nothing.

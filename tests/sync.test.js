@@ -359,3 +359,42 @@ describe('backup sync (push-only)', () => {
     assert.equal(Number(version), SCHEMA_VERSION);
   });
 });
+
+describe('grocery weeks before provisionsSince', () => {
+  const HEADERS = ['Week_Of', 'Item', 'Detail', 'Department', 'Status', 'Source', 'Line_Key'];
+  const PROVISIONS = { key: 'provisions', name: 'Provisions' };
+  const since = '2026-08-15';
+
+  it('are neither read nor changed in the sheet, in either direction', async () => {
+    for (const direction of /** @type {const} */ (['bidirectional', 'pushOnly'])) {
+      const sheet = fakeSheet({
+        Provisions: [
+          HEADERS,
+          ['2026-07-04', 'Old milk', '', 'Dairy', 'Bought', 'Added by you', 'custom:old'],
+          ['2026-10-03', 'Eggs', '', 'Dairy', 'To buy', 'Added by you', 'custom:new'],
+        ],
+      });
+      const device = fakeDevice();
+      const first = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [PROVISIONS], choice: 'merge' }));
+      assert.equal(first.status, 'done');
+      // Since then the week fell out of the window, so the device leaves it out (as sync.svelte.js does),
+      // and someone typed an old row without a key.
+      for (const key of device.provisions.keys()) if (key < since) device.provisions.delete(key);
+      sheet.find('Provisions').grid.push(['2026-07-11', 'Old, no key', '', 'Pantry', 'To buy', '', '']);
+      const result = await runSync(syncOptions(sheet, device, first.base, { tabs: [PROVISIONS], direction, provisionsSince: since }));
+      assert.equal(result.status, 'done');
+      assert.deepEqual(sheet.column('Provisions', 'Item'), ['Old milk', 'Eggs', 'Old, no key'], direction);
+      assert.deepEqual(sheet.column('Provisions', 'Line_Key'), ['custom:old', 'custom:new', ''], direction);
+      assert.deepEqual([...device.provisions.keys()], ['2026-10-03|custom:new'], direction);
+      assert.deepEqual(Object.keys(result.base.tabs.provisions.rows), ['2026-10-03|custom:new'], direction);
+    }
+  });
+
+  it('do not count as spreadsheet data on a first sync', async () => {
+    const sheet = fakeSheet({ Provisions: [HEADERS, ['2026-07-04', 'Old milk', '', 'Dairy', 'Bought', 'Added by you', 'custom:old']] });
+    const device = fakeDevice({ recipes: [recipe('r1', 'Pasta')] });
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [...TABS], provisionsSince: since }));
+    assert.equal(result.status, 'done');
+    assert.deepEqual(sheet.column('Provisions', 'Item'), ['Old milk']);
+  });
+});
