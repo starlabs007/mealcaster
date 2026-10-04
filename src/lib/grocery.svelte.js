@@ -18,6 +18,7 @@ import { formatQty } from './format.js';
 import { formatWeekday } from './dates.js';
 import { departments } from './data/departments.js';
 import { storageKey } from './env.js';
+import { saveItem } from './storage.svelte.js';
 import { rekeyGroceryWeeks } from './sync/codec.js';
 import { settings } from './settings.svelte.js';
 import { isHave } from './haveList.js';
@@ -98,14 +99,9 @@ export const grocery = $state({ weeks: load(), global: loadGlobal() });
 
 $effect.root(() => {
   $effect(() => {
-    const json = JSON.stringify(grocery.weeks);
-    const globalJson = JSON.stringify(grocery.global);
-    try {
-      localStorage.setItem(STORAGE_KEY, json);
-      localStorage.setItem(GLOBAL_KEY, globalJson);
-    } catch {
-      // In-memory only.
-    }
+    // In memory only if they don't fit (storage.svelte.js notes it).
+    saveItem(STORAGE_KEY, JSON.stringify(grocery.weeks));
+    saveItem(GLOBAL_KEY, JSON.stringify(grocery.global));
   });
 });
 

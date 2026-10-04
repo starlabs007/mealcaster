@@ -4,6 +4,7 @@
 // (Per-device preferences such as print options live in their own stores and are never synced.)
 
 import { storageKey } from './env.js';
+import { saveItem } from './storage.svelte.js';
 import { mappingKey, tidyName, withMapping } from './aisleMap.js';
 import { withHave, withoutHave } from './haveList.js';
 import { DEFAULT_WEEK_START_DAY, setWeekStartDay as applyWeekStartDay } from './dates.js';
@@ -61,12 +62,8 @@ applyWeekStartDay(settings.weekStartDay);
 
 $effect.root(() => {
   $effect(() => {
-    const json = JSON.stringify(settings);
-    try {
-      localStorage.setItem(STORAGE_KEY, json);
-    } catch {
-      // In-memory only.
-    }
+    // In memory only if it doesn't fit (storage.svelte.js notes it).
+    saveItem(STORAGE_KEY, JSON.stringify(settings));
   });
 });
 

@@ -1,6 +1,7 @@
 // Mirrors the Favorite_Flag column of the [Recipes] tab; cached locally.
 
 import { sampleData, storageKey } from './env.js';
+import { saveItem } from './storage.svelte.js';
 
 const STORAGE_KEY = storageKey('favorites.v1');
 // Sample favorites exist only alongside the sample recipes.
@@ -29,9 +30,6 @@ export function toggleFavorite(id) {
 /** @param {string[]} ids */
 export function setFavorites(ids) {
   favorites.ids = ids;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(favorites.ids));
-  } catch {
-    // In-memory only.
-  }
+  // In memory only if it doesn't fit (storage.svelte.js notes it).
+  saveItem(STORAGE_KEY, JSON.stringify(favorites.ids));
 }

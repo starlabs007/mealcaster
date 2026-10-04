@@ -3,6 +3,7 @@
 // Push is on, and from the Sync Now button). The sheet is the source of truth;
 // this device's data is a cache plus edits waiting to be pushed.
 
+import { flushSync } from 'svelte';
 import { googleConfigured } from '../google/config.js';
 import { auth, currentToken, prepareAuth, signIn, signOut } from '../google/auth.svelte.js';
 import { GoogleApiError, createSpreadsheet, ensurePhotoFolder, getAccount, isPhotoDataUrl, sheetsApi, uploadPhoto } from '../google/api.js';
@@ -14,9 +15,10 @@ import { planner, replacePlan, statusOf } from '../planner.svelte.js';
 import { grocery, groceryLines, replaceGrocery } from '../grocery.svelte.js';
 import { settings, replaceSettings } from '../settings.svelte.js';
 import { realignWeeks } from '../weekStart.svelte.js';
-import { weekStartOf, weekDates } from '../dates.js';
+import { addDays, weekStartOf, weekDates } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
 import { storageKey } from '../env.js';
+import { allSaved } from '../storage.svelte.js';
 import {
   groceryFromRows,
   globalFromRows,
@@ -102,6 +104,11 @@ syncState.lastSyncedAt = base.lastSyncedAt ?? null;
 
 function saveBase(next) {
   base = { ...next, lastSyncedAt: syncState.lastSyncedAt };
+  // The stored base must never get ahead of the stored data. If a store didn't fit, a reload
+  // brings back older data, and a newer base would read the difference as edits made here and
+  // push it over the sheet. Kept in memory only, the stored base stays older than the data, and
+  // the next pass after a reload lets the sheet win those rows. (An empty base is always safe.)
+  if (next.initialized && !allSaved()) return;
   try {
     localStorage.setItem(BASE_KEY, JSON.stringify(base));
   } catch {
@@ -131,8 +138,17 @@ const syncedTabs = () =>
     ].filter(Boolean)
   );
 
-/** Weeks whose grocery list is synced: any with saved changes, plus this week. */
-const groceryWeeks = () => [...new Set([...Object.keys(grocery.weeks), weekStartOf(new Date())])].sort();
+/** How many weeks of grocery lists sync, counting this one; future weeks always do. */
+const PROVISION_WEEKS = 8;
+
+/** Start of the oldest week whose grocery list syncs. Older lists stay as they are, here and in the sheet. */
+const provisionsSince = () => addDays(weekStartOf(new Date()), -7 * (PROVISION_WEEKS - 1));
+
+/** Weeks whose grocery list is synced: recent or future ones with saved changes, plus this week. */
+const groceryWeeks = () => {
+  const since = provisionsSince();
+  return [...new Set([...Object.keys(grocery.weeks), weekStartOf(new Date())])].filter((w) => w >= since).sort();
+};
 
 const today = () => planner.today;
 
@@ -195,7 +211,16 @@ const device = {
         const recipeId = key.split(':')[0];
         return weekDates(week).some((iso) => planner.entries[iso]?.recipeId === recipeId && statusOf(iso) === 'planned');
       };
-      replaceGrocery(groceryFromRows([...final.values()], isPlanned), globalFromRows([...final.values()]));
+      // Weeks too old to sync keep their lists, and standing items acquired back then stay acquired there.
+      const since = provisionsSince();
+      const rows = [...final.values()];
+      const weeks = groceryFromRows(rows, isPlanned);
+      for (const [week, list] of Object.entries(grocery.weeks)) if (week < since) weeks[week] = $state.snapshot(list);
+      const global = globalFromRows(rows);
+      for (const g of grocery.global) {
+        if (g.status !== 'need' && g.doneWeek < since && !global.some((x) => x.id === g.id)) global.push($state.snapshot(g));
+      }
+      replaceGrocery(weeks, global);
     }
   },
 };
@@ -263,12 +288,15 @@ export function syncNow(options = {}) {
         base,
         choice: options.choice,
         local: device,
+        provisionsSince: provisionsSince(),
       });
       if (result.title !== sheets.spreadsheetName) updateSheetsSettings({ spreadsheetName: result.title });
       syncState.error = '';
       syncState.conflict = result.status === 'conflict' ? { tab: result.tab, columns: result.columns } : null;
       syncState.choice = result.status === 'choose' ? { sheet: result.sheet, device: result.device, backup: result.backup } : null;
       if (result.status === 'done') {
+        // Run the stores' save effects now, so saveBase knows whether the pulled data was stored.
+        flushSync();
         syncState.lastSyncedAt = new Date().toISOString();
         saveBase(result.base);
         lastFingerprint = deviceFingerprint();
