@@ -161,6 +161,24 @@ describe('first sync', () => {
     assert.equal(result.status, 'done');
     assert.deepEqual(device.recipes.map((r) => r.title), ['Sheet A']);
   });
+
+  it('does not count the device\'s default settings as data', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Sheet A', '[]', '']], Settings: [['Section', 'Name', 'Value']] });
+    const device = fakeDevice();
+    const tabs = [TABS[0], SETTINGS_TAB];
+    assert.ok(device.adapter.localRows('settings').size > 0, 'the device always has settings rows');
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs }));
+    assert.equal(result.status, 'done');
+    assert.deepEqual(device.recipes.map((r) => r.title), ['Sheet A']);
+  });
+
+  it('does not ask when the sheet has only settings and the device has recipes', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS], Settings: [['Section', 'Name', 'Value'], ['Preference', 'Week starts on', 'Monday']] });
+    const device = fakeDevice({ recipes: [recipe('b', 'Device B')] });
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [TABS[0], SETTINGS_TAB] }));
+    assert.equal(result.status, 'done');
+    assert.deepEqual(sheet.column('Recipes', 'Title'), ['Device B']);
+  });
 });
 
 describe('clearing device data (switching dev modes)', () => {
@@ -223,7 +241,7 @@ describe('sheet layout and options', () => {
   it('push-only makes the sheet a copy of the device', async () => {
     const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['x', 'Only in sheet', '[]', '']] });
     const device = fakeDevice({ recipes: [recipe('b', 'Device B')] });
-    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [TABS[0]], direction: 'pushOnly' }));
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [TABS[0]], direction: 'pushOnly', choice: 'confirm' }));
     assert.equal(result.status, 'done');
     assert.deepEqual(sheet.column('Recipes', 'Title'), ['Device B']);
     assert.deepEqual(device.recipes.map((r) => r.title), ['Device B']);
@@ -287,12 +305,24 @@ describe('backup sync (push-only)', () => {
     assert.equal(ask.backup, true);
   });
 
-  it('does not ask when the device has data, or the spreadsheet is empty', async () => {
-    const full = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Sheet A', '[]', '']] });
-    const pushed = await runSync(syncOptions(full, fakeDevice({ recipes: [recipe('b', 'Device B')] }), emptyBase('S1'), push));
-    assert.equal(pushed.status, 'done');
-    assert.deepEqual(full.column('Recipes', 'Title'), ['Device B']);
+  it('confirms before overwriting a spreadsheet that has different data than the device', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Sheet A', '[]', '']] });
+    const device = fakeDevice({ recipes: [recipe('b', 'Device B')] });
 
+    const ask = await runSync(syncOptions(sheet, device, emptyBase('S1'), push));
+    assert.equal(ask.status, 'choose');
+    assert.equal(ask.backup, true);
+    assert.equal(ask.sheet.recipes, 1);
+    assert.equal(ask.device.recipes, 1);
+    assert.equal(sheet.calls.writes + sheet.calls.batch, 0, 'nothing is changed before the confirmation');
+    assert.deepEqual(sheet.column('Recipes', 'Title'), ['Sheet A']);
+
+    const done = await runSync(syncOptions(sheet, device, emptyBase('S1'), { ...push, choice: 'confirm' }));
+    assert.equal(done.status, 'done');
+    assert.deepEqual(sheet.column('Recipes', 'Title'), ['Device B']);
+  });
+
+  it('does not ask when the spreadsheet has no data', async () => {
     const empty = fakeSheet({ Recipes: [RECIPE_HEADERS] });
     const none = await runSync(syncOptions(empty, fakeDevice(), emptyBase('S1'), push));
     assert.equal(none.status, 'done');
@@ -311,7 +341,7 @@ describe('backup sync (push-only)', () => {
   it('overwrites sheet edits, never pulls, and removes rows the device lacks', async () => {
     const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['a', 'Edited in sheet', '[]', ''], ['x', 'Only in sheet', '[]', '']] });
     const device = fakeDevice({ recipes: [recipe('a', 'From device')] });
-    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), push));
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { ...push, choice: 'confirm' }));
     assert.equal(result.pulled, 0);
     assert.deepEqual(sheet.column('Recipes', 'Title'), ['From device']);
     assert.deepEqual(device.recipes.map((r) => r.title), ['From device']);

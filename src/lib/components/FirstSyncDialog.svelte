@@ -1,8 +1,8 @@
 <script>
   // First sync with data both in the spreadsheet and on this device: merge the
   // two (the sheet wins where both have the same item) or keep only the sheet.
-  // In backup sync (Sheets as Backup) with an empty device it instead confirms
-  // that the spreadsheet's rows will be removed to match the device.
+  // In backup sync (Sheets as Backup) it instead confirms that the spreadsheet's rows will be
+  // overwritten or removed to match the device; restoring is offered only if the device is empty.
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
   import { sheets } from '../sheets.svelte.js';
@@ -14,6 +14,7 @@
 
   const counts = $derived(syncState.choice);
   const backup = $derived(Boolean(counts?.backup));
+  const deviceEmpty = $derived(!counts || counts.device.recipes + counts.device.weeklyPlan + counts.device.provisions === 0);
   const rows = $derived(
     [
       { key: 'recipes', label: 'Recipes', icon: 'menu_book' },
@@ -48,13 +49,18 @@
         </span>
         <div class="flex flex-col gap-1">
           <h2 id="first-sync-title" class="font-display text-headline-sm text-on-surface sm:text-headline-md">
-            {backup ? 'Empty' : 'Combine with'} “{sheets.spreadsheetName || 'your spreadsheet'}”{backup ? ' to match this device?' : '?'}
+            {backup ? (deviceEmpty ? 'Empty' : 'Overwrite') : 'Combine with'} “{sheets.spreadsheetName || 'your spreadsheet'}”{backup ? ' to match this device?' : '?'}
           </h2>
           <p id="first-sync-subtitle" class="text-body-md text-on-surface-variant">
             {#if backup}
-              This device has no recipes, plan or grocery list, but the spreadsheet does. In Sheets as Backup mode the
-              spreadsheet is a copy of this device, so syncing will delete everything listed under Spreadsheet. To get that data
-              onto this device instead, restore it: sync switches to Bidirectional.
+              {#if deviceEmpty}
+                This device has no recipes, plan or grocery list, but the spreadsheet does.
+              {:else}
+                The spreadsheet already has data.
+              {/if}
+              In Sheets as Backup mode the spreadsheet is a copy of this device, so syncing will overwrite matching rows and
+              delete the rest of what is listed under Spreadsheet.
+              {#if deviceEmpty}To get that data onto this device instead, restore it: sync switches to Bidirectional.{/if}
             {:else}
               The spreadsheet and this device both have data. Choose what happens on this first sync.
             {/if}
@@ -108,7 +114,7 @@
       <button type="button" class="btn px-4 py-2 text-body-md text-on-surface hover:bg-surface-container-high" disabled={syncState.busy} onclick={cancelFirstSync}>
         Don’t Connect
       </button>
-      {#if backup}
+      {#if backup && deviceEmpty}
         <button type="button" class="btn-outline px-4 py-2 text-body-md" disabled={syncState.busy} onclick={restoreFromSheet}>
           <Icon name="cloud_download" class="text-[18px]" /> Restore From Spreadsheet
         </button>
@@ -120,7 +126,7 @@
         onclick={go}
       >
         <Icon name={syncState.busy ? 'progress_activity' : 'sync'} class="text-[18px] {syncState.busy ? 'animate-spin' : ''}" />
-        {syncState.busy ? 'Syncing…' : backup ? 'Empty Spreadsheet' : choice === 'merge' ? 'Merge & Sync' : 'Replace This Device'}
+        {syncState.busy ? 'Syncing…' : backup ? (deviceEmpty ? 'Empty Spreadsheet' : 'Overwrite Spreadsheet') : choice === 'merge' ? 'Merge & Sync' : 'Replace This Device'}
       </button>
     </div>
   </div>

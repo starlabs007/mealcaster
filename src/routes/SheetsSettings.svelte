@@ -84,6 +84,19 @@
 
   const close = () => goBack('/');
 
+  // Connecting and syncing use the saved settings, so apply any unsaved changes (sync direction, tab
+  // names) first. Save is still needed to close the page; this just keeps the sync from running on stale ones.
+  function applyDraftThen(action) {
+    if (dirty) {
+      if (!tabsValid) {
+        showToast('Fix the tab names before connecting.');
+        return;
+      }
+      saveSheetsSettings({ ...$state.snapshot(sheets), ...$state.snapshot(draft) });
+    }
+    action();
+  }
+
   function save() {
     if (!tabsValid) return;
     saveSheetsSettings({ ...$state.snapshot(sheets), ...$state.snapshot(draft) });
@@ -296,7 +309,7 @@
                   <Icon name="logout" class="text-[16px]" /> Sign Out
                 </button>
               {:else}
-                <button type="button" class="btn-primary shrink-0 self-start py-2 sm:self-auto" disabled={phase === 'syncing'} onclick={connect}>
+                <button type="button" class="btn-primary shrink-0 self-start py-2 sm:self-auto" disabled={phase === 'syncing'} onclick={() => applyDraftThen(connect)}>
                   <Icon name="login" class="text-[16px]" /> {sheets.spreadsheet ? 'Reconnect' : 'Sign in with Google'}
                 </button>
               {/if}
@@ -328,17 +341,17 @@
             {#if googleConfigured}
               <div class="flex shrink-0 flex-wrap gap-2">
                 {#if sheets.spreadsheet}
-                  <button type="button" class="btn-outline py-2" disabled={phase === 'syncing'} onclick={chooseSpreadsheet}>
+                  <button type="button" class="btn-outline py-2" disabled={phase === 'syncing'} onclick={() => applyDraftThen(chooseSpreadsheet)}>
                     <Icon name="swap_horiz" class="text-[16px]" /> Change
                   </button>
                   <button type="button" class="btn py-2 text-secondary hover:bg-secondary-fixed/50" onclick={disconnect}>
                     <Icon name="link_off" class="text-[16px]" /> Disconnect
                   </button>
                 {:else}
-                  <button type="button" class="btn-outline py-2" disabled={phase === 'syncing'} onclick={chooseSpreadsheet}>
+                  <button type="button" class="btn-outline py-2" disabled={phase === 'syncing'} onclick={() => applyDraftThen(chooseSpreadsheet)}>
                     <Icon name="folder_open" class="text-[16px]" /> Choose from Drive
                   </button>
-                  <button type="button" class="btn-primary py-2" disabled={phase === 'syncing'} onclick={createNewSpreadsheet}>
+                  <button type="button" class="btn-primary py-2" disabled={phase === 'syncing'} onclick={() => applyDraftThen(createNewSpreadsheet)}>
                     <Icon name="add" class="text-[16px]" /> Create New Sheet
                   </button>
                 {/if}
@@ -360,7 +373,7 @@
           <div class="flex flex-col gap-2 rounded-lg bg-surface-container-low px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
             <SyncStatus variant="line" />
             {#if phase === 'synced' || phase === 'error'}
-              <button type="button" class="btn shrink-0 self-start bg-surface-container-lowest text-on-surface hover:bg-surface-container-high sm:self-auto" onclick={() => syncNow()}>
+              <button type="button" class="btn shrink-0 self-start bg-surface-container-lowest text-on-surface hover:bg-surface-container-high sm:self-auto" onclick={() => applyDraftThen(syncNow)}>
                 <Icon name="sync" class="text-[16px]" /> Sync Now
               </button>
             {:else if phase === 'conflict'}

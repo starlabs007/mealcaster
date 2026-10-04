@@ -163,9 +163,9 @@ In dev they come from `.env.local` (git-ignored); in CI from the repo's `product
   overlaps) or **Use the spreadsheet only**.
 - **Sheets as Backup** (backup sync, Sheets Settings → Sync Strategy) makes the sheet a backup of this device: the
   device wins every row, nothing is pulled, and rows only in the sheet (including unknown `[Settings]` rows) are deleted;
-  the sheet's schema version is overwritten with the app's. If this device is empty but the spreadsheet has data, the
-  first sync asks first: **Empty Spreadsheet**, **Restore From Spreadsheet** (switches to Bidirectional and takes the
-  sheet's data) or **Don't Connect**.
+  the sheet's schema version is overwritten with the app's. If the spreadsheet already has recipes, plan or grocery
+  data, the first sync asks first: **Empty / Overwrite Spreadsheet** or **Don't Connect**, plus **Restore From
+  Spreadsheet** (switches to Bidirectional and takes the sheet's data) when this device has none.
 - Runs on connect, when the app regains focus, ~1.5 s after edits (Instant Push), and on Sync Now.
 - Renamed/missing columns pause sync until resolved on `#/sheets-sync/columns`.
 - Uploaded recipe photos go to a "MealCaster Photos" Drive folder, shared as anyone-with-the-link.
