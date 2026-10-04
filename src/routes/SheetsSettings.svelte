@@ -257,7 +257,7 @@
     <div class="flex flex-col gap-6 overflow-y-auto px-4 py-4 sm:px-8">
       <!-- 01 Account & spreadsheet -->
       <section class="flex flex-col gap-3" aria-label="Account and target spreadsheet">
-        {@render sectionLabel('01. Account & Target Spreadsheet', googleConfigured ? 'Only files you choose are shared with MealCaster' : '')}
+        {@render sectionLabel('01. Account & Target Spreadsheet', googleConfigured ? 'Only the file you choose is shared with MealCaster' : '')}
         <div class="flex flex-col gap-4 rounded-xl bg-surface-container-lowest p-4 shadow-card">
           <!-- Google account -->
           <div class="flex flex-col justify-between gap-3 rounded-lg bg-surface-container-low/60 p-3 sm:flex-row sm:items-center">
@@ -404,10 +404,24 @@
         {/if}
       </section>
 
-      <!-- 02 Tab mapping -->
+      <!-- 02 Sync strategy -->
+      <section class="flex flex-col gap-3" aria-label="Sync strategy">
+        {@render sectionLabel('02. Sync Strategy & Automation')}
+        <div class="flex flex-col gap-2 rounded-xl bg-surface-container-lowest p-3 shadow-card sm:p-4">
+          <div class="grid gap-2 md:grid-cols-2" role="radiogroup" aria-label="Sync direction">
+            {@render directionOption('bidirectional', 'Bidirectional Sync', 'Changes in Sheets or MealCaster reflect in both. If both changed the same row, the Google Sheet wins.', 'sync_alt')}
+            {@render directionOption('pushOnly', 'Sheets as Backup', 'The sheet serves as an online backup and mirrors this device; edits made in the sheet are overwritten', 'arrow_forward')}
+          </div>
+          <div class="divide-y divide-surface-container-high px-1">
+            {@render toggle('instantPush', 'Instant Reactive Push', 'Push changes a moment after you make them. Off means syncing only on connect, when you return to the app, or when you press Sync Now.')}
+          </div>
+        </div>
+      </section>
+
+      <!-- 03 Tab mapping -->
       <section class="flex flex-col gap-3" aria-label="Tab mapping">
         <div class="flex flex-wrap items-center justify-between gap-2">
-          <h3 class="text-label-caps uppercase tracking-wider text-primary">02. Three-Sheet Tab Mapping</h3>
+          <h3 class="text-label-caps uppercase tracking-wider text-primary">03. Three-Sheet Tab Mapping</h3>
           <span class="text-label-sm text-outline">MealCaster adds a tab if it’s missing</span>
         </div>
         <div class="grid gap-3 md:grid-cols-3">
@@ -456,20 +470,6 @@
           >
             <Icon name="fact_check" class="text-[16px]" /> Check Column Headers
           </button>
-        </div>
-      </section>
-
-      <!-- 03 Sync strategy -->
-      <section class="flex flex-col gap-3" aria-label="Sync strategy">
-        {@render sectionLabel('03. Sync Strategy & Automation', 'The Google Sheet wins when both sides changed')}
-        <div class="flex flex-col gap-2 rounded-xl bg-surface-container-lowest p-3 shadow-card sm:p-4">
-          <div class="grid gap-2 md:grid-cols-2" role="radiogroup" aria-label="Sync direction">
-            {@render directionOption('bidirectional', 'Bidirectional Sync', 'Changes in Sheets or MealCaster reflect in both', 'sync_alt')}
-            {@render directionOption('pushOnly', 'MealCaster → Sheets', 'The sheet mirrors this device; edits made in the sheet are overwritten', 'arrow_forward')}
-          </div>
-          <div class="divide-y divide-surface-container-high px-1">
-            {@render toggle('instantPush', 'Instant Reactive Push', 'Push changes a moment after you make them. Off means syncing only on connect, when you return to the app, or when you press Sync Now.')}
-          </div>
         </div>
       </section>
     </div>
