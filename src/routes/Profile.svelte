@@ -6,10 +6,8 @@
   import Icon from '../lib/components/Icon.svelte';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
   import PrintOptionsFields from '../lib/components/PrintOptionsFields.svelte';
-  import { aisles } from '../lib/data/aisles.js';
-  import { aisleLabel, recipes, isSample, isSuggestedTag, normalizeTag, tagChoices, TAG_MAX } from '../lib/recipes.svelte.js';
-  import { settings, setAisleMapping, removeAisleMapping, setReturnToPlanner, setWeekStartDay, setHave } from '../lib/settings.svelte.js';
-  import { mappingKey } from '../lib/aisleMap.js';
+  import { recipes, isSample, isSuggestedTag, normalizeTag, tagChoices, TAG_MAX } from '../lib/recipes.svelte.js';
+  import { settings, setReturnToPlanner, setWeekStartDay } from '../lib/settings.svelte.js';
   import { realignWeeks } from '../lib/weekStart.svelte.js';
   import { printOptions, setPrintOptions } from '../lib/printOptions.svelte.js';
   import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
@@ -17,6 +15,8 @@
   import { RECENT_DAYS, planner } from '../lib/planner.svelte.js';
   import { weekStartOf } from '../lib/dates.js';
   import WipeDataDialog from '../lib/components/WipeDataDialog.svelte';
+  import HaveListDialog from '../lib/components/HaveListDialog.svelte';
+  import AisleMappingsDialog from '../lib/components/AisleMappingsDialog.svelte';
   import { sheets } from '../lib/sheets.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -25,30 +25,12 @@
     'rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container';
 
   let confirmingWipe = $state(false);
-  let draft = $state({ name: '', tag: 'Pantry' });
   const haveList = $derived([...settings.have].sort((a, b) => a.localeCompare(b)));
-  let haveDraft = $state('');
-  function addHave(e) {
-    e.preventDefault();
-    const name = haveDraft.trim();
-    if (!name) return;
-    setHave(name, true);
-    haveDraft = '';
-    showToast(`${name} will stay off your grocery list.`);
-  }
+  let editingHave = $state(false);
+  let editingAisles = $state(false);
 
   const mappings = $derived([...settings.aisles].sort((a, b) => a.name.localeCompare(b.name)));
   const synced = $derived(Boolean(sheets.spreadsheet));
-
-  function addMapping(event) {
-    event.preventDefault();
-    const name = draft.name.trim();
-    if (!name) return;
-    const existing = settings.aisles.some((m) => mappingKey(m.name) === mappingKey(name));
-    setAisleMapping(name, draft.tag);
-    showToast(`${existing ? 'Updated' : 'Added'} ${name} → ${aisleLabel(draft.tag)}.`);
-    draft = { name: '', tag: draft.tag };
-  }
 
   const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -196,49 +178,14 @@
       <SyncStatus />
     {/if}
 
-    <form onsubmit={addMapping} class="grid grid-cols-1 gap-3 sm:grid-cols-[2fr_1.3fr_auto] sm:items-end">
-      <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
-        Ingredient
-        <input required bind:value={draft.name} placeholder="e.g. Oat milk" class={inputClass} />
-      </label>
-      <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
-        Aisle
-        <select bind:value={draft.tag} class={inputClass}>
-          {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
-        </select>
-      </label>
-      <button type="submit" class="btn-primary py-2.5">Add Mapping</button>
-    </form>
-
-    {#if mappings.length}
-      <ul class="divide-y divide-surface-container-high overflow-hidden rounded-xl border border-surface-container-high">
-        {#each mappings as m (m.name)}
-          <li class="flex items-center gap-3 px-4 py-2.5">
-            <span class="min-w-0 flex-1 truncate text-body-md text-on-surface">{m.name}</span>
-            <select
-              aria-label="Aisle for {m.name}"
-              value={m.tag}
-              onchange={(e) => setAisleMapping(m.name, e.currentTarget.value)}
-              class="{inputClass} py-1.5"
-            >
-              {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
-            </select>
-            <button
-              type="button"
-              aria-label="Remove {m.name}"
-              class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
-              onclick={() => removeAisleMapping(m.name)}
-            >
-              <Icon name="delete" class="text-[18px]" />
-            </button>
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <p class="rounded-xl border border-dashed border-outline-variant px-4 py-6 text-center text-body-sm text-outline">
-        No custom mappings yet.
-      </p>
-    {/if}
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <span class="text-label-md {mappings.length ? 'text-on-surface' : 'text-outline'}">
+        {mappings.length ? `${mappings.length} mapping${mappings.length === 1 ? '' : 's'}` : 'No custom mappings yet.'}
+      </span>
+      <button type="button" class="btn-outline shrink-0 py-2" onclick={() => (editingAisles = true)}>
+        <Icon name="edit" class="text-[16px]" /> View / Edit
+      </button>
+    </div>
   </section>
 
   <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="have-heading">
@@ -255,35 +202,14 @@
       add it here. A name matches an ingredient exactly (any case, plural ok): “noodles” won’t hide “egg noodles”.
     </p>
 
-    <form onsubmit={addHave} class="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-      <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
-        Ingredient
-        <input required bind:value={haveDraft} placeholder="e.g. Egg noodles" class={inputClass} />
-      </label>
-      <button type="submit" class="btn-primary py-2.5">Add</button>
-    </form>
-
-    {#if haveList.length}
-      <ul class="divide-y divide-surface-container-high overflow-hidden rounded-xl border border-surface-container-high">
-        {#each haveList as name (name)}
-          <li class="flex items-center gap-3 px-4 py-2.5">
-            <span class="min-w-0 flex-1 truncate text-body-md text-on-surface">{name}</span>
-            <button
-              type="button"
-              aria-label="Remove {name}"
-              class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
-              onclick={() => setHave(name, false)}
-            >
-              <Icon name="delete" class="text-[18px]" />
-            </button>
-          </li>
-        {/each}
-      </ul>
-    {:else}
-      <p class="rounded-xl border border-dashed border-outline-variant px-4 py-6 text-center text-body-sm text-outline">
-        Nothing here yet.
-      </p>
-    {/if}
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <span class="text-label-md {haveList.length ? 'text-on-surface' : 'text-outline'}">
+        {haveList.length ? `${haveList.length} ingredient${haveList.length === 1 ? '' : 's'}` : 'Nothing here yet.'}
+      </span>
+      <button type="button" class="btn-outline shrink-0 py-2" onclick={() => (editingHave = true)}>
+        <Icon name="edit" class="text-[16px]" /> View / Edit
+      </button>
+    </div>
   </section>
 
   <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="tags-heading">
@@ -429,4 +355,12 @@
 
 {#if confirmingWipe}
   <WipeDataDialog onclose={() => (confirmingWipe = false)} />
+{/if}
+
+{#if editingHave}
+  <HaveListDialog onclose={() => (editingHave = false)} />
+{/if}
+
+{#if editingAisles}
+  <AisleMappingsDialog onclose={() => (editingAisles = false)} />
 {/if}
