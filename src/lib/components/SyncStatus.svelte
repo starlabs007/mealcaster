@@ -41,7 +41,7 @@
       case 'signedOut':
         return 'Reconnect to sync — changes are kept on this device until then.';
       case 'choose':
-        return syncState.choice?.mirror
+        return syncState.choice?.backup
           ? 'Confirm before the spreadsheet is emptied to match this device.'
           : 'Choose how to combine this device with the spreadsheet.';
       case 'conflict': {

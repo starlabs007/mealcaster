@@ -27,7 +27,7 @@ import { a1, fingerprint, readTable, reconcile, resolveColumns, rowCells } from 
  * @typedef {
  *   | { status: 'done', base: SyncBase, title: string, pushed: number, pulled: number }
  *   | { status: 'conflict', tab: TabKey, columns: string[], title: string }
- *   | { status: 'choose', sheet: Counts, device: Counts, title: string, mirror: boolean }
+ *   | { status: 'choose', sheet: Counts, device: Counts, title: string, backup: boolean }
  * } SyncResult
  */
 
@@ -66,9 +66,9 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
   const tables = Object.fromEntries(tabs.map(({ key }) => [key, readTable(key, valuesOf.get(key) ?? [], plans[key])]));
 
   // First sync of this spreadsheet: ask before anything is lost. Bidirectional with data on both
-  // sides: merge or replace the device. Mirror mode (push-only) with an empty device and a
+  // sides: merge or replace the device. Backup sync (push-only) with an empty device and a
   // spreadsheet that has data: the sheet would be emptied, so confirm. The always-present
-  // settings rows don't count as data in the mirror check.
+  // settings rows don't count as data in the backup check.
   if (!base.initialized && !choice) {
     const sheet = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
     const device = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
@@ -78,8 +78,8 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
     }
     const any = (c) => Object.values(c).some(Boolean);
     const userData = (c) => c.recipes + c.weeklyPlan + c.provisions > 0;
-    if (direction === 'bidirectional' && any(sheet) && any(device)) return { status: 'choose', sheet, device, title: meta.title, mirror: false };
-    if (direction === 'pushOnly' && userData(sheet) && !userData(device)) return { status: 'choose', sheet, device, title: meta.title, mirror: true };
+    if (direction === 'bidirectional' && any(sheet) && any(device)) return { status: 'choose', sheet, device, title: meta.title, backup: false };
+    if (direction === 'pushOnly' && userData(sheet) && !userData(device)) return { status: 'choose', sheet, device, title: meta.title, backup: true };
   }
 
   /** @type {Strategy} */

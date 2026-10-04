@@ -1,7 +1,7 @@
 <script>
   // First sync with data both in the spreadsheet and on this device: merge the
   // two (the sheet wins where both have the same item) or keep only the sheet.
-  // In mirror mode (MealCaster → Sheets) with an empty device it instead confirms
+  // In backup sync (Sheets as Backup) with an empty device it instead confirms
   // that the spreadsheet's rows will be removed to match the device.
   import { onMount } from 'svelte';
   import Icon from './Icon.svelte';
@@ -13,7 +13,7 @@
   let choice = $state(/** @type {'merge' | 'sheetOnly'} */ ('merge'));
 
   const counts = $derived(syncState.choice);
-  const mirror = $derived(Boolean(counts?.mirror));
+  const backup = $derived(Boolean(counts?.backup));
   const rows = $derived(
     [
       { key: 'recipes', label: 'Recipes', icon: 'menu_book' },
@@ -26,7 +26,7 @@
   onMount(() => dialog.focus());
 
   function go() {
-    syncNow({ choice: mirror ? 'confirm' : choice });
+    syncNow({ choice: backup ? 'confirm' : choice });
   }
 </script>
 
@@ -44,16 +44,16 @@
     <div class="flex flex-col gap-5 px-5 py-5 sm:px-7 sm:py-6">
       <div class="flex items-start gap-4">
         <span class="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary-fixed/70 text-primary sm:flex">
-          <Icon name={mirror ? 'warning' : 'merge'} class="text-[24px]" />
+          <Icon name={backup ? 'warning' : 'merge'} class="text-[24px]" />
         </span>
         <div class="flex flex-col gap-1">
           <h2 id="first-sync-title" class="font-display text-headline-sm text-on-surface sm:text-headline-md">
-            {mirror ? 'Empty' : 'Combine with'} “{sheets.spreadsheetName || 'your spreadsheet'}”{mirror ? ' to match this device?' : '?'}
+            {backup ? 'Empty' : 'Combine with'} “{sheets.spreadsheetName || 'your spreadsheet'}”{backup ? ' to match this device?' : '?'}
           </h2>
           <p id="first-sync-subtitle" class="text-body-md text-on-surface-variant">
-            {#if mirror}
-              This device has no recipes, plan or grocery list, but the spreadsheet does. In MealCaster → Sheets mode the
-              spreadsheet mirrors this device, so syncing will delete everything listed under Spreadsheet. To get that data
+            {#if backup}
+              This device has no recipes, plan or grocery list, but the spreadsheet does. In Sheets as Backup mode the
+              spreadsheet is a copy of this device, so syncing will delete everything listed under Spreadsheet. To get that data
               onto this device instead, restore it: sync switches to Bidirectional.
             {:else}
               The spreadsheet and this device both have data. Choose what happens on this first sync.
@@ -77,7 +77,7 @@
         </div>
       {/if}
 
-      {#if !mirror}
+      {#if !backup}
       <div class="flex flex-col gap-2" role="radiogroup" aria-label="First sync">
         {#each [
           { value: 'merge', title: 'Merge both', text: 'Add what’s only on this device to the spreadsheet. Where both have the same recipe, dinner or grocery line, the spreadsheet’s version is kept.', icon: 'join' },
@@ -108,19 +108,19 @@
       <button type="button" class="btn px-4 py-2 text-body-md text-on-surface hover:bg-surface-container-high" disabled={syncState.busy} onclick={cancelFirstSync}>
         Don’t Connect
       </button>
-      {#if mirror}
+      {#if backup}
         <button type="button" class="btn-outline px-4 py-2 text-body-md" disabled={syncState.busy} onclick={restoreFromSheet}>
           <Icon name="cloud_download" class="text-[18px]" /> Restore From Spreadsheet
         </button>
       {/if}
       <button
         type="button"
-        class="btn px-5 py-2 text-body-md shadow-sm {mirror || choice === 'sheetOnly' ? 'bg-secondary text-on-secondary hover:bg-secondary/90' : 'btn-primary'}"
+        class="btn px-5 py-2 text-body-md shadow-sm {backup || choice === 'sheetOnly' ? 'bg-secondary text-on-secondary hover:bg-secondary/90' : 'btn-primary'}"
         disabled={syncState.busy}
         onclick={go}
       >
         <Icon name={syncState.busy ? 'progress_activity' : 'sync'} class="text-[18px] {syncState.busy ? 'animate-spin' : ''}" />
-        {syncState.busy ? 'Syncing…' : mirror ? 'Empty Spreadsheet' : choice === 'merge' ? 'Merge & Sync' : 'Replace This Device'}
+        {syncState.busy ? 'Syncing…' : backup ? 'Empty Spreadsheet' : choice === 'merge' ? 'Merge & Sync' : 'Replace This Device'}
       </button>
     </div>
   </div>

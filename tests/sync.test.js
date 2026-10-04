@@ -220,7 +220,7 @@ describe('sheet layout and options', () => {
     assert.ok(!sheet.find('Recipes').grid[0].includes('Method_Steps'), 'the mapped column is not added again');
   });
 
-  it('push-only mirrors the device into the sheet', async () => {
+  it('push-only makes the sheet a copy of the device', async () => {
     const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, ['x', 'Only in sheet', '[]', '']] });
     const device = fakeDevice({ recipes: [recipe('b', 'Device B')] });
     const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [TABS[0]], direction: 'pushOnly' }));
@@ -247,7 +247,7 @@ describe('sheet layout and options', () => {
   });
 });
 
-describe('mirror mode (push-only)', () => {
+describe('backup sync (push-only)', () => {
   const push = { tabs: [TABS[0]], direction: 'pushOnly' };
 
   it('confirms before emptying a spreadsheet that has data into an empty device', async () => {
@@ -256,7 +256,7 @@ describe('mirror mode (push-only)', () => {
 
     const ask = await runSync(syncOptions(sheet, device, emptyBase('S1'), push));
     assert.equal(ask.status, 'choose');
-    assert.equal(ask.mirror, true);
+    assert.equal(ask.backup, true);
     assert.equal(ask.sheet.recipes, 1);
     assert.equal(ask.device.recipes, 0);
     assert.equal(sheet.calls.writes + sheet.calls.batch, 0, 'nothing is changed before the confirmation');
@@ -284,7 +284,7 @@ describe('mirror mode (push-only)', () => {
     const options = { ...push, tabs: [TABS[0], SETTINGS_TAB] };
     const ask = await runSync(syncOptions(sheet, fakeDevice(), emptyBase('S1'), options));
     assert.equal(ask.status, 'choose');
-    assert.equal(ask.mirror, true);
+    assert.equal(ask.backup, true);
   });
 
   it('does not ask when the device has data, or the spreadsheet is empty', async () => {

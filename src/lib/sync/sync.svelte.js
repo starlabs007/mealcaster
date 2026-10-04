@@ -50,7 +50,7 @@ export const syncState = $state({
   /** Columns that stop sync until resolved on the Column Conflicts screen. */
   conflict: /** @type {{ tab: TabKey, columns: string[] } | null} */ (null),
   /** First sync with data on both sides: what each side holds. */
-  choice: /** @type {{ sheet: Counts, device: Counts, mirror: boolean } | null} */ (null),
+  choice: /** @type {{ sheet: Counts, device: Counts, backup: boolean } | null} */ (null),
   account: /** @type {{ name: string, email: string, photo: string } | null} */ (null),
 });
 
@@ -267,7 +267,7 @@ export function syncNow(options = {}) {
       if (result.title !== sheets.spreadsheetName) updateSheetsSettings({ spreadsheetName: result.title });
       syncState.error = '';
       syncState.conflict = result.status === 'conflict' ? { tab: result.tab, columns: result.columns } : null;
-      syncState.choice = result.status === 'choose' ? { sheet: result.sheet, device: result.device, mirror: result.mirror } : null;
+      syncState.choice = result.status === 'choose' ? { sheet: result.sheet, device: result.device, backup: result.backup } : null;
       if (result.status === 'done') {
         syncState.lastSyncedAt = new Date().toISOString();
         saveBase(result.base);
@@ -368,7 +368,7 @@ export function disconnect() {
   showToast('Disconnected from Google Sheets. Your data stays on this device.');
 }
 
-/** Mirror-mode confirm, "restore" answer: switch to bidirectional and take the spreadsheet's data. */
+/** Backup-sync confirm, "restore" answer: switch to bidirectional and take the spreadsheet's data. */
 export function restoreFromSheet() {
   updateSheetsSettings({ direction: 'bidirectional' });
   return syncNow({ choice: 'sheetOnly' });
