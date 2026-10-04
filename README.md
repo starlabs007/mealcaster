@@ -56,7 +56,7 @@ npm run preview    # http://localhost:4173
     - Replacing a planned meal with either shows an **Undo** toast.
   - **Night off** (today or later): **Plan a Meal Instead** clears the night so it's open again.
   - **Completed** and **not logged** past days only offer **View Recipe** where there is a meal.
-- Grocery badge counts the ingredients of this week's upcoming dinners.
+- Grocery badge counts the items still to buy for the viewed week (every dinner of the week, past days included).
 
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
 
@@ -95,8 +95,9 @@ The `Category` column holds it; blank means none.
 
 ## Quick Grocery List (`#/grocery`)
 
-- Auto-compiled from the viewed week's upcoming dinners, grouped into Produce, Meat & Seafood,
-  Dairy and Pantry aisles (with aisle tabs). Each line shows which dinner needs it.
+- Auto-compiled from all of the viewed week's dinners (past days and ones marked done included, so their items and
+  their `[Provisions]` rows stay), grouped into Produce, Meat & Seafood, Dairy and Pantry aisles (with aisle tabs).
+  Each line shows which dinner needs it.
 - Ingredients on your **Ingredients I Have** list are left off; an expandable note (closed by default) says how many
   and lists them with the dinner they belong to.
 - Tap the circle when bought and the box icon if you already have it; either way the item moves to the
