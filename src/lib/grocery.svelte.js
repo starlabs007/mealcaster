@@ -1,7 +1,8 @@
 // Quick Grocery & Provisions list, one per week (mirrors a [Provisions] sheet tab).
 //
 // Lines come from three sources:
-//  1. Automatic — every ingredient of the week's upcoming dinners, except ones on the
+//  1. Automatic — every ingredient of the week's dinners, past days and ones marked done included (so items
+//     bought for them stay, here and in the sheet), except ones on the
 //     "ingredients I have" list (settings).
 //  2. Pushed — ingredients sent from a Recipe Detail page ("Add to List" /
 //     "Push Unchecked to Grocery"), even for recipes not on the plan.
@@ -127,6 +128,14 @@ export function ingredientKeys(recipeId) {
   return recipe.ingredients.flatMap((group, g) => group.items.map((_, i) => `${recipeId}:${g}:${i}`));
 }
 
+/**
+ * The week's days with a dinner whose ingredients go on the list: planned ones, and past or done ones
+ * ('completed') — the whole week, so a past day's items don't vanish from the list and the sheet.
+ * @param {string} [weekStart]
+ */
+export const weekDinners = (weekStart = planner.weekStart) =>
+  currentWeek(weekStart).filter((d) => (d.status === 'planned' || d.status === 'completed') && d.recipe);
+
 /** Lines of the viewed week's list (or of `weekStart`'s). @returns {GroceryLine[]} */
 export const groceryLines = (weekStart = planner.weekStart) => buildWeek(weekStart).lines;
 
@@ -171,9 +180,7 @@ function buildWeek(weekStart) {
     });
   };
 
-  for (const day of currentWeek(weekStart)) {
-    if (day.status === 'planned' && day.recipe) ingredientKeys(day.recipe.id).forEach((k) => addIngredient(k, day));
-  }
+  for (const day of weekDinners(weekStart)) ingredientKeys(day.recipe.id).forEach((k) => addIngredient(k, day));
   week.extras.forEach((k) => addIngredient(k));
   for (const c of week.custom) {
     lines.set(c.id, {

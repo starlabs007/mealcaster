@@ -11,11 +11,11 @@ import { pickSpreadsheet, preparePicker } from '../google/picker.js';
 import { sheets, updateSheetsSettings } from '../sheets.svelte.js';
 import { recipes, replaceRecipes, saveRecipe } from '../recipes.svelte.js';
 import { favorites, setFavorites } from '../favorites.svelte.js';
-import { planner, replacePlan, statusOf } from '../planner.svelte.js';
-import { grocery, groceryLines, replaceGrocery } from '../grocery.svelte.js';
+import { planner, replacePlan } from '../planner.svelte.js';
+import { grocery, groceryLines, replaceGrocery, weekDinners } from '../grocery.svelte.js';
 import { settings, replaceSettings } from '../settings.svelte.js';
 import { realignWeeks } from '../weekStart.svelte.js';
-import { addDays, weekStartOf, weekDates } from '../dates.js';
+import { addDays, weekStartOf } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
 import { storageKey } from '../env.js';
 import { allSaved } from '../storage.svelte.js';
@@ -209,7 +209,7 @@ const device = {
     } else {
       const isPlanned = (week, key) => {
         const recipeId = key.split(':')[0];
-        return weekDates(week).some((iso) => planner.entries[iso]?.recipeId === recipeId && statusOf(iso) === 'planned');
+        return weekDinners(week).some((d) => d.recipe.id === recipeId);
       };
       // Weeks too old to sync keep their lists, and standing items acquired back then stay acquired there.
       const since = provisionsSince();

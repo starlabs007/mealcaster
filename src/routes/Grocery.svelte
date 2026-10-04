@@ -10,9 +10,10 @@
     addCustomItem,
     removeCustomItem,
     grocery,
+    weekDinners,
   } from '../lib/grocery.svelte.js';
   import { aisles, guessAisle, recipes } from '../lib/recipes.svelte.js';
-  import { planner, currentWeek, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
+  import { planner, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { addDays, formatRange, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
@@ -82,8 +83,7 @@
   );
 
   const sources = $derived(
-    currentWeek()
-      .filter((d) => d.status === 'planned' && d.recipe)
+    weekDinners()
       .map((d) => ({
         day: d,
         count: shopping.filter((l) => l.recipeId === d.recipe.id).length,
@@ -507,7 +507,7 @@
             {/each}
           </ul>
         {:else}
-          <p class="text-body-sm text-on-surface-variant">No upcoming dinners planned for {weekName}.</p>
+          <p class="text-body-sm text-on-surface-variant">No dinners planned for {weekName}.</p>
         {/if}
         <a href={href('/')} class="mt-3 inline-flex items-center gap-1 text-label-md text-primary hover:underline">
           Open weekly dinner schedule <Icon name="arrow_forward" class="text-[16px]" />
