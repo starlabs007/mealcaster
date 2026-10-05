@@ -60,7 +60,7 @@ export function starterWorkbook(settings) {
   if (settings.syncProvisions) {
     sheets.push({ name: settings.tabs.provisions.trim(), rows: [SCHEMA.provisions, ...provisionRows] });
   }
-  const settingRows = [...settingsToRows($state.snapshot(profile)).values()].map((r) => SCHEMA.settings.map((c) => r[c]));
+  const settingRows = [...settingsToRows(profile).values()].map((r) => SCHEMA.settings.map((c) => r[c]));
   sheets.push({ name: settings.tabs.settings.trim(), rows: [SCHEMA.settings, ...settingRows] });
   return buildXlsx(sheets);
 }
