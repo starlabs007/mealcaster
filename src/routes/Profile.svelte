@@ -29,6 +29,9 @@
   const inputClass =
     'rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container';
 
+  /** A group of related device options in This Device. */
+  const deviceCard = 'flex flex-col rounded-xl border border-surface-container-high p-4';
+
   let confirmingWipe = $state(false);
 
   // Export: everything on this device as a workbook with the tabs (and tab names) the sheet uses.
@@ -123,6 +126,11 @@
     }
   }
 </script>
+
+{#snippet cardHeading(icon, title, description = '')}
+  <h3 class="flex items-center gap-2 text-label-md text-on-surface"><Icon name={icon} class="text-[18px] text-primary" /> {title}</h3>
+  {#if description}<p class="text-body-sm text-on-surface-variant">{description}</p>{/if}
+{/snippet}
 
 {#snippet switchRow(checked, title, description, onchange)}
   <label class="flex cursor-pointer items-start justify-between gap-4 py-3">
@@ -341,7 +349,7 @@
   </section>
 
   <!-- This device only -->
-  <section class="flex flex-col gap-2 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="device-heading">
+  <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="device-heading">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 id="device-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
         <Icon name="devices" class="text-[20px] text-primary" /> This Device
@@ -349,17 +357,15 @@
       <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">Not synced</span>
     </div>
 
-    <div class="divide-y divide-surface-container-high">
-      <div class="py-3">
-        <h3 class="flex items-center gap-2 text-label-md text-on-surface"><Icon name="print" class="text-[16px] text-outline" /> Recipe printing</h3>
-        <p class="text-body-sm text-on-surface-variant">Defaults for the Print Options dialog on a recipe.</p>
-        <div class="mt-1 max-w-md">
-          <PrintOptionsFields bind:draft={print} />
-        </div>
+    <!-- One card per group of related options. -->
+    <div class="flex flex-col gap-3">
+      <div class="{deviceCard}">
+        {@render cardHeading('print', 'Recipe Printing', 'Defaults for the Print Options dialog on a recipe.')}
+        <PrintOptionsFields bind:draft={print} rowClass="max-w-md" />
       </div>
 
-      <div class="flex flex-col gap-2 py-3" id="storage">
-        <h3 class="flex items-center gap-2 text-label-md text-on-surface"><Icon name="storage" class="text-[16px] text-outline" /> Storage</h3>
+      <div class="{deviceCard} gap-2" id="storage">
+        {@render cardHeading('storage', 'Storage')}
         {#if overBudget}
           <p class="text-body-sm text-on-surface-variant">
             About {mb(used)} used, shared with other apps on the same site. This browser allows more than the usual {mb(STORAGE_BUDGET)}.
@@ -403,9 +409,21 @@
         {/if}
       </div>
 
-      <div class="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4" id="export">
+      <div class="{deviceCard}">
+        {@render cardHeading('menu_book', 'Catalog')}
+        <div class="-mb-3">
+          {@render switchRow(
+            devicePrefs.hideRecent,
+            'Hide recently made recipes',
+            `Starts the catalog with “Not made in ${RECENT_DAYS} days” switched on.`,
+            setHideRecent,
+          )}
+        </div>
+      </div>
+
+      <div class="{deviceCard} gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4" id="export">
         <div class="flex flex-col">
-          <h3 class="flex items-center gap-2 text-label-md text-on-surface"><Icon name="download" class="text-[16px] text-outline" /> Export data</h3>
+          {@render cardHeading('download', 'Export')}
           <p class="text-body-sm text-on-surface-variant">
             Download your {exportContents} as an .xlsx workbook with MealCaster’s tabs — a backup, or something to open in Excel or
             Numbers. Uploaded photos that haven’t reached Google Drive are left out.
@@ -415,13 +433,6 @@
           <Icon name="download" class="text-[16px]" /> Export (.xlsx)
         </button>
       </div>
-
-      {@render switchRow(
-        devicePrefs.hideRecent,
-        'Catalog: hide recently made recipes',
-        `Starts the catalog with “Not made in ${RECENT_DAYS} days” switched on.`,
-        setHideRecent,
-      )}
     </div>
   </section>
 
