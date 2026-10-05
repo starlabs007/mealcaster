@@ -11,6 +11,7 @@
   import RecipeEditor from './routes/RecipeEditor.svelte';
   import ColumnConflicts from './routes/ColumnConflicts.svelte';
   import FirstSyncDialog from './lib/components/FirstSyncDialog.svelte';
+  import DisconnectDialog, { disconnectPrompt } from './lib/components/DisconnectDialog.svelte';
   import { syncState } from './lib/sync/sync.svelte.js';
   import { route } from './lib/router.svelte.js';
   import { recipeById } from './lib/recipes.svelte.js';
@@ -49,6 +50,9 @@
 {/if}
 {#if syncState.choice}
   <FirstSyncDialog />
+{/if}
+{#if disconnectPrompt.open}
+  <DisconnectDialog />
 {/if}
 <AppFooter />
 <Toast />
