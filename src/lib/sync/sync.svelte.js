@@ -33,6 +33,7 @@ import {
   settingsToRows,
 } from './codec.js';
 import { emptyBase, runSync } from './run.js';
+import { PHASE_LOOK, phaseOf } from './phase.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
 /** @typedef {import('./run.js').SyncBase} SyncBase */
@@ -40,9 +41,7 @@ import { emptyBase, runSync } from './run.js';
 
 const BASE_KEY = storageKey('syncBase.v1');
 
-/**
- * @typedef {'unavailable' | 'unlinked' | 'signedOut' | 'syncing' | 'synced' | 'error' | 'conflict' | 'choose'} SyncPhase
- */
+/** @typedef {import('./phase.js').SyncPhase} SyncPhase */
 export const syncState = $state({
   busy: false,
   /** Last pass finished: when, and what it did. */
@@ -58,32 +57,18 @@ export const syncState = $state({
 
 /** @returns {SyncPhase} */
 export function syncPhase() {
-  if (!googleConfigured) return 'unavailable';
-  if (syncState.busy) return 'syncing';
-  if (!sheets.spreadsheet) return 'unlinked';
-  if (!auth.token) return 'signedOut';
-  if (syncState.choice) return 'choose';
-  if (syncState.conflict) return 'conflict';
-  if (syncState.error) return 'error';
-  return 'synced';
+  return phaseOf({
+    configured: googleConfigured,
+    busy: syncState.busy,
+    spreadsheet: sheets.spreadsheet,
+    token: auth.token,
+    choice: syncState.choice,
+    conflict: syncState.conflict,
+    error: syncState.error,
+  });
 }
 
-/**
- * How each phase looks, shared by the header tab and the status labels.
- * Tones: ok = connected and in sync, busy/warn = working or waiting on you,
- * bad = sync is stopped, off = not connected.
- * @type {Record<SyncPhase, { tone: 'ok' | 'busy' | 'warn' | 'bad' | 'off', icon: string, short: string }>}
- */
-export const PHASE_LOOK = {
-  synced: { tone: 'ok', icon: 'cloud_done', short: 'Synced' },
-  syncing: { tone: 'busy', icon: 'sync', short: 'Syncing' },
-  signedOut: { tone: 'warn', icon: 'login', short: 'Reconnect' },
-  choose: { tone: 'warn', icon: 'help', short: 'Needs you' },
-  conflict: { tone: 'bad', icon: 'sync_problem', short: 'Paused' },
-  error: { tone: 'bad', icon: 'sync_problem', short: 'Sync problem' },
-  unlinked: { tone: 'off', icon: 'cloud_off', short: 'Not connected' },
-  unavailable: { tone: 'off', icon: 'cloud_off', short: 'Not connected' },
-};
+export { PHASE_LOOK };
 
 // ---- Base (fingerprints as of the last sync) --------------------------------
 
