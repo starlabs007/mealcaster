@@ -18,8 +18,7 @@
   import { addDays, formatRange, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
-  import { sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
-  import { syncPhase, syncNow, connect } from '../lib/sync/sync.svelte.js';
+  import { sheets } from '../lib/sheets.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
   import GroceryPrint from '../lib/components/GroceryPrint.svelte';
 
@@ -512,44 +511,6 @@
         <a href={href('/')} class="mt-3 inline-flex items-center gap-1 text-label-md text-primary hover:underline">
           Open weekly dinner schedule <Icon name="arrow_forward" class="text-[16px]" />
         </a>
-      </section>
-
-      <section class="rounded-2xl bg-surface-container p-5">
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-            <Icon name="table_chart" class="text-[20px]" /> Sheets Two-Way Sync
-          </h2>
-          <Icon name={sheets.spreadsheet ? 'cloud_done' : 'cloud_off'} class="text-[20px] {sheets.spreadsheet ? 'text-primary' : 'text-outline'}" />
-        </div>
-        <div class="flex flex-col gap-2 rounded-xl bg-surface-container-lowest p-3">
-          <div class="flex items-center justify-between gap-2 text-label-caps uppercase text-on-surface-variant">
-            <span>Target spreadsheet</span>
-            {#if sheets.spreadsheet}
-              <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="inline-flex min-w-0 items-center gap-1 normal-case tracking-normal text-primary hover:underline">
-                <span class="truncate">{sheets.spreadsheetName || 'Open sheet'}</span><Icon name="open_in_new" class="text-[14px]" />
-              </a>
-            {:else}
-              <span class="text-outline">Not connected</span>
-            {/if}
-          </div>
-          <SyncStatus />
-        </div>
-        {#if syncPhase() === 'signedOut'}
-          <button type="button" class="btn mt-3 w-full bg-surface-container-lowest py-2 text-on-surface hover:bg-surface-container-high" onclick={connect}>
-            <Icon name="login" class="text-[16px]" /> Reconnect
-          </button>
-        {:else if syncPhase() === 'synced' || syncPhase() === 'error'}
-          <button type="button" class="btn mt-3 w-full bg-surface-container-lowest py-2 text-on-surface hover:bg-surface-container-high" onclick={() => syncNow()}>
-            <Icon name="sync" class="text-[16px]" /> Sync Now
-          </button>
-        {:else}
-          <a
-            href={href('/sheets-sync')}
-            class="btn mt-3 w-full bg-surface-container-lowest py-2 text-on-surface hover:bg-surface-container-high"
-          >
-            <Icon name={sheets.spreadsheet ? 'settings' : 'add_link'} class="text-[16px]" /> {sheets.spreadsheet ? 'Sheets Settings' : 'Connect Google Sheets'}
-          </a>
-        {/if}
       </section>
     </aside>
     {/if}
