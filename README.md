@@ -241,6 +241,12 @@ src/
     components/              AppHeader, DayCard, RecipeCard, LastMade, ...
 ```
 
+**Runes only in `.svelte` / `.svelte.js`.** Svelte compiles `$state`, `$derived`, `$effect` and the other runes
+only in those files. In a plain `.js` module they're left as-is: the build passes and the code throws when it runs.
+A module that holds or snapshots app state is a `.svelte.js` file; a plain `.js` module takes plain data as
+arguments (which also keeps it testable — the Node tests can't load `.svelte.js` modules).
+`tests/runes.test.js` fails on any rune in a plain `.js` file under `src/`.
+
 ## Deploying
 
 `.github/workflows/deploy.yml` builds and publishes `dist/` on every push to `main`.
