@@ -22,11 +22,26 @@
   import { showToast } from '../lib/toast.svelte.js';
   import { NEARLY_FULL, STORAGE_BUDGET, protectStorage, storageState, storageUsed } from '../lib/storage.svelte.js';
   import { isPhotoDataUrl } from '../lib/google/api.js';
+  import { dataWorkbook } from '../lib/sheetsTemplate.js';
+  import { downloadBlob } from '../lib/xlsx.js';
+  import { toISO } from '../lib/dates.js';
 
   const inputClass =
     'rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container';
 
   let confirmingWipe = $state(false);
+
+  // Export: everything on this device as a workbook with the tabs (and tab names) the sheet uses.
+  const exportContents = $derived(
+    [`${recipes.length} recipe${recipes.length === 1 ? '' : 's'}`, 'planned dinners', sheets.syncProvisions && 'the viewed week’s grocery list', 'settings']
+      .filter(Boolean)
+      .join(', ')
+      .replace(/, ([^,]*)$/, ' and $1'),
+  );
+  function exportData() {
+    downloadBlob(dataWorkbook($state.snapshot(sheets)), `MealCaster_Export_${toISO(new Date())}.xlsx`);
+    showToast('Workbook downloaded.');
+  }
   const haveList = $derived([...settings.have].sort((a, b) => a.localeCompare(b)));
   let editingHave = $state(false);
   let editingAisles = $state(false);
@@ -386,6 +401,19 @@
             <button type="button" class="btn-outline shrink-0 py-2" onclick={askToKeep}>Ask to Keep It</button>
           </div>
         {/if}
+      </div>
+
+      <div class="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4" id="export">
+        <div class="flex flex-col">
+          <h3 class="flex items-center gap-2 text-label-md text-on-surface"><Icon name="download" class="text-[16px] text-outline" /> Export data</h3>
+          <p class="text-body-sm text-on-surface-variant">
+            Download your {exportContents} as an .xlsx workbook with MealCaster’s tabs — a backup, or something to open in Excel or
+            Numbers. Uploaded photos that haven’t reached Google Drive are left out.
+          </p>
+        </div>
+        <button type="button" class="btn-outline shrink-0 self-start py-2 sm:self-auto" onclick={exportData}>
+          <Icon name="download" class="text-[16px]" /> Export (.xlsx)
+        </button>
       </div>
 
       {@render switchRow(
