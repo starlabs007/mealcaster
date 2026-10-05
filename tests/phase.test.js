@@ -14,10 +14,12 @@ const state = (changes = {}) => ({
   choice: null,
   conflict: null,
   error: '',
+  initialized: true,
   ...changes,
 });
 
-const PHASES = /** @type {const} */ (['unavailable', 'unlinked', 'signedOut', 'syncing', 'synced', 'error', 'conflict', 'choose']);
+const PHASES = /** @type {const} */ (['unavailable', 'unlinked', 'signedOut', 'syncing', 'pending', 'synced', 'error', 'conflict', 'choose']);
+const LINKED = PHASES.filter((p) => p !== 'unavailable' && p !== 'unlinked');
 
 describe('phaseOf', () => {
   it('reads each state', () => {
@@ -29,6 +31,14 @@ describe('phaseOf', () => {
     assert.equal(phaseOf(state({ choice: { backup: false } })), 'choose');
     assert.equal(phaseOf(state({ conflict: { tab: 'recipes', columns: ['Title'] } })), 'conflict');
     assert.equal(phaseOf(state({ error: 'Offline' })), 'error');
+    assert.equal(phaseOf(state({ initialized: false })), 'pending');
+  });
+
+  it('waits for the first sync only once signed in and nothing else needs attention', () => {
+    assert.equal(phaseOf(state({ initialized: false, token: '' })), 'signedOut');
+    assert.equal(phaseOf(state({ initialized: false, busy: true })), 'syncing');
+    assert.equal(phaseOf(state({ initialized: false, choice: {} })), 'choose');
+    assert.equal(phaseOf(state({ initialized: false, error: 'Offline' })), 'error');
   });
 
   it('puts an unconfigured build before everything else', () => {
@@ -69,6 +79,7 @@ describe('headerActions', () => {
     assert.equal(primaryOf('synced'), 'syncNow');
     assert.equal(primaryOf('error'), 'syncNow');
     assert.equal(primaryOf('syncing'), 'syncNow');
+    assert.equal(primaryOf('pending'), 'review');
     assert.equal(primaryOf('conflict'), 'resolveColumns');
     assert.equal(primaryOf('choose'), 'review');
   });
@@ -83,7 +94,7 @@ describe('headerActions', () => {
   });
 
   it('offers settings, the sheet and disconnect once a spreadsheet is linked', () => {
-    for (const phase of ['signedOut', 'syncing', 'synced', 'error', 'conflict', 'choose']) {
+    for (const phase of LINKED) {
       assert.deepEqual(headerActions(phase).menu.map((a) => a.id), ['settings', 'openSheet', 'disconnect'], phase);
     }
   });
@@ -110,6 +121,6 @@ describe('startStep', () => {
   });
 
   it('opens on the sync step once a spreadsheet is linked', () => {
-    for (const phase of ['signedOut', 'syncing', 'synced', 'error', 'conflict', 'choose']) assert.equal(startStep(phase), 'sync', phase);
+    for (const phase of LINKED) assert.equal(startStep(phase), 'sync', phase);
   });
 });

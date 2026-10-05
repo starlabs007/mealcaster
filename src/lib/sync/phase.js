@@ -2,7 +2,7 @@
 // connection steps offer in each state. Plain module (no runes) so it can be tested.
 
 /**
- * @typedef {'unavailable' | 'unlinked' | 'signedOut' | 'syncing' | 'synced' | 'error' | 'conflict' | 'choose'} SyncPhase
+ * @typedef {'unavailable' | 'unlinked' | 'signedOut' | 'syncing' | 'pending' | 'synced' | 'error' | 'conflict' | 'choose'} SyncPhase
  */
 
 /**
@@ -14,10 +14,13 @@
  *   choice: unknown,
  *   conflict: unknown,
  *   error: string,
+ *   initialized: boolean,
  * }} state
+ * `initialized`: the linked spreadsheet has been synced at least once (its first sync is
+ * explicit, from the connection screen; until then it's `pending`).
  * @returns {SyncPhase}
  */
-export function phaseOf({ configured, busy, spreadsheet, token, choice, conflict, error }) {
+export function phaseOf({ configured, busy, spreadsheet, token, choice, conflict, error, initialized }) {
   if (!configured) return 'unavailable';
   if (busy) return 'syncing';
   if (!spreadsheet) return 'unlinked';
@@ -25,6 +28,7 @@ export function phaseOf({ configured, busy, spreadsheet, token, choice, conflict
   if (choice) return 'choose';
   if (conflict) return 'conflict';
   if (error) return 'error';
+  if (!initialized) return 'pending';
   return 'synced';
 }
 
@@ -37,6 +41,7 @@ export function phaseOf({ configured, busy, spreadsheet, token, choice, conflict
 export const PHASE_LOOK = {
   synced: { tone: 'ok', icon: 'cloud_done', short: 'Synced' },
   syncing: { tone: 'busy', icon: 'sync', short: 'Syncing' },
+  pending: { tone: 'warn', icon: 'pending', short: 'Not synced yet' },
   signedOut: { tone: 'warn', icon: 'login', short: 'Reconnect' },
   choose: { tone: 'warn', icon: 'help', short: 'Needs you' },
   conflict: { tone: 'bad', icon: 'sync_problem', short: 'Paused' },
@@ -70,6 +75,7 @@ const PRIMARY = {
   synced: 'syncNow',
   error: 'syncNow',
   syncing: 'syncNow',
+  pending: 'review',
   conflict: 'resolveColumns',
   choose: 'review',
 };

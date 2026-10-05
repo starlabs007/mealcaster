@@ -1,6 +1,7 @@
 // Google Sheets sync: connecting, choosing the spreadsheet, and running sync
 // passes (on connect, when the app regains focus, after edits when Instant
-// Push is on, and from the Sync Now button). The sheet is the source of truth;
+// Push is on, and from the Sync Now button). A newly linked spreadsheet's first
+// sync is started from the connection screen; the automatic ones wait for it. The sheet is the source of truth;
 // this device's data is a cache plus edits waiting to be pushed.
 
 import { flushSync } from 'svelte';
@@ -65,6 +66,7 @@ export function syncPhase() {
     choice: syncState.choice,
     conflict: syncState.conflict,
     error: syncState.error,
+    initialized: initialized(),
   });
 }
 
@@ -101,6 +103,9 @@ function saveBase(next) {
     // Without a saved base the next pass is a merge, which is still safe.
   }
 }
+
+/** Whether the linked spreadsheet has had its first sync. */
+export const initialized = () => base.initialized && base.spreadsheetId === sheets.spreadsheet;
 
 /**
  * Name of the tab that held this row at the last sync, or '' if it wasn't on
@@ -326,16 +331,32 @@ export async function connect() {
   if (sheets.spreadsheet) await syncNow();
 }
 
-/** @param {{ id: string, name: string }} file */
-async function link(file) {
+/**
+ * Signs in with a Google account picked in Google's chooser — call from a click. A linked
+ * spreadsheet belongs to the old account's access, so it's unlinked if the account changes.
+ * @returns {Promise<boolean>} whether a (possibly the same) account is now signed in
+ */
+export async function switchAccount() {
+  const before = sheets.accountEmail;
+  try {
+    await signIn(undefined, { chooseAccount: true });
+  } catch (error) {
+    showToast(describe(error));
+    return false;
+  }
+  await afterSignIn();
+  if (sheets.spreadsheet && before && sheets.accountEmail !== before) {
+    unlink();
+    showToast(`Signed in as ${sheets.accountEmail}. Choose a spreadsheet for this account.`);
+  }
+  return true;
+}
+
+/** Links a spreadsheet; its first sync runs from the connection screen. @param {{ id: string, name: string }} file */
+function link(file) {
   updateSheetsSettings({ spreadsheet: file.id, spreadsheetName: file.name });
   saveBase(emptyBase(file.id));
-  syncState.lastSyncedAt = null;
-  syncState.error = '';
-  syncState.conflict = null;
-  syncState.choice = null;
-  await syncNow();
-  if (syncPhase() === 'synced') showToast(`Connected to “${file.name}”.`);
+  Object.assign(syncState, { lastSyncedAt: null, error: '', conflict: null, choice: null });
 }
 
 /** Sign in first if needed; resolves false if that didn't work. */
@@ -351,34 +372,51 @@ async function ensureSignedIn() {
   return true;
 }
 
-/** Opens the Google Picker to choose the spreadsheet — call from a click. */
+/**
+ * Opens the Google Picker to choose the spreadsheet — call from a click.
+ * @returns {Promise<boolean>} whether a spreadsheet was linked
+ */
 export async function chooseSpreadsheet() {
-  if (!(await ensureSignedIn())) return;
+  if (!(await ensureSignedIn())) return false;
   try {
     const file = await pickSpreadsheet(currentToken());
-    if (file) await link(file);
+    if (!file) return false;
+    link(file);
+    return true;
   } catch (error) {
     showToast(describe(error));
+    return false;
   }
 }
 
-/** Creates a new MealCaster spreadsheet in the person's Drive — call from a click. */
-export async function createNewSpreadsheet() {
-  if (!(await ensureSignedIn())) return;
+/**
+ * Creates a new spreadsheet in the person's Drive — call from a click.
+ * @param {string} [name] the file's name ("MealCaster" if blank)
+ * @returns {Promise<boolean>} whether it was created and linked
+ */
+export async function createNewSpreadsheet(name = '') {
+  if (!(await ensureSignedIn())) return false;
   try {
-    const file = await createSpreadsheet('MealCaster', syncedTabs().map((t) => t.name));
-    await link(file);
+    link(await createSpreadsheet(name.trim() || 'MealCaster', syncedTabs().map((t) => t.name)));
+    return true;
   } catch (error) {
     showToast(describe(error));
+    return false;
   }
+}
+
+/** Forgets the linked spreadsheet but stays signed in. Everything stays on this device. */
+export function unlink() {
+  updateSheetsSettings({ spreadsheet: '', spreadsheetName: '' });
+  saveBase(emptyBase(''));
+  Object.assign(syncState, { lastSyncedAt: null, error: '', conflict: null, choice: null });
 }
 
 /** Signs out and unlinks the spreadsheet. Everything stays on this device. */
 export function disconnect() {
   signOut();
-  updateSheetsSettings({ spreadsheet: '', spreadsheetName: '' });
-  saveBase(emptyBase(''));
-  Object.assign(syncState, { lastSyncedAt: null, error: '', conflict: null, choice: null, account: null });
+  unlink();
+  syncState.account = null;
   showToast('Disconnected from Google Sheets. Your data stays on this device.');
 }
 
@@ -388,10 +426,9 @@ export function restoreFromSheet() {
   return syncNow({ choice: 'sheetOnly' });
 }
 
-/** Leaves the first-sync choice without syncing. */
+/** Leaves the first-sync choice without syncing: unlinks the spreadsheet, staying signed in to choose another. */
 export function cancelFirstSync() {
-  syncState.choice = null;
-  disconnect();
+  unlink();
 }
 
 // ---- Triggers -------------------------------------------------------------------
@@ -408,18 +445,19 @@ export function startSync() {
     $effect(() => {
       const print = deviceFingerprint();
       // Waiting on the person (first-sync choice, column conflicts): don't retry on every edit.
-      if (!sheets.instantPush || !auth.token || syncState.choice || syncState.conflict || print === lastFingerprint) return;
+      // Before the first sync of a linked spreadsheet: that one is started from the connection screen.
+      if (!sheets.instantPush || !auth.token || !initialized() || syncState.choice || syncState.conflict || print === lastFingerprint) return;
       clearTimeout(timer);
       timer = setTimeout(() => {
         // A pass may have caught up with these edits in the meantime.
-        if (deviceFingerprint() !== lastFingerprint && !syncState.choice && !syncState.conflict) syncNow({ quiet: true });
+        if (deviceFingerprint() !== lastFingerprint && initialized() && !syncState.choice && !syncState.conflict) syncNow({ quiet: true });
       }, 1500);
     });
   });
 
   // Pick up changes made in the sheet when coming back to the app.
   const onFocus = () => {
-    if (document.visibilityState !== 'visible' || !currentToken() || syncState.busy) return;
+    if (document.visibilityState !== 'visible' || !currentToken() || syncState.busy || !initialized()) return;
     const last = syncState.lastSyncedAt ? Date.parse(syncState.lastSyncedAt) : 0;
     if (Date.now() - last > 20_000) syncNow();
   };

@@ -7,17 +7,21 @@
   import RecipeDetail from './routes/RecipeDetail.svelte';
   import Grocery from './routes/Grocery.svelte';
   import Profile from './routes/Profile.svelte';
-  import SheetsSettings from './routes/SheetsSettings.svelte';
+  import SheetsConnection from './routes/SheetsConnection.svelte';
   import RecipeEditor from './routes/RecipeEditor.svelte';
   import ColumnConflicts from './routes/ColumnConflicts.svelte';
-  import FirstSyncDialog from './lib/components/FirstSyncDialog.svelte';
   import DisconnectDialog, { disconnectPrompt } from './lib/components/DisconnectDialog.svelte';
   import { syncState } from './lib/sync/sync.svelte.js';
-  import { route } from './lib/router.svelte.js';
+  import { route, navigate } from './lib/router.svelte.js';
   import { recipeById } from './lib/recipes.svelte.js';
 
   const recipeId = $derived(route.path.match(/^\/recipe\/([\w-]+)$/)?.[1]);
   const editId = $derived(route.path.match(/^\/recipe\/([\w-]+)\/edit$/)?.[1]);
+
+  // A first sync that needs an answer (e.g. after reconnecting) is answered on the connection screen's sync step.
+  $effect(() => {
+    if (syncState.choice && route.path !== '/sheets-sync/sync') navigate('/sheets-sync/sync');
+  });
 </script>
 
 <AppHeader />
@@ -42,14 +46,11 @@
     <WeeklyPlanner />
   {/if}
 </main>
-{#if route.path === '/sheets-sync'}
-  <!-- The settings modal sits over the weekly menu, as in the mock. -->
-  <SheetsSettings />
-{:else if route.path === '/sheets-sync/columns'}
+{#if route.path === '/sheets-sync/columns'}
   <ColumnConflicts />
-{/if}
-{#if syncState.choice}
-  <FirstSyncDialog />
+{:else if route.path === '/sheets-sync' || route.path.startsWith('/sheets-sync/')}
+  <!-- The connection steps sit over the page they were opened from. -->
+  <SheetsConnection />
 {/if}
 {#if disconnectPrompt.open}
   <DisconnectDialog />

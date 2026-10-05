@@ -64,3 +64,13 @@ export function starterWorkbook(settings) {
   sheets.push({ name: settings.tabs.settings.trim(), rows: [SCHEMA.settings, ...settingRows] });
   return buildXlsx(sheets);
 }
+
+/**
+ * Empty template: each synced tab with only its header row, to upload to Google Drive and
+ * choose as the spreadsheet.
+ * @param {Pick<import('./sheets.svelte.js').SheetsSettings, 'tabs' | 'syncProvisions'>} settings
+ */
+export function emptyWorkbook(settings) {
+  const keys = /** @type {(keyof typeof SCHEMA)[]} */ (['weeklyPlan', 'recipes', ...(settings.syncProvisions ? ['provisions'] : []), 'settings']);
+  return buildXlsx(keys.map((key) => ({ name: settings.tabs[key].trim(), rows: [SCHEMA[key]] })));
+}
