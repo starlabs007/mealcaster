@@ -1,6 +1,7 @@
 // Minimal hash router — hash URLs work on GitHub Pages without server rewrites.
 // Routes: #/ (weekly menu), #/catalog?day=&q=&filter=&category=, #/recipe/:id?day=, #/recipe/new, #/recipe/:id/edit, #/grocery, #/profile,
-// #/sheets-sync (settings modal over the weekly menu), #/sheets-sync/columns (column conflicts modal)
+// #/sheets-sync → #/sheets-sync/account | /sheet | /sync (connection steps, a modal over the previous page),
+// #/sheets-sync/columns (column conflicts modal)
 
 /** @returns {{ path: string, query: Record<string, string> }} */
 function parse() {
@@ -36,4 +37,10 @@ export function href(path, query = {}) {
 /** @param {string} path @param {Record<string, string | undefined | null>} [query] */
 export function navigate(path, query) {
   location.hash = href(path, query);
+}
+
+/** Like navigate, but replaces the current history entry (steps within one screen). @param {string} path */
+export function replace(path) {
+  history.replaceState(history.state, '', href(path));
+  Object.assign(route, parse());
 }

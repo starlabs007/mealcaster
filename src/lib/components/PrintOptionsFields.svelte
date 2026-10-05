@@ -3,8 +3,11 @@
   import Icon from './Icon.svelte';
   import { IMAGE_SCALE, clampScale } from '../printOptions.svelte.js';
 
-  /** @type {{ draft: import('../printOptions.svelte.js').PrintOptions, hasImage?: boolean }} */
-  let { draft = $bindable(), hasImage = true } = $props();
+  /**
+   * `rowClass` limits each row's content (e.g. `max-w-md`) while the dividers between rows stay full width.
+   * @type {{ draft: import('../printOptions.svelte.js').PrintOptions, hasImage?: boolean, rowClass?: string }}
+   */
+  let { draft = $bindable(), hasImage = true, rowClass = '' } = $props();
 
   /** @param {number} by */
   const stepScale = (by) => (draft.imageScale = clampScale(draft.imageScale + by));
@@ -17,7 +20,7 @@
 </script>
 
 {#snippet toggle(/** @type {'image' | 'simple'} */ key, title, description, disabled = false)}
-  <label class="flex items-start justify-between gap-4 py-3 {disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
+  <label class="flex items-start justify-between gap-4 py-3 {rowClass} {disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}">
     <span class="flex flex-col">
       <span class="text-label-md text-on-surface">{title}</span>
       <span class="text-body-sm text-on-surface-variant">{description}</span>
@@ -34,7 +37,7 @@
   <div>
     {@render toggle('image', 'Print recipe image', hasImage ? 'Include the photo on the page.' : 'This recipe has no photo.', !hasImage)}
     {#if hasImage}
-      <div class="flex items-center justify-between gap-4 pb-3 pl-4 {draft.image ? '' : 'opacity-50'}">
+      <div class="flex items-center justify-between gap-4 pb-3 pl-4 {rowClass} {draft.image ? '' : 'opacity-50'}">
         <label for="print-scale" class="text-body-sm text-on-surface-variant">Image scaling</label>
         <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest">
           <button
@@ -73,10 +76,12 @@
     {/if}
   </div>
 
-  {@render toggle('simple', 'Simple layout', 'One column, no tinted backgrounds or shadows, sections headed by large bold titles.')}
+  <div>
+    {@render toggle('simple', 'Simple layout', 'One column, no tinted backgrounds or shadows, sections headed by large bold titles.')}
+  </div>
 
   <div class="py-3">
-    <fieldset>
+    <fieldset class={rowClass}>
       <legend class="text-label-md text-on-surface">Text size</legend>
       <div class="mt-2 grid grid-cols-3 gap-2">
         {#each sizes as size (size.value)}
