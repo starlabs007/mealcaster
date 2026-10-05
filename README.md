@@ -291,4 +291,3 @@ The build job runs in the `production` environment to read the three `GOOGLE_*` 
 - **Dinner picks ignore the category.** Auto-fill and Surprise Me choose from every recipe, so a Lunch or
   Dessert recipe (e.g. the New York Cheesecake sample) can land on a dinner day. Limit both to recipes in the
   Dinner category or with no category.
-- **Customized aisle mapping.** Allow for additional ingredients to automatically map to aisle. These would be merged into the existing mappings. These can exist as profile settings (settings not implemented yet either)
