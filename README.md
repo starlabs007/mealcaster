@@ -133,10 +133,15 @@ Reached from the avatar in the header (and the footer, on phones).
   and Delete; both change every recipe with the tag (samples become edited), renaming onto a tag in use merges
   them, and an Undo toast follows. The four built-ins can't be changed. Reset Colours hands colours out again.
   Colours sync as `Tag Colour` rows (`Section | Name | Value` = `Tag Colour | Date Night | Plum`) in `[Settings]`.
-- **This Device** — print defaults for the Print Options dialog and the catalog's "Not made in 7 days" default.
-  Never synced. **Storage** shows how much of the roughly 5 MB a browser allows the site is used (shared with other
-  apps on the same domain), uploaded photos still waiting for Google Drive, a warning when the device is nearly full or
-  a save didn't fit, and **Ask to Keep It** while the browser may clear the data to free space.
+- **This Device** — never synced; one card per group:
+  - **Recipe Printing**: defaults for the Print Options dialog (image and its scaling, simple layout, text size).
+  - **Storage**: how much of the roughly 5 MB a browser allows the site is used (shared with other apps on the same
+    domain), uploaded photos still waiting for Google Drive, a warning when the device is nearly full or a save didn't
+    fit, and **Ask to Keep It** while the browser may clear the data to free space.
+  - **Catalog**: start the catalog with "Not made in 7 days" switched on.
+  - **Export**: downloads everything on this device as `MealCaster_Export_<date>.xlsx` with the sheet's tabs (and
+    tab names) — recipes, planned dinners, the viewed week's grocery list and settings; photos not yet on Drive are
+    left out. Works connected or not.
 - **Danger Zone** — *Disconnect & Erase*: after a confirmation dialog, signs out of Google, removes every
   `mealcaster.*` key from this browser and reloads fresh. The Google Sheet is never changed. Handy for testing.
 
@@ -157,23 +162,49 @@ Picker or that it creates ("Create New Sheet").
 In dev they come from `.env.local` (git-ignored); in CI from the repo's `production` environment
 (variables or secrets). `vite.config.js` exposes exactly these three to the bundle.
 
+**The connection screen** — a modal over the page it was opened from, in three steps. `#/sheets-sync` opens step 1
+when no spreadsheet is linked, otherwise step 3. Steps replace each other in history, so Back / Done / Escape return
+to that page.
+
+1. **Google account** (`#/sheets-sync/account`) — Sign in with Google (or Reconnect), or **Use a different account**
+   (Google's account chooser). Switching to another account unlinks the spreadsheet, as it may not have access.
+2. **Spreadsheet** (`#/sheets-sync/sheet`) — **Create a new spreadsheet** (name it; "MealCaster" by default) *or*
+   **Choose from Drive**. **Empty Template (.xlsx)** downloads the tabs with only their header rows, to upload to Drive
+   and choose. **Tab names (advanced)**, collapsed: the three required tabs, then the optional grocery list tab; saved
+   when leaving the step by Continue / Create / Choose. **Clear Saved Settings** (with Undo) shows there while nothing
+   is linked.
+3. **Sync** (`#/sheets-sync/sync`) — the account and spreadsheet with Change links, **How to sync** (direction and
+   Instant Push, saved as they change), the sync status with **Start Syncing** / **Sync Now** / **Reconnect** /
+   **Resolve Columns**, **Check Column Headers**, and **Disconnect…** (asks first).
+
+The header's Google Sheets button follows the sync state: a plain **Connect Google Sheets** link while nothing is
+linked; otherwise a split button whose main action is Reconnect, Sync Now, Resolve Columns or Finish Connecting
+(first sync not done or waiting on a choice), with a menu of Connection Settings, Open in Google Sheets and
+Disconnect…. Below `sm` it's icon-only and opens the menu. The states and actions are plain functions in
+`src/lib/sync/phase.js` (tested in `tests/phase.test.js`).
+
 **How sync behaves**
 
 - The Google Sheet is the source of truth; `localStorage` is a cache plus edits waiting to be pushed.
 - Row-level three-way sync keyed by `Recipe_ID`, `Date_ISO`, `Week_Of` + `Line_Key`, and `Section` + `Name`: if a row
   changed in the sheet since the last sync the sheet wins; otherwise this device's edit is pushed.
   Rows are updated in place and only MealCaster's columns are written, so extra columns stay put.
-- First sync with data on both sides asks: **Merge** (device-only rows are added, the sheet wins on
-  overlaps) or **Use the spreadsheet only**.
-- **Sheets as Backup** (backup sync, Sheets Settings → Sync Strategy) makes the sheet a backup of this device: the
+- Choosing or creating a spreadsheet doesn't sync: its first sync starts from step 3 (**Start Syncing**). Until
+  then the header shows **Finish Connecting** and automatic syncs (Instant Push, regaining focus) wait.
+- First sync with data on both sides asks, on step 3: **Merge** (device-only rows are added, the sheet wins on
+  overlaps) or **Use the spreadsheet only**; **Don't Connect** unlinks the spreadsheet but stays signed in. If the
+  question comes up elsewhere (e.g. after reconnecting), the app opens step 3.
+- **Sheets as Backup** (backup sync, step 3 → How to sync) makes the sheet a backup of this device: the
   device wins every row, nothing is pulled, and rows only in the sheet (including unknown `[Settings]` rows) are deleted;
   the sheet's schema version is overwritten with the app's. If the spreadsheet already has recipes, plan or grocery
   data, the first sync asks first: **Empty / Overwrite Spreadsheet** or **Don't Connect**, plus **Restore From
-  Spreadsheet** (switches to Bidirectional and takes the sheet's data) when this device has none.
-- Runs on connect, when the app regains focus, ~1.5 s after edits (Instant Push), and on Sync Now.
+  Spreadsheet** (switches to Bidirectional and takes the sheet's data) when this device has none. Switching to
+  backup after the first sync asks to confirm, since the next sync overwrites the sheet.
+- After the first sync it runs on connect, when the app regains focus, ~1.5 s after edits (Instant Push), and on
+  Sync Now.
 - Renamed/missing columns pause sync until resolved on `#/sheets-sync/columns`.
 - Uploaded recipe photos go to a "MealCaster Photos" Drive folder, shared as anyone-with-the-link.
-- Sign-in lasts about an hour and isn't stored; after a reload, click **Reconnect**.
+- Sign-in lasts about an hour and isn't stored; after a reload, click **Reconnect** (the header button's main action).
 
 Sync logic is plain JS in `src/lib/sync/` (`codec.js` rows ⇄ data, `engine.js` reconcile,
 `run.js` one pass with the API injected); `sync.svelte.js` wires it to the stores and UI.
@@ -217,13 +248,14 @@ src/
     Grocery.svelte           #/grocery
     Profile.svelte           #/profile
     RecipeEditor.svelte      #/recipe/new, #/recipe/:id/edit
-    SheetsSettings.svelte    #/sheets-sync
+    SheetsConnection.svelte  #/sheets-sync/account|sheet|sync (AccountStep, SheetStep, SyncStep components)
     ColumnConflicts.svelte   #/sheets-sync/columns
   lib/
     google/                  config, sign-in, Sheets/Drive REST client, Picker
-    sync/                    codec, engine, one sync pass, sync orchestration
+    sync/                    codec, engine, one sync pass, sync orchestration, phase.js (sync states + header actions)
     schema.js                expected column headers per tab
     schemaCheck.js           header matching for the Column Conflicts screen
+    sheetsTemplate.js        .xlsx workbooks: the Profile data export and the empty template
     router.svelte.js         hash router (works on GitHub Pages)
     planner.svelte.js        weekly plan state + actions, last made / times made (Svelte runes)
     recipes.svelte.js        live recipe list (samples + saved), save/delete/revert
