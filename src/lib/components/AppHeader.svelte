@@ -1,6 +1,6 @@
 <script>
   import Icon from './Icon.svelte';
-  import { syncPhase, connect, PHASE_LOOK } from '../sync/sync.svelte.js';
+  import SheetsButton from './SheetsButton.svelte';
   import { planner, shiftWeek, goToThisWeek } from '../planner.svelte.js';
   import { settings } from '../settings.svelte.js';
   import { groceryCount } from '../grocery.svelte.js';
@@ -10,7 +10,6 @@
   const tabs = [
     { id: 'weekly-menu', label: 'Weekly Menu', path: '/' },
     { id: 'recipe-catalog', label: 'Recipe Catalog', path: '/catalog' },
-    { id: 'sheets-sync', label: 'Google Sheets Sync', path: '/sheets-sync' },
   ];
   // Recipe Detail lives under the catalog tab.
   const active = $derived(
@@ -24,37 +23,10 @@
   );
   let search = $state('');
 
-  // The Sheets tab is coloured by sync status rather than by being the current page.
-  const sheetsLook = $derived(PHASE_LOOK[syncPhase()]);
-  const SHEETS_TONE = {
-    ok: 'bg-primary-fixed text-primary shadow-sm',
-    busy: 'bg-[#ffdead] text-tertiary shadow-sm',
-    warn: 'bg-[#ffdead] text-tertiary shadow-sm',
-    bad: 'bg-secondary-fixed text-secondary shadow-sm',
-    off: '',
-  };
-
   /** @param {{ id: string }} tab */
   function tabClass(tab) {
-    const current = tab.id === active;
-    const tone = tab.id === 'sheets-sync' ? SHEETS_TONE[sheetsLook.tone] : '';
-    if (tone) return `${tone} ${current ? 'ring-2 ring-inset ring-current/40' : 'hover:brightness-95'}`;
-    if (current) return tab.id === 'sheets-sync' ? 'bg-surface-container-highest text-on-surface shadow-sm' : 'bg-primary-container text-on-primary shadow-sm';
+    if (tab.id === active) return 'bg-primary-container text-on-primary shadow-sm';
     return 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface';
-  }
-
-  /**
-   * Signed out (e.g. after a reload): the Sheets tab reconnects in place, like the grocery list's
-   * Reconnect button, instead of opening the settings page. If that fails, open the page.
-   * @param {MouseEvent} event
-   * @param {{ id: string, path: string }} tab
-   */
-  async function onTabClick(event, tab) {
-    if (tab.id !== 'sheets-sync' || syncPhase() !== 'signedOut') return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.button) return;
-    event.preventDefault();
-    await connect();
-    if (syncPhase() === 'signedOut') navigate(tab.path);
   }
 
   const groceries = $derived(groceryCount());
@@ -71,20 +43,13 @@
     {#each tabs as tab (tab.id)}
       <a
         href={href(tab.path)}
-        onclick={(event) => onTabClick(event, tab)}
         aria-current={tab.id === active ? 'page' : undefined}
-        title={tab.id === 'sheets-sync' ? `Google Sheets: ${sheetsLook.short}` : undefined}
-        class="whitespace-nowrap rounded-lg py-2 text-label-md transition-all {tab.id === 'sheets-sync' ? 'px-3 sm:px-4' : 'px-4'} {tabClass(tab)}"
+        class="whitespace-nowrap rounded-lg px-4 py-2 text-label-md transition-all {tabClass(tab)}"
       >
-        <span class="inline-flex items-center gap-1.5">
-          {#if tab.id === 'sheets-sync'}
-            <Icon name={sheetsLook.icon} class="text-[16px] max-sm:text-[20px] {sheetsLook.tone === 'busy' ? 'animate-spin' : ''}" />
-          {/if}
-          <span class={tab.id === 'sheets-sync' ? 'max-sm:sr-only' : ''}>{tab.label}</span>
-          {#if tab.id === 'sheets-sync'}<span class="sr-only">({sheetsLook.short})</span>{/if}
-        </span>
+        {tab.label}
       </a>
     {/each}
+    <SheetsButton />
   </nav>
 {/snippet}
 

@@ -130,7 +130,7 @@
     return () => (document.body.style.overflow = overflow);
   });
 
-  const close = () => goBack('/sheets-sync');
+  const close = () => goBack('/sheets-sync/sync');
 
   /**
    * Checks a tab's first rows. Pasted rows must look like MealCaster's (to catch

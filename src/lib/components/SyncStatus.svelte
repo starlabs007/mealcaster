@@ -38,6 +38,8 @@
         return syncState.lastSyncedAt ? `Synced with Google Sheets · ${ago(syncState.lastSyncedAt)}` : 'Connected to Google Sheets';
       case 'syncing':
         return 'Syncing with Google Sheets…';
+      case 'pending':
+        return 'Spreadsheet linked, not synced yet. Changes stay on this device until you start syncing.';
       case 'signedOut':
         return 'Reconnect to sync — changes are kept on this device until then.';
       case 'choose':

@@ -1,5 +1,6 @@
-// Starter spreadsheet: the PRD tabs with headers, pre-filled with what's saved
-// on this device so importing it into Google Sheets carries the data across.
+// .xlsx workbooks with MealCaster's tabs: the data export (Profile), pre-filled with what's saved
+// on this device so it works as a backup or an import into Google Sheets, and the empty template
+// (connection step 2) with only the header rows.
 
 import { recipes } from './recipes.svelte.js';
 import { planner } from './planner.svelte.js';
@@ -14,7 +15,7 @@ import { buildXlsx } from './xlsx.js';
 const STATUS_LABEL = { need: 'To buy', bought: 'Bought', owned: 'On hand' };
 
 /** @param {import('./sheets.svelte.js').SheetsSettings} settings */
-export function starterWorkbook(settings) {
+export function dataWorkbook(settings) {
   const recipeRows = recipes.map((r) => [
     r.id,
     r.title,
@@ -63,4 +64,14 @@ export function starterWorkbook(settings) {
   const settingRows = [...settingsToRows(profile).values()].map((r) => SCHEMA.settings.map((c) => r[c]));
   sheets.push({ name: settings.tabs.settings.trim(), rows: [SCHEMA.settings, ...settingRows] });
   return buildXlsx(sheets);
+}
+
+/**
+ * Empty template: each synced tab with only its header row, to upload to Google Drive and
+ * choose as the spreadsheet.
+ * @param {Pick<import('./sheets.svelte.js').SheetsSettings, 'tabs' | 'syncProvisions'>} settings
+ */
+export function emptyWorkbook(settings) {
+  const keys = /** @type {(keyof typeof SCHEMA)[]} */ (['weeklyPlan', 'recipes', ...(settings.syncProvisions ? ['provisions'] : []), 'settings']);
+  return buildXlsx(keys.map((key) => ({ name: settings.tabs[key].trim(), rows: [SCHEMA[key]] })));
 }

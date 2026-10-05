@@ -81,14 +81,15 @@ export async function prepareAuth() {
  * Opens Google sign-in. Call it straight from a click handler so the popup
  * isn't blocked.
  * @param {string} [hint] email of the account used last time
+ * @param {{ chooseAccount?: boolean }} [options] show Google's account chooser (no hint)
  * @returns {Promise<string>} access token
  */
-export function signIn(hint) {
+export function signIn(hint, { chooseAccount = false } = {}) {
   if (!client) return Promise.reject(new Error('Google sign-in is still loading — try again in a moment.'));
   pending?.reject(new Error('Sign-in restarted.'));
   return new Promise((resolve, reject) => {
     pending = { resolve, reject };
-    client.requestAccessToken({ prompt: '', ...(hint && { login_hint: hint }) });
+    client.requestAccessToken(chooseAccount ? { prompt: 'select_account' } : { prompt: '', ...(hint && { login_hint: hint }) });
   });
 }
 
