@@ -122,12 +122,6 @@
     pages = 1;
   }
 
-  /** @param {string} c */
-  function toggleCategory(c) {
-    category = category === c ? '' : c;
-    pages = 1;
-  }
-
   function clearFilters() {
     active = [];
     category = '';
@@ -285,12 +279,21 @@
       {/each}
     </div>
     {#if categories.length > 1 || category}
-      <span class="mt-1 text-label-caps uppercase text-on-surface-variant">Filter by Category</span>
-      <div class="flex flex-wrap gap-2">
-        {#each categories as c (c)}
-          {@render pill(category === c, c, undefined, () => toggleCategory(c))}
-        {/each}
-      </div>
+      <label class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span class="text-label-caps uppercase text-on-surface-variant">Filter by Category</span>
+        <select
+          bind:value={category}
+          onchange={() => (pages = 1)}
+          class="min-w-0 max-w-full truncate rounded-lg border py-2 pl-3 pr-8 text-body-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-container {category
+            ? 'border-primary bg-primary-container/30 text-on-surface'
+            : 'border-outline-variant bg-surface-container-lowest text-on-surface'}"
+        >
+          <option value="">Any category</option>
+          {#each categories as c (c)}
+            <option value={c}>{c}</option>
+          {/each}
+        </select>
+      </label>
     {/if}
   </div>
 
