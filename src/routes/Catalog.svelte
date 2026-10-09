@@ -3,8 +3,8 @@
   import RecipeCard from '../lib/components/RecipeCard.svelte';
   import { recipes, recipeById, tagChoices, tagIcon, normalizeTags, categoryChoices, normalizeCategory } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
-  import { planner, statusOf, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, madeRecently, timesMade, lastMadeOn, RECENT_DAYS } from '../lib/planner.svelte.js';
-  import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
+  import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
+  import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { settings } from '../lib/settings.svelte.js';
@@ -31,8 +31,10 @@
   let query = $state('');
   let sort = $state('most-cooked');
   let favoritesOnly = $state(false);
+  // On by default and remembered on this device: don't offer meals the viewed week already has (planned or completed).
+  const hidePlanned = $derived(devicePrefs.hidePlanned);
 
-  // "Not made in 7 days" is remembered on this device (see Profile): skipping repeats is a standing preference.
+  // "Not made recently" is remembered on this device (see Profile): skipping repeats is a standing preference.
   const hideRecent = $derived(devicePrefs.hideRecent);
 
   /** @param {boolean} on */
@@ -79,11 +81,21 @@
   const targetName = $derived(targetDay ? formatWeekday(targetDay) : undefined);
   const currentPick = $derived(targetDay ? planner.entries[targetDay]?.recipeId : undefined);
 
+  // The week's dinners, except the target day's own — swapping it should still show the current pick.
+  const plannedIds = $derived(
+    new Set(
+      currentWeek()
+        .filter((d) => (d.status === 'planned' || d.status === 'completed') && d.recipe && d.iso !== targetDay)
+        .map((d) => d.recipe.id),
+    ),
+  );
+
   const results = $derived.by(() => {
     const words = query.toLowerCase().split(/\s+/).filter(Boolean);
     return recipes
       .filter((r) => !favoritesOnly || favorites.ids.includes(r.id))
       .filter((r) => !hideRecent || !madeRecently(r.id))
+      .filter((r) => !hidePlanned || !plannedIds.has(r.id))
       .filter((r) => !category || r.badge.label === category)
       .filter((r) => active.every((t) => r.tags.includes(t)))
       .filter((r) => {
@@ -103,16 +115,10 @@
   });
   const visible = $derived(results.slice(0, pages * PAGE_SIZE));
   const remaining = $derived(results.length - visible.length);
-  const activeCount = $derived(active.length + (category ? 1 : 0) + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0));
+  const activeCount = $derived(active.length + (category ? 1 : 0) + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0) + (hidePlanned ? 1 : 0));
 
   function toggleFilter(id) {
     active = active.includes(id) ? active.filter((x) => x !== id) : [...active, id];
-    pages = 1;
-  }
-
-  /** @param {string} c */
-  function toggleCategory(c) {
-    category = category === c ? '' : c;
     pages = 1;
   }
 
@@ -120,6 +126,7 @@
     active = [];
     category = '';
     favoritesOnly = false;
+    setHidePlanned(false);
     setHideRecent(false);
   }
 
@@ -265,18 +272,28 @@
     {/snippet}
     <div class="flex flex-wrap gap-2">
       {@render pill(favoritesOnly, 'Favorites', 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
-      {@render pill(hideRecent, `Not made in ${RECENT_DAYS} days`, 'history', () => toggleHideRecent(!hideRecent))}
+      {@render pill(hidePlanned, 'Unplanned this week', 'event_busy', () => (setHidePlanned(!hidePlanned), (pages = 1)))}
+      {@render pill(hideRecent, 'Not made recently', 'history', () => toggleHideRecent(!hideRecent))}
       {#each filters as tag (tag)}
         {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
       {/each}
     </div>
     {#if categories.length > 1 || category}
-      <span class="mt-1 text-label-caps uppercase text-on-surface-variant">Filter by Category</span>
-      <div class="flex flex-wrap gap-2">
-        {#each categories as c (c)}
-          {@render pill(category === c, c, undefined, () => toggleCategory(c))}
-        {/each}
-      </div>
+      <label class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <span class="text-label-caps uppercase text-on-surface-variant">Filter by Category</span>
+        <select
+          bind:value={category}
+          onchange={() => (pages = 1)}
+          class="min-w-0 max-w-full truncate rounded-lg border py-2 pl-3 pr-8 text-body-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-container {category
+            ? 'border-primary bg-primary-container/30 text-on-surface'
+            : 'border-outline-variant bg-surface-container-lowest text-on-surface'}"
+        >
+          <option value="">Any category</option>
+          {#each categories as c (c)}
+            <option value={c}>{c}</option>
+          {/each}
+        </select>
+      </label>
     {/if}
   </div>
 

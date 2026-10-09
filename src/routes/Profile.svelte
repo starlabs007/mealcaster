@@ -10,7 +10,7 @@
   import { settings, setReturnToPlanner, setWeekStartDay } from '../lib/settings.svelte.js';
   import { realignWeeks } from '../lib/weekStart.svelte.js';
   import { printOptions, setPrintOptions } from '../lib/printOptions.svelte.js';
-  import { devicePrefs, setHideRecent } from '../lib/devicePrefs.svelte.js';
+  import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { TONES, tagClass, toneClassOf, setTagTone, renameTag, deleteTag, resetTagColors } from '../lib/tagColors.svelte.js';
   import { RECENT_DAYS, planner } from '../lib/planner.svelte.js';
   import { weekStartOf } from '../lib/dates.js';
@@ -411,11 +411,17 @@
 
       <div class="{deviceCard}">
         {@render cardHeading('menu_book', 'Catalog')}
-        <div class="-mb-3">
+        <div class="-mb-3 divide-y divide-outline-variant/40">
+          {@render switchRow(
+            devicePrefs.hidePlanned,
+            'Hide meals already planned this week',
+            'Starts the catalog with “Unplanned this week” switched on. The meal on the day you’re swapping stays listed.',
+            setHidePlanned,
+          )}
           {@render switchRow(
             devicePrefs.hideRecent,
             'Hide recently made recipes',
-            `Starts the catalog with “Not made in ${RECENT_DAYS} days” switched on.`,
+            `Starts the catalog with “Not made recently” (nothing made in the last ${RECENT_DAYS} days) switched on.`,
             setHideRecent,
           )}
         </div>

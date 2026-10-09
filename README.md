@@ -61,7 +61,8 @@ npm run preview    # http://localhost:4173
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
 
 - Keyword search across titles, descriptions, categories, tags and ingredients (the header search lands here too).
-- Filters (combined with AND): Favorites, **Not made in 7 days** (remembered on the device) and one per
+- Filters (combined with AND): Favorites, **Unplanned this week** (on by default, remembered on the device; hides meals the
+  viewed week already has planned or completed, except the day being swapped), **Not made recently** (nothing made in the last 7 days; remembered on the device) and one per
   recipe tag in use, plus one category at a time (Filter by Category). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
   Name (A–Z or Z–A), Recently Added to Box. Paging, 9 per page.
 - Each card says when the meal was **last made** (from the plan): terracotta within 7 days, green otherwise.
@@ -138,7 +139,8 @@ Reached from the avatar in the header (and the footer, on phones).
   - **Storage**: how much of the roughly 5 MB a browser allows the site is used (shared with other apps on the same
     domain), uploaded photos still waiting for Google Drive, a warning when the device is nearly full or a save didn't
     fit, and **Ask to Keep It** while the browser may clear the data to free space.
-  - **Catalog**: start the catalog with "Not made in 7 days" switched on.
+  - **Catalog**: start the catalog with "Unplanned this week" (on by default) and/or "Not made recently"
+    switched on.
   - **Export**: downloads everything on this device as `MealCaster_Export_<date>.xlsx` with the sheet's tabs (and
     tab names) — recipes, planned dinners, the viewed week's grocery list and settings; photos not yet on Drive are
     left out. Works connected or not.
@@ -226,7 +228,7 @@ State is cached in `localStorage`; clear these keys to reset:
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
 | `mealcaster.syncBase.v1` | row fingerprints from the last sync |
 
-Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`
+Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`, `mealcaster.catalogHidePlanned.v1`
 (`mealcaster.tagColors.v1`, the old per-device tag colours, is moved into settings once and removed); an unsaved new recipe is kept in `mealcaster.recipeDraft.v1`.
 
 The grocery badge counts items still to buy for the viewed week.
@@ -291,4 +293,3 @@ The build job runs in the `production` environment to read the three `GOOGLE_*` 
 - **Dinner picks ignore the category.** Auto-fill and Surprise Me choose from every recipe, so a Lunch or
   Dessert recipe (e.g. the New York Cheesecake sample) can land on a dinner day. Limit both to recipes in the
   Dinner category or with no category.
-- **Customized aisle mapping.** Allow for additional ingredients to automatically map to aisle. These would be merged into the existing mappings. These can exist as profile settings (settings not implemented yet either)
