@@ -1,11 +1,13 @@
 <script>
   import PlannerHeader from '../lib/components/PlannerHeader.svelte';
   import DayCard from '../lib/components/DayCard.svelte';
+  import SwitchDaysDialog from '../lib/components/SwitchDaysDialog.svelte';
   import { onMount, tick } from 'svelte';
   import { currentWeek, spotlight } from '../lib/planner.svelte.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
 
   const days = $derived(currentWeek());
+  let switching = $state('');
 
   // Coming back from the catalog with a meal just picked: bring that day into view (the highlight
   // itself is drawn by the day card and fades on its own).
@@ -27,7 +29,11 @@
       Minimal view
     </label>
     {#each days as day (day.iso)}
-      <DayCard {day} minimal={devicePrefs.plannerMinimal} />
+      <DayCard {day} minimal={devicePrefs.plannerMinimal} onswitch={(iso) => (switching = iso)} />
     {/each}
   </section>
 </div>
+
+{#if switching}
+  <SwitchDaysDialog iso={switching} onclose={() => (switching = '')} />
+{/if}
