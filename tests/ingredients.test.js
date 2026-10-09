@@ -109,3 +109,51 @@ describe('recipe lines', () => {
     assert.equal(ing.shoppingName(sugar), 'sugar');
   });
 });
+
+describe('suggestions', () => {
+  const options = [
+    { value: 'onion', label: 'onion', keys: ['onions'] },
+    { value: 'green onion', label: 'green onion', keys: ['green onions'] },
+    { value: 'lemon', label: 'lemon' },
+    { value: 'rau răm', label: 'rau răm' },
+  ];
+  const values = (q) => ing.suggest(options, q).map((o) => o.value);
+  it('rank the whole text, then the start, then a word start, then anywhere', () => {
+    assert.deepEqual(values('onion'), ['onion', 'green onion']);
+    assert.deepEqual(values('mon'), ['lemon']);
+  });
+  it('ignore case and accents, and match by other keys', () => {
+    assert.deepEqual(values('RAU RAM'), ['rau răm']);
+    assert.deepEqual(values('green onions'), ['green onion']);
+  });
+  it('need 3 letters to match inside a word', () => {
+    assert.deepEqual(values('on'), ['onion', 'green onion']);
+  });
+  it('find units by their other spellings', () => {
+    const units = (q) => ing.suggest(ing.UNIT_SUGGESTIONS, q).map((o) => o.value);
+    assert.deepEqual(units('tablespoon'), ['tbsp']);
+    assert.deepEqual(units('pou'), ['lb']);
+    assert.equal(units('cup')[0], 'cup');
+    assert.equal(ing.suggest(ing.UNIT_SUGGESTIONS, '', 100).length, ing.UNITS.length);
+  });
+});
+
+describe('near duplicates', () => {
+  const list = [onion, greenOnion, rauRam, { ...sugar, id: 'thai-basil', name: 'thai basil' }, { ...sugar, id: 'cilantro', name: 'cilantro' }];
+  const similar = (name) => ing.similarIngredients(list, name).map((s) => [s.ingredient.id, s.note]);
+  it('offer the ingredient a variant means, with the extra words as a note', () => {
+    assert.deepEqual(similar('yellow onion'), [['onion', 'yellow']]);
+    assert.deepEqual(similar('Large Onions'), [['onion', 'large']]);
+    assert.deepEqual(similar('fresh cilantro'), [['cilantro', 'fresh']]);
+  });
+  it('catch typos and longer names', () => {
+    assert.deepEqual(similar('cilanto'), [['cilantro', '']]);
+    assert.deepEqual(similar('basil'), [['thai-basil', '']]);
+  });
+  it('say nothing for an existing ingredient or something unrelated', () => {
+    assert.deepEqual(similar('Onions'), []);
+    assert.deepEqual(similar('rau ram'), []);
+    assert.deepEqual(similar('scallion'), []);
+    assert.deepEqual(similar('on'), []);
+  });
+});

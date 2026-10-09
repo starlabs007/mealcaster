@@ -35,6 +35,7 @@
     categoryChoices,
     normalizeCategory,
     aisles,
+    aisleLabel,
     parseQty,
     guessAisle,
     parseIngredientLines,
@@ -45,7 +46,7 @@
   } from '../lib/recipes.svelte.js';
   import { SCHEMA, sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
   import { addIngredient as createIngredient, findIngredient, ingredientOf, ingredients } from '../lib/ingredients.svelte.js';
-  import { canonicalUnit } from '../lib/ingredients.js';
+  import { UNIT_SUGGESTIONS, canonicalUnit, similarIngredients } from '../lib/ingredients.js';
   import { href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { formatQty } from '../lib/format.js';
@@ -54,6 +55,7 @@
   import { normalizeTags } from '../lib/tags.js';
   import { tagClasses } from '../lib/tagColors.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
+  import Combobox from '../lib/components/Combobox.svelte';
 
   /** @type {{ id?: string }} */
   let { id } = $props();
@@ -200,6 +202,8 @@
   }
   let submitted = $state(false);
   let bulkOpen = $state(false);
+  // The paste rules, shown under the paste box on request so they can stay open while typing.
+  let pasteHelpOpen = $state(false);
   let bulkText = $state('');
   let photoError = $state('');
   let dragging = $state(false);
@@ -221,8 +225,12 @@
   const valid = $derived(Object.values(errors).every((e) => !e));
   const show = (key) => submitted && errors[key];
 
-  // Every ingredient's name, offered as autocomplete.
-  const ingredientNames = $derived([...new Set(ingredients.map((i) => i.name))].sort((a, b) => a.localeCompare(b)));
+  // Every ingredient, offered as you type its name (found by its plural too), with its aisle.
+  const ingredientSuggestions = $derived(
+    ingredients
+      .map((i) => ({ value: i.name, label: i.name, hint: aisleLabel(i.aisle), keys: i.plural ? [i.plural] : [] }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  );
 
   /** The existing ingredient a row names, if any. @param {IngredientRow} row */
   const rowIngredient = (row) =>
@@ -254,6 +262,20 @@
   // svelte-ignore state_referenced_locally
   const detailsOpen = new SvelteSet(form.ingredients.filter((row) => detailsSummary(row)).map((row) => row.key));
 
+  /**
+   * Uses an existing ingredient for a row whose name looked like a new one ("yellow onion" → onion); the extra
+   * words become the note unless it has one.
+   * @param {IngredientRow} row @param {{ ingredient: import('../lib/ingredients.js').Ingredient, note: string }} match
+   */
+  function useExisting(row, { ingredient, note }) {
+    row.text = ingredient.name;
+    row.aisle = ingredient.aisle;
+    if (note && !row.note.trim()) {
+      row.note = note;
+      detailsOpen.add(row.key);
+    }
+  }
+
   /** An existing ingredient brings its aisle; a new one gets a guess until you pick one. @param {IngredientRow} row */
   function onIngredientText(row) {
     const existing = rowIngredient(row);
@@ -268,13 +290,12 @@
       showToast('No ingredients found — put one per line, e.g. “1 lb rigatoni”.');
       return;
     }
-    form.ingredients = [
-      ...form.ingredients.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim()),
-      ...parsed.map((row) => {
-        const existing = findIngredient(row.text);
-        return { ...blankIngredient(row.group), ...row, aisle: existing?.aisle ?? row.aisle, key: nextKey() };
-      }),
-    ];
+    const added = parsed.map((row) => {
+      const existing = findIngredient(row.text);
+      return { ...blankIngredient(row.group), ...row, aisle: existing?.aisle ?? row.aisle, key: nextKey() };
+    });
+    form.ingredients = [...form.ingredients.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim()), ...added];
+    for (const row of added) if (detailsSummary(row)) detailsOpen.add(row.key);
     showToast(`Added ${parsed.length} ${parsed.length === 1 ? 'ingredient' : 'ingredients'} — check the amounts and aisles.`);
     bulkText = '';
     bulkOpen = false;
@@ -843,17 +864,36 @@
                 class="{field} {border(false)} font-mono text-body-sm"
               ></textarea>
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-body-sm text-outline">A line ending in “:” starts a new component group.</span>
+                <button
+                  type="button"
+                  aria-label="How pasted lines are read"
+                  aria-expanded={pasteHelpOpen}
+                  aria-controls="paste-help"
+                  class="inline-flex items-center rounded-md p-1 hover:bg-surface-container-high hover:text-primary {pasteHelpOpen ? 'text-primary' : 'text-on-surface-variant'}"
+                  onclick={() => (pasteHelpOpen = !pasteHelpOpen)}
+                >
+                  <Icon name="help" class="text-[20px]" />
+                  <Icon name={pasteHelpOpen ? 'expand_less' : 'expand_more'} class="text-[16px]" />
+                </button>
                 <button type="button" class="btn-primary py-2" disabled={!bulkText.trim()} onclick={addBulk}>
                   <Icon name="playlist_add" class="text-[16px]" /> Add Ingredients
                 </button>
               </div>
+              {#if pasteHelpOpen}
+                <ul id="paste-help" class="flex list-disc flex-col gap-1.5 rounded-lg bg-surface-container-lowest py-3 pl-8 pr-3 text-body-sm text-on-surface-variant">
+                  <li>One ingredient per line. Bullets and numbering are ignored.</li>
+                  <li>A line ending in “:” starts a component group, e.g. <em>Sauce:</em></li>
+                  <li>Amount and unit come first: <em>1 1/2 cups rice</em>, <em>½ tsp salt</em>.</li>
+                  <li>Brackets become the note: <em>beef (flank or ribeye)</em>. Kitchen words in them go to prep: <em>(…, sliced)</em>.</li>
+                  <li>After a comma is prep: <em>shallot, finely minced</em>. So is a prep word before the name: <em>shredded chicken</em>.</li>
+                  <li><em>(optional)</em> marks the line optional.</li>
+                  <li>A container becomes the unit: <em>6 oz can of tomato paste</em> → 1 can, note “6 oz”.</li>
+                  <li>Check the rows after adding: new ingredients are marked <strong class="text-tertiary">New</strong>, and look-alikes offer “Did you mean…”.</li>
+                </ul>
+              {/if}
             </div>
           {/if}
 
-          <datalist id="ingredient-names">
-            {#each ingredientNames as n (n)}<option value={n}></option>{/each}
-          </datalist>
           <datalist id="ingredient-groups">
             {#each groupNames as g (g)}<option value={g}></option>{/each}
           </datalist>
@@ -863,21 +903,45 @@
               {@const badQty = submitted && qtyInvalid.has(row.key)}
               {@const known = rowIngredient(row)}
               {@const summary = detailsSummary(row)}
+              {@const isNew = Boolean(row.text.trim()) && !known && !(row.id && row.text.trim() === row.id)}
+              {@const similar = isNew ? similarIngredients(ingredients, row.text) : []}
               <li class="flex flex-col gap-2 rounded-lg bg-surface-container-low p-2">
                 <div class="flex min-w-0 flex-1 items-center gap-2">
                   <input type="text" aria-label="Quantity, row {i + 1}" placeholder="Qty" bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} class="{cellField} {border(badQty)} w-14 shrink-0 text-center" />
-                  <input type="text" aria-label="Unit, row {i + 1}" placeholder="Unit" bind:value={row.unit} class="{cellField} {border(false)} w-20 shrink-0" />
-                  <input
-                    type="text"
-                    aria-label="Ingredient, row {i + 1}"
+                  <Combobox
+                    label="Unit, row {i + 1}"
+                    placeholder="Unit"
+                    suggestions={UNIT_SUGGESTIONS}
+                    limit={UNIT_SUGGESTIONS.length}
+                    openOnFocus
+                    bind:value={row.unit}
+                    class="w-20 shrink-0"
+                    inputClass="{cellField} {border(false)}"
+                    listClass="w-44"
+                  />
+                  <Combobox
+                    label="Ingredient, row {i + 1}"
                     placeholder="Ingredient (e.g. green onion)"
-                    list="ingredient-names"
+                    suggestions={ingredientSuggestions}
                     bind:value={row.text}
                     oninput={() => onIngredientText(row)}
-                    aria-invalid={show('ingredients') && i === 0 ? 'true' : undefined}
-                    class="{cellField} {border(show('ingredients') && i === 0)} flex-1"
+                    onpick={() => onIngredientText(row)}
+                    invalid={show('ingredients') && i === 0}
+                    class="min-w-0 flex-1"
+                    align="right"
+                    inputClass="{cellField} {border(show('ingredients') && i === 0)}"
                   />
                 </div>
+                {#if similar.length}
+                  <p class="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-body-sm text-on-surface-variant">
+                    <Icon name="info" class="text-[16px] text-tertiary" /> New ingredient. Did you mean
+                    {#each similar as match (match.ingredient.id)}
+                      <button type="button" class="rounded-full border border-outline-variant bg-surface-container-lowest px-2 py-0.5 text-label-sm text-primary hover:bg-surface-container-high" onclick={() => useExisting(row, match)}>
+                        {match.ingredient.name}{#if match.note}<span class="text-on-surface-variant">&nbsp;+ note “{match.note}”</span>{/if}
+                      </button>
+                    {/each}
+                  </p>
+                {/if}
                 {#if detailsOpen.has(row.key)}
                 <div id="details-{row.key}" class="flex flex-wrap items-center gap-2">
                   <input type="text" aria-label="Note for the store, row {i + 1}" placeholder="Note (e.g. flank or ribeye)" bind:value={row.note} class="{cellField} {border(false)} min-w-0 flex-1 basis-40" />
@@ -893,6 +957,9 @@
                 {/if}
                 <div class="flex items-center gap-2">
                   <input type="text" aria-label="Component group, row {i + 1}" placeholder="Group (e.g. Sauce)" list="ingredient-groups" bind:value={row.group} class="{cellField} {border(false)} flex-1 md:w-36 md:flex-none" />
+                  {#if isNew}
+                    <span class="shrink-0 rounded bg-[#ffdead] px-1.5 py-0.5 text-label-caps uppercase text-tertiary" title="Saving adds “{row.text.trim()}” to your ingredients, in this aisle">New</span>
+                  {/if}
                   <select
                     aria-label="Store aisle, row {i + 1}"
                     title={known ? `The aisle of “${known.name}”, shared by every recipe that uses it` : 'Store aisle for this new ingredient'}

@@ -8,7 +8,7 @@ import { sampleRecipes } from './data/recipes.js';
 import { migrateNotes } from './markdown.js';
 import { normalizeCategory, normalizeTags, retag } from './tags.js';
 import { aisles } from './data/aisles.js';
-import { canonicalUnit, recipeIdFor } from './ingredients.js';
+import { recipeIdFor } from './ingredients.js';
 import { restoreSampleIngredients } from './ingredients.svelte.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
@@ -215,79 +215,8 @@ export const newRecipeId = (title) => recipeIdFor(title, (id) => recipeById.has(
 
 // ---- Ingredient text helpers -------------------------------------------------
 
-const UNICODE_FRACTIONS = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125 };
-
-/**
- * "1", "1.5", "1/2", "1 1/2", "½", "1½" → number; "" → undefined; junk → NaN.
- * @param {string} text
- */
-export function parseQty(text) {
-  const value = text.trim().replace(/([\d])([½¼¾⅓⅔⅛])/, '$1 $2');
-  if (!value) return undefined;
-  const parts = value.split(/\s+/);
-  if (parts.length > 2) return NaN;
-  let total = 0;
-  for (const part of parts) {
-    if (part in UNICODE_FRACTIONS) total += UNICODE_FRACTIONS[part];
-    else if (/^\d+\/\d+$/.test(part)) {
-      const [n, d] = part.split('/').map(Number);
-      if (!d) return NaN;
-      total += n / d;
-    } else if (/^\d*\.?\d+$/.test(part)) total += Number(part);
-    else return NaN;
-  }
-  return total > 0 ? total : NaN;
-}
-
+export { parseQty, guessAisle, parseIngredientLines } from './ingredientText.js';
 export { aisles };
 
 /** Display name for an ingredient tag; tags outside the aisle list show as-is. @param {string} tag */
 export const aisleLabel = (tag) => aisles.find((a) => a.tag === tag)?.label ?? tag;
-
-const AISLE_WORDS = [
-  ['Herbs', /\b(basil|parsley|cilantro|coriander leaves|thyme|rosemary|dill|mint|sage|chives|tarragon|oregano leaves)\b/],
-  ['Spices', /\b(salt|peppercorns?|black pepper|cumin|paprika|turmeric|cinnamon|chili flakes|chilli flakes|red pepper flakes|nutmeg|spice|garam masala|curry powder|oregano|bay lea(f|ves))\b/],
-  ['Fresh', /\b(chicken|beef|pork|lamb|turkey|sausage|bacon|pancetta|prosciutto|salmon|cod|tuna|shrimp|prawns?|fish|scallops?|mussels|clams|steak|mince|ground (beef|pork|turkey)|short ribs?|thighs?|fillets?)\b/],
-  ['Dairy', /\b(milk|cheese|butter|cream|yogh?urt|eggs?|ricotta|mozzarella|parmesan|feta|cheddar|mascarpone|crème fraîche|creme fraiche|ghee)\b/],
-  ['Bakery', /\b(bread|baguette|buns?|tortillas?|pita|naan|sourdough|rolls?)\b/],
-  ['Frozen', /\bfrozen\b/],
-  ['Produce', /\b(onions?|shallots?|garlic|lemons?|limes?|oranges?|tomato(es)?|potato(es)?|carrots?|celery|peppers?|zucchini|courgettes?|squash|spinach|kale|lettuce|arugula|rocket|cabbage|broccoli|cauliflower|mushrooms?|eggplant|aubergine|asparagus|peas|beans|corn|avocados?|ginger|leeks?|fennel|cucumbers?|apples?|pears?|berries|chil(e|i|li)s?|jalapeños?|scallions?|green onions?)\b/],
-];
-
-/** Best-guess aisle for a new ingredient's name. @param {string} text */
-export function guessAisle(text) {
-  const t = text.toLowerCase();
-  return AISLE_WORDS.find(([, re]) => re.test(t))?.[0] ?? 'Pantry';
-}
-
-const UNITS =
-  'cups?|c\\.|tbsp\\.?|tablespoons?|tsp\\.?|teaspoons?|lbs?\\.?|pounds?|oz\\.?|ounces?|g|grams?|kg|kilograms?|ml|millilit(?:er|re)s?|l|lit(?:er|re)s?|cloves?|bunch(?:es)?|cans?|tins?|jars?|whole|pinch(?:es)?|dash(?:es)?|slices?|sprigs?|heads?|stalks?|packages?|pkgs?|handfuls?|sticks?|pieces?|fillets?|large|medium|small';
-const LINE = new RegExp(
-  `^((?:\\d+\\s+)?\\d+\\/\\d+|\\d*\\.?\\d+\\s*[½¼¾⅓⅔⅛]?|[½¼¾⅓⅔⅛])\\s*(?:(${UNITS})(?=\\s|$))?\\s*(.*)$`,
-  'i',
-);
-
-/**
- * Parses pasted ingredient lines ("1 lb rigatoni", "Sauce:" starts a group).
- * @param {string} text @param {string} [group]
- * @returns {{ qty: string, unit: string, text: string, group: string, aisle: string }[]} `unit` canonical when known
- */
-export function parseIngredientLines(text, group = '') {
-  const rows = [];
-  let current = group;
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.replace(/^\s*(?:[-*•▢☐]|\d+[.)](?=\s))\s*/, '').trim();
-    if (!line) continue;
-    if (line.endsWith(':')) {
-      current = line.slice(0, -1).trim();
-      continue;
-    }
-    const match = line.match(LINE);
-    const row = match
-      ? { qty: match[1].trim(), unit: canonicalUnit(match[2] ?? ''), text: match[3].trim() }
-      : { qty: '', unit: '', text: line };
-    if (!row.text) continue;
-    rows.push({ ...row, group: current, aisle: guessAisle(row.text) });
-  }
-  return rows;
-}

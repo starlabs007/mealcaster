@@ -173,3 +173,94 @@ export function findByName(list, name) {
   for (const i of list) if (nameKey(i.name) === key || (i.plural && nameKey(i.plural) === key)) return i;
   return undefined;
 }
+
+// ---- Suggestions (autocomplete) ----------------------------------------------
+
+/** @typedef {{ value: string, label: string, hint?: string, keys?: string[] }} Suggestion  `keys`: other words it's found by */
+
+/**
+ * Options matching typed text, best first: the whole text, then the start, then the start of a word, then anywhere
+ * (from 3 letters; "on" in "lemon" is noise) — ignoring case and accents. Empty text → the first `limit` options.
+ * @param {Suggestion[]} options @param {string} query @param {number} [limit]
+ * @returns {Suggestion[]}
+ */
+export function suggest(options, query, limit = 8) {
+  const q = foldKey(query);
+  if (!q) return options.slice(0, limit);
+  /** @type {[number, Suggestion][]} */
+  const scored = [];
+  for (const option of options) {
+    let best = Infinity;
+    for (const key of [option.label, ...(option.keys ?? [])]) {
+      const k = foldKey(key);
+      const score = k === q ? 0 : k.startsWith(q) ? 1 : k.split(/[\s-]/).some((w) => w.startsWith(q)) ? 2 : q.length >= 3 && k.includes(q) ? 3 : Infinity;
+      best = Math.min(best, score);
+    }
+    if (best < Infinity) scored.push([best, option]);
+  }
+  return scored
+    .sort(([a, x], [b, y]) => a - b || x.label.length - y.label.length || x.label.localeCompare(y.label))
+    .slice(0, limit)
+    .map(([, option]) => option);
+}
+
+const UNIT_HINT = {
+  tsp: 'teaspoon', tbsp: 'tablespoon', oz: 'ounce', lb: 'pound', g: 'gram', kg: 'kilogram', ml: 'millilitre', l: 'litre',
+  small: 'size', medium: 'size', large: 'size',
+};
+
+/** The canonical units as suggestions, found by their plurals and other spellings too ("tablespoon" → tbsp). */
+export const UNIT_SUGGESTIONS = UNITS.map(([unit]) => ({
+  value: unit,
+  label: unit,
+  ...(UNIT_HINT[unit] && { hint: UNIT_HINT[unit] }),
+  keys: [...UNIT_ALIASES].filter(([, u]) => u === unit).map(([alias]) => alias),
+}));
+
+// ---- Near duplicates ---------------------------------------------------------
+
+/** Edits (insert, delete, change a letter) between two strings. */
+function distance(a, b) {
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= b.length; j++) next[j] = Math.min(prev[j] + 1, next[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    prev = next;
+  }
+  return prev[b.length];
+}
+
+/**
+ * Existing ingredients a new name probably means, best first: a variant of one ("yellow onion" → onion, with the
+ * extra words as a note), a typo ("cilanto" → cilantro), or a longer name containing it ("basil" → thai basil).
+ * Nothing when the name already is an ingredient.
+ * @param {Ingredient[]} list @param {string} name @param {number} [limit]
+ * @returns {{ ingredient: Ingredient, note: string }[]}
+ */
+export function similarIngredients(list, name, limit = 3) {
+  const key = nameKey(name);
+  if (key.length < 3 || findByName(list, name)) return [];
+  const typed = tidyIngredientName(name).split(' ');
+  const words = key.split(' ');
+  /** @type {[number, { ingredient: Ingredient, note: string }][]} */
+  const found = [];
+  for (const ingredient of list) {
+    let best;
+    for (const k of [nameKey(ingredient.name), ingredient.plural && nameKey(ingredient.plural)].filter(Boolean)) {
+      const kw = k.split(' ');
+      const n = kw.length;
+      /** @type {[number, string] | undefined} */
+      let hit;
+      if (n < words.length && words.slice(-n).join(' ') === k) hit = [0, typed.slice(0, -n).join(' ')];
+      else if (n < words.length && words.slice(0, n).join(' ') === k) hit = [0, typed.slice(n).join(' ')];
+      else if (key.length >= 4 && distance(k, key) <= (key.length >= 8 ? 2 : 1)) hit = [1, ''];
+      else if (key.length >= 4 && ` ${k} `.includes(` ${key} `)) hit = [2, ''];
+      if (hit && (!best || hit[0] < best[0])) best = hit;
+    }
+    if (best) found.push([best[0], { ingredient, note: best[1] }]);
+  }
+  return found
+    .sort(([a, x], [b, y]) => a - b || x.ingredient.name.length - y.ingredient.name.length)
+    .slice(0, limit)
+    .map(([, s]) => s);
+}
