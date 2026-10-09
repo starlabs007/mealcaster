@@ -1,7 +1,7 @@
 <script>
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
-  import { surpriseMe, markDiningOut, clearDay, spotlight } from '../planner.svelte.js';
+  import { surpriseMe, markDiningOut, clearDay, spotlight, switchTargets } from '../planner.svelte.js';
   import { formatShort, formatWeekday } from '../dates.js';
   import { href } from '../router.svelte.js';
   import { tagClass } from '../tagColors.svelte.js';
@@ -14,9 +14,9 @@
    *   isPast: boolean,
    *   status: import('../planner.svelte.js').DayStatus,
    *   recipe?: import('../data/recipes.js').Recipe,
-   * }, minimal?: boolean }}
+   * }, minimal?: boolean, onswitch?: (iso: string) => void }}
    */
-  let { day, minimal = false } = $props();
+  let { day, minimal = false, onswitch } = $props();
 
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
@@ -127,6 +127,15 @@
             >
               <Icon name="storefront" class="text-[14px]" /> Dining Out
             </button>
+            {#if onswitch && switchTargets(day.iso).length}
+              <button
+                type="button"
+                class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+                onclick={() => onswitch(day.iso)}
+              >
+                <Icon name="swap_vert" class="text-[14px]" /> Switch Days…
+              </button>
+            {/if}
           {/if}
         </div>
         {/if}

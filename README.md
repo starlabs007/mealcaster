@@ -48,12 +48,15 @@ npm run preview    # http://localhost:4173
   plan and not made in the last 7 days.
 - Each day card offers actions for its state:
   - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Dining Out**.
-  - **Planned meal** (including today): **View Recipe**, **Swap Meal** (opens the catalog), **Surprise Me** and
-    **Dining Out**.
+  - **Planned meal** (including today): **View Recipe**, **Swap Meal** (opens the catalog), **Surprise Me**,
+    **Dining Out** and **Switch Days…**.
     - **Surprise Me** replaces the meal with a random one, preferring meals not already on the week's plan or
       made recently. It skips the meal being replaced unless that is the only recipe available.
     - **Dining Out** turns the evening into a night off.
     - Replacing a planned meal with either shows an **Undo** toast.
+    - **Switch Days…** trades the meal with another evening of the same week (today onward, not yet completed);
+      that evening's meal or night off moves the other way, and an open evening just receives the meal. Notes go
+      with the meal, the completed flag stays with the date. Shows an **Undo** toast.
   - **Night off** (today or later): **Plan a Meal Instead** clears the night so it's open again.
   - **Completed** and **not logged** past days only offer **View Recipe** where there is a meal.
 - Grocery badge counts the items still to buy for the viewed week (every dinner of the week, past days included).
@@ -260,6 +263,7 @@ src/
     sheetsTemplate.js        .xlsx workbooks: the Profile data export and the empty template
     router.svelte.js         hash router (works on GitHub Pages)
     planner.svelte.js        weekly plan state + actions, last made / times made (Svelte runes)
+    switchDays.js            entries after two evenings switch (pure, tested)
     recipes.svelte.js        live recipe list (samples + saved), save/delete/revert
     tags.js                  tag & category normalizing, suggestions, colour rotation
     tagColors.svelte.js      tag colours (synced) and renaming / deleting tags

@@ -4,7 +4,8 @@
 
 import './settings.svelte.js'; // sets the week start day before the first week is computed
 import { recipes, recipeById } from './recipes.svelte.js';
-import { addDays, daysBetween, formatLong, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
+import { addDays, daysBetween, formatLong, formatWeekday, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
+import { switchedEntries } from './switchDays.js';
 import { showToast } from './toast.svelte.js';
 import { sampleData, storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
@@ -246,6 +247,28 @@ export function markDiningOut(iso) {
   const previous = planner.entries[iso]?.recipeId ? { ...planner.entries[iso] } : undefined;
   planner.entries[iso] = { diningOut: true };
   if (previous) showToast(`${formatLong(iso)} is now a night off.`, undoDay(iso, previous));
+}
+
+/** Days of `iso`'s week its meal can switch with: today onward, not finished, not `iso` itself. @param {string} iso */
+export function switchTargets(iso) {
+  return weekDates(weekStartOf(fromISO(iso))).filter(
+    // statusOf keeps a past night off as 'diningOut', so the date check is needed too.
+    (d) => d !== iso && d >= planner.today && ['planned', 'open', 'diningOut'].includes(statusOf(d)),
+  );
+}
+
+/** Two evenings trade places, with an Undo toast. @param {string} a @param {string} b */
+export function switchDays(a, b) {
+  const before = { [a]: planner.entries[a], [b]: planner.entries[b] };
+  const put = (/** @type {Record<string, PlanEntry | undefined>} */ values) => {
+    for (const [iso, entry] of Object.entries(values)) {
+      if (entry) planner.entries[iso] = entry;
+      else delete planner.entries[iso];
+    }
+  };
+  put(switchedEntries(planner.entries, a, b));
+  spotlightDay(b);
+  showToast(`Switched ${formatWeekday(a)} and ${formatWeekday(b)}.`, { label: 'Undo', run: () => put(before) });
 }
 
 /** @param {string} iso */
