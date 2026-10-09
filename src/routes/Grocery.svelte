@@ -5,14 +5,16 @@
     departments,
     deptOfTag,
     groceryLines,
-    haveHiddenLines,
+    stockHiddenLines,
     setLineStatus,
     addCustomItem,
     removeCustomItem,
     grocery,
     weekDinners,
   } from '../lib/grocery.svelte.js';
-  import { aisles, guessAisle, recipes } from '../lib/recipes.svelte.js';
+  import { aisles, guessAisle } from '../lib/recipes.svelte.js';
+  import { ingredients } from '../lib/ingredients.svelte.js';
+  import { foldKey } from '../lib/ingredients.js';
   import { planner, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { addDays, formatRange, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
@@ -33,22 +35,22 @@
   let showOnHand = $state(true);
   let adding = $state(false);
   let draft = $state({ name: '', note: '', aisle: 'Produce', everyWeek: false });
-  // The aisle follows the item's name (your Profile mappings first) until you pick one yourself.
+  // The aisle follows the item's name until you pick one yourself.
   let aislePicked = false;
   const guessDraftAisle = () => {
     if (!aislePicked && draft.name.trim()) draft.aisle = guessAisle(draft.name);
   };
 
-  // Autocomplete for the Item field: items added before (any week, standing ones too), then every recipe ingredient.
+  // Autocomplete for the Item field: items added before (any week, standing ones too), then every ingredient.
   const itemNames = $derived.by(() => {
     const seen = new Map();
     const add = (t) => {
       const name = (t ?? '').trim();
-      if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name);
+      if (name && !seen.has(foldKey(name))) seen.set(foldKey(name), name);
     };
     for (const w of Object.values(grocery.weeks)) for (const c of w.custom) add(c.name);
     for (const g of grocery.global) add(g.name);
-    for (const r of recipes) for (const grp of r.ingredients ?? []) for (const i of grp.items ?? []) add(i.text);
+    for (const i of ingredients) add(i.plural || i.name);
     return [...seen.values()].sort((a, b) => a.localeCompare(b));
   });
 
@@ -63,7 +65,7 @@
   ];
 
   const lines = $derived(groceryLines());
-  const haveHidden = $derived(haveHiddenLines());
+  const haveHidden = $derived(stockHiddenLines());
   // Bought and on-hand lines both leave the aisle lists for the Acquired ledger.
   const shopping = $derived(lines.filter((l) => l.status === 'need'));
   const onHand = $derived(lines.filter((l) => l.status === 'owned'));
@@ -372,7 +374,7 @@
           <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
             <Icon name="visibility_off" class="text-[16px] text-outline" />
             <span class="flex-1">
-              {haveHidden.length} {haveHidden.length === 1 ? 'ingredient is' : 'ingredients are'} left off because you have {haveHidden.length === 1 ? 'it' : 'them'}.
+              {haveHidden.length} {haveHidden.length === 1 ? 'ingredient is' : 'ingredients are'} left off because {haveHidden.length === 1 ? 'it’s' : 'they’re'} in stock.
             </span>
             <Icon name="expand_more" class="text-[18px] text-outline transition-transform group-open:rotate-180" />
           </summary>
@@ -385,7 +387,7 @@
             {/each}
           </ul>
           <p class="border-t border-surface-container-high px-3 py-2">
-            Manage these in <a href={href('/profile')} class="text-primary underline">Profile</a>.
+            Out of one? Untick it on its recipe page and it comes back on the list.
           </p>
         </details>
       {/if}

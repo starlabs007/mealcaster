@@ -12,8 +12,7 @@ import { departments } from '../data/departments.js';
 import { DEFAULT_WEEK_START_DAY, formatWeekday, fromISO, weekStartOf } from '../dates.js';
 import { TONES, normalizeAisle, normalizeCategory, normalizeTag, normalizeTags } from '../tags.js';
 import { aisles } from '../data/aisles.js';
-import { mappingKey, tidyName } from '../aisleMap.js';
-import { haveKey } from '../haveList.js';
+import { canonicalUnit, ingredientIdFor, recipeIdFor, tidyIngredientName } from '../ingredients.js';
 import { SCHEMA_VERSION } from '../schema.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
@@ -107,8 +106,9 @@ export function parseSteps(text) {
 }
 
 /**
- * Ingredients_JSON → ingredient groups. Accepts MealCaster's own groups, or a
- * flat list of items (`{ name, qty, dept }` works too).
+ * Ingredients_JSON → ingredient groups. Accepts MealCaster's own groups, or a flat list of lines.
+ * A line is `{ id, qty, unit, note, prep, optional }`; `id` is an Ingredient_ID, and lines without
+ * one are skipped. Units are stored in their canonical form ("cups" → "cup").
  * @returns {import('../data/recipes.js').IngredientGroup[] | null} null when it can't be read
  */
 export function parseIngredients(value) {
@@ -123,16 +123,20 @@ export function parseIngredients(value) {
   if (!Array.isArray(data)) return null;
   const item = (i) => {
     const qty = typeof i.qty === 'number' ? i.qty : Number.parseFloat(i.qty);
-    const unit = i.unit ?? (typeof i.qty === 'string' ? i.qty.replace(/^[\d.,/\s]+/, '').trim() : '');
+    const unit = canonicalUnit(i.unit ?? (typeof i.qty === 'string' ? i.qty.replace(/^[\d.,/\s]+/, '') : ''));
+    const note = str(i.note);
+    const prep = str(i.prep);
     return {
+      id: str(i.id),
       ...(Number.isFinite(qty) && qty > 0 && { qty }),
       ...(unit && { unit }),
-      text: str(i.text ?? i.name ?? i.item),
-      tag: normalizeAisle(str(i.tag ?? i.dept ?? i.aisle)) || 'Pantry',
+      ...(note && { note }),
+      ...(prep && { prep }),
+      ...(bool(i.optional) && { optional: true }),
     };
   };
   // Hand-edited cells can hold nulls or bare values; skip them rather than fail the sync.
-  const items = (list) => list.filter((i) => i && typeof i === 'object').map(item).filter((i) => i.text);
+  const items = (list) => list.filter((i) => i && typeof i === 'object').map(item).filter((i) => i.id);
   const isGroup = (g) => g && Array.isArray(g.items);
   if (data.every(isGroup)) {
     return data.map((g) => {
@@ -248,14 +252,61 @@ export function recipeFromRow(row, existing, { columns, favorites, today }) {
   return { recipe, favorite: ctx.favorite };
 }
 
-/** Recipe_ID for a sheet row that has none. */
-export function newRecipeIdFor(title, taken) {
-  const slug = str(title).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
-  let id;
-  do id = `custom-${slug || 'recipe'}-${Math.random().toString(36).slice(2, 6)}`;
-  while (taken.has(id));
-  return id;
+/**
+ * Whether an Ingredients_JSON cell is in the layout before schema version 2 (lines with their own
+ * `text` instead of an ingredient `id`).
+ */
+export function isOldIngredientsJSON(value) {
+  let data;
+  try {
+    data = JSON.parse(str(value) || '[]');
+  } catch {
+    return false;
+  }
+  if (!Array.isArray(data)) return false;
+  const lines = data.flatMap((g) => (g && Array.isArray(g.items) ? g.items : [g]));
+  return lines.some((i) => i && typeof i === 'object' && !i.id && (i.text || i.name || i.item));
 }
+
+/** Recipe_ID for a sheet row that has none. @param {unknown} title @param {Set<string>} taken */
+export const newRecipeIdFor = (title, taken) => recipeIdFor(str(title), (id) => taken.has(id));
+
+// ---- Ingredients ------------------------------------------------------------
+
+/** @typedef {import('../ingredients.js').Ingredient} Ingredient */
+
+/** @param {Ingredient} ingredient @returns {Row} */
+export function ingredientToRow(ingredient) {
+  return {
+    Ingredient_ID: ingredient.id,
+    Name: ingredient.name,
+    Plural: ingredient.plural,
+    Aisle: aisles.find((a) => a.tag === ingredient.aisle)?.label ?? ingredient.aisle,
+    On_Hand: ingredient.onHand,
+  };
+}
+
+/**
+ * @param {Row} row @param {Ingredient | undefined} existing on-device version of the same Ingredient_ID
+ * @param {string[]} columns the ones the sheet has
+ * @returns {Ingredient}
+ */
+export function ingredientFromRow(row, existing, columns) {
+  const id = str(row.Ingredient_ID);
+  const written = existing ? ingredientToRow(existing) : null;
+  const changed = (col) => columns.includes(col) && !(written && cellText(written[col]) === cellText(row[col]));
+  const next = existing ? { ...existing } : { id, name: '', plural: '', aisle: 'Pantry', onHand: false };
+  if (changed('Name')) next.name = tidyIngredientName(str(row.Name)) || next.name;
+  if (changed('Plural')) next.plural = tidyIngredientName(str(row.Plural));
+  // An aisle MealCaster doesn't know keeps the one it had.
+  if (changed('Aisle')) next.aisle = parseAisle(row.Aisle) || next.aisle;
+  if (changed('On_Hand')) next.onHand = bool(row.On_Hand);
+  if (!next.name) next.name = id.replace(/-/g, ' ');
+  return next;
+}
+
+/** Ingredient_ID for a sheet row that has a name but no id. @param {unknown} name @param {Set<string>} taken */
+export const newIngredientIdFor = (name, taken) => ingredientIdFor(str(name), (id) => taken.has(id));
 
 // ---- Weekly plan ------------------------------------------------------------
 
@@ -426,8 +477,8 @@ export function globalFromRows(rows) {
 
 // ---- Settings ---------------------------------------------------------------
 
-/** Settings row key: one row per section and name. */
-export const settingKey = (section, name) => `${str(section).toLowerCase()}|${mappingKey(str(name))}`;
+/** Settings row key: one row per section and name (case and spacing ignored). */
+export const settingKey = (section, name) => `${str(section).toLowerCase()}|${str(name).toLowerCase().replace(/\s+/g, ' ')}`;
 
 /** Ingredient aisle tag for a cell: an aisle's tag or label ("Meat & Seafood"), or '' if unknown. */
 export function parseAisle(v) {
@@ -459,7 +510,7 @@ export const parseWeekday = (v) => {
 
 /**
  * The [Settings] rows for the device's settings, keyed for sync.
- * @param {{ aisles: import('../aisleMap.js').AisleMapping[], have?: string[], tagColors?: Record<string, string>, returnToPlanner?: boolean, weekStartDay?: number }} settings
+ * @param {{ tagColors?: Record<string, string>, returnToPlanner?: boolean, weekStartDay?: number }} settings
  * @returns {Map<string, Row>}
  */
 export function settingsToRows(settings) {
@@ -473,11 +524,6 @@ export function settingsToRows(settings) {
     ...WEEK_STARTS_ON,
     Value: WEEKDAYS[settings.weekStartDay ?? DEFAULT_WEEK_START_DAY],
   });
-  for (const m of settings.aisles) {
-    const label = aisles.find((a) => a.tag === m.tag)?.label ?? m.tag;
-    rows.set(settingKey('Aisle', m.name), { Section: 'Aisle', Name: m.name, Value: label });
-  }
-  for (const name of settings.have ?? []) rows.set(settingKey('Have', name), { Section: 'Have', Name: name, Value: true });
   for (const [tag, tone] of Object.entries(settings.tagColors ?? {})) {
     rows.set(settingKey(TAG_COLOUR_SECTION, tag), { Section: TAG_COLOUR_SECTION, Name: tag, Value: tone[0].toUpperCase() + tone.slice(1) });
   }
@@ -491,13 +537,9 @@ export function settingsToRows(settings) {
  * @param {Row[]} rows
  * The sheet's `Schema | Version` comes back as `schemaVersion` (0 when missing or unreadable) so a migration can
  * tell how old the sheet is; the device never overwrites it.
- * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], have: string[], tagColors: Record<string, string>, returnToPlanner: boolean, weekStartDay: number, schemaVersion: number }}
+ * @returns {{ tagColors: Record<string, string>, returnToPlanner: boolean, weekStartDay: number, schemaVersion: number }}
  */
 export function settingsFromRows(rows) {
-  /** @type {Map<string, import('../aisleMap.js').AisleMapping>} */
-  const found = new Map();
-  /** @type {Map<string, string>} */
-  const have = new Map();
   /** @type {Record<string, string>} */
   const tagColors = {};
   let returnToPlanner = true;
@@ -522,22 +564,11 @@ export function settingsFromRows(rows) {
       }
       continue;
     }
-    if (section === 'have') {
-      const name = tidyName(str(row.Name));
-      if (!name) continue;
-      if (!/^(false|no|n|0|off)$/.test(str(row.Value).toLowerCase())) have.set(haveKey(name), name);
-      continue;
-    }
     if (section === TAG_COLOUR_SECTION.toLowerCase()) {
       const tag = normalizeTag(str(row.Name));
       const tone = str(row.Value).toLowerCase();
       if (tag && TONES.includes(tone) && !Object.hasOwn(tagColors, tag)) tagColors[tag] = tone;
-      continue;
     }
-    if (section !== 'aisle') continue;
-    const name = tidyName(str(row.Name));
-    const tag = parseAisle(row.Value);
-    if (name && tag && !found.has(mappingKey(name))) found.set(mappingKey(name), { name, tag });
   }
-  return { aisles: [...found.values()], have: [...have.values()], tagColors, returnToPlanner, weekStartDay, schemaVersion };
+  return { tagColors, returnToPlanner, weekStartDay, schemaVersion };
 }

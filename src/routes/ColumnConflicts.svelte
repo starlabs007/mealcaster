@@ -22,14 +22,19 @@
   /** @typedef {import('../lib/schemaCheck.js').Resolution} Resolution */
   /** @typedef {{ headers: string[], rows: string[][], resolution: Record<string, Resolution> | null }} TabCheck */
 
-  const TAB_ICON = { recipes: 'menu_book', weeklyPlan: 'calendar_month', provisions: 'shopping_basket', settings: 'tune' };
+  const TAB_ICON = { ingredients: 'grocery', recipes: 'menu_book', weeklyPlan: 'calendar_month', provisions: 'shopping_basket', settings: 'tune' };
 
   // Header rows that show off each kind of conflict, for trying the screen out.
   const EXAMPLES = {
+    ingredients: [
+      ['ID', 'Ingredient', 'Plurals', 'Department', 'In_Stock'],
+      ['green-onion', 'green onion', 'green onions', 'Produce', 'TRUE'],
+      ['nuoc-mam', 'nuoc mam', '', 'Pantry', 'FALSE'],
+    ],
     recipes: [
       ['Recipe_ID', 'Course_Type', 'Title', 'Ingredients_JSON', 'Preparation_Steps', 'Image_URL', 'Cooking_Method', 'Recipe_Notes', 'Favorite', 'Serves'],
-      ['salmon-01', 'Seafood', 'Pan-Seared Crispy Salmon', '[{"name":"Salmon fillets","qty":"2 × 180 g","dept":"Fish"}]', '1. Score the salmon skin…', '', 'Pan-sear', 'Rest 2 minutes before plating.', 'TRUE', '2'],
-      ['risotto-02', 'Vegetarian', 'Wild Mushroom Risotto', '[{"name":"Arborio rice","qty":"300 g","dept":"Pantry"}]', '1. Bring the stock to a gentle simmer…', '', 'Stovetop', '', 'FALSE', '4'],
+      ['salmon-01', 'Seafood', 'Pan-Seared Crispy Salmon', '[{"id":"salmon-fillet","qty":2,"note":"180 g each"}]', '1. Score the salmon skin…', '', 'Pan-sear', 'Rest 2 minutes before plating.', 'TRUE', '2'],
+      ['risotto-02', 'Vegetarian', 'Wild Mushroom Risotto', '[{"id":"arborio-rice","qty":300,"unit":"g"}]', '1. Bring the stock to a gentle simmer…', '', 'Stovetop', '', 'FALSE', '4'],
     ],
     weeklyPlan: [
       ['Date', 'Day_Of_Week', 'Recipe_ID_Assigned', 'Completed_Flag', 'Custom_Notes', 'Guest_Count'],
@@ -42,14 +47,15 @@
       ['2026-10-17', 'Arborio rice', '300 g', 'Pantry', 'On hand'],
     ],
     settings: [
-      ['Type', 'Ingredient', 'Aisle'],
-      ['Aisle', 'Quinoa', 'Pantry'],
-      ['Aisle', 'Oat milk', 'Dairy & Eggs'],
+      ['Type', 'Setting', 'Setting value'],
+      ['Preference', 'Week starts on', 'Saturday'],
+      ['Tag Colour', 'Vegetarian', 'Sage'],
     ],
   };
 
   const tabKeys = /** @type {TabKey[]} */ (
     [
+      'ingredients',
       'recipes',
       'weeklyPlan',
       ...(sheets.syncProvisions ? ['provisions'] : []),

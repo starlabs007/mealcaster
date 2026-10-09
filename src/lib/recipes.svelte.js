@@ -6,10 +6,10 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleRecipes } from './data/recipes.js';
 import { migrateNotes } from './markdown.js';
-import { normalizeAisle, normalizeCategory, normalizeTags, retag } from './tags.js';
+import { normalizeCategory, normalizeTags, retag } from './tags.js';
 import { aisles } from './data/aisles.js';
-import { findAisleMapping } from './aisleMap.js';
-import { settings } from './settings.svelte.js';
+import { canonicalUnit, recipeIdFor } from './ingredients.js';
+import { restoreSampleIngredients } from './ingredients.svelte.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
@@ -20,8 +20,7 @@ export { suggestedTags, isSuggestedTag, tagIcon, normalizeTag, normalizeTags, ta
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */
 
-const STORAGE_KEY = storageKey('recipeBox.v1');
-const LEGACY_KEY = storageKey('customRecipes.v1');
+const STORAGE_KEY = storageKey('recipeBox.v2');
 
 // Sample recipes are development data only (`npm run dev`) — production starts empty.
 const builtIn = sampleData ? sampleRecipes : [];
@@ -39,7 +38,7 @@ const migrate = (r) => {
     ...rest,
     badge: { label: normalizeCategory(rest.badge?.label ?? 'Dinner') },
     tags: normalizeTags(r.tags),
-    ingredients: (rest.ingredients ?? []).map((g) => ({ ...g, items: (g.items ?? []).map((i) => ({ ...i, tag: normalizeAisle(i.tag) })) })),
+    ingredients: (rest.ingredients ?? []).map((g) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
   };
 };
 
@@ -51,9 +50,6 @@ function load() {
       const box = JSON.parse(raw);
       return { ...box, saved: box.saved.map(migrate) };
     }
-    // Earlier builds stored only custom recipes, as a plain array.
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) return { saved: JSON.parse(legacy).map(migrate), deleted: [] };
   } catch {
     // Start from the samples.
   }
@@ -79,13 +75,7 @@ export const customRecipeCount = () => recipes.filter((r) => r.custom).length;
 /** @returns {boolean} whether the recipes fit on this device */
 function store() {
   const saved = recipes.filter((r) => r.custom || r.edited).map(({ minutes, ...r }) => r);
-  if (!saveItem(STORAGE_KEY, JSON.stringify({ saved, deleted: [...deleted] }))) return false;
-  try {
-    localStorage.removeItem(LEGACY_KEY);
-  } catch {
-    // Harmless leftover.
-  }
-  return true;
+  return saveItem(STORAGE_KEY, JSON.stringify({ saved, deleted: [...deleted] }));
 }
 
 function persist() {
@@ -120,6 +110,8 @@ export function revertSample(id) {
   const index = recipes.findIndex((r) => r.id === id);
   if (index < 0 || !isSample(id)) return;
   recipes[index] = sampleById.get(id);
+  // Its lines must resolve, even if one of its ingredients was deleted meanwhile.
+  restoreSampleIngredients(recipes[index].ingredients.flatMap((g) => g.items.map((i) => i.id)));
   recipeById.set(id, recipes[index]);
   persist();
 }
@@ -219,18 +211,7 @@ export function replaceRecipes(list) {
 }
 
 /** @param {string} title */
-export function newRecipeId(title) {
-  const slug = title
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .slice(0, 40);
-  let id;
-  do id = `custom-${slug || 'recipe'}-${Math.random().toString(36).slice(2, 6)}`;
-  while (recipeById.has(id));
-  return id;
-}
+export const newRecipeId = (title) => recipeIdFor(title, (id) => recipeById.has(id));
 
 // ---- Ingredient text helpers -------------------------------------------------
 
@@ -273,10 +254,8 @@ const AISLE_WORDS = [
   ['Produce', /\b(onions?|shallots?|garlic|lemons?|limes?|oranges?|tomato(es)?|potato(es)?|carrots?|celery|peppers?|zucchini|courgettes?|squash|spinach|kale|lettuce|arugula|rocket|cabbage|broccoli|cauliflower|mushrooms?|eggplant|aubergine|asparagus|peas|beans|corn|avocados?|ginger|leeks?|fennel|cucumbers?|apples?|pears?|berries|chil(e|i|li)s?|jalapeños?|scallions?|green onions?)\b/],
 ];
 
-/** Best-guess aisle for an ingredient description: the person's own aisle mappings first. @param {string} text */
+/** Best-guess aisle for a new ingredient's name. @param {string} text */
 export function guessAisle(text) {
-  const mapped = findAisleMapping(settings.aisles, text);
-  if (mapped) return mapped;
   const t = text.toLowerCase();
   return AISLE_WORDS.find(([, re]) => re.test(t))?.[0] ?? 'Pantry';
 }
@@ -291,7 +270,7 @@ const LINE = new RegExp(
 /**
  * Parses pasted ingredient lines ("1 lb rigatoni", "Sauce:" starts a group).
  * @param {string} text @param {string} [group]
- * @returns {{ qty: string, unit: string, text: string, group: string, aisle: string }[]}
+ * @returns {{ qty: string, unit: string, text: string, group: string, aisle: string }[]} `unit` canonical when known
  */
 export function parseIngredientLines(text, group = '') {
   const rows = [];
@@ -305,7 +284,7 @@ export function parseIngredientLines(text, group = '') {
     }
     const match = line.match(LINE);
     const row = match
-      ? { qty: match[1].trim(), unit: (match[2] ?? '').trim(), text: match[3].trim() }
+      ? { qty: match[1].trim(), unit: canonicalUnit(match[2] ?? ''), text: match[3].trim() }
       : { qty: '', unit: '', text: line };
     if (!row.text) continue;
     rows.push({ ...row, group: current, aisle: guessAisle(row.text) });

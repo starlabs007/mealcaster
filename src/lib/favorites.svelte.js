@@ -3,7 +3,7 @@
 import { sampleData, storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 
-const STORAGE_KEY = storageKey('favorites.v1');
+const STORAGE_KEY = storageKey('favorites.v2');
 // Sample favorites exist only alongside the sample recipes.
 const SEED = sampleData ? ['sheet-pan-chicken', 'salmon-risotto', 'sourdough-pizza'] : [];
 

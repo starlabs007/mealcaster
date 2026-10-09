@@ -16,16 +16,39 @@ export const storageKey = (name) => `mealcaster.${name}`;
 // "everything was deleted here" and delete the rows from the sheet. Without
 // it, the next sync is a first sync and simply brings the sheet's data back.
 const DEVICE_DATA = [
+  'ingredients.v1',
+  'recipeBox.v2',
+  'weeklyPlan.v2',
+  'favorites.v2',
+  'grocery.v3',
+  'groceryGlobal.v2',
+  'settings.v2',
+  'recipeDraft.v2',
+  'syncBase.v2',
+];
+
+// Data saved before schema version 2 (ingredients in their own tab). Nothing reads it any more, so
+// it's removed on load: it would only use up the origin's shared storage. A device starts empty and
+// takes the converted spreadsheet on its next first sync (the old sync base goes too, so its rows
+// are never mistaken for deletions).
+const OLD_DATA = [
   'recipeBox.v1',
   'customRecipes.v1',
   'weeklyPlan.v1',
   'favorites.v1',
   'grocery.v2',
-  'settings.v1',
   'groceryExtras.v1',
+  'groceryGlobal.v1',
+  'settings.v1',
+  'tagColors.v1',
   'recipeDraft.v1',
   'syncBase.v1',
 ];
+try {
+  for (const key of OLD_DATA) localStorage.removeItem(storageKey(key));
+} catch {
+  // Storage unavailable: nothing to remove.
+}
 
 // Dev only (dropped from production builds). Production runs on its own origin,
 // so its localStorage is never visible here anyway.

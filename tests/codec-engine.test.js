@@ -31,23 +31,63 @@ describe('codec', () => {
     ]);
   });
 
-  it('reads ingredient groups and flat item lists, and rejects bad JSON', () => {
-    const groups = [{ title: 'Main', category: '1 item', items: [{ qty: 2, unit: 'cups', text: 'rice', tag: 'Pantry' }] }];
+  it('reads ingredient groups and flat line lists, and rejects bad JSON', () => {
+    const groups = [{ title: 'Main', category: '1 item', items: [{ id: 'beef', qty: 1, unit: 'lb', note: 'flank or ribeye', prep: 'sliced', optional: true }] }];
     assert.deepEqual(codec.parseIngredients(JSON.stringify(groups)), groups);
-    assert.deepEqual(codec.parseIngredients('[{"name":"Wild Trout","qty":"450g","dept":"Fish"}]'), [
-      { title: 'Ingredients', category: '1 items', items: [{ qty: 450, unit: 'g', text: 'Wild Trout', tag: 'Fish' }] },
+    assert.deepEqual(codec.parseIngredients('[{"id":"wild-trout","qty":"450g"}]'), [
+      { title: 'Ingredients', category: '1 items', items: [{ id: 'wild-trout', qty: 450, unit: 'g' }] },
     ]);
     assert.deepEqual(codec.parseIngredients(''), []);
     assert.equal(codec.parseIngredients('not json'), null);
   });
 
-  it('skips nulls and bare values in hand-edited ingredient JSON', () => {
-    assert.deepEqual(codec.parseIngredients('[{"title":"Main","items":[null,"rice",{"text":"salt"}]}]'), [
-      { title: 'Main', category: '1 item', items: [{ text: 'salt', tag: 'Pantry' }] },
+  it('stores units in their canonical form and leaves out empty fields', () => {
+    const [group] = codec.parseIngredients('[{"title":"Main","items":[{"id":"water","qty":2,"unit":"Cups","note":" ","prep":"","optional":false}]}]');
+    assert.deepEqual(group.items, [{ id: 'water', qty: 2, unit: 'cup' }]);
+  });
+
+  it('skips nulls, bare values and lines without an ingredient id', () => {
+    assert.deepEqual(codec.parseIngredients('[{"title":"Main","items":[null,"rice",{"text":"salt"},{"id":"salt"}]}]'), [
+      { title: 'Main', category: '1 item', items: [{ id: 'salt' }] },
     ]);
-    assert.deepEqual(codec.parseIngredients('[null,{"text":"salt"}]'), [
-      { title: 'Ingredients', category: '1 items', items: [{ text: 'salt', tag: 'Pantry' }] },
+    assert.deepEqual(codec.parseIngredients('[null,{"id":"salt"}]'), [
+      { title: 'Ingredients', category: '1 items', items: [{ id: 'salt' }] },
     ]);
+  });
+
+  it('tells old-layout ingredient lines (text, no id) from new ones', () => {
+    assert.equal(codec.isOldIngredientsJSON('[{"title":"Main","items":[{"qty":1,"text":"onion","tag":"Produce"}]}]'), true);
+    assert.equal(codec.isOldIngredientsJSON('[{"name":"Wild Trout"}]'), true);
+    assert.equal(codec.isOldIngredientsJSON('[{"title":"Main","items":[{"id":"onion","qty":1}]}]'), false);
+    assert.equal(codec.isOldIngredientsJSON(''), false);
+    assert.equal(codec.isOldIngredientsJSON('not json'), false);
+  });
+
+  it('round-trips ingredient rows, writing the aisle by its label', () => {
+    const onion = { id: 'onion', name: 'onion', plural: 'onions', aisle: 'Fresh', onHand: true };
+    const row = codec.ingredientToRow(onion);
+    assert.deepEqual(row, { Ingredient_ID: 'onion', Name: 'onion', Plural: 'onions', Aisle: 'Meat & Seafood', On_Hand: true });
+    assert.deepEqual(codec.ingredientFromRow(row, undefined, SCHEMA.ingredients), onion);
+  });
+
+  it('reads ingredient rows the way people type them', () => {
+    const read = (row, existing) => codec.ingredientFromRow({ Ingredient_ID: 'rau-ram', ...row }, existing, SCHEMA.ingredients);
+    assert.deepEqual(read({ Name: '  Rau  Răm ', Plural: '', Aisle: 'herbs', On_Hand: 'yes' }), {
+      id: 'rau-ram', name: 'rau răm', plural: '', aisle: 'Herbs', onHand: true,
+    });
+    // A blank name falls back to the id; an unknown aisle keeps the one it had.
+    const existing = { id: 'rau-ram', name: 'rau răm', plural: '', aisle: 'Herbs', onHand: false };
+    assert.equal(read({ Name: '', Aisle: 'Aisle 9' }, existing).aisle, 'Herbs');
+    assert.equal(read({ Name: '', Aisle: 'Herbs' }).name, 'rau ram');
+    // Columns the sheet doesn't have leave the device's values alone.
+    const partial = codec.ingredientFromRow({ Ingredient_ID: 'rau-ram', Name: 'rau răm' }, { ...existing, onHand: true }, ['Ingredient_ID', 'Name']);
+    assert.equal(partial.onHand, true);
+  });
+
+  it('gives new recipes readable ids, accents folded', () => {
+    assert.match(codec.newRecipeIdFor('Bún chả', new Set()), /^custom-bun-cha-[a-z0-9]{4}$/);
+    assert.match(codec.newRecipeIdFor('Meat Omelet (Trứng Đúc)', new Set()), /^custom-meat-omelet-trung-duc-[a-z0-9]{4}$/);
+    assert.match(codec.newRecipeIdFor('', new Set()), /^custom-recipe-[a-z0-9]{4}$/);
   });
 
   it('parses dates, statuses and departments the way people type them', () => {

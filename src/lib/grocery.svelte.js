@@ -2,8 +2,7 @@
 //
 // Lines come from three sources:
 //  1. Automatic — every ingredient of the week's dinners, past days and ones marked done included (so items
-//     bought for them stay, here and in the sheet), except ones on the
-//     "ingredients I have" list (settings).
+//     bought for them stay, here and in the sheet), except ingredients in stock (ingredients store).
 //  2. Pushed — ingredients sent from a Recipe Detail page ("Add to List" /
 //     "Push Unchecked to Grocery"), even for recipes not on the plan.
 //  3. Custom — free-text items added on the grocery screen, for one week or (global) for every week.
@@ -14,6 +13,8 @@
 // Ingredient keys are `${recipeId}:${groupIndex}:${itemIndex}`.
 
 import { recipeById } from './recipes.svelte.js';
+import { ingredientOf } from './ingredients.svelte.js';
+import { shoppingName, unitLabel } from './ingredients.js';
 import { planner, currentWeek } from './planner.svelte.js';
 import { formatQty } from './format.js';
 import { formatWeekday } from './dates.js';
@@ -21,12 +22,9 @@ import { departments } from './data/departments.js';
 import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { rekeyGroceryWeeks } from './sync/codec.js';
-import { settings } from './settings.svelte.js';
-import { isHave } from './haveList.js';
 
-const STORAGE_KEY = storageKey('grocery.v2');
-const LEGACY_KEY = storageKey('groceryExtras.v1');
-const GLOBAL_KEY = storageKey('groceryGlobal.v1');
+const STORAGE_KEY = storageKey('grocery.v3');
+const GLOBAL_KEY = storageKey('groceryGlobal.v2');
 
 /**
  * @typedef {'need' | 'bought' | 'owned'} LineStatus
@@ -72,13 +70,6 @@ function load() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return rekeyGroceryWeeks(JSON.parse(raw));
-    // Migrate v1 (a flat list of pushed keys) into the current week.
-    const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) {
-      const extras = JSON.parse(legacy);
-      const status = Object.fromEntries(extras.map((k) => [k, 'need']));
-      return { [planner.weekStart]: { extras, status, custom: [] } };
-    }
   } catch {
     // Start empty.
   }
@@ -139,13 +130,13 @@ export const weekDinners = (weekStart = planner.weekStart) =>
 /** Lines of the viewed week's list (or of `weekStart`'s). @returns {GroceryLine[]} */
 export const groceryLines = (weekStart = planner.weekStart) => buildWeek(weekStart).lines;
 
-/** The week's ingredients the "ingredients I have" list keeps off it. @returns {{ key: string, name: string, detail: string, source: string }[]} */
-export const haveHiddenLines = (weekStart = planner.weekStart) => buildWeek(weekStart).hidden;
+/** The week's ingredients kept off it because they're in stock. @returns {{ key: string, name: string, detail: string, source: string }[]} */
+export const stockHiddenLines = (weekStart = planner.weekStart) => buildWeek(weekStart).hidden;
 
-/** Whether a recipe ingredient is on the "ingredients I have" list. @param {string} key */
-export function isHaveKey(key) {
+/** Whether a recipe line's ingredient is in stock. @param {string} key */
+export function isOnHandKey(key) {
   const item = lookup(key)?.item;
-  return Boolean(item) && isHave(settings.have, item.text);
+  return Boolean(item && ingredientOf(item.id)?.onHand);
 }
 
 /** @returns {{ lines: GroceryLine[], hidden: { key: string, name: string, detail: string, source: string }[] }} */
@@ -161,19 +152,22 @@ function buildWeek(weekStart) {
     const found = lookup(key);
     if (!found) return;
     const { recipe, item } = found;
+    const ingredient = ingredientOf(item.id);
     const amount =
-      item.qty == null ? 'To taste' : item.unit ? `${formatQty(item.qty)} ${item.unit}` : `Qty ${formatQty(item.qty)}`;
-    const name = item.text.charAt(0).toUpperCase() + item.text.slice(1);
+      item.qty == null ? 'To taste' : item.unit ? `${formatQty(item.qty)} ${unitLabel(item.unit, item.qty)}` : `Qty ${formatQty(item.qty)}`;
+    const detail = [amount, item.note, item.optional && 'optional'].filter(Boolean).join(' · ');
+    const shopping = shoppingName(ingredient);
+    const name = shopping.charAt(0).toUpperCase() + shopping.slice(1);
     const source = day ? `${formatWeekday(day.iso).slice(0, 3)}: ${recipe.shortTitle}` : recipe.shortTitle;
-    if (isHave(settings.have, item.text)) {
-      hidden.push({ key, name, detail: amount, source });
+    if (ingredient?.onHand) {
+      hidden.push({ key, name, detail, source });
       return;
     }
     lines.set(key, {
       key,
       name,
-      detail: amount,
-      dept: deptOfTag(item.tag),
+      detail,
+      dept: deptOfTag(ingredient?.aisle ?? 'Pantry'),
       status: week.status[key] ?? 'need',
       source: { label: source, tone: day ? DAY_TONES[day.weekday] : 'neutral' },
       recipeId: recipe.id,

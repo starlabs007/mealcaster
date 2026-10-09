@@ -1,6 +1,6 @@
 // Row-level sync between on-device data and one Google Sheets tab.
 //
-// Every row has a key (Recipe_ID, Date_ISO, Week_Of + Line_Key). For each key
+// Every row has a key (Ingredient_ID, Recipe_ID, Date_ISO, Week_Of + Line_Key, Section + Name). For each key
 // we compare three versions: the sheet now, the device now, and fingerprints of
 // both as of the last sync (the "base"). The Google Sheet is the source of
 // truth: if the sheet's row changed since the last sync it wins, and only rows
@@ -13,7 +13,7 @@
 
 import { SCHEMA } from '../schema.js';
 import { COLUMN_INFO, sameHeader, statusOf, suggestMapping } from '../schemaCheck.js';
-import { cellText, isBlankRow, isoDate, newRecipeIdFor, provisionKey, settingKey } from './codec.js';
+import { cellText, isBlankRow, isoDate, newIngredientIdFor, newRecipeIdFor, provisionKey, settingKey } from './codec.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
 /** @typedef {import('./codec.js').Row} Row */
@@ -108,6 +108,7 @@ export function resolveColumns(tab, headers, { saved, autoAppendOptional, hasDat
 
 /** Key of a row, or '' if it has none. @param {TabKey} tab @param {Row} row */
 export function rowKey(tab, row) {
+  if (tab === 'ingredients') return cellText(row.Ingredient_ID).trim();
   if (tab === 'recipes') return cellText(row.Recipe_ID).trim();
   if (tab === 'weeklyPlan') return isoDate(row.Date_ISO);
   if (tab === 'settings') return cellText(row.Section).trim() && cellText(row.Name).trim() ? settingKey(row.Section, row.Name) : '';
@@ -116,9 +117,12 @@ export function rowKey(tab, row) {
   return week && line ? provisionKey(week, line) : '';
 }
 
+/** Id column of the tabs whose rows people may type without one. */
+const ID_COLUMN = { recipes: 'Recipe_ID', ingredients: 'Ingredient_ID' };
+
 /**
  * Rows of a tab keyed for sync. Rows people typed without a key get one
- * (recipes and grocery items); those keys are written back to the sheet.
+ * (ingredients, recipes and grocery items); those keys are written back to the sheet.
  * Later rows with a key already seen are left alone.
  * @param {TabKey} tab @param {unknown[][]} values all rows including the header @param {ColumnPlan} plan
  * @returns {SheetTable}
@@ -127,8 +131,9 @@ export function readTable(tab, values, plan) {
   /** @type {Map<string, SheetRow>} */
   const rows = new Map();
   const keyFixes = [];
+  const idColumn = ID_COLUMN[tab];
   const taken = new Set(
-    values.slice(1).map((cells) => cellText(cells[plan.index.Recipe_ID]).trim()).filter(Boolean),
+    idColumn ? values.slice(1).map((cells) => cellText(cells[plan.index[idColumn]]).trim()).filter(Boolean) : [],
   );
   values.slice(1).forEach((cells, i) => {
     /** @type {Row} */
@@ -140,6 +145,11 @@ export function readTable(tab, values, plan) {
       taken.add(row.Recipe_ID);
       key = row.Recipe_ID;
       keyFixes.push({ index: i + 1, row, key: 'Recipe_ID' });
+    } else if (!key && tab === 'ingredients' && cellText(row.Name).trim()) {
+      row.Ingredient_ID = newIngredientIdFor(row.Name, taken);
+      taken.add(row.Ingredient_ID);
+      key = row.Ingredient_ID;
+      keyFixes.push({ index: i + 1, row, key: 'Ingredient_ID' });
     } else if (!key && tab === 'provisions' && isoDate(row.Week_Of) && cellText(row.Item).trim()) {
       row.Line_Key = `custom:${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
       key = rowKey(tab, row);
