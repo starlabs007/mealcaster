@@ -63,7 +63,8 @@ npm run preview    # http://localhost:4173
 
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
 
-- Keyword search across titles, descriptions, categories, tags and ingredients (the header search lands here too).
+- Keyword search across titles, descriptions, categories, tags and ingredient names, ignoring accents ("bun cha"
+  finds Bún chả; the header search lands here too).
 - Filters (combined with AND): Favorites, **Unplanned this week** (on by default, remembered on the device; hides meals the
   viewed week already has planned or completed, except the day being swapped), **Not made recently** (nothing made in the last 7 days; remembered on the device) and one per
   recipe tag in use, plus one category at a time (Filter by Category). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
@@ -78,10 +79,10 @@ npm run preview    # http://localhost:4173
 
 - Breadcrumb back to the plan, favorite toggle, Swap Meal, serving scaler (quantities rescale).
 - Tags (each links to the catalog filtered by it) and when the meal was last made.
-- Mise-en-place checklist grouped by component. Checking an ingredient means you always have it: it goes on your
-  **Ingredients I Have** list (see Profile & Settings) and stays off the grocery list, in every week, until you
-  uncheck it. **Checkmark all** / **Clear all** act on the whole recipe. **Push Unchecked to Grocery** and
-  **Add to List** skip checked ingredients.
+- Mise-en-place checklist grouped by component. Checking an ingredient marks it **in stock** at home (the same flag
+  as everywhere else, see Ingredients): it stays off every week's grocery list until you uncheck it. **Checkmark
+  all** / **Clear all** act on the whole recipe. **Push Unchecked to Grocery** and **Add to List** skip checked
+  ingredients. Lines read like "1 lb beef (flank or ribeye), sliced"; amounts and plurals follow the serving scaler.
 - Numbered method steps with durations; "Next: {Day} {Recipe}" walks through the week's dinners.
 
 ## Recipe tags
@@ -97,27 +98,61 @@ A recipe has at most one **category** (optional; shown on the cards, the detail 
 The editor offers Dinner, Lunch, Dessert and every category in use, and takes a custom one (tidied like a tag).
 The `Category` column holds it; blank means none.
 
+## Ingredients
+
+Every ingredient is one entry in the `[Ingredients]` tab (`Ingredient_ID, Name, Plural, Aisle, On_Hand`); recipe
+lines point at it by id and add their own amount, unit, **note** (for the store: "flank or ribeye", "6 oz"),
+**prep** (for the kitchen: "sliced") and an **optional** flag. So an ingredient's name, aisle and stock are set once
+for every recipe and the grocery list.
+
+- **Names** are stored lowercase, singular, with an optional plural ("green onion" / "green onions"; blank for
+  "rice", "rau răm"). The plural is used except for a single item (`1 onion`, `½ onion`, `1 large onion`, but
+  `2 onions`, `1 lb carrots`). Units have one canonical form (`tsp tbsp cup oz lb g kg ml l clove bunch can …`);
+  word units pluralize above 1 (`2 cups`), abbreviations and sizes never do.
+- **Accents and case never matter when comparing** — search, suggestions, duplicate checks ("rau ram" finds "rau
+  răm", "Đúc" = "duc") — but are kept as typed. Plain helpers in `src/lib/ingredients.js` (`foldKey`, `slugify`,
+  plural and unit display).
+- **Ids** are readable slugs fixed at creation (`nuoc-mam`, collisions get `-2`); renaming never changes them.
+- **In stock** (`On_Hand`) means you have it at home: it stays off every week's grocery list until unticked. Set it
+  from a recipe's checklist, a grocery line's box icon, or Profile → Ingredients; untick it there or with **Need it**
+  on the grocery list.
+- **Recipe editor**: the ingredient field suggests existing ingredients (accent-insensitive, plurals too) and creates
+  a new one on save, marked **New** with its aisle (guessed until you pick one) and "Did you mean…" buttons for
+  look-alikes. An existing ingredient's aisle is locked there (change it in Profile). The unit field suggests units
+  and other spellings ("tablespoon" → tbsp). **Paste bulk text** splits lines into amount, unit, ingredient, note,
+  prep and optional (rules under its help toggle).
+- A recipe line whose ingredient isn't in the tab shows as "Unknown ingredient" and keeps its id; sync doesn't stop.
+
 ## Quick Grocery List (`#/grocery`)
 
 - Auto-compiled from all of the viewed week's dinners (past days and ones marked done included, so their items and
-  their `[Provisions]` rows stay), grouped into Produce, Meat & Seafood, Dairy and Pantry aisles (with aisle tabs).
-  Each line shows which dinner needs it.
-- Ingredients on your **Ingredients I Have** list are left off; an expandable note (closed by default) says how many
-  and lists them with the dinner they belong to.
-- Tap the circle when bought and the box icon if you already have it; either way the item moves to the
-  **Already On Hand / Acquired** ledger and the aisle counters update.
-- **Add Item** for anything extra, for just the viewed week or as a **Standing item** shown in every week until it is
-  bought or marked on hand (then it stays only in that week's Acquired list), **Share** (native share sheet or clipboard), **Print Kitchen
-  Checklist** (print-friendly layout). Synced to the optional `[Provisions]` tab: this week, the 7 before it and any
+  their `[Provisions]` rows stay), plus recipes pushed from a recipe page and items you added, grouped by the
+  ingredient's aisle (with aisle tabs).
+- **One line per ingredient**: every dinner using it is merged into it, each shown as a chip (two, then "+N more").
+  Amounts in the same unit add up ("2 lb + 2 tbsp" otherwise); each meal's note stays with its meal. A line only
+  optional recipes need is labelled **optional**.
+- Ingredients **in stock** are left off; an expandable note (closed by default) lists them, each with **Need it** to
+  untick its stock and put it back on every week's list.
+- Tap the circle when bought (it moves to the **Bought** section); the box icon marks the ingredient in stock.
+  Bought is per week and leaves stock alone.
+- **Past weeks are frozen**: changing stock never changes a past week's list (each past week keeps a snapshot of what
+  it left off; Need it and the box icon are hidden there).
+- **Add Item** picks an ingredient or creates one (with its aisle), for **every week** (default — from this week on
+  until you buy it, then only in the week you bought it) or **just the viewed week**. Adding an in-stock ingredient
+  clears its stock. **Share** (native share sheet or clipboard), **Print Kitchen Checklist** (print-friendly layout).
+- Synced to the optional `[Provisions]` tab, one row per ingredient per week (`Line_Key` = `ing:<Ingredient_ID>`,
+  `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
   future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
+  `On hand` rows of this week and later are read-only — stock lives in `[Ingredients]`.
 - Sidebar: items to buy, completion, department spread and the dinners feeding the list.
 
 ## Profile & Settings (`#/profile`)
 
 The `[Settings]` tab is required (it can be renamed, not switched off). Besides the preferences below it holds a
-`Schema | Version` row — the schema version the sheet was written with (currently 1, `SCHEMA_VERSION` in
-`src/lib/schema.js`). Bump it when a change needs existing sheets migrated; a sheet's older number is kept so a
-migration can see it.
+`Schema | Version` row — the schema version the sheet was written with (currently 2, `SCHEMA_VERSION` in
+`src/lib/schema.js`). Bump it when a change needs existing sheets migrated. Sync refuses a spreadsheet with another
+version (or with no version row and old-style recipe lines) and says so, without reading or writing anything.
+Version 1 sheets (ingredient text on each recipe line) are converted once outside the app.
 
 Reached from the avatar in the header (and the footer, on phones).
 
@@ -125,14 +160,11 @@ Reached from the avatar in the header (and the footer, on phones).
   in the catalog). Synced as a `Preference` row in the `[Settings]` tab.
 - **Week starts on** — the first day of the weekly plan and the grocery week (Saturday by default). Synced as a
   `Preference` row in `[Settings]`. Plan dates don't move; grocery lists are re-keyed onto the new weeks.
-- **Aisle Mappings** — your own ingredient → aisle pairs (e.g. "Oat milk" → Pantry). They're checked before the
-  built-in word lists whenever an aisle is guessed: typing or pasting ingredients in the recipe editor, and the
-  aisle pre-selected in the grocery **Add Item** form. A name matches as whole words anywhere in the ingredient
-  ("oat milk" also matches "2 cups oat milk"), and the longest match wins. Explicit aisles already saved on a
-  recipe are never changed. Synced to the `[Settings]` tab.
-- **Ingredients I Have** — names that never reach the grocery list, in any week. Checking an ingredient on a recipe
-  adds it here; you can also add or remove names by hand. A name matches an ingredient's full text, ignoring case
-  and plurals ("noodles" won't hide "egg noodles"). Synced as `Have` rows in the `[Settings]` tab.
+- **Ingredients** — a count with **View / Edit**, opening a dialog (bottom sheet on phones): add an ingredient (name
+  + aisle; an existing name jumps to it), search (accent-insensitive), filter All / In stock / Not in a recipe, tick
+  stock, and edit name, plural and aisle in place. A name that is another ingredient's offers **Merge into it**: every
+  recipe line and grocery mark moves to the kept one (samples become edited), it's in stock if either was. Delete
+  is only offered for ingredients no recipe uses. Merge and Delete show an Undo toast. Synced to `[Ingredients]`.
 - **Recipe Tags** — every tag in use with its recipe count. Your own tags get a colour picker (five tones), Rename
   and Delete; both change every recipe with the tag (samples become edited), renaming onto a tag in use merges
   them, and an Undo toast follows. The four built-ins can't be changed. Reset Colours hands colours out again.
@@ -145,7 +177,7 @@ Reached from the avatar in the header (and the footer, on phones).
   - **Catalog**: start the catalog with "Unplanned this week" (on by default) and/or "Not made recently"
     switched on.
   - **Export**: downloads everything on this device as `MealCaster_Export_<date>.xlsx` with the sheet's tabs (and
-    tab names) — recipes, planned dinners, the viewed week's grocery list and settings; photos not yet on Drive are
+    tab names) — ingredients, recipes, planned dinners, the viewed week's grocery list and settings; photos not yet on Drive are
     left out. Works connected or not.
 - **Danger Zone** — *Disconnect & Erase*: after a confirmation dialog, signs out of Google, removes every
   `mealcaster.*` key from this browser and reloads fresh. The Google Sheet is never changed. Handy for testing.
@@ -175,7 +207,7 @@ to that page.
    (Google's account chooser). Switching to another account unlinks the spreadsheet, as it may not have access.
 2. **Spreadsheet** (`#/sheets-sync/sheet`) — **Create a new spreadsheet** (name it; "MealCaster" by default) *or*
    **Choose from Drive**. **Empty Template (.xlsx)** downloads the tabs with only their header rows, to upload to Drive
-   and choose. **Tab names (advanced)**, collapsed: the three required tabs, then the optional grocery list tab; saved
+   and choose. **Tab names (advanced)**, collapsed: the four required tabs, then the optional grocery list tab; saved
    when leaving the step by Continue / Create / Choose. **Clear Saved Settings** (with Undo) shows there while nothing
    is linked.
 3. **Sync** (`#/sheets-sync/sync`) — the account and spreadsheet with Change links, **How to sync** (direction and
@@ -191,7 +223,8 @@ Disconnect…. Below `sm` it's icon-only and opens the menu. The states and acti
 **How sync behaves**
 
 - The Google Sheet is the source of truth; `localStorage` is a cache plus edits waiting to be pushed.
-- Row-level three-way sync keyed by `Recipe_ID`, `Date_ISO`, `Week_Of` + `Line_Key`, and `Section` + `Name`: if a row
+- Row-level three-way sync keyed by `Ingredient_ID`, `Recipe_ID`, `Date_ISO`, `Week_Of` + `Line_Key`, and
+  `Section` + `Name` (`[Ingredients]` first, so recipes and grocery rows read the latest ingredients): if a row
   changed in the sheet since the last sync the sheet wins; otherwise this device's edit is pushed.
   Rows are updated in place and only MealCaster's columns are written, so extra columns stay put.
 - Choosing or creating a spreadsheet doesn't sync: its first sync starts from step 3 (**Start Syncing**). Until
@@ -222,22 +255,26 @@ State is cached in `localStorage`; clear these keys to reset:
 
 | Key | Mirrors |
 | --- | --- |
-| `mealcaster.recipeBox.v1` | `[Recipes]` tab (custom/edited recipes, deleted samples) |
-| `mealcaster.weeklyPlan.v1` | `[WeeklyPlan]` tab |
-| `mealcaster.favorites.v1` | `Favorite_Flag` column of `[Recipes]` |
-| `mealcaster.grocery.v2` | per-week `[Provisions]` list: bought/on-hand status, pushed and custom items |
-| `mealcaster.groceryGlobal.v1` | Standing items: `global:` rows in `[Provisions]`, one per week they show in |
-| `mealcaster.settings.v1` | `[Settings]` tab: Profile preferences, aisle mappings, ingredients I have, tag colours |
+| `mealcaster.ingredients.v1` | `[Ingredients]` tab (name, plural, aisle, in stock) |
+| `mealcaster.recipeBox.v2` | `[Recipes]` tab (custom/edited recipes, deleted samples) |
+| `mealcaster.weeklyPlan.v2` | `[WeeklyPlan]` tab |
+| `mealcaster.favorites.v2` | `Favorite_Flag` column of `[Recipes]` |
+| `mealcaster.grocery.v4` | per-week `[Provisions]` list: bought status, pushed recipes, items added this week, past weeks' stock snapshots |
+| `mealcaster.groceryEvery.v1` | items added for every week (merged into that ingredient's `[Provisions]` row) |
+| `mealcaster.settings.v2` | `[Settings]` tab: Profile preferences, tag colours |
 | `mealcaster.sheetsSettings.v1` | linked spreadsheet, tab names, sync options, column mapping |
-| `mealcaster.syncBase.v1` | row fingerprints from the last sync |
+| `mealcaster.syncBase.v2` | row fingerprints from the last sync |
 
-Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`, `mealcaster.catalogHidePlanned.v1`
-(`mealcaster.tagColors.v1`, the old per-device tag colours, is moved into settings once and removed); an unsaved new recipe is kept in `mealcaster.recipeDraft.v1`.
+Keys from before schema version 2 (`recipeBox.v1`, `grocery.v2`, `settings.v1`, `syncBase.v1`…) are removed at
+startup (`env.js`): the new build never reads old-format data, and a stale sync base would delete sheet rows.
+
+Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`, `mealcaster.catalogHidePlanned.v1`;
+an unsaved new recipe is kept in `mealcaster.recipeDraft.v2`.
 
 The grocery badge counts items still to buy for the viewed week.
 
 Saves go through `saveItem` (`storage.svelte.js`), which notes saves that didn't fit and shows a toast. Until every
-store is saved again, sync keeps the new `syncBase.v1` in memory only, so a reload can't push older data over the
+store is saved again, sync keeps the new `syncBase.v2` in memory only, so a reload can't push older data over the
 sheet. At startup the app asks the browser to keep its data (`navigator.storage.persist()`; Firefox only from the
 Profile button, as it asks the person) and warns at 80% of 5 MB.
 
@@ -265,17 +302,22 @@ src/
     planner.svelte.js        weekly plan state + actions, last made / times made (Svelte runes)
     switchDays.js            entries after two evenings switch (pure, tested)
     recipes.svelte.js        live recipe list (samples + saved), save/delete/revert
+    ingredients.js           ingredient helpers: foldKey, slugs, units, plural rule, line display (plain, tested)
+    ingredients.svelte.js    ingredient store (synced), stock changes
+    ingredientActions.svelte.js  merge / delete an ingredient across recipes and grocery lists, with Undo
+    ingredientText.js        paste parser, quantity parsing, aisle guess for new ingredients
     tags.js                  tag & category normalizing, suggestions, colour rotation
     tagColors.svelte.js      tag colours (synced) and renaming / deleting tags
-    grocery.svelte.js        grocery list model
-    settings.svelte.js       Profile settings (aisle mappings, ingredients I have) + aisleMap.js / haveList.js matching
+    grocery.svelte.js        grocery list state (per week, every-week items, stock snapshots)
+    groceryList.js           one line per ingredient: merging, amounts, visibility (plain, tested)
+    settings.svelte.js       Profile settings (preferences, tag colours)
     devicePrefs.svelte.js    small per-device display preferences
     favorites.svelte.js
     toast.svelte.js
     storage.svelte.js        localStorage saves that note failures, storage use, persist() request
     dates.js
     format.js                quantity formatting (1/3, 3 1/2)
-    data/recipes.js          sample recipes (dev only)
+    data/recipes.js          sample recipes (dev only); data/ingredients.js their ingredient catalog
     components/              AppHeader, DayCard, RecipeCard, LastMade, ...
 ```
 
