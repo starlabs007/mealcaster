@@ -163,6 +163,32 @@ export function retagRecipes(from, to) {
   return before;
 }
 
+/**
+ * Points every recipe line using ingredient `from` at ingredient `to` (merging two ingredients). Samples it touches
+ * are marked edited.
+ * @param {string} from @param {string} to
+ * @returns {Recipe[]} the recipes as they were, for `restoreTagged`
+ */
+export function relinkIngredient(from, to) {
+  const before = [];
+  const uses = (r) => r.ingredients.some((g) => g.items.some((item) => item.id === from));
+  for (const [i, r] of recipes.entries()) {
+    if (!uses(r)) continue;
+    before.push($state.snapshot(r));
+    const ingredients = r.ingredients.map((g) => ({ ...g, items: g.items.map((item) => (item.id === from ? { ...item, id: to } : item)) }));
+    recipes[i] = { ...r, ingredients, ...(isSample(r.id) && { edited: true }) };
+    recipeById.set(r.id, recipes[i]);
+  }
+  try {
+    persist();
+  } catch (error) {
+    // Roll back so memory matches what's stored.
+    putBack(before);
+    throw error;
+  }
+  return before;
+}
+
 /** @param {Recipe[]} before */
 function putBack(before) {
   for (const old of before) {
@@ -173,7 +199,7 @@ function putBack(before) {
   }
 }
 
-/** Undo for `retagRecipes` (recipes deleted since are left out). @param {Recipe[]} before */
+/** Undo for `retagRecipes` and `relinkIngredient` (recipes deleted since are left out). @param {Recipe[]} before */
 export function restoreTagged(before) {
   putBack(before);
   persist();

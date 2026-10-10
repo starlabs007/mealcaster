@@ -15,6 +15,7 @@
   import { RECENT_DAYS, planner } from '../lib/planner.svelte.js';
   import { weekStartOf } from '../lib/dates.js';
   import WipeDataDialog from '../lib/components/WipeDataDialog.svelte';
+  import IngredientsDialog from '../lib/components/IngredientsDialog.svelte';
   import { ingredients } from '../lib/ingredients.svelte.js';
   import { sheets } from '../lib/sheets.svelte.js';
   import { href } from '../lib/router.svelte.js';
@@ -32,6 +33,7 @@
   const deviceCard = 'flex flex-col rounded-xl border border-surface-container-high p-4';
 
   let confirmingWipe = $state(false);
+  let editingIngredients = $state(false);
 
   // Export: everything on this device as a workbook with the tabs (and tab names) the sheet uses.
   const exportContents = $derived(
@@ -197,12 +199,18 @@
       </span>
     </div>
     <p class="max-w-2xl text-body-sm text-on-surface-variant">
-      Everything your recipes use, each with its store aisle. An ingredient in stock stays off your grocery list until you
-      untick it — check it on any recipe that uses it.
+      Everything your recipes and grocery lists use, each with its store aisle. An ingredient in stock stays off every
+      grocery list until you untick it — here, on a recipe that uses it, or with Need it on the grocery list. Edit names
+      and aisles, merge duplicates, or delete ones no recipe uses.
     </p>
-    <span class="text-label-md {ingredients.length ? 'text-on-surface' : 'text-outline'}">
-      {ingredients.length ? `${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'} · ${inStock} in stock` : 'None yet — they’re added with your recipes.'}
-    </span>
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <span class="text-label-md {ingredients.length ? 'text-on-surface' : 'text-outline'}">
+        {ingredients.length ? `${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'} · ${inStock} in stock` : 'None yet — they’re added with your recipes.'}
+      </span>
+      <button type="button" class="btn-outline py-1.5" onclick={() => (editingIngredients = true)}>
+        <Icon name="edit" class="text-[16px]" /> View / Edit
+      </button>
+    </div>
   </section>
 
   <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="tags-heading">
@@ -417,3 +425,7 @@
   <WipeDataDialog onclose={() => (confirmingWipe = false)} />
 {/if}
 
+
+{#if editingIngredients}
+  <IngredientsDialog onclose={() => (editingIngredients = false)} />
+{/if}

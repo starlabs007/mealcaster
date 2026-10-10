@@ -197,7 +197,7 @@ export function removeAdded(ingredientId) {
  * Saves, for each past week without one yet, what it leaves off as in stock — called just before stock changes,
  * so a past week's list stays as it was.
  */
-function freezePastWeeks() {
+export function freezePastWeeks() {
   const thisWeek = thisWeekStart();
   const weeks = new Set([
     ...Object.keys(grocery.weeks),
@@ -211,6 +211,33 @@ function freezePastWeeks() {
   }
 }
 onBeforeStockChange(freezePastWeeks);
+
+/**
+ * Moves every grocery mark of ingredient `from` onto `to` (two ingredients merged), or drops them when `to` is ''
+ * (an ingredient deleted). Where both have one, what's still to buy wins and notes are joined.
+ * @param {string} from @param {string} to
+ */
+export function relinkGrocery(from, to) {
+  const swap = (id) => (id === from ? to : id);
+  for (const list of Object.values(grocery.weeks)) {
+    list.pushed = [...new Set(list.pushed.map((pair) => {
+      const [recipeId, id] = pair.split(':');
+      return id === from ? (to ? `${recipeId}:${to}` : '') : pair;
+    }).filter(Boolean))];
+    if (from in list.status) {
+      if (to) list.status[to] = list.status[to] === 'need' || list.status[from] === 'need' ? 'need' : 'bought';
+      delete list.status[from];
+    }
+    if (from in list.added) {
+      if (to) list.added[to] = [list.added[to], list.added[from]].filter(Boolean).join(', ');
+      delete list.added[from];
+    }
+    if (list.stock) list.stock = [...new Set(list.stock.map(swap).filter(Boolean))];
+  }
+  const kept = grocery.every.find((i) => i.ingredientId === to);
+  grocery.every = grocery.every.filter((i) => i.ingredientId !== from || (to && !kept));
+  for (const item of grocery.every) if (item.ingredientId === from) item.ingredientId = to;
+}
 
 /** Replaces every week's list (used by Google Sheets sync). @param {Record<string, WeekList>} weeks @param {EveryWeekItem[]} [every] */
 export function replaceGrocery(weeks, every = grocery.every) {

@@ -4,7 +4,8 @@
   import { toast, dismissToast } from '../toast.svelte.js';
 </script>
 
-<div class="pointer-events-none fixed inset-x-0 top-6 z-[60] flex justify-center px-4 print:hidden" aria-live="polite">
+<!-- Above dialogs (z-[70]), so a toast from inside one isn't dimmed by its backdrop. -->
+<div class="pointer-events-none fixed inset-x-0 top-6 z-[80] flex justify-center px-4 print:hidden" aria-live="polite">
   {#key toast.id}
     {#if toast.message}
       <div

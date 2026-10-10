@@ -92,6 +92,15 @@ export function updateIngredient(id, fields) {
   byId.set(id, ingredients[index]);
 }
 
+/** Removes an ingredient (recipes and grocery lists are the caller's to update). @param {string} id */
+export function removeIngredient(id) {
+  const index = ingredients.findIndex((i) => i.id === id);
+  if (index < 0) return;
+  if (ingredients[index].onHand) beforeStockChange();
+  ingredients.splice(index, 1);
+  byId.delete(id);
+}
+
 /** Marks an ingredient in stock (kept off the grocery list) or not. @param {string} id @param {boolean} on */
 export function setOnHand(id, on) {
   if (byId.get(id)?.onHand !== on) updateIngredient(id, { onHand: on });
