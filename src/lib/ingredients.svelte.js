@@ -56,6 +56,13 @@ export const ingredientOf = (id) => byId.get(id);
 /** The ingredient a typed name means (name or plural; case, accents and plural endings ignored). @param {string} name */
 export const findIngredient = (name) => findByName(ingredients, name);
 
+// Called just before any ingredient's stock changes, so the grocery list can freeze past weeks first.
+let beforeStockChange = () => {};
+/** @param {() => void} fn */
+export const onBeforeStockChange = (fn) => {
+  beforeStockChange = fn;
+};
+
 function reindex() {
   byId.clear();
   for (const i of ingredients) byId.set(i.id, i);
@@ -80,6 +87,7 @@ export function addIngredient({ name, plural = '', aisle = 'Pantry', onHand = fa
 export function updateIngredient(id, fields) {
   const index = ingredients.findIndex((i) => i.id === id);
   if (index < 0) return;
+  if ('onHand' in fields && fields.onHand !== ingredients[index].onHand) beforeStockChange();
   ingredients[index] = cleanIngredient({ ...ingredients[index], ...fields, id });
   byId.set(id, ingredients[index]);
 }
@@ -100,6 +108,10 @@ export function restoreSampleIngredients(ids) {
 
 /** Replaces the whole list with the synced one. @param {Ingredient[]} list */
 export function replaceIngredients(list) {
-  ingredients.splice(0, ingredients.length, ...list.map(cleanIngredient));
+  const next = list.map(cleanIngredient);
+  if (next.some((i) => (byId.get(i.id)?.onHand ?? false) !== i.onHand) || ingredients.some((i) => i.onHand && !next.some((n) => n.id === i.id))) {
+    beforeStockChange();
+  }
+  ingredients.splice(0, ingredients.length, ...next);
   reindex();
 }

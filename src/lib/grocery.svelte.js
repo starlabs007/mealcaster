@@ -1,70 +1,41 @@
-// Quick Grocery & Provisions list, one per week (mirrors a [Provisions] sheet tab).
+// Quick Grocery & Provisions list, one per week (mirrors a [Provisions] sheet tab), one line per ingredient.
 //
-// Lines come from three sources:
-//  1. Automatic — every ingredient of the week's dinners, past days and ones marked done included (so items
-//     bought for them stay, here and in the sheet), except ingredients in stock (ingredients store).
-//  2. Pushed — ingredients sent from a Recipe Detail page ("Add to List" /
-//     "Push Unchecked to Grocery"), even for recipes not on the plan.
-//  3. Custom — free-text items added on the grocery screen, for one week or (global) for every week.
-//     A global item shows in every week until it is bought / marked on hand; from then on it shows only in
-//     the week it was acquired in (as acquired) and disappears from the other weeks.
+// A line merges every source of its ingredient that week:
+//  1. Dinners — every ingredient of the week's dinners, past days and ones marked done included (so items
+//     bought for them stay, here and in the sheet).
+//  2. Pushed — ingredients sent from a Recipe Detail page ("Add to List" / "Push Unchecked to Grocery"),
+//     even for recipes not on the plan.
+//  3. Added by you — ingredients added on the grocery screen, for that week only or every week. An every-week
+//     item shows on this week and later ones until bought; from then on only on the week it was bought in.
 //
-// Each line is 'need' (to buy), 'bought' (checked off) or 'owned' (already on hand).
-// Ingredient keys are `${recipeId}:${groupIndex}:${itemIndex}`.
+// Ingredients in stock (the ingredient's On hand flag) are left off every week's list and listed apart. A past
+// week never changes: just before stock changes, each past week saves what it left off (`stock`).
+// Each line is 'need' (to buy) or 'bought'. The merging itself is in groceryList.js.
 
 import { recipeById } from './recipes.svelte.js';
-import { ingredientOf } from './ingredients.svelte.js';
-import { shoppingName, unitLabel } from './ingredients.js';
+import { ingredientOf, onBeforeStockChange, setOnHand } from './ingredients.svelte.js';
 import { planner, currentWeek } from './planner.svelte.js';
-import { formatQty } from './format.js';
-import { formatWeekday } from './dates.js';
+import { fromISO, weekStartOf } from './dates.js';
 import { departments } from './data/departments.js';
 import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { rekeyGroceryWeeks } from './sync/codec.js';
+import { buildWeekList, emptyWeek, everyWeekShows } from './groceryList.js';
 
-const STORAGE_KEY = storageKey('grocery.v3');
-const GLOBAL_KEY = storageKey('groceryGlobal.v2');
+export { deptOfTag } from './groceryList.js';
+
+const STORAGE_KEY = storageKey('grocery.v4');
+const EVERY_KEY = storageKey('groceryEvery.v1');
 
 /**
- * @typedef {'need' | 'bought' | 'owned'} LineStatus
- * @typedef {'produce' | 'meat' | 'dairy' | 'pantry' | 'other'} Dept
- * @typedef {{ id: string, name: string, note: string, dept: Dept }} CustomItem
- * @typedef {CustomItem & { status: LineStatus, doneWeek: string }} GlobalItem  `doneWeek` is the week it was acquired in ('' while still to buy)
- * @typedef {{ extras: string[], status: Record<string, LineStatus>, custom: CustomItem[] }} WeekList
- * @typedef {{
- *   key: string,
- *   name: string,
- *   detail: string,
- *   dept: Dept,
- *   status: LineStatus,
- *   source: { label: string, tone: string },
- *   recipeId?: string,
- *   custom?: boolean,
- *   global?: boolean,
- * }} GroceryLine
+ * @typedef {import('./groceryList.js').LineStatus} LineStatus
+ * @typedef {import('./groceryList.js').Dept} Dept
+ * @typedef {import('./groceryList.js').WeekList} WeekList
+ * @typedef {import('./groceryList.js').EveryWeekItem} EveryWeekItem
+ * @typedef {import('./groceryList.js').GroceryLine} GroceryLine
  */
 
 export { departments };
-
-/** Ingredient tag → store department. */
-const TAG_DEPT = {
-  Produce: 'produce',
-  Herbs: 'produce',
-  Fresh: 'meat',
-  Dairy: 'dairy',
-  Frozen: 'dairy',
-  Pantry: 'pantry',
-  Spices: 'pantry',
-  Bakery: 'pantry',
-  Other: 'other',
-};
-
-/** Store department for an ingredient aisle tag. @param {string} tag @returns {Dept} */
-export const deptOfTag = (tag) => TAG_DEPT[tag] ?? 'pantry';
-
-// Source-tag colors cycle by weekday so each dinner reads distinctly.
-const DAY_TONES = ['neutral', 'paprika', 'sage', 'saffron', 'paprika', 'sage', 'saffron'];
 
 function load() {
   try {
@@ -76,35 +47,36 @@ function load() {
   return {};
 }
 
-function loadGlobal() {
+function loadEvery() {
   try {
-    const raw = localStorage.getItem(GLOBAL_KEY);
-    if (raw) return JSON.parse(raw);
+    const raw = localStorage.getItem(EVERY_KEY);
+    if (raw) return JSON.parse(raw).filter((i) => i && typeof i.ingredientId === 'string');
   } catch {
     // Start empty.
   }
   return [];
 }
 
-/** @type {{ weeks: Record<string, WeekList>, global: GlobalItem[] }} */
-export const grocery = $state({ weeks: load(), global: loadGlobal() });
+/** @type {{ weeks: Record<string, WeekList>, every: EveryWeekItem[] }} */
+export const grocery = $state({ weeks: load(), every: loadEvery() });
 
 $effect.root(() => {
   $effect(() => {
     // In memory only if they don't fit (storage.svelte.js notes it).
     saveItem(STORAGE_KEY, JSON.stringify(grocery.weeks));
-    saveItem(GLOBAL_KEY, JSON.stringify(grocery.global));
+    saveItem(EVERY_KEY, JSON.stringify(grocery.every));
   });
 });
 
+/** Start of the week today is in. */
+export const thisWeekStart = () => weekStartOf(fromISO(planner.today));
+
 /** The viewed week's list, created on first write. */
 function weekList() {
-  return (grocery.weeks[planner.weekStart] ??= { extras: [], status: {}, custom: [] });
+  return (grocery.weeks[planner.weekStart] ??= emptyWeek());
 }
 
-const readWeek = (weekStart) => grocery.weeks[weekStart] ?? { extras: [], status: {}, custom: [] };
-
-/** @param {string} key */
+/** @param {string} key a recipe line key, `${recipeId}:${groupIndex}:${itemIndex}` */
 function lookup(key) {
   const [recipeId, g, i] = key.split(':');
   const recipe = recipeById.get(recipeId);
@@ -112,7 +84,7 @@ function lookup(key) {
   return item ? { recipe, item } : undefined;
 }
 
-/** All ingredient keys of a recipe. */
+/** All ingredient line keys of a recipe (`recipeId:group:item`). */
 export function ingredientKeys(recipeId) {
   const recipe = recipeById.get(recipeId);
   if (!recipe) return [];
@@ -127,10 +99,22 @@ export function ingredientKeys(recipeId) {
 export const weekDinners = (weekStart = planner.weekStart) =>
   currentWeek(weekStart).filter((d) => (d.status === 'planned' || d.status === 'completed') && d.recipe);
 
+/** @param {string} weekStart */
+const buildWeek = (weekStart) =>
+  buildWeekList({
+    week: weekStart,
+    thisWeek: thisWeekStart(),
+    list: grocery.weeks[weekStart] ?? emptyWeek(),
+    dinners: weekDinners(weekStart),
+    recipeOf: (id) => recipeById.get(id),
+    ingredientOf,
+    every: grocery.every,
+  });
+
 /** Lines of the viewed week's list (or of `weekStart`'s). @returns {GroceryLine[]} */
 export const groceryLines = (weekStart = planner.weekStart) => buildWeek(weekStart).lines;
 
-/** The week's ingredients kept off it because they're in stock. @returns {{ key: string, name: string, detail: string, source: string }[]} */
+/** The week's lines kept off it because their ingredient is in stock. @returns {GroceryLine[]} */
 export const stockHiddenLines = (weekStart = planner.weekStart) => buildWeek(weekStart).hidden;
 
 /** Whether a recipe line's ingredient is in stock. @param {string} key */
@@ -139,122 +123,97 @@ export function isOnHandKey(key) {
   return Boolean(item && ingredientOf(item.id)?.onHand);
 }
 
-/** @returns {{ lines: GroceryLine[], hidden: { key: string, name: string, detail: string, source: string }[] }} */
-function buildWeek(weekStart) {
-  const week = readWeek(weekStart);
-  const hidden = [];
-  /** @type {Map<string, GroceryLine>} */
-  const lines = new Map();
-
-  /** @param {string} key @param {{ iso: string, weekday: number }} [day] */
-  const addIngredient = (key, day) => {
-    if (lines.has(key) || hidden.some((h) => h.key === key)) return;
-    const found = lookup(key);
-    if (!found) return;
-    const { recipe, item } = found;
-    const ingredient = ingredientOf(item.id);
-    const amount =
-      item.qty == null ? 'To taste' : item.unit ? `${formatQty(item.qty)} ${unitLabel(item.unit, item.qty)}` : `Qty ${formatQty(item.qty)}`;
-    const detail = [amount, item.note, item.optional && 'optional'].filter(Boolean).join(' · ');
-    const shopping = shoppingName(ingredient);
-    const name = shopping.charAt(0).toUpperCase() + shopping.slice(1);
-    const source = day ? `${formatWeekday(day.iso).slice(0, 3)}: ${recipe.shortTitle}` : recipe.shortTitle;
-    if (ingredient?.onHand) {
-      hidden.push({ key, name, detail, source });
-      return;
-    }
-    lines.set(key, {
-      key,
-      name,
-      detail,
-      dept: deptOfTag(ingredient?.aisle ?? 'Pantry'),
-      status: week.status[key] ?? 'need',
-      source: { label: source, tone: day ? DAY_TONES[day.weekday] : 'neutral' },
-      recipeId: recipe.id,
-    });
-  };
-
-  for (const day of weekDinners(weekStart)) ingredientKeys(day.recipe.id).forEach((k) => addIngredient(k, day));
-  week.extras.forEach((k) => addIngredient(k));
-  for (const c of week.custom) {
-    lines.set(c.id, {
-      key: c.id,
-      name: c.name,
-      detail: c.note,
-      dept: c.dept,
-      status: week.status[c.id] ?? 'need',
-      source: { label: 'Added by you', tone: 'neutral' },
-      custom: true,
-    });
-  }
-  for (const g of grocery.global) {
-    // Acquired in another week: gone from this one.
-    if (g.status !== 'need' && g.doneWeek !== weekStart) continue;
-    lines.set(g.id, {
-      key: g.id,
-      name: g.name,
-      detail: g.note,
-      dept: g.dept,
-      status: g.status,
-      source: { label: 'Standing item', tone: 'neutral' },
-      custom: true,
-      global: true,
-    });
-  }
-  return { lines: [...lines.values()], hidden };
-}
-
-/** Keys currently on the shopping list (to buy or already bought). */
+/** Recipe line keys already on the viewed week's list (to buy or bought), through their recipe and ingredient. */
 export function groceryKeys() {
-  return new Set(groceryLines().filter((l) => l.status !== 'owned').map((l) => l.key));
+  const on = new Set();
+  for (const line of groceryLines()) for (const s of line.sources) if (s.recipeId) on.add(`${s.recipeId}:${line.ingredientId}`);
+  const keys = new Set();
+  for (const pair of on) {
+    const recipeId = pair.slice(0, pair.indexOf(':'));
+    for (const key of ingredientKeys(recipeId)) if (`${recipeId}:${lookup(key)?.item.id}` === pair) keys.add(key);
+  }
+  return keys;
 }
 
 /** Items still to buy — drives the header badge. */
 export const groceryCount = () => groceryLines().filter((l) => l.status === 'need').length;
 
-/** @param {string[]} keys @returns {number} how many were newly added */
+/**
+ * Puts recipe lines on the viewed week's list.
+ * @param {string[]} keys recipe line keys
+ * @returns {number} how many ingredients were newly added
+ */
 export function addToGrocery(keys) {
   const onList = groceryKeys();
-  const fresh = keys.filter((k) => !onList.has(k));
-  if (!fresh.length) return 0;
   const week = weekList();
-  for (const key of fresh) {
-    if (!week.extras.includes(key)) week.extras.push(key);
-    week.status[key] = 'need';
+  const fresh = new Set();
+  for (const key of keys) {
+    const found = lookup(key);
+    if (!found || onList.has(key)) continue;
+    const pair = `${found.recipe.id}:${found.item.id}`;
+    if (week.pushed.includes(pair)) continue;
+    week.pushed.push(pair);
+    week.status[found.item.id] = 'need';
+    fresh.add(found.item.id);
   }
-  return fresh.length;
+  return fresh.size;
 }
 
-/** @param {string} key @param {LineStatus} status */
-export function setLineStatus(key, status) {
-  const g = grocery.global.find((i) => i.id === key);
-  if (g) {
-    g.status = status;
-    g.doneWeek = status === 'need' ? '' : planner.weekStart;
-    return;
+/** Marks an ingredient's line on the viewed week bought or to buy (and its every-week item with it). @param {string} ingredientId @param {LineStatus} status */
+export function setLineStatus(ingredientId, status) {
+  const week = planner.weekStart;
+  weekList().status[ingredientId] = status;
+  for (const item of grocery.every) {
+    if (item.ingredientId !== ingredientId || !everyWeekShows(item, week, thisWeekStart())) continue;
+    item.status = status;
+    item.doneWeek = status === 'need' ? '' : week;
   }
-  weekList().status[key] = status;
 }
 
-/** @param {{ name: string, note: string, dept: Dept }} item @param {boolean} [everyWeek] show it in every week, not just the viewed one */
-export function addCustomItem(item, everyWeek = false) {
-  if (everyWeek) grocery.global.push({ id: `global:${Date.now()}`, ...item, status: 'need', doneWeek: '' });
-  else weekList().custom.push({ id: `custom:${Date.now()}`, ...item });
-}
-
-/** @param {string} id */
-export function removeCustomItem(id) {
-  if (id.startsWith('global:')) {
-    grocery.global = grocery.global.filter((g) => g.id !== id);
-    return;
+/**
+ * Adds an ingredient by hand. Adding it means you need it, so it's no longer in stock.
+ * @param {string} ingredientId @param {string} note @param {boolean} everyWeek on every week until bought, not just the viewed one
+ */
+export function addItem(ingredientId, note, everyWeek) {
+  setOnHand(ingredientId, false);
+  if (everyWeek) {
+    const existing = grocery.every.find((i) => i.ingredientId === ingredientId);
+    if (existing) Object.assign(existing, { note, status: 'need', doneWeek: '' });
+    else grocery.every.push({ ingredientId, note, status: 'need', doneWeek: '' });
+  } else {
+    weekList().added[ingredientId] = note;
   }
-  const week = weekList();
-  week.custom = week.custom.filter((c) => c.id !== id);
-  delete week.status[id];
+  weekList().status[ingredientId] = 'need';
 }
 
-/** Replaces every week's list (used by Google Sheets sync). @param {Record<string, WeekList>} weeks @param {GlobalItem[]} [global] */
-export function replaceGrocery(weeks, global = grocery.global) {
+/** Removes what you added of an ingredient: the viewed week's item, and its every-week item (from every week). @param {string} ingredientId */
+export function removeAdded(ingredientId) {
+  const week = grocery.weeks[planner.weekStart];
+  if (week) delete week.added[ingredientId];
+  grocery.every = grocery.every.filter((i) => i.ingredientId !== ingredientId);
+}
+
+/**
+ * Saves, for each past week without one yet, what it leaves off as in stock — called just before stock changes,
+ * so a past week's list stays as it was.
+ */
+function freezePastWeeks() {
+  const thisWeek = thisWeekStart();
+  const weeks = new Set([
+    ...Object.keys(grocery.weeks),
+    ...Object.keys(planner.entries).map((iso) => weekStartOf(fromISO(iso))),
+  ]);
+  for (const week of weeks) {
+    if (week >= thisWeek || grocery.weeks[week]?.stock) continue;
+    if (!weekDinners(week).length && !grocery.weeks[week]) continue;
+    const ids = buildWeek(week).hidden.map((l) => l.ingredientId);
+    (grocery.weeks[week] ??= emptyWeek()).stock = ids;
+  }
+}
+onBeforeStockChange(freezePastWeeks);
+
+/** Replaces every week's list (used by Google Sheets sync). @param {Record<string, WeekList>} weeks @param {EveryWeekItem[]} [every] */
+export function replaceGrocery(weeks, every = grocery.every) {
   grocery.weeks = weeks;
-  grocery.global = global;
+  grocery.every = every;
 }

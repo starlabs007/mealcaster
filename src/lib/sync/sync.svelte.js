@@ -11,10 +11,11 @@ import { GoogleApiError, createSpreadsheet, ensurePhotoFolder, getAccount, isPho
 import { pickSpreadsheet, preparePicker } from '../google/picker.js';
 import { sheets, updateSheetsSettings } from '../sheets.svelte.js';
 import { recipes, replaceRecipes, saveRecipe } from '../recipes.svelte.js';
-import { ingredientOf, ingredients, replaceIngredients } from '../ingredients.svelte.js';
+import { addIngredient, findIngredient, ingredientOf, ingredients, replaceIngredients } from '../ingredients.svelte.js';
 import { favorites, setFavorites } from '../favorites.svelte.js';
 import { planner, replacePlan } from '../planner.svelte.js';
-import { grocery, groceryLines, replaceGrocery, weekDinners } from '../grocery.svelte.js';
+import { grocery, groceryLines, replaceGrocery, stockHiddenLines, thisWeekStart } from '../grocery.svelte.js';
+import { AISLE_OF_DEPT } from '../groceryList.js';
 import { settings, replaceSettings } from '../settings.svelte.js';
 import { realignWeeks } from '../weekStart.svelte.js';
 import { addDays, weekStartOf } from '../dates.js';
@@ -25,7 +26,6 @@ import {
   ingredientFromRow,
   ingredientToRow,
   groceryFromRows,
-  globalFromRows,
   planEntryHasContent,
   planFromRow,
   planToRow,
@@ -171,6 +171,7 @@ const device = {
     const rows = new Map();
     for (const week of groceryWeeks()) {
       for (const line of groceryLines(week)) rows.set(provisionKey(week, line.key), provisionToRow(week, line));
+      for (const line of stockHiddenLines(week)) rows.set(provisionKey(week, line.key), provisionToRow(week, line, true));
     }
     return rows;
   },
@@ -218,27 +219,25 @@ const device = {
       replaceSettings(settingsFromRows([...final.values()]));
       realignWeeks(wasThisWeek);
     } else {
-      const isPlanned = (week, key) => {
-        const recipeId = key.split(':')[0];
-        return weekDinners(week).some((d) => d.recipe.id === recipeId);
-      };
-      // Weeks too old to sync keep their lists, and standing items acquired back then stay acquired there.
+      // A row typed into the sheet names its item: that ingredient, or a new one in the row's department.
+      const idForName = (name, dept) => findIngredient(name)?.id ?? addIngredient({ name, aisle: AISLE_OF_DEPT[dept] }).id;
+      // Weeks too old to sync keep their lists, and every-week items bought back then stay bought there.
       const since = provisionsSince();
-      const rows = [...final.values()];
-      const weeks = groceryFromRows(rows, isPlanned);
+      const { weeks, every } = groceryFromRows([...final.values()], { thisWeek: thisWeekStart(), idForName });
       for (const [week, list] of Object.entries(grocery.weeks)) if (week < since) weeks[week] = $state.snapshot(list);
-      const global = globalFromRows(rows);
-      for (const g of grocery.global) {
-        if (g.status !== 'need' && g.doneWeek < since && !global.some((x) => x.id === g.id)) global.push($state.snapshot(g));
+      for (const item of grocery.every) {
+        if (item.status !== 'need' && item.doneWeek < since && !every.some((x) => x.ingredientId === item.ingredientId)) {
+          every.push($state.snapshot(item));
+        }
       }
-      replaceGrocery(weeks, global);
+      replaceGrocery(weeks, every);
     }
   },
 };
 
 /** Everything a sync pass looks at, as one string — to notice edits. */
 const deviceFingerprint = () =>
-  JSON.stringify([ingredients, recipes, favorites.ids, planner.entries, grocery.weeks, grocery.global, settings, syncedTabs(), sheets.direction]);
+  JSON.stringify([ingredients, recipes, favorites.ids, planner.entries, grocery.weeks, grocery.every, settings, syncedTabs(), sheets.direction]);
 
 // ---- Sync passes ----------------------------------------------------------------
 

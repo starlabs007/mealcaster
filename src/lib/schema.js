@@ -10,8 +10,9 @@ export const SCHEMA = {
     'Recipe_ID', 'Title', 'Description', 'Ingredients_JSON', 'Method_Steps', 'Image_URL', 'Tags', 'Favorite_Flag',
     'Category', 'Servings', 'Prep_Minutes', 'Cook_Minutes', 'Notes',
   ],
-  // Line_Key ties a row back to its grocery line so edits round-trip.
-  provisions: ['Week_Of', 'Item', 'Detail', 'Department', 'Status', 'Source', 'Line_Key'],
+  // One row per ingredient per week. Line_Key ties a row back to its grocery line so edits round-trip; Added keeps
+  // what was added by hand.
+  provisions: ['Week_Of', 'Item', 'Detail', 'Department', 'Status', 'Source', 'Line_Key', 'Added'],
   // One row per setting: Section groups them ("Preference", "Tag Colour"…), Name identifies the row within it.
   settings: ['Section', 'Name', 'Value'],
 };

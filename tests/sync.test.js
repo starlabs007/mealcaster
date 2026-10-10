@@ -124,6 +124,17 @@ describe('a spreadsheet kept in sync over several passes', () => {
     await sync();
     assert.equal(device.provisions.get('2026-10-05|custom:1').Status, 'Bought');
   });
+
+  it('deletes a grocery row from the sheet once the device no longer lists it (a dinner moved or removed)', async () => {
+    const row = { Week_Of: '2026-10-05', Item: 'Beef', Detail: '1 lb', Department: 'Seafood & Meat', Status: 'To buy', Source: 'Mon: Pasta', Line_Key: 'ing:beef', Added: '' };
+    device.provisions.set('2026-10-05|ing:beef', row);
+    await sync();
+    assert.ok(sheet.column('Provisions', 'Line_Key').includes('ing:beef'));
+    device.provisions.delete('2026-10-05|ing:beef');
+    await sync();
+    assert.ok(!sheet.column('Provisions', 'Line_Key').includes('ing:beef'));
+    assert.ok(sheet.column('Provisions', 'Line_Key').includes('custom:1'), 'other rows stay');
+  });
 });
 
 describe('first sync', () => {

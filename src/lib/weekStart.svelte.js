@@ -11,5 +11,6 @@ import { rekeyGroceryWeeks } from './sync/codec.js';
 export function realignWeeks(wasThisWeek) {
   // The week holding the old week's middle day, or this week if that is what was in view.
   planner.weekStart = weekStartOf(wasThisWeek ? new Date() : fromISO(addDays(planner.weekStart, 3)));
-  replaceGrocery(rekeyGroceryWeeks($state.snapshot(grocery.weeks)));
+  const every = $state.snapshot(grocery.every).map((i) => (i.doneWeek ? { ...i, doneWeek: weekStartOf(fromISO(i.doneWeek)) } : i));
+  replaceGrocery(rekeyGroceryWeeks($state.snapshot(grocery.weeks)), every);
 }
