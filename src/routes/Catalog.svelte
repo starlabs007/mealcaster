@@ -3,6 +3,8 @@
   import RecipeCard from '../lib/components/RecipeCard.svelte';
   import { recipes, recipeById, tagChoices, tagIcon, normalizeTags, categoryChoices, normalizeCategory } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
+  import { ingredientOf } from '../lib/ingredients.svelte.js';
+  import { foldKey } from '../lib/ingredients.js';
   import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate } from '../lib/router.svelte.js';
@@ -91,7 +93,8 @@
   );
 
   const results = $derived.by(() => {
-    const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+    // Accents and case don't matter: "bun cha" finds Bún chả.
+    const words = foldKey(query).split(' ').filter(Boolean);
     return recipes
       .filter((r) => !favoritesOnly || favorites.ids.includes(r.id))
       .filter((r) => !hideRecent || !madeRecently(r.id))
@@ -105,11 +108,13 @@
           r.description,
           r.badge.label,
           ...r.tags,
-          ...r.ingredients.flatMap((g) => g.items.map((i) => i.text)),
-        ]
-          .join(' ')
-          .toLowerCase();
-        return words.every((w) => haystack.includes(w));
+          ...r.ingredients.flatMap((g) => g.items.flatMap((i) => {
+            const ingredient = ingredientOf(i.id);
+            return ingredient ? [ingredient.name, ingredient.plural] : [];
+          })),
+        ];
+        const text = foldKey(haystack.join(' '));
+        return words.every((w) => text.includes(w));
       })
       .sort(sorts.find((s) => s.id === sort).compare);
   });

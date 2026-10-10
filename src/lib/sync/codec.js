@@ -12,8 +12,7 @@ import { departments } from '../data/departments.js';
 import { DEFAULT_WEEK_START_DAY, formatWeekday, fromISO, weekStartOf } from '../dates.js';
 import { TONES, normalizeAisle, normalizeCategory, normalizeTag, normalizeTags } from '../tags.js';
 import { aisles } from '../data/aisles.js';
-import { mappingKey, tidyName } from '../aisleMap.js';
-import { haveKey } from '../haveList.js';
+import { canonicalUnit, ingredientIdFor, recipeIdFor, tidyIngredientName } from '../ingredients.js';
 import { SCHEMA_VERSION } from '../schema.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
@@ -107,8 +106,9 @@ export function parseSteps(text) {
 }
 
 /**
- * Ingredients_JSON → ingredient groups. Accepts MealCaster's own groups, or a
- * flat list of items (`{ name, qty, dept }` works too).
+ * Ingredients_JSON → ingredient groups. Accepts MealCaster's own groups, or a flat list of lines.
+ * A line is `{ id, qty, unit, note, prep, optional }`; `id` is an Ingredient_ID, and lines without
+ * one are skipped. Units are stored in their canonical form ("cups" → "cup").
  * @returns {import('../data/recipes.js').IngredientGroup[] | null} null when it can't be read
  */
 export function parseIngredients(value) {
@@ -123,16 +123,20 @@ export function parseIngredients(value) {
   if (!Array.isArray(data)) return null;
   const item = (i) => {
     const qty = typeof i.qty === 'number' ? i.qty : Number.parseFloat(i.qty);
-    const unit = i.unit ?? (typeof i.qty === 'string' ? i.qty.replace(/^[\d.,/\s]+/, '').trim() : '');
+    const unit = canonicalUnit(i.unit ?? (typeof i.qty === 'string' ? i.qty.replace(/^[\d.,/\s]+/, '') : ''));
+    const note = str(i.note);
+    const prep = str(i.prep);
     return {
+      id: str(i.id),
       ...(Number.isFinite(qty) && qty > 0 && { qty }),
       ...(unit && { unit }),
-      text: str(i.text ?? i.name ?? i.item),
-      tag: normalizeAisle(str(i.tag ?? i.dept ?? i.aisle)) || 'Pantry',
+      ...(note && { note }),
+      ...(prep && { prep }),
+      ...(bool(i.optional) && { optional: true }),
     };
   };
   // Hand-edited cells can hold nulls or bare values; skip them rather than fail the sync.
-  const items = (list) => list.filter((i) => i && typeof i === 'object').map(item).filter((i) => i.text);
+  const items = (list) => list.filter((i) => i && typeof i === 'object').map(item).filter((i) => i.id);
   const isGroup = (g) => g && Array.isArray(g.items);
   if (data.every(isGroup)) {
     return data.map((g) => {
@@ -248,14 +252,61 @@ export function recipeFromRow(row, existing, { columns, favorites, today }) {
   return { recipe, favorite: ctx.favorite };
 }
 
-/** Recipe_ID for a sheet row that has none. */
-export function newRecipeIdFor(title, taken) {
-  const slug = str(title).toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
-  let id;
-  do id = `custom-${slug || 'recipe'}-${Math.random().toString(36).slice(2, 6)}`;
-  while (taken.has(id));
-  return id;
+/**
+ * Whether an Ingredients_JSON cell is in the layout before schema version 2 (lines with their own
+ * `text` instead of an ingredient `id`).
+ */
+export function isOldIngredientsJSON(value) {
+  let data;
+  try {
+    data = JSON.parse(str(value) || '[]');
+  } catch {
+    return false;
+  }
+  if (!Array.isArray(data)) return false;
+  const lines = data.flatMap((g) => (g && Array.isArray(g.items) ? g.items : [g]));
+  return lines.some((i) => i && typeof i === 'object' && !i.id && (i.text || i.name || i.item));
 }
+
+/** Recipe_ID for a sheet row that has none. @param {unknown} title @param {Set<string>} taken */
+export const newRecipeIdFor = (title, taken) => recipeIdFor(str(title), (id) => taken.has(id));
+
+// ---- Ingredients ------------------------------------------------------------
+
+/** @typedef {import('../ingredients.js').Ingredient} Ingredient */
+
+/** @param {Ingredient} ingredient @returns {Row} */
+export function ingredientToRow(ingredient) {
+  return {
+    Ingredient_ID: ingredient.id,
+    Name: ingredient.name,
+    Plural: ingredient.plural,
+    Aisle: aisles.find((a) => a.tag === ingredient.aisle)?.label ?? ingredient.aisle,
+    On_Hand: ingredient.onHand,
+  };
+}
+
+/**
+ * @param {Row} row @param {Ingredient | undefined} existing on-device version of the same Ingredient_ID
+ * @param {string[]} columns the ones the sheet has
+ * @returns {Ingredient}
+ */
+export function ingredientFromRow(row, existing, columns) {
+  const id = str(row.Ingredient_ID);
+  const written = existing ? ingredientToRow(existing) : null;
+  const changed = (col) => columns.includes(col) && !(written && cellText(written[col]) === cellText(row[col]));
+  const next = existing ? { ...existing } : { id, name: '', plural: '', aisle: 'Pantry', onHand: false };
+  if (changed('Name')) next.name = tidyIngredientName(str(row.Name)) || next.name;
+  if (changed('Plural')) next.plural = tidyIngredientName(str(row.Plural));
+  // An aisle MealCaster doesn't know keeps the one it had.
+  if (changed('Aisle')) next.aisle = parseAisle(row.Aisle) || next.aisle;
+  if (changed('On_Hand')) next.onHand = bool(row.On_Hand);
+  if (!next.name) next.name = id.replace(/-/g, ' ');
+  return next;
+}
+
+/** Ingredient_ID for a sheet row that has a name but no id. @param {unknown} name @param {Set<string>} taken */
+export const newIngredientIdFor = (name, taken) => ingredientIdFor(str(name), (id) => taken.has(id));
 
 // ---- Weekly plan ------------------------------------------------------------
 
@@ -305,14 +356,15 @@ export function planFromRow(row, existing, columns) {
 }
 
 // ---- Provisions -------------------------------------------------------------
+// One row per ingredient per week: the merged line (Item, Detail, Department, Status, Source are for reading), keyed
+// `ing:<ingredient id>`. `Added` (JSON) keeps what was added by hand so another device rebuilds the same list:
+// `{ "recipes": [pushed recipe ids], "week": note, "every": note }`. Lines left off because the ingredient is in
+// stock are rows too, Status "On hand"; on a past week they are its frozen stock.
 
-const STATUS_LABEL = { need: 'To buy', bought: 'Bought', owned: 'On hand' };
-
-/** @returns {import('../grocery.svelte.js').LineStatus} */
+/** @returns {'need' | 'bought' | 'owned'} 'owned' = an "On hand" row */
 export function parseStatus(v) {
   const t = str(v).toLowerCase();
   if (v === true || /^(bought|done|got|checked|true|x|✓)/.test(t)) return 'bought';
-  // "In pantry" is what earlier builds wrote.
   if (/on hand|pantry|owned|have|stock/.test(t)) return 'owned';
   return 'need';
 }
@@ -325,109 +377,117 @@ export function parseDept(v) {
   if (/produce|veg|fruit|herb/.test(t)) return 'produce';
   if (/meat|fish|seafood|butcher|poultry/.test(t)) return 'meat';
   if (/dairy|cheese|egg|fridge|refrigerat|frozen/.test(t)) return 'dairy';
+  if (/other|household|non.?food/.test(t)) return 'other';
   return 'pantry';
 }
-
-/** Ingredient-derived line keys look like `recipeId:group:item`. */
-export const isIngredientKey = (key) => /^[\w-]+:\d+:\d+$/.test(key);
 
 /** Provisions row key: one row per line per week. */
 export const provisionKey = (week, lineKey) => `${week}|${lineKey}`;
 
-/** @param {string} week @param {import('../grocery.svelte.js').GroceryLine} line @returns {Row} */
-export function provisionToRow(week, line) {
+/** @param {import('../groceryList.js').GroceryLine} line */
+function addedCell(line) {
+  const added = {};
+  if (line.pushed.length) added.recipes = line.pushed;
+  if (line.added != null) added.week = line.added;
+  if (line.every != null) added.every = line.every;
+  return Object.keys(added).length ? JSON.stringify(added) : '';
+}
+
+/**
+ * @param {string} week @param {import('../groceryList.js').GroceryLine} line
+ * @param {boolean} [inStock] left off the list because the ingredient is in stock
+ * @returns {Row}
+ */
+export function provisionToRow(week, line, inStock = false) {
   return {
     Week_Of: week,
     Item: line.name,
-    Detail: line.detail,
+    Detail: [line.amount, line.optional && 'optional'].filter(Boolean).join(' · '),
     Department: departments.find((d) => d.id === line.dept)?.short ?? 'Pantry',
-    Status: STATUS_LABEL[line.status],
-    Source: line.source.label,
+    Status: inStock ? 'On hand' : line.status === 'bought' ? 'Bought' : 'To buy',
+    Source: line.sources.map((s) => (s.note ? `${s.label} (${s.note})` : s.label)).join(', '),
     Line_Key: line.key,
+    Added: addedCell(line),
   };
+}
+
+/** @returns {{ recipes?: string[], week?: string, every?: string }} */
+function parseAdded(v) {
+  try {
+    const data = JSON.parse(str(v) || '{}');
+    if (!data || typeof data !== 'object') return {};
+    return {
+      ...(Array.isArray(data.recipes) ? { recipes: data.recipes.map(String) } : {}),
+      ...(data.week != null ? { week: String(data.week) } : {}),
+      ...(data.every != null ? { every: String(data.every) } : {}),
+    };
+  } catch {
+    return {};
+  }
 }
 
 /**
  * Moves lists keyed by another weekday (the week start changed) onto the
  * day their week now starts on, merging lists that land on the same week.
- * @param {Record<string, import('../grocery.svelte.js').WeekList>} weeks
+ * @param {Record<string, import('../groceryList.js').WeekList>} weeks
  */
 export function rekeyGroceryWeeks(weeks) {
-  /** @type {Record<string, import('../grocery.svelte.js').WeekList>} */
+  /** @type {Record<string, import('../groceryList.js').WeekList>} */
   const out = {};
   for (const [week, list] of Object.entries(weeks).sort(([a], [b]) => a.localeCompare(b))) {
-    const into = (out[weekStartOf(fromISO(week))] ??= { extras: [], status: {}, custom: [] });
-    for (const key of list.extras ?? []) if (!into.extras.includes(key)) into.extras.push(key);
+    const into = (out[weekStartOf(fromISO(week))] ??= { pushed: [], status: {}, added: {} });
+    for (const pair of list.pushed ?? []) if (!into.pushed.includes(pair)) into.pushed.push(pair);
     Object.assign(into.status, list.status);
-    for (const item of list.custom ?? []) if (!into.custom.some((c) => c.id === item.id)) into.custom.push(item);
+    Object.assign(into.added, list.added);
+    if (list.stock) into.stock = [...new Set([...(into.stock ?? []), ...list.stock])];
   }
   return out;
 }
 
 /**
- * Rebuilds the per-week grocery state from provisions rows.
+ * Rebuilds the grocery lists from provisions rows. A row typed into the sheet (no `ing:` key) is an item added for
+ * its week; `idForName` finds or creates its ingredient.
  * @param {Row[]} rows
- * @param {(week: string, key: string) => boolean} isPlanned whether a line comes from that week's planned dinners
- * @returns {Record<string, import('../grocery.svelte.js').WeekList>}
+ * @param {{ thisWeek: string, idForName: (name: string, dept: import('../data/departments.js').Dept) => string }} options
+ * @returns {{ weeks: Record<string, import('../groceryList.js').WeekList>, every: import('../groceryList.js').EveryWeekItem[] }}
  */
-export function groceryFromRows(rows, isPlanned) {
-  /** @type {Record<string, import('../grocery.svelte.js').WeekList>} */
+export function groceryFromRows(rows, { thisWeek, idForName }) {
+  /** @type {Record<string, import('../groceryList.js').WeekList>} */
   const weeks = {};
-  for (const row of rows) {
-    const week = isoDate(row.Week_Of) && weekStartOf(fromISO(isoDate(row.Week_Of)));
+  /** @type {Map<string, import('../groceryList.js').EveryWeekItem>} */
+  const every = new Map();
+  const sorted = rows
+    .map((row) => ({ row, week: isoDate(row.Week_Of) && weekStartOf(fromISO(isoDate(row.Week_Of))) }))
+    .filter((r) => r.week)
+    .sort((a, b) => a.week.localeCompare(b.week));
+  for (const { row, week } of sorted) {
     const key = str(row.Line_Key);
-    if (!week || !key) continue;
-    if (isGlobalKey(key)) continue;
-    const list = (weeks[week] ??= { extras: [], status: {}, custom: [] });
-    list.status[key] = parseStatus(row.Status);
-    if (isIngredientKey(key)) {
-      if (!isPlanned(week, key) && !list.extras.includes(key)) list.extras.push(key);
-    } else if (!list.custom.some((c) => c.id === key)) {
-      list.custom.push({ id: key, name: str(row.Item) || 'Item', note: str(row.Detail), dept: parseDept(row.Department) });
-    }
-  }
-  return weeks;
-}
-
-/** Global (every-week) custom items have keys like `global:<id>`. */
-export const isGlobalKey = (key) => key.startsWith('global:');
-
-/**
- * Rebuilds the every-week items from provisions rows. A global item has a row in each week it shows in; one
- * that is bought / on hand in a row's week was acquired there.
- * @param {Row[]} rows
- * @returns {import('../grocery.svelte.js').GlobalItem[]}
- */
-export function globalFromRows(rows) {
-  /** @type {Map<string, import('../grocery.svelte.js').GlobalItem>} */
-  const items = new Map();
-  for (const row of rows) {
-    const week = isoDate(row.Week_Of) && weekStartOf(fromISO(isoDate(row.Week_Of)));
-    const key = str(row.Line_Key);
-    if (!week || !isGlobalKey(key)) continue;
+    const typed = !key.startsWith('ing:');
+    if (typed && !str(row.Item)) continue;
+    const id = typed ? idForName(str(row.Item), parseDept(row.Department)) : key.slice(4);
+    if (!id) continue;
+    const list = (weeks[week] ??= { pushed: [], status: {}, added: {} });
     const status = parseStatus(row.Status);
-    const item = items.get(key);
-    if (!item) {
-      items.set(key, {
-        id: key,
-        name: str(row.Item) || 'Item',
-        note: str(row.Detail),
-        dept: parseDept(row.Department),
-        status,
-        doneWeek: status === 'need' ? '' : week,
-      });
-    } else if (status !== 'need' && item.status === 'need') {
-      item.status = status;
-      item.doneWeek = week;
+    if (status === 'owned') {
+      if (week < thisWeek) (list.stock ??= []).push(id);
+    } else list.status[id] = status;
+    if (week < thisWeek) list.stock ??= [];
+    const added = typed ? { week: str(row.Detail) } : parseAdded(row.Added);
+    for (const recipeId of added.recipes ?? []) if (!list.pushed.includes(`${recipeId}:${id}`)) list.pushed.push(`${recipeId}:${id}`);
+    if (added.week != null) list.added[id] = added.week;
+    if (added.every != null) {
+      const item = every.get(id);
+      if (!item) every.set(id, { ingredientId: id, note: added.every, status: status === 'bought' ? 'bought' : 'need', doneWeek: status === 'bought' ? week : '' });
+      else if (status === 'bought' && item.status === 'need') Object.assign(item, { status: 'bought', doneWeek: week });
     }
   }
-  return [...items.values()];
+  return { weeks, every: [...every.values()] };
 }
 
 // ---- Settings ---------------------------------------------------------------
 
-/** Settings row key: one row per section and name. */
-export const settingKey = (section, name) => `${str(section).toLowerCase()}|${mappingKey(str(name))}`;
+/** Settings row key: one row per section and name (case and spacing ignored). */
+export const settingKey = (section, name) => `${str(section).toLowerCase()}|${str(name).toLowerCase().replace(/\s+/g, ' ')}`;
 
 /** Ingredient aisle tag for a cell: an aisle's tag or label ("Meat & Seafood"), or '' if unknown. */
 export function parseAisle(v) {
@@ -459,7 +519,7 @@ export const parseWeekday = (v) => {
 
 /**
  * The [Settings] rows for the device's settings, keyed for sync.
- * @param {{ aisles: import('../aisleMap.js').AisleMapping[], have?: string[], tagColors?: Record<string, string>, returnToPlanner?: boolean, weekStartDay?: number }} settings
+ * @param {{ tagColors?: Record<string, string>, returnToPlanner?: boolean, weekStartDay?: number }} settings
  * @returns {Map<string, Row>}
  */
 export function settingsToRows(settings) {
@@ -473,11 +533,6 @@ export function settingsToRows(settings) {
     ...WEEK_STARTS_ON,
     Value: WEEKDAYS[settings.weekStartDay ?? DEFAULT_WEEK_START_DAY],
   });
-  for (const m of settings.aisles) {
-    const label = aisles.find((a) => a.tag === m.tag)?.label ?? m.tag;
-    rows.set(settingKey('Aisle', m.name), { Section: 'Aisle', Name: m.name, Value: label });
-  }
-  for (const name of settings.have ?? []) rows.set(settingKey('Have', name), { Section: 'Have', Name: name, Value: true });
   for (const [tag, tone] of Object.entries(settings.tagColors ?? {})) {
     rows.set(settingKey(TAG_COLOUR_SECTION, tag), { Section: TAG_COLOUR_SECTION, Name: tag, Value: tone[0].toUpperCase() + tone.slice(1) });
   }
@@ -491,13 +546,9 @@ export function settingsToRows(settings) {
  * @param {Row[]} rows
  * The sheet's `Schema | Version` comes back as `schemaVersion` (0 when missing or unreadable) so a migration can
  * tell how old the sheet is; the device never overwrites it.
- * @returns {{ aisles: import('../aisleMap.js').AisleMapping[], have: string[], tagColors: Record<string, string>, returnToPlanner: boolean, weekStartDay: number, schemaVersion: number }}
+ * @returns {{ tagColors: Record<string, string>, returnToPlanner: boolean, weekStartDay: number, schemaVersion: number }}
  */
 export function settingsFromRows(rows) {
-  /** @type {Map<string, import('../aisleMap.js').AisleMapping>} */
-  const found = new Map();
-  /** @type {Map<string, string>} */
-  const have = new Map();
   /** @type {Record<string, string>} */
   const tagColors = {};
   let returnToPlanner = true;
@@ -522,22 +573,11 @@ export function settingsFromRows(rows) {
       }
       continue;
     }
-    if (section === 'have') {
-      const name = tidyName(str(row.Name));
-      if (!name) continue;
-      if (!/^(false|no|n|0|off)$/.test(str(row.Value).toLowerCase())) have.set(haveKey(name), name);
-      continue;
-    }
     if (section === TAG_COLOUR_SECTION.toLowerCase()) {
       const tag = normalizeTag(str(row.Name));
       const tone = str(row.Value).toLowerCase();
       if (tag && TONES.includes(tone) && !Object.hasOwn(tagColors, tag)) tagColors[tag] = tone;
-      continue;
     }
-    if (section !== 'aisle') continue;
-    const name = tidyName(str(row.Name));
-    const tag = parseAisle(row.Value);
-    if (name && tag && !found.has(mappingKey(name))) found.set(mappingKey(name), { name, tag });
   }
-  return { aisles: [...found.values()], have: [...have.values()], tagColors, returnToPlanner, weekStartDay, schemaVersion };
+  return { tagColors, returnToPlanner, weekStartDay, schemaVersion };
 }

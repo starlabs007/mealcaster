@@ -2,7 +2,8 @@
 // on-device stores are passed in, so this runs (and is tested) without either.
 
 import { a1, fingerprint, readTable, reconcile, resolveColumns, rowCells } from './engine.js';
-import { isoDate } from './codec.js';
+import { isOldIngredientsJSON, isoDate, settingsFromRows } from './codec.js';
+import { SCHEMA_VERSION } from '../schema.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
 /** @typedef {import('./codec.js').Row} Row */
@@ -23,13 +24,16 @@ import { isoDate } from './codec.js';
  *
  * @typedef {{ spreadsheetId: string, initialized: boolean, tabs: Partial<Record<TabKey, { name: string, rows: import('./engine.js').TabBase }>> }} SyncBase
  *
- * @typedef {{ recipes: number, weeklyPlan: number, provisions: number, settings: number }} Counts
+ * @typedef {{ ingredients: number, recipes: number, weeklyPlan: number, provisions: number, settings: number }} Counts
  *
  * @typedef {
  *   | { status: 'done', base: SyncBase, title: string, pushed: number, pulled: number }
  *   | { status: 'conflict', tab: TabKey, columns: string[], title: string }
  *   | { status: 'choose', sheet: Counts, device: Counts, title: string, backup: boolean }
+ *   | { status: 'version', sheetVersion: number, title: string }
  * } SyncResult
+ * `version`: the spreadsheet is in another layout (`Schema | Version`, or old-style recipe lines when
+ * it has no version row); nothing was read into the device or written.
  */
 
 export const emptyBase = (spreadsheetId) => ({ spreadsheetId, initialized: false, tabs: {} });
@@ -74,19 +78,26 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
     tables.provisions.keyFixes = tables.provisions.keyFixes.filter((fix) => !old(fix.row));
   }
 
-  // First sync of this spreadsheet: ask before anything is lost. Only recipes, plan and grocery
-  // rows count as data: the device always has settings rows (defaults), so they say nothing.
+  // A sheet in another layout would be misread (and then overwritten): stop before anything changes.
+  if (tables.settings) {
+    const sheetVersion = settingsFromRows([...tables.settings.rows.values()].map((r) => r.row)).schemaVersion;
+    const oldLines = () => [...(tables.recipes?.rows.values() ?? [])].some(({ row }) => isOldIngredientsJSON(row.Ingredients_JSON));
+    if (sheetVersion ? sheetVersion !== SCHEMA_VERSION : oldLines()) return { status: 'version', sheetVersion, title: meta.title };
+  }
+
+  // First sync of this spreadsheet: ask before anything is lost. Only ingredients, recipes, plan and
+  // grocery rows count as data: the device always has settings rows (defaults), so they say nothing.
   // Bidirectional with data on both sides: merge or replace the device. Backup sync (push-only)
   // with a spreadsheet that has data: the sheet's rows would be overwritten or deleted to match
   // the device, so confirm.
   if (!base.initialized && !choice) {
-    const sheet = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
-    const device = /** @type {Counts} */ ({ recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
+    const sheet = /** @type {Counts} */ ({ ingredients: 0, recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
+    const device = /** @type {Counts} */ ({ ingredients: 0, recipes: 0, weeklyPlan: 0, provisions: 0, settings: 0 });
     for (const { key } of tabs) {
       sheet[key] = tables[key].rows.size;
       device[key] = local.localRows(key).size;
     }
-    const userData = (c) => c.recipes + c.weeklyPlan + c.provisions > 0;
+    const userData = (c) => c.ingredients + c.recipes + c.weeklyPlan + c.provisions > 0;
     if (direction === 'bidirectional' && userData(sheet) && userData(device)) return { status: 'choose', sheet, device, title: meta.title, backup: false };
     if (direction === 'pushOnly' && userData(sheet)) return { status: 'choose', sheet, device, title: meta.title, backup: true };
   }
@@ -95,8 +106,8 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
   const strategy = direction === 'pushOnly' ? 'pushOnly' : choice === 'sheetOnly' ? 'sheetOnly' : 'sync';
   const tabBase = (key, name) => (base.initialized && base.tabs[key]?.name === name ? base.tabs[key].rows : {});
 
-  // Reconcile tab by tab, applying each before the next reads the device: the
-  // grocery rows depend on the recipes and plan that were just pulled.
+  // Reconcile tab by tab, applying each before the next reads the device: the grocery rows depend
+  // on the ingredients, recipes and plan that were just pulled.
   const results = {};
   let pulled = 0;
   for (const { key, name } of tabs) {

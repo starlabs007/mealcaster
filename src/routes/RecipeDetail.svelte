@@ -1,6 +1,5 @@
 <script>
   import Icon from '../lib/components/Icon.svelte';
-  import { formatQty } from '../lib/format.js';
   import { renderMarkdown } from '../lib/markdown.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
   import PrintOptionsDialog from '../lib/components/PrintOptionsDialog.svelte';
@@ -10,8 +9,9 @@
   import { tagClass } from '../lib/tagColors.svelte.js';
   import LastMade from '../lib/components/LastMade.svelte';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
-  import { groceryKeys, isHaveKey, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
-  import { setHave } from '../lib/settings.svelte.js';
+  import { groceryKeys, isOnHandKey, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
+  import { ingredientOf, setOnHand } from '../lib/ingredients.svelte.js';
+  import { lineParts } from '../lib/ingredients.js';
   import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe } from '../lib/planner.svelte.js';
   import { href, navigate } from '../lib/router.svelte.js';
   import { formatLong, formatWeekday } from '../lib/dates.js';
@@ -38,20 +38,20 @@
   const scale = $derived(recipe ? servings / recipe.serves : 1);
 
   const allKeys = recipe ? ingredientKeys(recipe.id) : [];
-  // A checked ingredient is one you always have: its name goes on the "ingredients I have" list
-  // (Profile), and it stays off every week's grocery list until unchecked.
-  const checked = $derived(allKeys.filter(isHaveKey));
+  // A checked ingredient is in stock at home: it stays off every week's grocery list until unchecked.
+  // Lines of the same ingredient check together.
+  const checked = $derived(allKeys.filter(isOnHandKey));
   const onList = $derived(groceryKeys());
   const notOnList = $derived(allKeys.filter((k) => !onList.has(k)));
   const uncheckedToPush = $derived(notOnList.filter((k) => !checked.includes(k)));
 
   const setChecked = (key, on) => {
     const [, g, i] = key.split(':');
-    setHave(recipe.ingredients[+g].items[+i].text, on);
+    setOnHand(recipe.ingredients[+g].items[+i].id, on);
   };
 
   function toggleCheck(key) {
-    setChecked(key, !isHaveKey(key));
+    setChecked(key, !isOnHandKey(key));
   }
 
   function toggleAll() {
@@ -313,7 +313,7 @@
               <Icon name="receipt_long" class="mt-0.5 text-[22px] text-secondary" />
               <div>
                 <h2 class="font-display text-headline-sm text-on-surface">Mise en Place Ingredients</h2>
-                <p class="text-body-sm text-on-surface-variant print:hidden">Check what you always have to keep it off your grocery list</p>
+                <p class="text-body-sm text-on-surface-variant print:hidden">Check what you have in stock to keep it off your grocery list</p>
               </div>
             </div>
             <button type="button" class="inline-flex shrink-0 items-center gap-1 text-label-sm text-on-surface-variant hover:text-primary print:hidden" onclick={toggleAll}>
@@ -333,6 +333,8 @@
                   {#each group.items as item, i (i)}
                     {@const key = `${recipe.id}:${g}:${i}`}
                     {@const isChecked = checked.includes(key)}
+                    {@const ingredient = ingredientOf(item.id)}
+                    {@const line = lineParts(item, ingredient, scale)}
                     <li class="print:break-inside-avoid">
                       <label class="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container">
                         <input type="checkbox" class="peer sr-only" checked={isChecked} onchange={() => toggleCheck(key)} />
@@ -344,13 +346,16 @@
                         >
                           <Icon name="check" class="text-[13px]" />
                         </span>
-                        <span class="flex-1 text-body-sm {isChecked ? 'text-outline line-through decoration-outline' : 'text-on-surface'}">
-                          {#if item.qty != null}<strong class="font-semibold">{formatQty(item.qty * scale)}</strong>{/if}
-                          {item.unit ?? ''} {item.text}
+                        <span class="flex-1 text-body-sm text-on-surface">
+                          {#if line.amount}<strong class="font-semibold">{line.amount}</strong>{/if}
+                          <span class={ingredient ? '' : 'italic'}>{line.name}</span>{#if line.note}{' '}<span class="text-on-surface-variant">({line.note})</span>{/if}{#if line.prep}, {line.prep}{/if}
+                          {#if line.optional}<span class="ml-1 text-label-sm text-outline">optional</span>{/if}
                         </span>
-                        <span class="shrink-0 rounded bg-surface-container-highest px-1.5 py-0.5 text-label-caps text-on-surface-variant">
-                          {aisleLabel(item.tag)}
-                        </span>
+                        {#if ingredient}
+                          <span class="shrink-0 rounded bg-surface-container-highest px-1.5 py-0.5 text-label-caps text-on-surface-variant">
+                            {aisleLabel(ingredient.aisle)}
+                          </span>
+                        {/if}
                       </label>
                     </li>
                   {/each}

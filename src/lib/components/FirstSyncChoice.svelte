@@ -15,9 +15,10 @@
 
   const counts = $derived(syncState.choice);
   const backup = $derived(Boolean(counts?.backup));
-  const deviceEmpty = $derived(!counts || counts.device.recipes + counts.device.weeklyPlan + counts.device.provisions === 0);
+  const deviceEmpty = $derived(!counts || counts.device.ingredients + counts.device.recipes + counts.device.weeklyPlan + counts.device.provisions === 0);
   const rows = $derived(
     [
+      { key: 'ingredients', label: 'Ingredients', icon: 'grocery' },
       { key: 'recipes', label: 'Recipes', icon: 'menu_book' },
       { key: 'weeklyPlan', label: 'Planned dinners', icon: 'calendar_month' },
       sheets.syncProvisions && { key: 'provisions', label: 'Grocery lines', icon: 'shopping_basket' },
@@ -45,7 +46,7 @@
       <p class="text-body-sm text-on-surface-variant">
         {#if backup}
           {#if deviceEmpty}
-            This device has no recipes, plan or grocery list, but the spreadsheet does.
+            This device has no ingredients, recipes, plan or grocery list, but the spreadsheet does.
           {:else}
             The spreadsheet already has data.
           {/if}
@@ -78,7 +79,7 @@
     <div class="flex flex-col gap-2" role="radiogroup" aria-label="First sync">
       {#each [
         { value: 'merge', title: 'Merge both', text: 'Add what’s only on this device to the spreadsheet. Where both have the same recipe, dinner or grocery line, the spreadsheet’s version is kept.', icon: 'join' },
-        { value: 'sheetOnly', title: 'Use the spreadsheet only', text: 'Replace this device’s recipes, plan and grocery list with the spreadsheet’s. Anything only on this device is removed.', icon: 'cloud_download' },
+        { value: 'sheetOnly', title: 'Use the spreadsheet only', text: 'Replace this device’s ingredients, recipes, plan and grocery list with the spreadsheet’s. Anything only on this device is removed.', icon: 'cloud_download' },
       ] as option (option.value)}
         <label
           class="flex cursor-pointer items-start gap-3 rounded-lg bg-surface-container-lowest p-3 transition-colors {choice === option.value

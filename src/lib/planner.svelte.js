@@ -10,7 +10,7 @@ import { showToast } from './toast.svelte.js';
 import { sampleData, storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 
-const STORAGE_KEY = storageKey('weeklyPlan.v1');
+const STORAGE_KEY = storageKey('weeklyPlan.v2');
 
 /**
  * `notes` holds the sheet's Custom_Notes for that evening.

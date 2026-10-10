@@ -1,6 +1,6 @@
 <script>
-  // Profile & Settings. Planning, aisle mappings, ingredients I have and recipe tags belong to the
-  // household and sync to the [Settings] tab of the Google Sheet (tag names live on the recipes);
+  // Profile & Settings. Planning and recipe tags belong to the household and sync to the [Settings]
+  // tab of the Google Sheet (tag names live on the recipes), ingredients to the [Ingredients] tab;
   // everything under "This device" is remembered here only.
   import { untrack } from 'svelte';
   import Icon from '../lib/components/Icon.svelte';
@@ -15,8 +15,8 @@
   import { RECENT_DAYS, planner } from '../lib/planner.svelte.js';
   import { weekStartOf } from '../lib/dates.js';
   import WipeDataDialog from '../lib/components/WipeDataDialog.svelte';
-  import HaveListDialog from '../lib/components/HaveListDialog.svelte';
-  import AisleMappingsDialog from '../lib/components/AisleMappingsDialog.svelte';
+  import IngredientsDialog from '../lib/components/IngredientsDialog.svelte';
+  import { ingredients } from '../lib/ingredients.svelte.js';
   import { sheets } from '../lib/sheets.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -33,10 +33,11 @@
   const deviceCard = 'flex flex-col rounded-xl border border-surface-container-high p-4';
 
   let confirmingWipe = $state(false);
+  let editingIngredients = $state(false);
 
   // Export: everything on this device as a workbook with the tabs (and tab names) the sheet uses.
   const exportContents = $derived(
-    [`${recipes.length} recipe${recipes.length === 1 ? '' : 's'}`, 'planned dinners', sheets.syncProvisions && 'the viewed week’s grocery list', 'settings']
+    [`${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'}`, `${recipes.length} recipe${recipes.length === 1 ? '' : 's'}`, 'planned dinners', sheets.syncProvisions && 'the viewed week’s grocery list', 'settings']
       .filter(Boolean)
       .join(', ')
       .replace(/, ([^,]*)$/, ' and $1'),
@@ -45,11 +46,7 @@
     downloadBlob(dataWorkbook($state.snapshot(sheets)), `MealCaster_Export_${toISO(new Date())}.xlsx`);
     showToast('Workbook downloaded.');
   }
-  const haveList = $derived([...settings.have].sort((a, b) => a.localeCompare(b)));
-  let editingHave = $state(false);
-  let editingAisles = $state(false);
-
-  const mappings = $derived([...settings.aisles].sort((a, b) => a.name.localeCompare(b.name)));
+  const inStock = $derived(ingredients.filter((i) => i.onHand).length);
   const synced = $derived(Boolean(sheets.spreadsheet));
 
   const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -158,7 +155,7 @@
   <div>
     <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">Profile &amp; Settings</h1>
     <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-      Planning, Aisle Mappings, Ingredients I Have and Recipe Tags are shared through your Google Sheet; the rest stay on this
+      Planning, Ingredients and Recipe Tags are shared through your Google Sheet; the rest stay on this
       device.
     </p>
   </div>
@@ -192,61 +189,25 @@
     </label>
   </section>
 
-  <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="aisle-heading">
+  <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="ingredients-heading">
     <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 id="aisle-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-        <Icon name="shelves" class="text-[20px] text-primary" /> Aisle Mappings
+      <h2 id="ingredients-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+        <Icon name="grocery" class="text-[20px] text-primary" /> Ingredients
       </h2>
       <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
-        {synced ? `Synced · [${sheets.tabs.settings}]` : 'Saved on this device'}
+        {synced ? `Synced · [${sheets.tabs.ingredients}]` : 'Saved on this device'}
       </span>
     </div>
     <p class="max-w-2xl text-body-sm text-on-surface-variant">
-      Tell MealCaster where an ingredient lives. When you add or paste ingredients in the recipe editor, or add a
-      grocery item, a name here is used before the built-in guesses. “oat milk” also matches “2 cups oat milk”, and the
-      longest name wins.
+      Everything your recipes and grocery lists use, each with its store aisle. An ingredient in stock stays off every
+      grocery list until you untick it — here, on a recipe that uses it, or with Need it on the grocery list. Edit names
+      and aisles, merge duplicates, or delete ones no recipe uses.
     </p>
-    {#if !synced}
-      <p class="flex items-start gap-2 text-body-sm text-on-surface-variant">
-        <Icon name="cloud_off" class="mt-0.5 text-[16px] text-outline" />
-        <span>
-          Connect a Google Sheet to share these with your other devices.
-          <a href={href('/sheets-sync')} class="text-primary underline">Sheets settings</a>
-        </span>
-      </p>
-    {:else}
-      <SyncStatus />
-    {/if}
-
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <span class="text-label-md {mappings.length ? 'text-on-surface' : 'text-outline'}">
-        {mappings.length ? `${mappings.length} mapping${mappings.length === 1 ? '' : 's'}` : 'No custom mappings yet.'}
+      <span class="text-label-md {ingredients.length ? 'text-on-surface' : 'text-outline'}">
+        {ingredients.length ? `${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'} · ${inStock} in stock` : 'None yet — they’re added with your recipes.'}
       </span>
-      <button type="button" class="btn-outline shrink-0 py-2" onclick={() => (editingAisles = true)}>
-        <Icon name="edit" class="text-[16px]" /> View / Edit
-      </button>
-    </div>
-  </section>
-
-  <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="have-heading">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <h2 id="have-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-        <Icon name="inventory_2" class="text-[20px] text-primary" /> Ingredients I Have
-      </h2>
-      <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
-        {synced ? `Synced · [${sheets.tabs.settings}]` : 'Saved on this device'}
-      </span>
-    </div>
-    <p class="max-w-2xl text-body-sm text-on-surface-variant">
-      These never appear on your grocery list, in any week, until you remove them. Check an ingredient on a recipe to
-      add it here. A name matches an ingredient exactly (any case, plural ok): “noodles” won’t hide “egg noodles”.
-    </p>
-
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <span class="text-label-md {haveList.length ? 'text-on-surface' : 'text-outline'}">
-        {haveList.length ? `${haveList.length} ingredient${haveList.length === 1 ? '' : 's'}` : 'Nothing here yet.'}
-      </span>
-      <button type="button" class="btn-outline shrink-0 py-2" onclick={() => (editingHave = true)}>
+      <button type="button" class="btn-outline py-1.5" onclick={() => (editingIngredients = true)}>
         <Icon name="edit" class="text-[16px]" /> View / Edit
       </button>
     </div>
@@ -464,10 +425,7 @@
   <WipeDataDialog onclose={() => (confirmingWipe = false)} />
 {/if}
 
-{#if editingHave}
-  <HaveListDialog onclose={() => (editingHave = false)} />
-{/if}
 
-{#if editingAisles}
-  <AisleMappingsDialog onclose={() => (editingAisles = false)} />
+{#if editingIngredients}
+  <IngredientsDialog onclose={() => (editingIngredients = false)} />
 {/if}

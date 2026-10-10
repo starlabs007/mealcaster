@@ -11,9 +11,11 @@ import { GoogleApiError, createSpreadsheet, ensurePhotoFolder, getAccount, isPho
 import { pickSpreadsheet, preparePicker } from '../google/picker.js';
 import { sheets, updateSheetsSettings } from '../sheets.svelte.js';
 import { recipes, replaceRecipes, saveRecipe } from '../recipes.svelte.js';
+import { addIngredient, findIngredient, ingredientOf, ingredients, replaceIngredients } from '../ingredients.svelte.js';
 import { favorites, setFavorites } from '../favorites.svelte.js';
 import { planner, replacePlan } from '../planner.svelte.js';
-import { grocery, groceryLines, replaceGrocery, weekDinners } from '../grocery.svelte.js';
+import { grocery, groceryLines, replaceGrocery, stockHiddenLines, thisWeekStart } from '../grocery.svelte.js';
+import { AISLE_OF_DEPT } from '../groceryList.js';
 import { settings, replaceSettings } from '../settings.svelte.js';
 import { realignWeeks } from '../weekStart.svelte.js';
 import { addDays, weekStartOf } from '../dates.js';
@@ -21,8 +23,9 @@ import { showToast } from '../toast.svelte.js';
 import { storageKey } from '../env.js';
 import { allSaved } from '../storage.svelte.js';
 import {
+  ingredientFromRow,
+  ingredientToRow,
   groceryFromRows,
-  globalFromRows,
   planEntryHasContent,
   planFromRow,
   planToRow,
@@ -34,13 +37,15 @@ import {
   settingsToRows,
 } from './codec.js';
 import { emptyBase, runSync } from './run.js';
+import { SCHEMA_VERSION } from '../schema.js';
 import { PHASE_LOOK, phaseOf } from './phase.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
 /** @typedef {import('./run.js').SyncBase} SyncBase */
 /** @typedef {import('./run.js').Counts} Counts */
 
-const BASE_KEY = storageKey('syncBase.v1');
+// v2 with schema version 2: a base from the old layout must never be compared with new rows.
+const BASE_KEY = storageKey('syncBase.v2');
 
 /** @typedef {import('./phase.js').SyncPhase} SyncPhase */
 export const syncState = $state({
@@ -119,9 +124,12 @@ export function sheetTabOf(tab, key) {
 
 // ---- The device side ----------------------------------------------------------
 
+// Order matters: each tab is applied before the next reads the device, and recipe lines and grocery
+// rows need the ingredients.
 const syncedTabs = () =>
   /** @type {{ key: TabKey, name: string }[]} */ (
     [
+      { key: 'ingredients', name: sheets.tabs.ingredients.trim() },
       { key: 'recipes', name: sheets.tabs.recipes.trim() },
       { key: 'weeklyPlan', name: sheets.tabs.weeklyPlan.trim() },
       sheets.syncProvisions && { key: 'provisions', name: sheets.tabs.provisions.trim() },
@@ -146,6 +154,7 @@ const today = () => planner.today;
 /** @type {import('./run.js').LocalAdapter} */
 const device = {
   localRows(tab) {
+    if (tab === 'ingredients') return new Map(ingredients.map((i) => [i.id, ingredientToRow($state.snapshot(i))]));
     if (tab === 'recipes') {
       const favs = new Set(favorites.ids);
       return new Map(recipes.map((r) => [r.id, recipeToRow($state.snapshot(r), favs)]));
@@ -162,6 +171,7 @@ const device = {
     const rows = new Map();
     for (const week of groceryWeeks()) {
       for (const line of groceryLines(week)) rows.set(provisionKey(week, line.key), provisionToRow(week, line));
+      for (const line of stockHiddenLines(week)) rows.set(provisionKey(week, line.key), provisionToRow(week, line, true));
     }
     return rows;
   },
@@ -169,7 +179,18 @@ const device = {
   apply(tab, final, fromSheet, columns) {
     // Nothing came from the sheet: the device already holds the result.
     if (!fromSheet.size) return;
-    if (tab === 'recipes') {
+    if (tab === 'ingredients') {
+      const list = [];
+      for (const [id, row] of final) {
+        const existing = ingredientOf(id);
+        if (!fromSheet.has(id)) {
+          if (existing) list.push($state.snapshot(existing));
+          continue;
+        }
+        list.push(ingredientFromRow(row, existing && $state.snapshot(existing), columns));
+      }
+      replaceIngredients(list);
+    } else if (tab === 'recipes') {
       const byId = new Map(recipes.map((r) => [r.id, $state.snapshot(r)]));
       const favs = new Set(favorites.ids);
       const nextFavs = [];
@@ -198,27 +219,25 @@ const device = {
       replaceSettings(settingsFromRows([...final.values()]));
       realignWeeks(wasThisWeek);
     } else {
-      const isPlanned = (week, key) => {
-        const recipeId = key.split(':')[0];
-        return weekDinners(week).some((d) => d.recipe.id === recipeId);
-      };
-      // Weeks too old to sync keep their lists, and standing items acquired back then stay acquired there.
+      // A row typed into the sheet names its item: that ingredient, or a new one in the row's department.
+      const idForName = (name, dept) => findIngredient(name)?.id ?? addIngredient({ name, aisle: AISLE_OF_DEPT[dept] }).id;
+      // Weeks too old to sync keep their lists, and every-week items bought back then stay bought there.
       const since = provisionsSince();
-      const rows = [...final.values()];
-      const weeks = groceryFromRows(rows, isPlanned);
+      const { weeks, every } = groceryFromRows([...final.values()], { thisWeek: thisWeekStart(), idForName });
       for (const [week, list] of Object.entries(grocery.weeks)) if (week < since) weeks[week] = $state.snapshot(list);
-      const global = globalFromRows(rows);
-      for (const g of grocery.global) {
-        if (g.status !== 'need' && g.doneWeek < since && !global.some((x) => x.id === g.id)) global.push($state.snapshot(g));
+      for (const item of grocery.every) {
+        if (item.status !== 'need' && item.doneWeek < since && !every.some((x) => x.ingredientId === item.ingredientId)) {
+          every.push($state.snapshot(item));
+        }
       }
-      replaceGrocery(weeks, global);
+      replaceGrocery(weeks, every);
     }
   },
 };
 
 /** Everything a sync pass looks at, as one string — to notice edits. */
 const deviceFingerprint = () =>
-  JSON.stringify([recipes, favorites.ids, planner.entries, grocery.weeks, grocery.global, settings, syncedTabs(), sheets.direction]);
+  JSON.stringify([ingredients, recipes, favorites.ids, planner.entries, grocery.weeks, grocery.every, settings, syncedTabs(), sheets.direction]);
 
 // ---- Sync passes ----------------------------------------------------------------
 
@@ -254,6 +273,12 @@ function describe(error) {
   return error instanceof Error ? error.message : 'Sync failed.';
 }
 
+/** Why a spreadsheet in another layout isn't synced. @param {number} sheetVersion 0 when it has no version row */
+function versionMessage(sheetVersion) {
+  if (sheetVersion > SCHEMA_VERSION) return 'This spreadsheet was set up by a newer MealCaster. Reload the app to update it, then sync again.';
+  return 'This spreadsheet uses an older MealCaster layout, so it can’t be synced. Convert it first, or choose another spreadsheet.';
+}
+
 /**
  * Runs a sync pass now (or right after the current one).
  * @param {{ choice?: 'merge' | 'sheetOnly' | 'confirm', quiet?: boolean }} [options]
@@ -285,6 +310,7 @@ export function syncNow(options = {}) {
       syncState.error = '';
       syncState.conflict = result.status === 'conflict' ? { tab: result.tab, columns: result.columns } : null;
       syncState.choice = result.status === 'choose' ? { sheet: result.sheet, device: result.device, backup: result.backup } : null;
+      if (result.status === 'version') syncState.error = versionMessage(result.sheetVersion);
       if (result.status === 'done') {
         // Run the stores' save effects now, so saveBase knows whether the pulled data was stored.
         flushSync();

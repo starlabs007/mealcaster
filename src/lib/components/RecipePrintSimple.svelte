@@ -2,7 +2,8 @@
   // The "Simple layout" printout: one column, plain text, sections headed by large
   // bold titles. Never shown on screen. Sizes are in em so the text size option
   // only has to set the base size.
-  import { formatQty } from '../format.js';
+  import { lineParts } from '../ingredients.js';
+  import { ingredientOf } from '../ingredients.svelte.js';
   import { renderMarkdown } from '../markdown.js';
 
   /** @type {{ recipe: any, servings: number, scale: number, image: string | undefined, imageScale: number, textDelta: number, mins: (m: number) => string }} */
@@ -34,9 +35,10 @@
         {#if recipe.ingredients.length > 1}<h3 class="font-bold">{group.title}</h3>{/if}
         <ul class="list-disc pl-[1.3em]">
           {#each group.items as item, i (i)}
+            {@const line = lineParts(item, ingredientOf(item.id), scale)}
             <li>
-              {#if item.qty != null}<strong>{formatQty(item.qty * scale)}</strong>{/if}
-              {item.unit ?? ''} {item.text}
+              {#if line.amount}<strong>{line.amount}</strong>{/if}
+              {line.name}{#if line.note}{' '}({line.note}){/if}{#if line.prep}, {line.prep}{/if}{#if line.optional}{' '}(optional){/if}
             </li>
           {/each}
         </ul>
