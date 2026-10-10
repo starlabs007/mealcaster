@@ -167,14 +167,14 @@
 {/snippet}
 
 {#snippet line(item, done)}
-  <li class="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-container-low/60 {done ? 'opacity-70' : ''}">
+  <li class="group flex gap-3 px-4 transition-colors hover:bg-surface-container-low/60 {devicePrefs.groceryMinimal ? 'items-center py-2' : 'items-start py-3.5'} {done ? 'opacity-70' : ''}">
     <button
       type="button"
       role="checkbox"
       aria-checked={item.status === 'bought'}
       aria-label="{item.status === 'bought' ? 'Unmark' : 'Mark'} {item.name} as bought"
       onclick={() => setLineStatus(item.ingredientId, item.status === 'bought' ? 'need' : 'bought')}
-      class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status === 'bought'
+      class="{devicePrefs.groceryMinimal ? '' : 'mt-0.5'} flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status === 'bought'
         ? 'border-primary-container bg-primary-container text-on-primary'
         : 'border-outline-variant bg-surface-container-low text-transparent hover:border-primary-container'}"
     >
@@ -188,7 +188,7 @@
           <span class="rounded bg-surface-container-high px-1.5 py-px text-label-caps uppercase text-on-surface-variant">Optional</span>
         {/if}
       </p>
-      {@render chips(item, done)}
+      {#if !devicePrefs.groceryMinimal}{@render chips(item, done)}{/if}
     </div>
     <div class="flex shrink-0 items-center">
       {#if done}
