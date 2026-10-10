@@ -6,7 +6,7 @@
 
 import { flushSync } from 'svelte';
 import { googleConfigured } from '../google/config.js';
-import { auth, currentToken, prepareAuth, signIn, signOut } from '../google/auth.svelte.js';
+import { auth, checkToken, currentToken, prepareAuth, signIn, signOut } from '../google/auth.svelte.js';
 import { GoogleApiError, createSpreadsheet, ensurePhotoFolder, getAccount, isPhotoDataUrl, sheetsApi, uploadPhoto } from '../google/api.js';
 import { pickSpreadsheet, preparePicker } from '../google/picker.js';
 import { sheets, updateSheetsSettings } from '../sheets.svelte.js';
@@ -284,7 +284,8 @@ function versionMessage(sheetVersion) {
  * @param {{ choice?: 'merge' | 'sheetOnly' | 'confirm', quiet?: boolean }} [options]
  */
 export function syncNow(options = {}) {
-  if (!googleConfigured || !sheets.spreadsheet || !currentToken()) return Promise.resolve();
+  // A token that ran out shows as Reconnect rather than leaving Sync Now doing nothing.
+  if (!googleConfigured || !sheets.spreadsheet || !checkToken()) return Promise.resolve();
   if (running) {
     again = { ...again, ...options, quiet: Boolean(again?.quiet ?? true) && Boolean(options.quiet) };
     return running;
@@ -343,6 +344,14 @@ async function afterSignIn() {
   } catch {
     // The account name is nice to show but not needed.
   }
+}
+
+/**
+ * Sync Now from a click: reconnects first if the Google session ran out while the page sat idle
+ * (a click can open the sign-in popup, so one click still syncs).
+ */
+export function syncFromClick() {
+  return checkToken() ? syncNow() : connect();
 }
 
 /** Sign in (or reconnect) — call from a click. Syncs if a spreadsheet is linked. */
@@ -481,9 +490,13 @@ export function startSync() {
     });
   });
 
+  // The expiry timer doesn't run while the computer sleeps: notice a token that ran out meanwhile,
+  // so the header shows Reconnect.
+  setInterval(checkToken, 60_000);
+
   // Pick up changes made in the sheet when coming back to the app.
   const onFocus = () => {
-    if (document.visibilityState !== 'visible' || !currentToken() || syncState.busy || !initialized()) return;
+    if (document.visibilityState !== 'visible' || !checkToken() || syncState.busy || !initialized()) return;
     const last = syncState.lastSyncedAt ? Date.parse(syncState.lastSyncedAt) : 0;
     if (Date.now() - last > 20_000) syncNow();
   };

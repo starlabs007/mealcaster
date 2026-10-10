@@ -96,6 +96,16 @@ export function signIn(hint, { chooseAccount = false } = {}) {
 /** A usable token, or '' when the person needs to reconnect. */
 export const currentToken = () => (auth.token && Date.now() < auth.expiresAt ? auth.token : '');
 
+/**
+ * Forgets a token that ran out without its expiry timer firing — timers don't run while the
+ * computer sleeps or the tab is frozen, so after a night away the token can look live.
+ * @returns {boolean} whether a usable token remains
+ */
+export function checkToken() {
+  if (auth.token && !currentToken()) expire();
+  return Boolean(auth.token);
+}
+
 /** Forgets the token (it expired, or Google rejected it). */
 export function expire() {
   clearTimeout(expiryTimer);
