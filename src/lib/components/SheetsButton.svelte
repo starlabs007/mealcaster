@@ -6,7 +6,7 @@
   import { tick } from 'svelte';
   import Icon from './Icon.svelte';
   import { sheets, spreadsheetUrl } from '../sheets.svelte.js';
-  import { syncPhase, syncNow, connect, PHASE_LOOK } from '../sync/sync.svelte.js';
+  import { syncPhase, syncFromClick, connect, PHASE_LOOK } from '../sync/sync.svelte.js';
   import { headerActions } from '../sync/phase.js';
   import { route, href, navigate } from '../router.svelte.js';
   import { disconnectPrompt } from './DisconnectDialog.svelte';
@@ -46,7 +46,10 @@
   /** @param {string} id */
   async function run(id) {
     close(false);
-    if (id === 'syncNow') syncNow();
+    if (id === 'syncNow') {
+      await syncFromClick();
+      if (syncPhase() === 'signedOut') navigate('/sheets-sync');
+    }
     else if (id === 'disconnect') Object.assign(disconnectPrompt, { open: true, returnFocus: toggle });
     else if (id === 'reconnect') {
       // Reconnect in place; if that didn't work, the connection screen explains why.

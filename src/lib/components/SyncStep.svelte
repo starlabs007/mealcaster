@@ -7,7 +7,7 @@
   import { disconnectPrompt } from './DisconnectDialog.svelte';
   import { sheets, saveSheetsSettings, spreadsheetUrl, shortId } from '../sheets.svelte.js';
   import { auth } from '../google/auth.svelte.js';
-  import { syncState, syncPhase, syncNow, connect, initialized } from '../sync/sync.svelte.js';
+  import { syncState, syncPhase, syncFromClick, connect, initialized } from '../sync/sync.svelte.js';
   import { navigate } from '../router.svelte.js';
   import { showToast } from '../toast.svelte.js';
 
@@ -32,7 +32,7 @@
   }
 
   async function firstSync() {
-    await syncNow();
+    await syncFromClick();
     if (syncPhase() === 'synced') showToast(`Connected to “${sheets.spreadsheetName || 'your spreadsheet'}”.`);
   }
 
@@ -185,7 +185,7 @@
             {:else if phase === 'syncing'}
               <button type="button" class="btn-primary py-2" disabled><Icon name="progress_activity" class="animate-spin text-[16px]" /> Syncing…</button>
             {:else}
-              <button type="button" class="btn-outline py-2" onclick={() => syncNow()}><Icon name="sync" class="text-[16px]" /> Sync Now</button>
+              <button type="button" class="btn-outline py-2" onclick={() => syncFromClick()}><Icon name="sync" class="text-[16px]" /> Sync Now</button>
             {/if}
           </div>
         </div>
