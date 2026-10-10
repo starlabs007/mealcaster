@@ -104,7 +104,7 @@ export const recipe = (id, title, extra = {}) => ({
   addedAt: '2026-01-01',
   tags: ['quick'],
   notes: '',
-  ingredients: [{ title: 'Main', category: '1 item', items: [{ qty: 1, unit: 'lb', text: 'pasta', tag: 'Pantry' }] }],
+  ingredients: [{ title: 'Main', category: '1 item', items: [{ id: 'pasta', qty: 1, unit: 'lb' }] }],
   steps: [{ title: 'Boil', minutes: 10, text: 'Boil it.' }],
   custom: true,
   ...extra,
@@ -114,17 +114,19 @@ export const recipe = (id, title, extra = {}) => ({
  * On-device data plus the LocalAdapter runSync uses — the same shape as
  * sync.svelte.js, without Svelte. Provisions are kept as rows.
  */
-export function fakeDevice({ recipes = [], plan = {}, favorites = [], provisions = [], aisles = [], returnToPlanner = true, weekStartDay = 6 } = {}) {
+export function fakeDevice({ ingredients = [], recipes = [], plan = {}, favorites = [], provisions = [], tagColors = {}, returnToPlanner = true, weekStartDay = 6 } = {}) {
   const d = {
+    ingredients,
     recipes,
     plan,
     favorites: new Set(favorites),
-    settings: { aisles, returnToPlanner, weekStartDay },
+    settings: { tagColors, returnToPlanner, weekStartDay },
     provisions: new Map(provisions.map((r) => [codec.provisionKey(r.Week_Of, r.Line_Key), r])),
   };
   /** @type {import('../src/lib/sync/run.js').LocalAdapter} */
   d.adapter = {
     localRows(tab) {
+      if (tab === 'ingredients') return new Map(d.ingredients.map((i) => [i.id, codec.ingredientToRow(i)]));
       if (tab === 'recipes') return new Map(d.recipes.map((r) => [r.id, codec.recipeToRow(r, d.favorites)]));
       if (tab === 'weeklyPlan') {
         return new Map(
@@ -137,7 +139,13 @@ export function fakeDevice({ recipes = [], plan = {}, favorites = [], provisions
       return new Map(d.provisions);
     },
     apply(tab, final, fromSheet, columns) {
-      if (tab === 'recipes') {
+      if (tab === 'ingredients') {
+        const byId = new Map(d.ingredients.map((i) => [i.id, i]));
+        d.ingredients = [...final].flatMap(([id, row]) => {
+          if (!fromSheet.has(id)) return byId.has(id) ? [byId.get(id)] : [];
+          return [codec.ingredientFromRow(row, byId.get(id), columns)];
+        });
+      } else if (tab === 'recipes') {
         const byId = new Map(d.recipes.map((r) => [r.id, r]));
         const favs = new Set();
         d.recipes = [...final].flatMap(([id, row]) => {
@@ -171,6 +179,11 @@ export const TABS = /** @type {const} */ ([
 ]);
 
 export const SETTINGS_TAB = /** @type {const} */ ({ key: 'settings', name: 'Settings' });
+
+export const INGREDIENTS_TAB = /** @type {const} */ ({ key: 'ingredients', name: 'Ingredients' });
+
+/** An ingredient with defaults. */
+export const ingredient = (id, extra = {}) => ({ id, name: id.replace(/-/g, ' '), plural: '', aisle: 'Pantry', onHand: false, ...extra });
 
 /** runSync options with test defaults. */
 export const syncOptions = (sheet, device, base, extra = {}) => ({

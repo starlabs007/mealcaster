@@ -1,21 +1,24 @@
 <script>
   import { slide } from 'svelte/transition';
+  import { SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
+  import Combobox from '../lib/components/Combobox.svelte';
   import {
     departments,
-    deptOfTag,
     groceryLines,
-    haveHiddenLines,
+    stockHiddenLines,
     setLineStatus,
-    addCustomItem,
-    removeCustomItem,
-    grocery,
+    addItem,
+    removeAdded,
+    thisWeekStart,
     weekDinners,
   } from '../lib/grocery.svelte.js';
-  import { aisles, guessAisle, recipes } from '../lib/recipes.svelte.js';
+  import { aisles, aisleLabel, guessAisle } from '../lib/recipes.svelte.js';
+  import { addIngredient, findIngredient, ingredients, setOnHand } from '../lib/ingredients.svelte.js';
+  import { shoppingName } from '../lib/ingredients.js';
   import { planner, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
-  import { addDays, formatRange, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
+  import { formatRange, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { sheets } from '../lib/sheets.svelte.js';
@@ -30,27 +33,22 @@
   };
 
   let aisle = $state('all');
-  let showOnHand = $state(true);
+  let showBought = $state(true);
   let adding = $state(false);
-  let draft = $state({ name: '', note: '', aisle: 'Produce', everyWeek: false });
-  // The aisle follows the item's name (your Profile mappings first) until you pick one yourself.
+  let draft = $state({ name: '', note: '', aisle: 'Produce', everyWeek: true });
+  // The aisle follows the item's name until you pick one yourself; an existing ingredient keeps its own.
   let aislePicked = false;
-  const guessDraftAisle = () => {
-    if (!aislePicked && draft.name.trim()) draft.aisle = guessAisle(draft.name);
+  const draftIngredient = $derived(draft.name.trim() ? findIngredient(draft.name) : undefined);
+  const onDraftName = () => {
+    if (draftIngredient) draft.aisle = draftIngredient.aisle;
+    else if (!aislePicked && draft.name.trim()) draft.aisle = guessAisle(draft.name);
   };
 
-  // Autocomplete for the Item field: items added before (any week, standing ones too), then every recipe ingredient.
-  const itemNames = $derived.by(() => {
-    const seen = new Map();
-    const add = (t) => {
-      const name = (t ?? '').trim();
-      if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name);
-    };
-    for (const w of Object.values(grocery.weeks)) for (const c of w.custom) add(c.name);
-    for (const g of grocery.global) add(g.name);
-    for (const r of recipes) for (const grp of r.ingredients ?? []) for (const i of grp.items ?? []) add(i.text);
-    return [...seen.values()].sort((a, b) => a.localeCompare(b));
-  });
+  const ingredientSuggestions = $derived(
+    ingredients
+      .map((i) => ({ value: i.name, label: i.name, hint: aisleLabel(i.aisle), keys: i.plural ? [i.plural] : [] }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  );
 
   const offset = $derived(weekOffset());
   /** "this week", "next week", "last week" or "the week of Oct 10" */
@@ -61,15 +59,16 @@
     { offset: 0, label: 'This Week' },
     { offset: 1, label: 'Next Week' },
   ];
+  // A past week's list stays as it was: stock changes don't reach it.
+  const pastWeek = $derived(planner.weekStart < thisWeekStart());
 
   const lines = $derived(groceryLines());
-  const haveHidden = $derived(haveHiddenLines());
-  // Bought and on-hand lines both leave the aisle lists for the Acquired ledger.
+  const haveHidden = $derived(stockHiddenLines());
+  // Bought lines leave the aisle lists for the Bought ledger.
   const shopping = $derived(lines.filter((l) => l.status === 'need'));
-  const onHand = $derived(lines.filter((l) => l.status === 'owned'));
-  const acquired = $derived(lines.filter((l) => l.status !== 'need'));
+  const acquired = $derived(lines.filter((l) => l.status === 'bought'));
   const toBuy = $derived(shopping.length);
-  const bought = $derived(acquired.length - onHand.length);
+  const bought = $derived(acquired.length);
   const completion = $derived(toBuy + bought ? Math.round((bought / (toBuy + bought)) * 100) : 0);
 
   const sections = $derived(
@@ -85,24 +84,46 @@
     weekDinners()
       .map((d) => ({
         day: d,
-        count: shopping.filter((l) => l.recipeId === d.recipe.id).length,
+        count: shopping.filter((l) => l.sources.some((s) => s.recipeId === d.recipe.id)).length,
       })),
   );
 
-  function addItem(event) {
+  // Lines whose meal labels are all shown ("+N more" tapped).
+  const expanded = new SvelteSet();
+
+  function submitItem(event) {
     event.preventDefault();
     const name = draft.name.trim();
     if (!name) return;
-    addCustomItem({ name, note: draft.note.trim(), dept: deptOfTag(draft.aisle) }, draft.everyWeek);
-    showToast(`Added ${name} to your list.`);
+    const existing = draftIngredient;
+    const ingredient = existing ?? addIngredient({ name, aisle: draft.aisle });
+    const wasOnHand = ingredient.onHand;
+    addItem(ingredient.id, draft.note.trim(), draft.everyWeek);
+    const label = shoppingName(ingredient);
+    showToast(
+      `Added ${label} to ${draft.everyWeek ? 'your list until you buy it' : `the list for ${weekName}`}.` +
+        (wasOnHand ? ' It’s no longer marked on hand.' : ''),
+    );
     draft = { name: '', note: '', aisle: draft.aisle, everyWeek: draft.everyWeek };
     aislePicked = false;
+  }
+
+  /** @param {import('../lib/grocery.svelte.js').GroceryLine} item */
+  function markOnHand(item) {
+    setOnHand(item.ingredientId, true);
+    showToast(`${item.name} is on hand: it stays off every week’s list until you say you need it.`);
+  }
+
+  /** @param {import('../lib/grocery.svelte.js').GroceryLine} item */
+  function needIt(item) {
+    setOnHand(item.ingredientId, false);
+    showToast(`${item.name} is back on the list.`);
   }
 
   function listAsText() {
     const body = sections
       .filter((s) => s.items.length)
-      .map((s) => `${s.label}\n${s.items.map((l) => `${'☐'} ${l.name} — ${l.detail}`).join('\n')}`)
+      .map((s) => `${s.label}\n${s.items.map((l) => `${'☐'} ${l.name}${l.amount ? ` — ${l.amount}` : ''}`).join('\n')}`)
       .join('\n\n');
     return `MealCaster grocery list · ${formatRange(planner.weekStart)}\n\n${body}`;
   }
@@ -121,63 +142,85 @@
   }
 </script>
 
-{#snippet line(item, isOnHand)}
-  <li class="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-container-low/60 {isOnHand ? 'opacity-70' : ''}">
+{#snippet chips(item, done)}
+  {@const all = expanded.has(item.key) || item.sources.length <= 3}
+  {@const shown = all ? item.sources : item.sources.slice(0, 2)}
+  <ul class="mt-1 flex flex-wrap gap-1" aria-label="For">
+    {#each shown as s, i (i)}
+      <li class="max-w-full rounded-xl px-2 py-0.5 text-label-sm {toneClass[done ? 'neutral' : s.tone]}">
+        {s.label}{#if s.note}<span class="opacity-80">{` · ${s.note}`}</span>{/if}
+      </li>
+    {/each}
+    {#if !all}
+      <li>
+        <button
+          type="button"
+          class="rounded-full px-2 py-0.5 text-label-sm text-primary hover:bg-surface-container-high"
+          aria-label="Show all {item.sources.length} sources of {item.name}"
+          onclick={() => expanded.add(item.key)}
+        >
+          +{item.sources.length - 2} more
+        </button>
+      </li>
+    {/if}
+  </ul>
+{/snippet}
+
+{#snippet line(item, done)}
+  <li class="group flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-surface-container-low/60 {done ? 'opacity-70' : ''}">
     <button
       type="button"
       role="checkbox"
-      aria-checked={item.status !== 'need'}
+      aria-checked={item.status === 'bought'}
       aria-label="{item.status === 'bought' ? 'Unmark' : 'Mark'} {item.name} as bought"
-      disabled={item.status === 'owned'}
-      onclick={() => setLineStatus(item.key, item.status === 'bought' ? 'need' : 'bought')}
-      class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status !== 'need'
+      onclick={() => setLineStatus(item.ingredientId, item.status === 'bought' ? 'need' : 'bought')}
+      class="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status === 'bought'
         ? 'border-primary-container bg-primary-container text-on-primary'
         : 'border-outline-variant bg-surface-container-low text-transparent hover:border-primary-container'}"
     >
       <Icon name="check" class="text-[14px]" />
     </button>
     <div class="min-w-0 flex-1">
-      <p class="text-body-md font-medium {item.status !== 'need' ? 'text-outline line-through decoration-outline' : 'text-on-surface'}">
-        {item.name}
+      <p class="flex flex-wrap items-baseline gap-x-2">
+        <span class="text-body-md font-medium {done ? 'text-outline line-through decoration-outline' : 'text-on-surface'}">{item.name}</span>
+        {#if item.amount}<span class="text-body-sm text-on-surface-variant">{item.amount}</span>{/if}
+        {#if item.optional}
+          <span class="rounded bg-surface-container-high px-1.5 py-px text-label-caps uppercase text-on-surface-variant">Optional</span>
+        {/if}
       </p>
-      <p class="text-body-sm text-on-surface-variant">
-        {item.detail}{isOnHand ? (item.status === 'bought' ? ' • Bought' : ' • On hand') : ''}
-        {#if !isOnHand}<span class="sm:hidden">· {item.source.label}</span>{/if}
-      </p>
+      {@render chips(item, done)}
     </div>
-    <span class="hidden max-w-[45%] shrink-0 truncate rounded-full px-2 py-0.5 text-label-sm sm:inline {isOnHand ? toneClass.neutral : toneClass[item.source.tone]}">
-      {isOnHand ? (item.status === 'bought' ? 'Bought' : 'On hand') : `• ${item.source.label}`}
-    </span>
     <div class="flex shrink-0 items-center">
-      {#if isOnHand}
+      {#if done}
         <button
           type="button"
           title="Need to buy after all"
           aria-label="Move {item.name} back to the shopping list"
           class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
-          onclick={() => setLineStatus(item.key, 'need')}
+          onclick={() => setLineStatus(item.ingredientId, 'need')}
         >
           <Icon name="add_shopping_cart" class="text-[18px]" />
         </button>
-        {#if item.custom}
-          <button
-            type="button"
-            aria-label="Delete {item.name}"
-            class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
-            onclick={() => removeCustomItem(item.key)}
-          >
-            <Icon name="delete" class="text-[18px]" />
-          </button>
-        {/if}
-      {:else}
+      {:else if !pastWeek}
         <button
           type="button"
-          title="Already have it — mark as on hand"
+          title="Have it at home — mark as on hand"
           aria-label="Mark {item.name} as on hand"
           class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
-          onclick={() => setLineStatus(item.key, 'owned')}
+          onclick={() => markOnHand(item)}
         >
           <Icon name="inventory_2" class="text-[18px]" />
+        </button>
+      {/if}
+      {#if item.added != null || item.every != null}
+        <button
+          type="button"
+          title={item.every != null ? 'Remove what you added (from every week)' : 'Remove what you added'}
+          aria-label="Remove {item.name}, added by you"
+          class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
+          onclick={() => removeAdded(item.ingredientId)}
+        >
+          <Icon name="delete" class="text-[18px]" />
         </button>
       {/if}
     </div>
@@ -255,26 +298,26 @@
   {#if adding}
     <form
       transition:slide={{ duration: 180 }}
-      onsubmit={addItem}
+      onsubmit={submitItem}
       class="grid grid-cols-1 gap-3 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 shadow-card sm:grid-cols-[2fr_2fr_1.3fr_auto] sm:items-end"
     >
-      <datalist id="grocery-item-names">
-        {#each itemNames as n (n)}<option value={n}></option>{/each}
-      </datalist>
-      <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
-        Item
-        <!-- svelte-ignore a11y_autofocus -->
-        <input
-          required
-          autofocus
+      <div class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
+        <span class="flex items-center gap-2">
+          Ingredient
+          {#if draft.name.trim() && !draftIngredient}
+            <span class="rounded bg-[#ffdead] px-1.5 py-px text-label-caps uppercase text-tertiary" title="Adding it also adds “{draft.name.trim()}” to your ingredients, in this aisle">New</span>
+          {/if}
+        </span>
+        <Combobox
+          label="Ingredient"
+          placeholder="e.g. bananas"
+          suggestions={ingredientSuggestions}
           bind:value={draft.name}
-          oninput={guessDraftAisle}
-          list="grocery-item-names"
-          autocomplete="off"
-          placeholder="e.g. Sparkling water"
-          class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
+          oninput={onDraftName}
+          onpick={onDraftName}
+          inputClass="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         />
-      </label>
+      </div>
       <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
         Quantity or note
         <input
@@ -287,22 +330,24 @@
         Aisle
         <select
           bind:value={draft.aisle}
+          disabled={!!draftIngredient}
+          title={draftIngredient ? 'The ingredient’s aisle (change it in Profile → Ingredients)' : undefined}
           onchange={() => (aislePicked = true)}
-          class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
+          class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container disabled:opacity-60"
         >
           {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
         </select>
       </label>
-      <button type="submit" class="btn-primary py-2.5">Add to List</button>
+      <button type="submit" class="btn-primary py-2.5" disabled={!draft.name.trim()}>Add to List</button>
       <fieldset class="flex flex-wrap gap-x-5 gap-y-1 text-body-sm text-on-surface sm:col-span-full">
         <legend class="sr-only">Which weeks</legend>
         <label class="flex items-center gap-2">
-          <input type="radio" name="item-weeks" checked={!draft.everyWeek} onchange={() => (draft.everyWeek = false)} class="accent-primary-container" />
-          Just {weekName}
+          <input type="radio" name="item-weeks" checked={draft.everyWeek} onchange={() => (draft.everyWeek = true)} class="accent-primary-container" />
+          <span>Every week <span class="text-on-surface-variant">— from this week on, until you buy it</span></span>
         </label>
         <label class="flex items-center gap-2">
-          <input type="radio" name="item-weeks" checked={draft.everyWeek} onchange={() => (draft.everyWeek = true)} class="accent-primary-container" />
-          Standing item <span class="text-on-surface-variant">— until you buy it or mark it on hand</span>
+          <input type="radio" name="item-weeks" checked={!draft.everyWeek} onchange={() => (draft.everyWeek = false)} class="accent-primary-container" />
+          Just {weekName}
         </label>
       </fieldset>
     </form>
@@ -329,7 +374,7 @@
           {/each}
         </div>
         <p class="mt-2 flex items-center gap-1 px-1 text-body-sm text-outline">
-          <Icon name="touch_app" class="text-[15px]" /> Tap the circle when bought, or the box icon if you already have it
+          <Icon name="touch_app" class="text-[15px]" /> Tap the circle when bought, or the box if it’s at home (keeps it off every week’s list)
         </p>
       </div>
       {/if}
@@ -372,44 +417,64 @@
           <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
             <Icon name="visibility_off" class="text-[16px] text-outline" />
             <span class="flex-1">
-              {haveHidden.length} {haveHidden.length === 1 ? 'ingredient is' : 'ingredients are'} left off because you have {haveHidden.length === 1 ? 'it' : 'them'}.
+              {#if pastWeek}
+                {haveHidden.length} {haveHidden.length === 1 ? 'ingredient was' : 'ingredients were'} left off because {haveHidden.length === 1 ? 'it was' : 'they were'} in stock.
+              {:else}
+                {haveHidden.length} {haveHidden.length === 1 ? 'ingredient is' : 'ingredients are'} left off because {haveHidden.length === 1 ? 'it’s' : 'they’re'} in stock.
+              {/if}
             </span>
             <Icon name="expand_more" class="text-[18px] text-outline transition-transform group-open:rotate-180" />
           </summary>
           <ul class="divide-y divide-surface-container-high border-t border-surface-container-high px-3">
             {#each haveHidden as h (h.key)}
-              <li class="flex items-baseline gap-2 py-1.5">
-                <span class="min-w-0 flex-1 truncate text-on-surface">{h.name}</span>
-                <span class="shrink-0 text-outline">{h.detail} · {h.source}</span>
+              <li class="flex items-center gap-2 py-1.5">
+                <span class="min-w-0 flex-1">
+                  <span class="text-on-surface">{h.name}</span>
+                  <span class="text-outline">{[h.amount, h.sources.map((s) => s.label).join(', ')].filter(Boolean).join(' · ')}</span>
+                </span>
+                {#if !pastWeek}
+                  <button
+                    type="button"
+                    class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-label-md text-primary hover:bg-surface-container-high"
+                    aria-label="Need {h.name}: put it back on the list"
+                    onclick={() => needIt(h)}
+                  >
+                    <Icon name="add_shopping_cart" class="text-[16px]" /> Need it
+                  </button>
+                {/if}
               </li>
             {/each}
           </ul>
           <p class="border-t border-surface-container-high px-3 py-2">
-            Manage these in <a href={href('/profile')} class="text-primary underline">Profile</a>.
+            {#if pastWeek}
+              This week is over, so its list stays as it was.
+            {:else}
+              Out of one? Tap Need it (or untick it on a recipe page) and it’s back on every week’s list.
+            {/if}
           </p>
         </details>
       {/if}
 
       {#if acquired.length && !devicePrefs.groceryMinimal}
-        <section class="rounded-2xl bg-surface-container-low" aria-labelledby="on-hand-heading">
+        <section class="rounded-2xl bg-surface-container-low" aria-labelledby="bought-heading">
           <div class="flex items-center justify-between gap-2 px-4 py-3">
-            <h2 id="on-hand-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="inventory_2" class="text-[20px]" />
-              Already On Hand / Acquired
+            <h2 id="bought-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+              <Icon name="shopping_bag" class="text-[20px]" />
+              Bought
               <span class="rounded-full bg-surface-container-high px-2 py-0.5 font-sans text-label-caps uppercase text-on-surface-variant">
-                {acquired.length} acquired
+                {acquired.length} {acquired.length === 1 ? 'item' : 'items'}
               </span>
             </h2>
             <button
               type="button"
-              aria-expanded={showOnHand}
-              onclick={() => (showOnHand = !showOnHand)}
+              aria-expanded={showBought}
+              onclick={() => (showBought = !showBought)}
               class="inline-flex items-center gap-0.5 text-label-md text-on-surface-variant hover:text-on-surface"
             >
-              {showOnHand ? 'Hide' : 'Show'} <Icon name={showOnHand ? 'expand_less' : 'expand_more'} class="text-[18px]" />
+              {showBought ? 'Hide' : 'Show'} <Icon name={showBought ? 'expand_less' : 'expand_more'} class="text-[18px]" />
             </button>
           </div>
-          {#if showOnHand}
+          {#if showBought}
             <ul transition:slide={{ duration: 180 }} class="divide-y divide-surface-container-high border-t border-surface-container-high">
               {#each acquired as item (item.key)}
                 {@render line(item, true)}
@@ -433,7 +498,7 @@
             <span class="font-display text-[40px] leading-none">{toBuy}</span> items to buy
           </p>
           <p class="text-right text-body-sm text-on-surface-variant">
-            <span class="block text-body-lg text-on-surface">{onHand.length}</span> on hand
+            <span class="block text-body-lg text-on-surface">{haveHidden.length}</span> on hand
           </p>
         </div>
 

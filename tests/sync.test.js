@@ -4,7 +4,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { emptyBase, runSync } from '../src/lib/sync/run.js';
 import { SCHEMA_VERSION } from '../src/lib/schema.js';
-import { SETTINGS_TAB, TABS, fakeDevice, fakeSheet, recipe, syncOptions } from './fakes.js';
+import { INGREDIENTS_TAB, SETTINGS_TAB, TABS, fakeDevice, fakeSheet, ingredient, recipe, syncOptions } from './fakes.js';
 
 const RECIPE_HEADERS = ['Recipe_ID', 'Title', 'Ingredients_JSON', 'Method_Steps'];
 
@@ -95,7 +95,7 @@ describe('a spreadsheet kept in sync over several passes', () => {
     grid.splice(1, 1); // delete Soup
     const typed = [];
     typed[headers.indexOf('Title')] = 'Typed In Sheet';
-    typed[headers.indexOf('Ingredients_JSON')] = '[{"name":"Rice","qty":"200g","dept":"Pantry"}]';
+    typed[headers.indexOf('Ingredients_JSON')] = '[{"id":"rice","qty":"200g"}]';
     typed[headers.indexOf('Method_Steps')] = '1. Rinse rice\n2. Cook (15 min): Simmer';
     grid.push(typed);
 
@@ -104,7 +104,7 @@ describe('a spreadsheet kept in sync over several passes', () => {
     const added = device.recipes[1];
     assert.match(added.id, /^custom-typed-in-sheet-/);
     assert.equal(sheet.column('Recipes', 'Recipe_ID')[1], added.id);
-    assert.deepEqual(added.ingredients[0].items[0], { qty: 200, unit: 'g', text: 'Rice', tag: 'Pantry' });
+    assert.deepEqual(added.ingredients[0].items[0], { id: 'rice', qty: 200, unit: 'g' });
     assert.deepEqual(
       added.steps.map((s) => [s.title, s.minutes, s.text]),
       [['Step 1', 0, 'Rinse rice'], ['Cook', 15, 'Simmer']],
@@ -123,6 +123,17 @@ describe('a spreadsheet kept in sync over several passes', () => {
     row[i] = 'Bought';
     await sync();
     assert.equal(device.provisions.get('2026-10-05|custom:1').Status, 'Bought');
+  });
+
+  it('deletes a grocery row from the sheet once the device no longer lists it (a dinner moved or removed)', async () => {
+    const row = { Week_Of: '2026-10-05', Item: 'Beef', Detail: '1 lb', Department: 'Seafood & Meat', Status: 'To buy', Source: 'Mon: Pasta', Line_Key: 'ing:beef', Added: '' };
+    device.provisions.set('2026-10-05|ing:beef', row);
+    await sync();
+    assert.ok(sheet.column('Provisions', 'Line_Key').includes('ing:beef'));
+    device.provisions.delete('2026-10-05|ing:beef');
+    await sync();
+    assert.ok(!sheet.column('Provisions', 'Line_Key').includes('ing:beef'));
+    assert.ok(sheet.column('Provisions', 'Line_Key').includes('custom:1'), 'other rows stay');
   });
 });
 
@@ -396,5 +407,96 @@ describe('grocery weeks before provisionsSince', () => {
     const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs: [...TABS], provisionsSince: since }));
     assert.equal(result.status, 'done');
     assert.deepEqual(sheet.column('Provisions', 'Item'), ['Old milk']);
+  });
+});
+
+describe('the [Ingredients] tab', () => {
+  const tabs = [INGREDIENTS_TAB, ...TABS, SETTINGS_TAB];
+  const HEADERS = ['Ingredient_ID', 'Name', 'Plural', 'Aisle', 'On_Hand'];
+
+  it('is written first, with aisles by label and stock as TRUE/FALSE', async () => {
+    const sheet = fakeSheet();
+    const device = fakeDevice({
+      ingredients: [ingredient('pasta', { onHand: true }), ingredient('green-onion', { plural: 'green onions', aisle: 'Produce' })],
+      recipes: [recipe('r1', 'Pasta')],
+    });
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs }));
+    assert.equal(result.status, 'done');
+    assert.deepEqual(sheet.state.tabs.map((t) => t.title), ['Ingredients', 'Recipes', 'WeeklyPlan', 'Provisions', 'Settings']);
+    assert.deepEqual(sheet.find('Ingredients').grid, [
+      HEADERS,
+      ['pasta', 'pasta', '', 'Pantry', true],
+      ['green-onion', 'green onion', 'green onions', 'Produce', false],
+    ]);
+  });
+
+  it('pulls renames, aisle and stock changes, and gives typed-in rows an id', async () => {
+    const sheet = fakeSheet();
+    const device = fakeDevice({ ingredients: [ingredient('nuoc-mam'), ingredient('rau-ram', { name: 'rau răm', aisle: 'Herbs' })] });
+    const base = (await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs }))).base;
+
+    const grid = sheet.find('Ingredients').grid;
+    grid[1][1] = 'nước mắm';
+    grid[1][3] = 'Spices';
+    grid[2][4] = 'TRUE';
+    grid.push(['', 'Gai Lan', '', 'Produce', '']);
+    const pull = await runSync(syncOptions(sheet, device, base, { tabs }));
+    assert.equal(pull.status, 'done');
+    assert.deepEqual(device.ingredients, [
+      ingredient('nuoc-mam', { name: 'nước mắm', aisle: 'Spices' }),
+      ingredient('rau-ram', { name: 'rau răm', aisle: 'Herbs', onHand: true }),
+      ingredient('gai-lan', { name: 'gai lan', aisle: 'Produce' }),
+    ]);
+    assert.equal(sheet.column('Ingredients', 'Ingredient_ID')[2], 'gai-lan');
+    // The typed name stays as typed; the device shows it lowercase.
+    assert.equal(sheet.column('Ingredients', 'Name')[2], 'Gai Lan');
+    const again = await runSync(syncOptions(sheet, device, pull.base, { tabs }));
+    assert.equal(again.pushed, 0);
+  });
+
+  it('counts as data on a first sync', async () => {
+    const sheet = fakeSheet({ Ingredients: [HEADERS, ['salt', 'salt', '', 'Spices', 'TRUE']] });
+    const device = fakeDevice({ ingredients: [ingredient('pepper')] });
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs }));
+    assert.equal(result.status, 'choose');
+    assert.equal(result.sheet.ingredients, 1);
+    assert.equal(result.device.ingredients, 1);
+  });
+});
+
+describe('a spreadsheet in another layout', () => {
+  const tabs = [INGREDIENTS_TAB, ...TABS, SETTINGS_TAB];
+  const OLD_RECIPE = ['r1', 'Pasta', '[{"title":"Main","items":[{"qty":1,"text":"onion","tag":"Produce"}]}]', '1. Cook'];
+
+  /** Syncs a full device against `sheet` and checks nothing was written. */
+  async function refused(sheet, direction = 'bidirectional') {
+    const device = fakeDevice({ ingredients: [ingredient('pasta')], recipes: [recipe('r2', 'Soup')] });
+    const before = JSON.stringify(sheet.state.tabs);
+    const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs, direction }));
+    assert.equal(JSON.stringify(sheet.state.tabs), before, 'nothing written');
+    assert.deepEqual(device.recipes.map((r) => r.id), ['r2'], 'nothing pulled');
+    return result;
+  }
+
+  it('is refused when its schema version is older, in either direction', async () => {
+    const sheet = () => fakeSheet({ Settings: [['Section', 'Name', 'Value'], ['Schema', 'Version', 1]], Recipes: [RECIPE_HEADERS, OLD_RECIPE] });
+    assert.deepEqual(await refused(sheet()), { status: 'version', sheetVersion: 1, title: 'Test Sheet' });
+    assert.equal((await refused(sheet(), 'pushOnly')).status, 'version');
+  });
+
+  it('is refused when it has no version but old-style recipe lines', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS, OLD_RECIPE] });
+    assert.deepEqual(await refused(sheet), { status: 'version', sheetVersion: 0, title: 'Test Sheet' });
+  });
+
+  it('is refused when a newer MealCaster wrote it', async () => {
+    const sheet = fakeSheet({ Settings: [['Section', 'Name', 'Value'], ['Schema', 'Version', SCHEMA_VERSION + 1]] });
+    assert.equal((await refused(sheet)).sheetVersion, SCHEMA_VERSION + 1);
+  });
+
+  it('is fine when it has no version and no old-style lines (a new, empty sheet)', async () => {
+    const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS] });
+    const result = await runSync(syncOptions(sheet, fakeDevice(), emptyBase('S1'), { tabs }));
+    assert.equal(result.status, 'done');
   });
 });

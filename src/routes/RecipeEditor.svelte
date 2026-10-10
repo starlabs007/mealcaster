@@ -1,7 +1,7 @@
 <script module>
   import { storageKey } from '../lib/env.js';
 
-  const DRAFT_KEY = storageKey('recipeDraft.v1');
+  const DRAFT_KEY = storageKey('recipeDraft.v2');
 
   /** Which form field fills each [Recipes] column. */
   const COLUMN_SOURCE = {
@@ -23,6 +23,7 @@
 
 <script>
   import { tick } from 'svelte';
+  import { SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
   import {
@@ -34,6 +35,7 @@
     categoryChoices,
     normalizeCategory,
     aisles,
+    aisleLabel,
     parseQty,
     guessAisle,
     parseIngredientLines,
@@ -43,6 +45,8 @@
     customRecipeCount,
   } from '../lib/recipes.svelte.js';
   import { SCHEMA, sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
+  import { addIngredient as createIngredient, findIngredient, ingredientOf, ingredients } from '../lib/ingredients.svelte.js';
+  import { UNIT_SUGGESTIONS, canonicalUnit, similarIngredients } from '../lib/ingredients.js';
   import { href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { formatQty } from '../lib/format.js';
@@ -51,6 +55,7 @@
   import { normalizeTags } from '../lib/tags.js';
   import { tagClasses } from '../lib/tagColors.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
+  import Combobox from '../lib/components/Combobox.svelte';
 
   /** @type {{ id?: string }} */
   let { id } = $props();
@@ -63,7 +68,9 @@
 
   /**
    * Rows carry `critical` through untouched so editing a sample doesn't lose them.
-   * @typedef {{ key: number, qty: string, unit: string, text: string, group: string, aisle: string, aisleSet: boolean }} IngredientRow
+   * An ingredient row's `text` is the ingredient's name: saving picks the ingredient with that name (or plural), or
+   * creates one in `aisle`. `id` keeps the ingredient of a line whose name wasn't touched (so an unknown id survives).
+   * @typedef {{ key: number, qty: string, unit: string, text: string, id?: string, note: string, prep: string, optional: boolean, group: string, aisle: string, aisleSet: boolean }} IngredientRow
    * @typedef {{ key: number, title: string, text: string, minutes: string, critical?: boolean }} StepRow
    * @typedef {{
    *   title: string, description: string, image: string, category: string,
@@ -75,7 +82,7 @@
   let lastKey = 0;
   const nextKey = () => ++lastKey;
   /** @returns {IngredientRow} */
-  const blankIngredient = (group = '') => ({ key: nextKey(), qty: '', unit: '', text: '', group, aisle: 'Pantry', aisleSet: false });
+  const blankIngredient = (group = '') => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, group, aisle: 'Pantry', aisleSet: false });
   /** @returns {StepRow} */
   const blankStep = () => ({ key: nextKey(), title: '', text: '', minutes: '' });
 
@@ -108,15 +115,22 @@
       cookMinutes: r.cookMinutes,
       tags: [...r.tags],
       ingredients: r.ingredients.flatMap((g) =>
-        g.items.map((item) => ({
-          key: nextKey(),
-          qty: item.qty == null ? '' : formatQty(item.qty),
-          unit: item.unit ?? '',
-          text: item.text,
-          group: g.title,
-          aisle: item.tag,
-          aisleSet: true,
-        })),
+        g.items.map((item) => {
+          const ingredient = ingredientOf(item.id);
+          return {
+            key: nextKey(),
+            qty: item.qty == null ? '' : formatQty(item.qty),
+            unit: item.unit ?? '',
+            text: ingredient?.name ?? item.id,
+            id: item.id,
+            note: item.note ?? '',
+            prep: item.prep ?? '',
+            optional: Boolean(item.optional),
+            group: g.title,
+            aisle: ingredient?.aisle ?? 'Pantry',
+            aisleSet: true,
+          };
+        }),
       ),
       steps: r.steps.map((s) => ({
         key: nextKey(),
@@ -136,7 +150,7 @@
       if (!raw) return null;
       const draft = JSON.parse(raw);
       // Fresh keys so they can't collide with rows added from here on.
-      draft.ingredients = draft.ingredients.map((row) => ({ ...row, key: nextKey() }));
+      draft.ingredients = draft.ingredients.map((row) => ({ ...blankIngredient(), ...row, key: nextKey() }));
       draft.steps = draft.steps.map((step) => ({ ...step, key: nextKey() }));
       draft.tags = normalizeTags(draft.tags);
       draft.category = normalizeCategory(draft.category);
@@ -188,6 +202,8 @@
   }
   let submitted = $state(false);
   let bulkOpen = $state(false);
+  // The paste rules, shown under the paste box on request so they can stay open while typing.
+  let pasteHelpOpen = $state(false);
   let bulkText = $state('');
   let photoError = $state('');
   let dragging = $state(false);
@@ -209,15 +225,16 @@
   const valid = $derived(Object.values(errors).every((e) => !e));
   const show = (key) => submitted && errors[key];
 
-  // Ingredient descriptions already used in any recipe, offered as autocomplete (sorted, de-duplicated by case).
-  const ingredientNames = $derived.by(() => {
-    const seen = new Map();
-    for (const r of recipes) for (const g of r.ingredients ?? []) for (const ing of g.items ?? []) {
-      const t = (ing.text ?? '').trim();
-      if (t && !seen.has(t.toLowerCase())) seen.set(t.toLowerCase(), t);
-    }
-    return [...seen.values()].sort((a, b) => a.localeCompare(b));
-  });
+  // Every ingredient, offered as you type its name (found by its plural too), with its aisle.
+  const ingredientSuggestions = $derived(
+    ingredients
+      .map((i) => ({ value: i.name, label: i.name, hint: aisleLabel(i.aisle), keys: i.plural ? [i.plural] : [] }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  );
+
+  /** The existing ingredient a row names, if any. @param {IngredientRow} row */
+  const rowIngredient = (row) =>
+    (row.id && ingredientOf(row.id)?.name === row.text.trim() ? ingredientOf(row.id) : undefined) ?? findIngredient(row.text);
 
   const groupNames = $derived([...new Set(form.ingredients.map((r) => r.group.trim()).filter(Boolean))]);
 
@@ -234,9 +251,36 @@
     if (!form.ingredients.length) form.ingredients.push(blankIngredient());
   }
 
-  /** @param {IngredientRow} row */
+  /** "(flank or ribeye), sliced · optional" — the hidden details at a glance. @param {IngredientRow} row */
+  const detailsSummary = (row) =>
+    [[row.note.trim() && `(${row.note.trim()})`, row.prep.trim()].filter(Boolean).join(', '), row.optional && 'optional']
+      .filter(Boolean)
+      .join(' · ');
+
+  // Rows showing their note / prep / optional fields: open from the start on rows that use them, closed (taking no
+  // space) on the rest, which is most of them.
+  // svelte-ignore state_referenced_locally
+  const detailsOpen = new SvelteSet(form.ingredients.filter((row) => detailsSummary(row)).map((row) => row.key));
+
+  /**
+   * Uses an existing ingredient for a row whose name looked like a new one ("yellow onion" → onion); the extra
+   * words become the note unless it has one.
+   * @param {IngredientRow} row @param {{ ingredient: import('../lib/ingredients.js').Ingredient, note: string }} match
+   */
+  function useExisting(row, { ingredient, note }) {
+    row.text = ingredient.name;
+    row.aisle = ingredient.aisle;
+    if (note && !row.note.trim()) {
+      row.note = note;
+      detailsOpen.add(row.key);
+    }
+  }
+
+  /** An existing ingredient brings its aisle; a new one gets a guess until you pick one. @param {IngredientRow} row */
   function onIngredientText(row) {
-    if (!row.aisleSet) row.aisle = guessAisle(row.text);
+    const existing = rowIngredient(row);
+    if (existing) row.aisle = existing.aisle;
+    else if (!row.aisleSet) row.aisle = guessAisle(row.text);
   }
 
   function addBulk() {
@@ -246,10 +290,12 @@
       showToast('No ingredients found — put one per line, e.g. “1 lb rigatoni”.');
       return;
     }
-    form.ingredients = [
-      ...form.ingredients.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim()),
-      ...parsed.map((row) => ({ ...row, key: nextKey(), aisleSet: false })),
-    ];
+    const added = parsed.map((row) => {
+      const existing = findIngredient(row.text);
+      return { ...blankIngredient(row.group), ...row, aisle: existing?.aisle ?? row.aisle, key: nextKey() };
+    });
+    form.ingredients = [...form.ingredients.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim()), ...added];
+    for (const row of added) if (detailsSummary(row)) detailsOpen.add(row.key);
     showToast(`Added ${parsed.length} ${parsed.length === 1 ? 'ingredient' : 'ingredients'} — check the amounts and aisles.`);
     bulkText = '';
     bulkOpen = false;
@@ -309,6 +355,17 @@
 
   // ---- Save / draft ------------------------------------------------------------
 
+  /**
+   * The ingredient id for a row: the line's own unknown id while its text wasn't changed, an existing
+   * ingredient with that name, or a new ingredient in the row's aisle.
+   * @param {IngredientRow} row
+   */
+  function rowIngredientId(row) {
+    if (row.id && !ingredientOf(row.id) && row.text.trim() === row.id) return row.id;
+    return (rowIngredient(row) ?? createIngredient({ name: row.text, aisle: row.aisle })).id;
+  }
+
+  /** The recipe as saved; ingredients that don't exist yet are added. */
   function toRecipe() {
     // Group categories ("Protein", "Aromatics"…) survive when the group name does.
     const originalCategory = new Map(editing?.ingredients.map((g) => [g.title.toLowerCase(), g.category]) ?? []);
@@ -319,11 +376,14 @@
       let group = groups.find((g) => g.title.toLowerCase() === title.toLowerCase());
       if (!group) groups.push((group = { title, category: '', items: [] }));
       const qty = parseQty(row.qty);
+      const unit = canonicalUnit(row.unit);
       group.items.push({
+        id: rowIngredientId(row),
         ...(qty !== undefined && { qty }),
-        ...(row.unit.trim() && { unit: row.unit.trim() }),
-        text: row.text.trim(),
-        tag: row.aisle,
+        ...(unit && { unit }),
+        ...(row.note.trim() && { note: row.note.trim() }),
+        ...(row.prep.trim() && { prep: row.prep.trim() }),
+        ...(row.optional && { optional: true }),
       });
     }
     for (const g of groups) {
@@ -786,7 +846,7 @@
               <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
                 <Icon name="grocery" class="text-[20px] text-primary" /> <span>Ingredients &amp; Mise en Place<span class="text-secondary">&nbsp;*</span></span>
               </h2>
-              <p class="text-body-sm text-on-surface-variant">Qty · Unit · Item · Component group · Store aisle (for the grocery list)</p>
+              <p class="text-body-sm text-on-surface-variant">Qty · Unit · Ingredient · Note (for the store) · Prep (for the kitchen) · Component group · Store aisle</p>
             </div>
             <button type="button" class="btn text-primary hover:bg-surface-container-low" aria-expanded={bulkOpen} onclick={() => (bulkOpen = !bulkOpen)}>
               <Icon name={bulkOpen ? 'close' : 'content_paste'} class="text-[16px]" /> {bulkOpen ? 'Close' : 'Paste bulk text'}
@@ -804,17 +864,36 @@
                 class="{field} {border(false)} font-mono text-body-sm"
               ></textarea>
               <div class="flex flex-wrap items-center justify-between gap-2">
-                <span class="text-body-sm text-outline">A line ending in “:” starts a new component group.</span>
+                <button
+                  type="button"
+                  aria-label="How pasted lines are read"
+                  aria-expanded={pasteHelpOpen}
+                  aria-controls="paste-help"
+                  class="inline-flex items-center rounded-md p-1 hover:bg-surface-container-high hover:text-primary {pasteHelpOpen ? 'text-primary' : 'text-on-surface-variant'}"
+                  onclick={() => (pasteHelpOpen = !pasteHelpOpen)}
+                >
+                  <Icon name="help" class="text-[20px]" />
+                  <Icon name={pasteHelpOpen ? 'expand_less' : 'expand_more'} class="text-[16px]" />
+                </button>
                 <button type="button" class="btn-primary py-2" disabled={!bulkText.trim()} onclick={addBulk}>
                   <Icon name="playlist_add" class="text-[16px]" /> Add Ingredients
                 </button>
               </div>
+              {#if pasteHelpOpen}
+                <ul id="paste-help" class="flex list-disc flex-col gap-1.5 rounded-lg bg-surface-container-lowest py-3 pl-8 pr-3 text-body-sm text-on-surface-variant">
+                  <li>One ingredient per line. Bullets and numbering are ignored.</li>
+                  <li>A line ending in “:” starts a component group, e.g. <em>Sauce:</em></li>
+                  <li>Amount and unit come first: <em>1 1/2 cups rice</em>, <em>½ tsp salt</em>.</li>
+                  <li>Brackets become the note: <em>beef (flank or ribeye)</em>. Kitchen words in them go to prep: <em>(…, sliced)</em>.</li>
+                  <li>After a comma is prep: <em>shallot, finely minced</em>. So is a prep word before the name: <em>shredded chicken</em>.</li>
+                  <li><em>(optional)</em> marks the line optional.</li>
+                  <li>A container becomes the unit: <em>6 oz can of tomato paste</em> → 1 can, note “6 oz”.</li>
+                  <li>Check the rows after adding: new ingredients are marked <strong class="text-tertiary">New</strong>, and look-alikes offer “Did you mean…”.</li>
+                </ul>
+              {/if}
             </div>
           {/if}
 
-          <datalist id="ingredient-names">
-            {#each ingredientNames as n (n)}<option value={n}></option>{/each}
-          </datalist>
           <datalist id="ingredient-groups">
             {#each groupNames as g (g)}<option value={g}></option>{/each}
           </datalist>
@@ -822,28 +901,94 @@
           <ul class="flex flex-col gap-2">
             {#each form.ingredients as row, i (row.key)}
               {@const badQty = submitted && qtyInvalid.has(row.key)}
-              <li class="flex flex-col gap-2 rounded-lg bg-surface-container-low p-2 md:flex-row md:items-center">
+              {@const known = rowIngredient(row)}
+              {@const summary = detailsSummary(row)}
+              {@const isNew = Boolean(row.text.trim()) && !known && !(row.id && row.text.trim() === row.id)}
+              {@const similar = isNew ? similarIngredients(ingredients, row.text) : []}
+              <li class="flex flex-col gap-2 rounded-lg bg-surface-container-low p-2">
                 <div class="flex min-w-0 flex-1 items-center gap-2">
                   <input type="text" aria-label="Quantity, row {i + 1}" placeholder="Qty" bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} class="{cellField} {border(badQty)} w-14 shrink-0 text-center" />
-                  <input type="text" aria-label="Unit, row {i + 1}" placeholder="Unit" bind:value={row.unit} class="{cellField} {border(false)} w-20 shrink-0" />
-                  <input
-                    type="text"
-                    aria-label="Ingredient, row {i + 1}"
-                    placeholder="Ingredient description"
-                    list="ingredient-names"
+                  <Combobox
+                    label="Unit, row {i + 1}"
+                    placeholder="Unit"
+                    suggestions={UNIT_SUGGESTIONS}
+                    limit={UNIT_SUGGESTIONS.length}
+                    openOnFocus
+                    bind:value={row.unit}
+                    class="w-20 shrink-0"
+                    inputClass="{cellField} {border(false)}"
+                    listClass="w-44"
+                  />
+                  <Combobox
+                    label="Ingredient, row {i + 1}"
+                    placeholder="Ingredient (e.g. green onion)"
+                    suggestions={ingredientSuggestions}
                     bind:value={row.text}
                     oninput={() => onIngredientText(row)}
-                    aria-invalid={show('ingredients') && i === 0 ? 'true' : undefined}
-                    class="{cellField} {border(show('ingredients') && i === 0)} flex-1"
+                    onpick={() => onIngredientText(row)}
+                    invalid={show('ingredients') && i === 0}
+                    class="min-w-0 flex-1"
+                    align="right"
+                    inputClass="{cellField} {border(show('ingredients') && i === 0)}"
                   />
                 </div>
+                {#if similar.length}
+                  <p class="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-body-sm text-on-surface-variant">
+                    <Icon name="info" class="text-[16px] text-tertiary" /> New ingredient. Did you mean
+                    {#each similar as match (match.ingredient.id)}
+                      <button type="button" class="rounded-full border border-outline-variant bg-surface-container-lowest px-2 py-0.5 text-label-sm text-primary hover:bg-surface-container-high" onclick={() => useExisting(row, match)}>
+                        {match.ingredient.name}{#if match.note}<span class="text-on-surface-variant">&nbsp;+ note “{match.note}”</span>{/if}
+                      </button>
+                    {/each}
+                  </p>
+                {/if}
+                {#if detailsOpen.has(row.key)}
+                <div id="details-{row.key}" class="flex flex-wrap items-center gap-2">
+                  <input type="text" aria-label="Note for the store, row {i + 1}" placeholder="Note (e.g. flank or ribeye)" bind:value={row.note} class="{cellField} {border(false)} min-w-0 flex-1 basis-40" />
+                  <input type="text" aria-label="Prep, row {i + 1}" placeholder="Prep (e.g. sliced)" bind:value={row.prep} class="{cellField} {border(false)} min-w-0 flex-1 basis-32" />
+                  <label class="inline-flex shrink-0 items-center gap-1.5 px-1 text-body-sm text-on-surface-variant">
+                    <input type="checkbox" bind:checked={row.optional} class="accent-primary" /> Optional
+                  </label>
+                </div>
+                {:else if summary}
+                  <button type="button" class="truncate px-1 text-left text-body-sm text-on-surface-variant hover:text-primary" onclick={() => detailsOpen.add(row.key)}>
+                    {summary}
+                  </button>
+                {/if}
                 <div class="flex items-center gap-2">
                   <input type="text" aria-label="Component group, row {i + 1}" placeholder="Group (e.g. Sauce)" list="ingredient-groups" bind:value={row.group} class="{cellField} {border(false)} flex-1 md:w-36 md:flex-none" />
-                  <select aria-label="Store aisle, row {i + 1}" bind:value={row.aisle} onchange={() => (row.aisleSet = true)} class="{cellField} {border(false)} flex-1 md:w-32 md:flex-none">
+                  {#if isNew}
+                    <span class="shrink-0 rounded bg-[#ffdead] px-1.5 py-0.5 text-label-caps uppercase text-tertiary" title="Saving adds “{row.text.trim()}” to your ingredients, in this aisle">New</span>
+                  {/if}
+                  <select
+                    aria-label="Store aisle, row {i + 1}"
+                    title={known ? `The aisle of “${known.name}”, shared by every recipe that uses it` : 'Store aisle for this new ingredient'}
+                    disabled={Boolean(known)}
+                    bind:value={row.aisle}
+                    onchange={() => (row.aisleSet = true)}
+                    class="{cellField} {border(false)} flex-1 disabled:opacity-60 md:w-32 md:flex-none"
+                  >
                     {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
                   </select>
-                  <button type="button" aria-label="Remove ingredient row {i + 1}" class="shrink-0 rounded-md p-1.5 text-outline hover:bg-surface-container-high hover:text-secondary" onclick={() => removeIngredient(row.key)}>
-                    <Icon name="close" class="text-[18px]" />
+                  <button
+                    type="button"
+                    aria-expanded={detailsOpen.has(row.key)}
+                    aria-controls="details-{row.key}"
+                    aria-label="Note, prep and optional, row {i + 1}"
+                    title="Note, prep, optional"
+                    class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-label-sm hover:bg-surface-container-high {detailsOpen.has(row.key) || summary ? 'text-primary' : 'text-outline'}"
+                    onclick={() => (detailsOpen.has(row.key) ? detailsOpen.delete(row.key) : detailsOpen.add(row.key))}
+                  >
+                    <Icon name={detailsOpen.has(row.key) ? 'expand_less' : 'tune'} class="text-[18px]" /><span class="hidden sm:inline">Details</span>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Remove ingredient row {i + 1}"
+                    title="Remove ingredient"
+                    class="ml-auto shrink-0 rounded-md p-1.5 text-outline hover:bg-surface-container-high hover:text-secondary"
+                    onclick={() => removeIngredient(row.key)}
+                  >
+                    <Icon name="delete" class="text-[18px]" />
                   </button>
                 </div>
               </li>

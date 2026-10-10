@@ -31,23 +31,63 @@ describe('codec', () => {
     ]);
   });
 
-  it('reads ingredient groups and flat item lists, and rejects bad JSON', () => {
-    const groups = [{ title: 'Main', category: '1 item', items: [{ qty: 2, unit: 'cups', text: 'rice', tag: 'Pantry' }] }];
+  it('reads ingredient groups and flat line lists, and rejects bad JSON', () => {
+    const groups = [{ title: 'Main', category: '1 item', items: [{ id: 'beef', qty: 1, unit: 'lb', note: 'flank or ribeye', prep: 'sliced', optional: true }] }];
     assert.deepEqual(codec.parseIngredients(JSON.stringify(groups)), groups);
-    assert.deepEqual(codec.parseIngredients('[{"name":"Wild Trout","qty":"450g","dept":"Fish"}]'), [
-      { title: 'Ingredients', category: '1 items', items: [{ qty: 450, unit: 'g', text: 'Wild Trout', tag: 'Fish' }] },
+    assert.deepEqual(codec.parseIngredients('[{"id":"wild-trout","qty":"450g"}]'), [
+      { title: 'Ingredients', category: '1 items', items: [{ id: 'wild-trout', qty: 450, unit: 'g' }] },
     ]);
     assert.deepEqual(codec.parseIngredients(''), []);
     assert.equal(codec.parseIngredients('not json'), null);
   });
 
-  it('skips nulls and bare values in hand-edited ingredient JSON', () => {
-    assert.deepEqual(codec.parseIngredients('[{"title":"Main","items":[null,"rice",{"text":"salt"}]}]'), [
-      { title: 'Main', category: '1 item', items: [{ text: 'salt', tag: 'Pantry' }] },
+  it('stores units in their canonical form and leaves out empty fields', () => {
+    const [group] = codec.parseIngredients('[{"title":"Main","items":[{"id":"water","qty":2,"unit":"Cups","note":" ","prep":"","optional":false}]}]');
+    assert.deepEqual(group.items, [{ id: 'water', qty: 2, unit: 'cup' }]);
+  });
+
+  it('skips nulls, bare values and lines without an ingredient id', () => {
+    assert.deepEqual(codec.parseIngredients('[{"title":"Main","items":[null,"rice",{"text":"salt"},{"id":"salt"}]}]'), [
+      { title: 'Main', category: '1 item', items: [{ id: 'salt' }] },
     ]);
-    assert.deepEqual(codec.parseIngredients('[null,{"text":"salt"}]'), [
-      { title: 'Ingredients', category: '1 items', items: [{ text: 'salt', tag: 'Pantry' }] },
+    assert.deepEqual(codec.parseIngredients('[null,{"id":"salt"}]'), [
+      { title: 'Ingredients', category: '1 items', items: [{ id: 'salt' }] },
     ]);
+  });
+
+  it('tells old-layout ingredient lines (text, no id) from new ones', () => {
+    assert.equal(codec.isOldIngredientsJSON('[{"title":"Main","items":[{"qty":1,"text":"onion","tag":"Produce"}]}]'), true);
+    assert.equal(codec.isOldIngredientsJSON('[{"name":"Wild Trout"}]'), true);
+    assert.equal(codec.isOldIngredientsJSON('[{"title":"Main","items":[{"id":"onion","qty":1}]}]'), false);
+    assert.equal(codec.isOldIngredientsJSON(''), false);
+    assert.equal(codec.isOldIngredientsJSON('not json'), false);
+  });
+
+  it('round-trips ingredient rows, writing the aisle by its label', () => {
+    const onion = { id: 'onion', name: 'onion', plural: 'onions', aisle: 'Fresh', onHand: true };
+    const row = codec.ingredientToRow(onion);
+    assert.deepEqual(row, { Ingredient_ID: 'onion', Name: 'onion', Plural: 'onions', Aisle: 'Meat & Seafood', On_Hand: true });
+    assert.deepEqual(codec.ingredientFromRow(row, undefined, SCHEMA.ingredients), onion);
+  });
+
+  it('reads ingredient rows the way people type them', () => {
+    const read = (row, existing) => codec.ingredientFromRow({ Ingredient_ID: 'rau-ram', ...row }, existing, SCHEMA.ingredients);
+    assert.deepEqual(read({ Name: '  Rau  Răm ', Plural: '', Aisle: 'herbs', On_Hand: 'yes' }), {
+      id: 'rau-ram', name: 'rau răm', plural: '', aisle: 'Herbs', onHand: true,
+    });
+    // A blank name falls back to the id; an unknown aisle keeps the one it had.
+    const existing = { id: 'rau-ram', name: 'rau răm', plural: '', aisle: 'Herbs', onHand: false };
+    assert.equal(read({ Name: '', Aisle: 'Aisle 9' }, existing).aisle, 'Herbs');
+    assert.equal(read({ Name: '', Aisle: 'Herbs' }).name, 'rau ram');
+    // Columns the sheet doesn't have leave the device's values alone.
+    const partial = codec.ingredientFromRow({ Ingredient_ID: 'rau-ram', Name: 'rau răm' }, { ...existing, onHand: true }, ['Ingredient_ID', 'Name']);
+    assert.equal(partial.onHand, true);
+  });
+
+  it('gives new recipes readable ids, accents folded', () => {
+    assert.match(codec.newRecipeIdFor('Bún chả', new Set()), /^custom-bun-cha-[a-z0-9]{4}$/);
+    assert.match(codec.newRecipeIdFor('Meat Omelet (Trứng Đúc)', new Set()), /^custom-meat-omelet-trung-duc-[a-z0-9]{4}$/);
+    assert.match(codec.newRecipeIdFor('', new Set()), /^custom-recipe-[a-z0-9]{4}$/);
   });
 
   it('parses dates, statuses and departments the way people type them', () => {
@@ -121,46 +161,82 @@ describe('codec', () => {
 
   it('rebuilds grocery weeks from provisions rows', () => {
     const rows = [
-      { Week_Of: '2026-10-03', Item: 'Basil', Detail: '1 bunch', Department: 'Produce', Status: 'Bought', Line_Key: 'pesto:0:1' },
-      { Week_Of: '2026-10-03', Item: 'Lemons', Detail: '3', Department: 'Produce', Status: 'To buy', Line_Key: 'tart:0:0' },
-      { Week_Of: '2026-10-05', Item: 'Milk', Detail: '1 l', Department: 'Dairy', Status: 'In pantry', Line_Key: 'custom:1' },
+      { Week_Of: '2026-10-10', Item: 'Basil', Status: 'Bought', Line_Key: 'ing:basil' },
+      { Week_Of: '2026-10-10', Item: 'Lemons', Status: 'To buy', Line_Key: 'ing:lemon', Added: '{"recipes":["tart"],"week":"3"}' },
+      { Week_Of: '2026-10-10', Item: 'Eggs', Status: 'On hand', Line_Key: 'ing:egg' }, // this week: stock is the ingredient's
+      { Week_Of: '2026-10-05', Item: 'Milk', Detail: '1 l', Department: 'Dairy', Status: 'To buy', Line_Key: 'custom:1' }, // typed in
+      { Week_Of: '2026-10-03', Item: 'Salt', Status: 'On hand', Line_Key: 'ing:salt' }, // a past week's frozen stock
     ];
-    const planned = (week, key) => key.startsWith('pesto:');
-    assert.deepEqual(codec.groceryFromRows(rows, planned), {
-      '2026-10-03': { // the Monday-dated Milk row lands on its week's Saturday
-        extras: ['tart:0:0'], // not from a planned dinner, so it was added by hand from a recipe
-        status: { 'pesto:0:1': 'bought', 'tart:0:0': 'need', 'custom:1': 'owned' },
-        custom: [{ id: 'custom:1', name: 'Milk', note: '1 l', dept: 'dairy' }],
+    const names = [];
+    const idForName = (name, dept) => (names.push([name, dept]), 'milk');
+    assert.deepEqual(codec.groceryFromRows(rows, { thisWeek: '2026-10-10', idForName }), {
+      weeks: {
+        '2026-10-10': { pushed: ['tart:lemon'], status: { basil: 'bought', lemon: 'need' }, added: { lemon: '3' } },
+        '2026-10-03': { pushed: [], status: { milk: 'need' }, added: { milk: '1 l' }, stock: ['salt'] }, // the Monday row lands on its Saturday
       },
+      every: [],
     });
+    assert.deepEqual(names, [['Milk', 'dairy']]);
+  });
+
+  it('marks a past week with rows but nothing in stock as frozen', () => {
+    const rows = [{ Week_Of: '2026-10-03', Item: 'Basil', Status: 'Bought', Line_Key: 'ing:basil' }];
+    const { weeks } = codec.groceryFromRows(rows, { thisWeek: '2026-10-10', idForName: () => '' });
+    assert.deepEqual(weeks['2026-10-03'].stock, []);
   });
 
   it('rebuilds every-week grocery items from provisions rows', () => {
-    const row = (week, status) => ({ Week_Of: week, Item: 'Salt', Detail: '1 box', Department: 'Pantry', Status: status, Line_Key: 'global:1' });
-    assert.deepEqual(codec.globalFromRows([row('2026-10-03', 'To buy'), row('2026-10-10', 'To buy')]), [
-      { id: 'global:1', name: 'Salt', note: '1 box', dept: 'pantry', status: 'need', doneWeek: '' },
+    const row = (week, status) => ({ Week_Of: week, Item: 'Salt', Status: status, Line_Key: 'ing:salt', Added: '{"every":"1 box"}' });
+    const read = (rows) => codec.groceryFromRows(rows, { thisWeek: '2026-10-03', idForName: () => '' }).every;
+    assert.deepEqual(read([row('2026-10-03', 'To buy'), row('2026-10-10', 'To buy')]), [
+      { ingredientId: 'salt', note: '1 box', status: 'need', doneWeek: '' },
     ]);
-    assert.deepEqual(codec.globalFromRows([row('2026-10-03', 'On hand')]), [
-      { id: 'global:1', name: 'Salt', note: '1 box', dept: 'pantry', status: 'owned', doneWeek: '2026-10-03' },
-    ]);
-    assert.deepEqual(codec.groceryFromRows([row('2026-10-03', 'To buy')], () => false), {}, 'not a per-week item');
+    assert.deepEqual(read([row('2026-10-10', 'Bought')]), [{ ingredientId: 'salt', note: '1 box', status: 'bought', doneWeek: '2026-10-10' }]);
+  });
+
+  it('writes one row per merged line, with what was added by hand', () => {
+    const line = {
+      key: 'ing:beef',
+      ingredientId: 'beef',
+      name: 'Beef',
+      amount: '2 lb',
+      optional: false,
+      dept: 'meat',
+      status: 'need',
+      sources: [{ label: 'Mon: Phở', tone: 'paprika', note: 'eye round', recipeId: 'pho' }, { label: 'Stew', tone: 'neutral', recipeId: 'stew' }],
+      pushed: ['stew'],
+      added: undefined,
+      every: '',
+    };
+    assert.deepEqual(codec.provisionToRow('2026-10-10', line), {
+      Week_Of: '2026-10-10',
+      Item: 'Beef',
+      Detail: '2 lb',
+      Department: 'Seafood & Meat',
+      Status: 'To buy',
+      Source: 'Mon: Phở (eye round), Stew',
+      Line_Key: 'ing:beef',
+      Added: '{"recipes":["stew"],"every":""}',
+    });
+    assert.equal(codec.provisionToRow('2026-10-10', { ...line, pushed: [], every: undefined }, true).Status, 'On hand');
+    assert.equal(codec.provisionToRow('2026-10-10', { ...line, pushed: [], every: undefined }).Added, '');
   });
 
   it('moves Monday-keyed grocery weeks onto their Saturday', () => {
-    const milk = { id: 'custom:1', name: 'Milk', note: '', dept: 'dairy' };
     assert.deepEqual(
       codec.rekeyGroceryWeeks({
-        '2026-09-28': { extras: ['tart:0:0'], status: { 'tart:0:0': 'bought' }, custom: [milk] },
-        '2026-09-26': { extras: ['tart:0:0', 'pesto:0:1'], status: { 'pesto:0:1': 'need' }, custom: [milk] },
-        '2026-10-03': { extras: [], status: {}, custom: [] },
+        '2026-09-28': { pushed: ['tart:lemon'], status: { lemon: 'bought' }, added: { milk: '' }, stock: ['salt'] },
+        '2026-09-26': { pushed: ['tart:lemon', 'pesto:basil'], status: { basil: 'need' }, added: {} },
+        '2026-10-03': { pushed: [], status: {}, added: {} },
       }),
       {
         '2026-09-26': {
-          extras: ['tart:0:0', 'pesto:0:1'],
-          status: { 'pesto:0:1': 'need', 'tart:0:0': 'bought' },
-          custom: [milk],
+          pushed: ['tart:lemon', 'pesto:basil'],
+          status: { basil: 'need', lemon: 'bought' },
+          added: { milk: '' },
+          stock: ['salt'],
         },
-        '2026-10-03': { extras: [], status: {}, custom: [] },
+        '2026-10-03': { pushed: [], status: {}, added: {} },
       },
     );
   });

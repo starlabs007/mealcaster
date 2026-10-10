@@ -1,7 +1,7 @@
 <script>
   // The printed Kitchen Checklist: one column, plain text, a department per section
   // headed by a large bold title, an empty box to tick beside each item. Only what
-  // is still to buy; bought and on-hand items stay off the paper. Never shown on screen.
+  // is still to buy; bought and in-stock items stay off the paper. Never shown on screen.
 
   /** @type {{ week: string, sections: { id: string, label: string, where: string, items: import('../grocery.svelte.js').GroceryLine[] }[], sources: string[] }} */
   let { week, sections, sources } = $props();
@@ -29,9 +29,9 @@
           <li class="flex break-inside-avoid items-baseline gap-[0.6em] py-[0.15em]">
             <span class="inline-block h-[0.85em] w-[0.85em] shrink-0 translate-y-[0.1em] border border-on-surface"></span>
             <span class="flex-1">
-              <strong class="font-semibold">{item.name}</strong>{#if item.detail}&nbsp;— {item.detail}{/if}
+              <strong class="font-semibold">{item.name}</strong>{#if item.amount}&nbsp;— {item.amount}{/if}{#if item.optional}&nbsp;(optional){/if}
             </span>
-            <span class="shrink-0 text-[0.9em] text-on-surface-variant">{item.source.label}</span>
+            <span class="max-w-[45%] text-right text-[0.9em] text-on-surface-variant">{item.sources.map((s) => s.label).join(', ')}</span>
           </li>
         {/each}
       </ul>

@@ -23,6 +23,7 @@
 
   // Required tabs, then the optional grocery list tab.
   const REQUIRED = /** @type {const} */ ([
+    { key: 'ingredients', label: 'Ingredients', icon: 'grocery' },
     { key: 'weeklyPlan', label: 'Weekly meals', icon: 'calendar_month' },
     { key: 'recipes', label: 'Recipes', icon: 'menu_book' },
     { key: 'settings', label: 'Settings', icon: 'tune' },

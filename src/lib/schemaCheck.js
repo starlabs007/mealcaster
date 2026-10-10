@@ -10,6 +10,13 @@ import { SCHEMA } from './schema.js';
  * @type {Record<keyof typeof SCHEMA, Record<string, { note: string, required?: boolean, aliases: string[] }>>}
  */
 export const COLUMN_INFO = {
+  ingredients: {
+    Ingredient_ID: { note: 'Unique ID recipes point to — keep it as is once made.', required: true, aliases: ['id', 'ingredient id', 'key', 'slug'] },
+    Name: { note: 'Ingredient name, singular (e.g. green onion).', required: true, aliases: ['ingredient', 'ingredient name', 'item', 'singular'] },
+    Plural: { note: 'Plural name (green onions); blank when it has none.', aliases: ['plural name', 'plural form', 'plurals'] },
+    Aisle: { note: 'Store aisle, e.g. Produce or Meat & Seafood.', aliases: ['department', 'section', 'dept', 'store aisle'] },
+    On_Hand: { note: 'TRUE while it’s in stock at home (kept off the grocery list).', aliases: ['in stock', 'stock', 'have', 'on hand', 'have it'] },
+  },
   weeklyPlan: {
     Date_ISO: { note: 'The dinner’s date, e.g. 2026-10-21.', required: true, aliases: ['date', 'dinner date', 'planned date', 'day date'] },
     Day_Of_Week: { note: 'Weekday name, for reading the sheet.', aliases: ['day', 'weekday', 'day name'] },
@@ -21,7 +28,7 @@ export const COLUMN_INFO = {
     Recipe_ID: { note: 'Unique ID the weekly plan points to.', required: true, aliases: ['id', 'recipe id', 'slug', 'key'] },
     Title: { note: 'Recipe name shown on cards.', required: true, aliases: ['name', 'recipe name', 'recipe title', 'dish'] },
     Description: { note: 'One or two sentences about the dish.', aliases: ['summary', 'about', 'blurb', 'intro'] },
-    Ingredients_JSON: { note: 'Item names, amounts and grocery aisle tags.', required: true, aliases: ['ingredients', 'ingredient list', 'ingredients list'] },
+    Ingredients_JSON: { note: 'Ingredient lines: Ingredient_ID, amount, unit, note, prep, optional.', required: true, aliases: ['ingredients', 'ingredient list', 'ingredients list'] },
     Method_Steps: { note: 'Numbered step-by-step prep & cooking.', required: true, aliases: ['steps', 'instructions', 'method', 'directions', 'preparation', 'preparation steps', 'instructions arr'] },
     Image_URL: { note: 'Link to a photo of the dish.', aliases: ['image', 'photo', 'picture', 'img', 'photo url'] },
     Tags: { note: 'Comma-separated recipe tags (e.g. Vegetarian, Gluten-Free).', aliases: ['tags csv', 'labels', 'dietary labels', 'flags', 'diet'] },
@@ -37,14 +44,15 @@ export const COLUMN_INFO = {
     Item: { note: 'Ingredient or product to buy.', required: true, aliases: ['ingredient', 'name', 'product', 'item name'] },
     Detail: { note: 'Amount and notes, e.g. 450 g.', aliases: ['qty', 'quantity', 'amount', 'details'] },
     Department: { note: 'Store aisle the item is filed under.', aliases: ['aisle', 'section', 'dept'] },
-    Status: { note: 'To buy, Bought or On hand.', aliases: ['state', 'bought', 'checked'] },
-    Source: { note: 'Recipe the item is for, or “Added by you”.', aliases: ['recipe', 'for', 'from'] },
+    Status: { note: 'To buy or Bought. On hand: left off the list because it’s in stock (change that in [Ingredients]).', aliases: ['state', 'bought', 'checked'] },
+    Source: { note: 'Meals the item is for, “Added by you” or “Every week”.', aliases: ['recipe', 'for', 'from'] },
     Line_Key: { note: 'MealCaster’s ID for the line — leave it as is.', required: true, aliases: ['key', 'line id', 'id'] },
+    Added: { note: 'What was added by hand, for MealCaster — leave it as is.', aliases: ['added by hand'] },
   },
   settings: {
-    Section: { note: 'What kind of setting the row is, e.g. Aisle.', required: true, aliases: ['group', 'type', 'category', 'kind'] },
-    Name: { note: 'The setting’s name — for Aisle rows, the ingredient.', required: true, aliases: ['key', 'setting', 'item', 'ingredient'] },
-    Value: { note: 'The setting’s value — for Aisle rows, the store aisle.', required: true, aliases: ['setting value', 'aisle', 'val'] },
+    Section: { note: 'What kind of setting the row is, e.g. Preference.', required: true, aliases: ['group', 'type', 'category', 'kind'] },
+    Name: { note: 'The setting’s name, e.g. Week starts on.', required: true, aliases: ['key', 'setting', 'item'] },
+    Value: { note: 'The setting’s value, e.g. Saturday.', required: true, aliases: ['setting value', 'val'] },
   },
 };
 
