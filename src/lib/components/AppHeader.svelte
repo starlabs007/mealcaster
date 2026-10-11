@@ -22,6 +22,12 @@
           : 'weekly-menu',
   );
   let search = $state('');
+  // On a recipe opened from the catalog while planning a day (that isn't the recipe's own), the tab returns to that day.
+  const planningDay = $derived(
+    route.path.startsWith('/recipe/') && route.query.day && planner.entries[route.query.day]?.recipeId !== route.path.split('/')[2]
+      ? route.query.day
+      : undefined,
+  );
 
   /** @param {{ id: string }} tab */
   function tabClass(tab) {
@@ -42,7 +48,7 @@
   <nav aria-label="Primary" class="items-center gap-1 rounded-xl bg-surface-container-low p-1 {extra}">
     {#each tabs as tab (tab.id)}
       <a
-        href={href(tab.path)}
+        href={href(tab.path, tab.id === 'recipe-catalog' ? { day: planningDay } : {})}
         aria-current={tab.id === active ? 'page' : undefined}
         class="whitespace-nowrap rounded-lg px-4 py-2 text-label-md transition-all {tabClass(tab)}"
       >

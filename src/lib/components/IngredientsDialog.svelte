@@ -30,7 +30,7 @@
   });
 
   /** The row being edited: its fields, or a merge target being picked. */
-  /** @type {{ id: string, name: string, plural: string, aisle: string, merging: boolean, into: string } | null} */
+  /** @type {{ id: string, name: string, plural: string, aisle: string, merging: boolean, into: string, confirmDelete: boolean } | null} */
   let editing = $state(null);
 
   const uses = $derived(ingredientUses());
@@ -73,7 +73,7 @@
 
   /** @param {import('../ingredients.js').Ingredient} i */
   function edit(i) {
-    editing = { id: i.id, name: i.name, plural: i.plural, aisle: i.aisle, merging: false, into: '' };
+    editing = { id: i.id, name: i.name, plural: i.plural, aisle: i.aisle, merging: false, into: '', confirmDelete: false };
   }
 
   /** Another ingredient already called `text` (name or plural), if any. */
@@ -269,11 +269,22 @@
                         class="btn-outline py-1.5 text-secondary disabled:opacity-50"
                         disabled={n > 0}
                         title={n ? `Used by ${recipeCount(n)} — merge it into another ingredient instead` : undefined}
-                        onclick={() => remove(i)}
+                        onclick={() => (editing.confirmDelete = true)}
                       >
                         <Icon name="delete" class="text-[16px]" /> Delete
                       </button>
                     </div>
+                    {#if editing.confirmDelete}
+                      <div class="flex flex-wrap items-center gap-3 rounded-lg bg-secondary-fixed/50 p-3 sm:col-span-3" role="alert">
+                        <p class="flex flex-1 items-center gap-2 text-body-sm text-on-surface">
+                          <Icon name="warning" class="shrink-0 text-[18px] text-secondary" /> Delete {i.name}?
+                        </p>
+                        <button type="button" class="btn-outline py-1.5" onclick={() => (editing.confirmDelete = false)}>Cancel</button>
+                        <button type="button" class="btn bg-secondary py-1.5 text-on-secondary hover:bg-secondary/90" onclick={() => remove(i)}>
+                          Delete
+                        </button>
+                      </div>
+                    {/if}
                     {#if n > 0}
                       <p class="text-body-sm text-outline sm:col-span-3">Only ingredients no recipe uses can be deleted.</p>
                     {/if}

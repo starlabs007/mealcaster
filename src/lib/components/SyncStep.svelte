@@ -1,6 +1,7 @@
 <script>
   // Connection step 3: what's connected, how it syncs (saved as soon as it changes), the first
   // sync and its choice, then status, Sync Now, column problems and Disconnect.
+  import { onMount, tick } from 'svelte';
   import Icon from './Icon.svelte';
   import SyncStatus from './SyncStatus.svelte';
   import FirstSyncChoice from './FirstSyncChoice.svelte';
@@ -30,6 +31,15 @@
     if (value === 'pushOnly' && initialized()) confirmBackup = true;
     else save({ direction: value });
   }
+
+  // Arriving to start syncing (e.g. just after choosing a sheet) the Start Syncing button sits below the fold: scroll to it.
+  /** @type {HTMLElement} */
+  let scroller;
+  onMount(async () => {
+    if (phase !== 'pending') return;
+    await tick();
+    scroller.scrollTo({ top: scroller.scrollHeight });
+  });
 
   async function firstSync() {
     await syncFromClick();
@@ -72,7 +82,7 @@
   </a>
 {/snippet}
 
-<div class="flex flex-col gap-5 overflow-y-auto px-4 py-4 sm:px-8">
+<div bind:this={scroller} class="flex flex-col gap-5 overflow-y-auto px-4 py-4 sm:px-8">
   {#if !sheets.spreadsheet}
     <div class="flex flex-col items-start gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-card">
       <p class="text-body-md text-on-surface-variant">No spreadsheet is linked yet, so everything is saved on this device.</p>

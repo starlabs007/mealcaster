@@ -63,6 +63,25 @@ $effect.root(() => {
   });
 });
 
+/**
+ * Roll `planner.today` forward when the date changed while the page sat open. A viewer on the week
+ * that was "this week" follows it into the new one.
+ */
+export function refreshToday() {
+  const now = toISO(new Date());
+  if (now === planner.today) return;
+  const followed = planner.weekStart === weekStartOf(fromISO(planner.today));
+  planner.today = now;
+  if (followed) planner.weekStart = weekStartOf(new Date());
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && refreshToday());
+  window.addEventListener('focus', refreshToday);
+  // A page left in view across midnight gets neither event; timers are throttled in the background, so also check on return.
+  setInterval(refreshToday, 60_000);
+}
+
 // ── Derived views ──────────────────────────────────────────────────────────
 
 /** @param {string} iso @returns {DayStatus} */
@@ -240,6 +259,13 @@ function undoDay(iso, previous) {
       else delete planner.entries[iso];
     },
   };
+}
+
+/** Mark today's meal done (or not done again); past days count as done on their own. @param {string} iso @param {boolean} done */
+export function setDone(iso, done) {
+  const entry = planner.entries[iso];
+  if (!entry?.recipeId || iso !== planner.today) return;
+  planner.entries[iso] = done ? { ...entry, completed: true } : (({ completed, ...rest }) => rest)(entry);
 }
 
 /** @param {string} iso */
