@@ -1,7 +1,7 @@
 <script>
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
-  import { surpriseMe, markDiningOut, clearDay, spotlight, switchTargets } from '../planner.svelte.js';
+  import { surpriseMe, markDiningOut, clearDay, setDone, spotlight, switchTargets } from '../planner.svelte.js';
   import { formatShort, formatWeekday } from '../dates.js';
   import { href } from '../router.svelte.js';
   import { tagClass } from '../tagColors.svelte.js';
@@ -106,6 +106,18 @@
           >
             View Recipe <Icon name="arrow_forward" class="text-[14px]" />
           </a>
+          {#if day.isToday}
+            <button
+              type="button"
+              aria-pressed={day.status === 'completed'}
+              class="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {day.status === 'completed'
+                ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
+                : 'border border-outline-variant text-on-surface hover:bg-surface-container-high'}"
+              onclick={() => setDone(day.iso, day.status !== 'completed')}
+            >
+              <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? 'Done' : 'Mark Done'}
+            </button>
+          {/if}
           {#if day.status === 'planned'}
             <a
               href={href('/catalog', { day: day.iso })}

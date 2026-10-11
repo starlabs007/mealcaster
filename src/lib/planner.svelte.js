@@ -242,6 +242,13 @@ function undoDay(iso, previous) {
   };
 }
 
+/** Mark today's meal done (or not done again); past days count as done on their own. @param {string} iso @param {boolean} done */
+export function setDone(iso, done) {
+  const entry = planner.entries[iso];
+  if (!entry?.recipeId || iso !== planner.today) return;
+  planner.entries[iso] = done ? { ...entry, completed: true } : (({ completed, ...rest }) => rest)(entry);
+}
+
 /** @param {string} iso */
 export function markDiningOut(iso) {
   const previous = planner.entries[iso]?.recipeId ? { ...planner.entries[iso] } : undefined;
