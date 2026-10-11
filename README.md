@@ -69,7 +69,10 @@ npm run preview    # http://localhost:4173
 - Filters (combined with AND): Favorites, **Unplanned this week** (on by default, remembered on the device; hides meals the
   viewed week already has planned or completed, except the day being swapped), **Not made recently** (nothing made in the last 7 days; remembered on the device) and one per
   recipe tag in use, plus one category at a time (Filter by Category). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
-  Name (A–Z or Z–A), Recently Added to Box. Paging, 9 per page.
+  Name (A–Z or Z–A), Recently Added to Box.
+- Infinite scroll: 9 recipes at first, 9 more as you near the bottom; a new search, filter or sort starts over at 9.
+- Going back to the catalog from a recipe (back button, breadcrumb or header tab) with the same search returns to where
+  you were: same recipes loaded, same sort and Favorites, same scroll position.
 - Each card says when the meal was **last made** (from the plan): terracotta within 7 days, green otherwise.
 - **Select for {Day}** assigns the recipe to the chosen day and returns to the weekly plan, scrolled to that day and briefly
   highlighting it (or, with that

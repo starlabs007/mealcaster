@@ -14,8 +14,13 @@ export const route = $state(parse());
 // Whether there's an earlier in-app page to go back to.
 let inAppHistory = false;
 
+/** The page the latest navigation left, and how far it was scrolled (pages that restore their place read it). */
+export const left = { path: '', scrollY: 0 };
+
 window.addEventListener('hashchange', () => {
   inAppHistory = true;
+  left.path = route.path;
+  left.scrollY = window.scrollY;
   Object.assign(route, parse());
   window.scrollTo({ top: 0 });
 });
