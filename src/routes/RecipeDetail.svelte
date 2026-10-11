@@ -31,6 +31,8 @@
   const day = $derived(
     recipe && dayParam && planner.entries[dayParam]?.recipeId === recipe.id ? dayParam : recipe && dayOfRecipe(recipe.id),
   );
+  // Opened from the catalog while planning a day this recipe isn't on: carry that day back to the catalog.
+  const planningDay = $derived(recipe && dayParam && planner.entries[dayParam]?.recipeId !== recipe.id ? dayParam : undefined);
   const editable = $derived(!!day && day >= planner.today);
   const next = $derived(day ? nextPlannedAfter(day) : undefined);
   const openDay = $derived(day ? undefined : firstOpenDay());
@@ -133,7 +135,7 @@
           <span class="text-outline">/</span>
           <span class="shrink-0">{formatWeekday(day)} Dinner</span>
         {:else}
-          <a href={href('/catalog')} class="shrink-0 font-semibold text-on-surface hover:text-primary">Recipe Catalog</a>
+          <a href={href('/catalog', { day: planningDay })} class="shrink-0 font-semibold text-on-surface hover:text-primary">Recipe Catalog</a>
         {/if}
         <span class="text-outline">/</span>
         <span class="truncate text-on-surface" aria-current="page">{recipe.shortTitle}</span>
@@ -221,7 +223,7 @@
           {#each recipe.tags as tag (tag)}
             <li class="max-w-full">
               <a
-                href={href('/catalog', { filter: tag })}
+                href={href('/catalog', { filter: tag, day: planningDay })}
                 title="Browse recipes tagged {tag}"
                 class="inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-label-caps transition-opacity hover:opacity-80 {tagClass(tag)}"
               >
