@@ -1,4 +1,16 @@
+<script module>
+  /**
+   * Where the catalog was left (batches shown, sort, favorites, scroll), for the same search coming back from a recipe.
+   * @type {{ key: string, pages: number, sort: string, favoritesOnly: boolean, scrollY: number } | null}
+   */
+  let place = null;
+
+  /** The search as shown: the day is the one being planned, so `#/catalog` and its breadcrumb's `?day=` match. */
+  const placeKey = (q, day) => JSON.stringify([q.q ?? '', q.filter ?? '', q.category ?? '', day ?? '']);
+</script>
+
 <script>
+  import { onDestroy, tick, untrack } from 'svelte';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
   import { recipes, recipeById, tagChoices, tagIcon, normalizeTags, categoryChoices, normalizeCategory } from '../lib/recipes.svelte.js';
@@ -7,7 +19,7 @@
   import { foldKey } from '../lib/ingredients.js';
   import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
-  import { route, href, navigate } from '../lib/router.svelte.js';
+  import { route, href, navigate, left } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { settings } from '../lib/settings.svelte.js';
   import { formatLong, formatWeekday, weekStartOf, fromISO, weekDates } from '../lib/dates.js';
@@ -50,14 +62,45 @@
   let category = $state('');
   let pages = $state(1);
 
+  // Back from a recipe to the same search: pick up where the catalog was left (first run of the effect below only).
+  let restore = left.path.startsWith('/recipe/') ? place : null;
+  let key = '';
+
   // Keep search / filter in sync with the URL (header search, "Browse Recipes" links).
   // `filter` is a comma-separated list of tags (tags never contain commas).
   $effect(() => {
     query = route.query.q ?? '';
     active = normalizeTags(route.query.filter?.split(','));
     category = normalizeCategory(route.query.category);
-    pages = 1;
+    const back = restore?.key === placeKey(route.query, untrack(() => targetDay)) ? restore : null;
+    restore = null;
+    pages = back?.pages ?? 1;
+    if (back) {
+      sort = back.sort;
+      favoritesOnly = back.favoritesOnly;
+      // After the router's scroll to the top, once the restored batches are on the page.
+      tick().then(() => window.scrollTo({ top: back.scrollY }));
+    }
   });
+
+  // The search as shown, for onDestroy (by then the route is the next page's).
+  $effect(() => {
+    if (route.path === '/catalog') key = placeKey(route.query, targetDay);
+  });
+
+  // By the time the catalog goes away the router has scrolled to the top, so the scroll comes from `left`.
+  onDestroy(() => {
+    place = { key, pages, sort, favoritesOnly, scrollY: left.scrollY };
+  });
+
+  /** Shows the next batch whenever the sentinel under the grid comes near the screen. @param {HTMLElement} node */
+  function loadMoreWhenNear(node) {
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((e) => e.isIntersecting)) pages++;
+    }, { rootMargin: '600px 0px' });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }
 
   // One filter per tag in use (suggested tags first); an active tag stays listed even with no recipes.
   const filters = $derived(
@@ -315,6 +358,10 @@
         />
       {/each}
     </div>
+    {#if remaining}
+      <!-- Re-created per batch so a sentinel still in range after a batch loads the next one too. -->
+      {#key pages}<div {@attach loadMoreWhenNear} class="-mt-6 h-px" aria-hidden="true"></div>{/key}
+    {/if}
   {:else if !recipes.length}
     <!-- A new household: nothing in the catalog yet. -->
     <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-16 text-center">
@@ -339,43 +386,26 @@
     </div>
   {/if}
 
-  {#if targetDay || remaining}
+  {#if targetDay}
     <div class="flex flex-col items-center justify-between gap-6 rounded-3xl bg-surface-container p-6 md:flex-row md:p-8">
       <div class="flex items-center gap-4">
         <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-secondary-fixed/40 text-secondary">
           <Icon name="auto_stories" class="text-[28px]" />
         </div>
         <div>
-          <h3 class="font-display text-headline-sm text-on-surface">
-            {targetDay ? `Can’t decide on ${targetName}’s Dinner?` : 'Looking for more inspiration?'}
-          </h3>
+          <h3 class="font-display text-headline-sm text-on-surface">Can’t decide on {targetName}’s Dinner?</h3>
           <p class="mt-1 max-w-xl text-body-md text-on-surface-variant">
-            {targetDay
-              ? 'Roll for a random pick from the meals matching your current search and filters.'
-              : 'Keep browsing the household recipe box.'}
+            Roll for a random pick from the meals matching your current search and filters.
           </p>
         </div>
       </div>
-      <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
-        {#if targetDay}
-          <button
-            type="button"
-            onclick={surprise}
-            class="inline-flex items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-label-md text-on-secondary shadow-md transition-all hover:bg-[#b34728]"
-          >
-            <Icon name="casino" class="text-[18px]" /> Surprise Me & Assign
-          </button>
-        {/if}
-        {#if remaining}
-          <button
-            type="button"
-            onclick={() => pages++}
-            class="rounded-xl border border-surface-container-high bg-surface-container-lowest px-6 py-3 text-label-md text-on-surface transition-all hover:bg-surface-container-low"
-          >
-            Load {Math.min(remaining, PAGE_SIZE)} More Meals
-          </button>
-        {/if}
-      </div>
+      <button
+        type="button"
+        onclick={surprise}
+        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-label-md text-on-secondary shadow-md transition-all hover:bg-[#b34728] sm:w-auto"
+      >
+        <Icon name="casino" class="text-[18px]" /> Surprise Me & Assign
+      </button>
     </div>
   {/if}
 </div>
