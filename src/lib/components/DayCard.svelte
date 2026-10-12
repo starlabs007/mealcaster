@@ -60,12 +60,12 @@
 
     {#if minimal}
       <!-- Minimal view: just the weekday, image, title and tags. -->
-    {:else if day.isToday}
-      <span class="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-label-sm text-on-primary shadow-sm">• TODAY</span>
     {:else if day.status === 'completed'}
       <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
         <Icon name="check_circle" class="text-[13px]" /> Completed
       </span>
+    {:else if day.isToday}
+      <span class="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-label-sm text-on-primary shadow-sm">• TODAY</span>
     {:else if day.status === 'planned'}
       <span class="rounded bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">Planned</span>
     {:else}
