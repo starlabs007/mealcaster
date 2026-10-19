@@ -23,6 +23,7 @@
 
 <script>
   import { tick } from 'svelte';
+  import { defaultAisle, groupCategory } from '../lib/sheetText.js';
   import { SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
@@ -82,7 +83,7 @@
   let lastKey = 0;
   const nextKey = () => ++lastKey;
   /** @returns {IngredientRow} */
-  const blankIngredient = (group = '') => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, group, aisle: 'Pantry', aisleSet: false });
+  const blankIngredient = (group = '') => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, group, aisle: defaultAisle, aisleSet: false });
   /** @returns {StepRow} */
   const blankStep = () => ({ key: nextKey(), title: '', text: '', minutes: '' });
 
@@ -127,7 +128,7 @@
             prep: item.prep ?? '',
             optional: Boolean(item.optional),
             group: g.title,
-            aisle: ingredient?.aisle ?? 'Pantry',
+            aisle: ingredient?.aisle ?? defaultAisle,
             aisleSet: true,
           };
         }),
@@ -387,7 +388,7 @@
       });
     }
     for (const g of groups) {
-      g.category = originalCategory.get(g.title.toLowerCase()) || `${g.items.length} ${g.items.length === 1 ? 'item' : 'items'}`;
+      g.category = originalCategory.get(g.title.toLowerCase()) || groupCategory(g.items.length);
     }
 
     const title = form.title.trim();

@@ -325,10 +325,16 @@ src/
     toast.svelte.js
     storage.svelte.js        localStorage saves that note failures, storage use, persist() request
     dates.js
+    text.js                  all on-screen wording (plain module; plural() helper, one group per screen)
+    sheetText.js             wording stored in the Google Sheet and parsed back by sync/codec.js (changing it may need a migration)
     format.js                quantity formatting (1/3, 3 1/2)
     data/recipes.js          sample recipes (dev only); data/ingredients.js their ingredient catalog
     components/              AppHeader, DayCard, RecipeCard, LastMade, ...
 ```
+
+**Which text file?** Words a person only reads on screen go in `text.js`; words written to or read back from the
+sheet (statuses, `[Settings]` rows, aisle and department names, weekdays, colour names) go in `sheetText.js`,
+whose header explains how to change them safely.
 
 **Runes only in `.svelte` / `.svelte.js`.** Svelte compiles `$state`, `$derived`, `$effect` and the other runes
 only in those files. In a plain `.js` module they're left as-is: the build passes and the code throws when it runs.

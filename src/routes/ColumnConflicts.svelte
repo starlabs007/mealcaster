@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import Icon from '../lib/components/Icon.svelte';
   import { SCHEMA, sheets, saveSchemaCheck } from '../lib/sheets.svelte.js';
+  import { defaultAisle, status, tagColourName, tagColourSection, weekStartsOnRow, weekdays } from '../lib/sheetText.js';
   import {
     COLUMN_INFO,
     columnLetter,
@@ -29,7 +30,7 @@
     ingredients: [
       ['ID', 'Ingredient', 'Plurals', 'Department', 'In_Stock'],
       ['green-onion', 'green onion', 'green onions', 'Produce', 'TRUE'],
-      ['nuoc-mam', 'nuoc mam', '', 'Pantry', 'FALSE'],
+      ['nuoc-mam', 'nuoc mam', '', defaultAisle, 'FALSE'],
     ],
     recipes: [
       ['Recipe_ID', 'Course_Type', 'Title', 'Ingredients_JSON', 'Preparation_Steps', 'Image_URL', 'Cooking_Method', 'Recipe_Notes', 'Favorite', 'Serves'],
@@ -43,13 +44,13 @@
     ],
     provisions: [
       ['Week_Of', 'Item', 'Quantity', 'Aisle', 'Status'],
-      ['2026-10-17', 'Salmon fillets', '2 × 180 g', 'Seafood', 'To buy'],
-      ['2026-10-17', 'Arborio rice', '300 g', 'Pantry', 'On hand'],
+      ['2026-10-17', 'Salmon fillets', '2 × 180 g', 'Seafood', status.toBuy],
+      ['2026-10-17', 'Arborio rice', '300 g', defaultAisle, status.onHand],
     ],
     settings: [
       ['Type', 'Setting', 'Setting value'],
-      ['Preference', 'Week starts on', 'Saturday'],
-      ['Tag Colour', 'Vegetarian', 'Sage'],
+      [weekStartsOnRow.Section, weekStartsOnRow.Name, weekdays[6]],
+      [tagColourSection, 'Vegetarian', tagColourName('sage')],
     ],
   };
 

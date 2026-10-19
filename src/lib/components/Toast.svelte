@@ -2,6 +2,7 @@
   import { fly } from 'svelte/transition';
   import Icon from './Icon.svelte';
   import { toast, dismissToast } from '../toast.svelte.js';
+  import { text } from '../text.js';
 </script>
 
 <!-- Above dialogs (z-[70]), so a toast from inside one isn't dimmed by its backdrop. -->
@@ -27,7 +28,7 @@
         {/if}
         <button
           type="button"
-          aria-label="Dismiss"
+          aria-label={text.common.dismiss}
           class="-mr-1 shrink-0 rounded-md p-0.5 text-on-secondary/70 hover:bg-on-secondary/10 hover:text-on-secondary"
           onclick={dismissToast}
         >
