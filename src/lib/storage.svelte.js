@@ -6,6 +6,7 @@
 import { untrack } from 'svelte';
 import { showToast } from './toast.svelte.js';
 import { navigate } from './router.svelte.js';
+import { text } from './text.js';
 
 /** What browsers allow a site, roughly, in characters; the real limit varies and isn't exposed. */
 export const STORAGE_BUDGET = 5_000_000;
@@ -25,7 +26,7 @@ export const storageState = $state({
   persisted: /** @type {boolean | null} */ (null),
 });
 
-const profileAction = { label: 'Details', run: () => navigate('/profile') };
+const profileAction = { label: text.profile.storage.toasts.details, run: () => navigate('/profile') };
 
 /**
  * @param {string} key
@@ -48,7 +49,7 @@ export function saveItem(key, value) {
     storageState.saves++;
     // Say so once each time the device fills up, not on every save after.
     if (!saved && !wasFull) {
-      showToast('This device is out of storage space, so recent changes aren’t saved here.', profileAction, 10_000);
+      showToast(text.profile.storage.toasts.outOfSpace, profileAction, 10_000);
     }
   });
   return saved;
@@ -94,6 +95,6 @@ export function checkStorage() {
   const used = storageUsed();
   // Past the budget without a failed save, this browser allows more than the estimate.
   if (used >= STORAGE_BUDGET * NEARLY_FULL && used <= STORAGE_BUDGET) {
-    showToast('This device is nearly out of storage space for MealCaster.', profileAction, 10_000);
+    showToast(text.profile.storage.toasts.nearlyFull, profileAction, 10_000);
   }
 }
