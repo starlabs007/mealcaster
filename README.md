@@ -246,7 +246,12 @@ Disconnect…. Below `sm` it's icon-only and opens the menu. The states and acti
   Sync Now.
 - Renamed/missing columns pause sync until resolved on `#/sheets-sync/columns`.
 - Uploaded recipe photos go to a "MealCaster Photos" Drive folder, shared as anyone-with-the-link.
-- Sign-in lasts about an hour and isn't stored; after a reload, click **Reconnect** (the header button's main action).
+- Sign-in lasts about an hour (Google's limit) and isn't stored. While a spreadsheet is linked, your next click
+  anywhere in the app renews it quietly — in the last 10 minutes of the hour, or after it ran out or the page
+  reloaded — by opening Google's sign-in window, which closes by itself when you've already allowed MealCaster.
+  Nothing syncs in the background once the hour is up until you click something. If you close that window or Google
+  fails, it isn't tried again for 5 minutes; click **Reconnect** (the header button's main action) or **Sync Now**
+  any time.
 
 Sync logic is plain JS in `src/lib/sync/` (`codec.js` rows ⇄ data, `engine.js` reconcile,
 `run.js` one pass with the API injected); `sync.svelte.js` wires it to the stores and UI.

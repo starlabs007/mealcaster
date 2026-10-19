@@ -54,7 +54,7 @@
         <Icon name="check" class="text-[14px]" /> Signed in
       </span>
     </div>
-    <button type="button" class="btn w-fit px-0 text-body-sm text-primary hover:underline" disabled={busy} onclick={() => run(switchAccount)}>
+    <button type="button" data-signs-in class="btn w-fit px-0 text-body-sm text-primary hover:underline" disabled={busy} onclick={() => run(switchAccount)}>
       <Icon name="switch_account" class="text-[18px]" /> Use a different account
     </button>
   {:else}
@@ -69,12 +69,12 @@
         {/if}
       </p>
       <div class="flex flex-wrap items-center gap-3">
-        <button type="button" class="btn-primary py-2" disabled={busy} onclick={() => run(connect)}>
+        <button type="button" data-signs-in class="btn-primary py-2" disabled={busy} onclick={() => run(connect)}>
           <Icon name="login" class="text-[16px]" />
           {sheets.spreadsheet ? 'Reconnect' : sheets.accountEmail ? `Sign in as ${sheets.accountEmail}` : 'Sign in with Google'}
         </button>
         {#if sheets.accountEmail}
-          <button type="button" class="btn px-0 text-body-sm text-primary hover:underline" disabled={busy} onclick={() => run(switchAccount)}>
+          <button type="button" data-signs-in class="btn px-0 text-body-sm text-primary hover:underline" disabled={busy} onclick={() => run(switchAccount)}>
             Use a different account
           </button>
         {/if}

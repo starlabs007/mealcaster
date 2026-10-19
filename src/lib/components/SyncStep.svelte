@@ -185,7 +185,7 @@
           <SyncStatus variant="line" />
           <div class="shrink-0">
             {#if phase === 'signedOut'}
-              <button type="button" class="btn-primary py-2" onclick={connect}><Icon name="login" class="text-[16px]" /> Reconnect</button>
+              <button type="button" data-signs-in class="btn-primary py-2" onclick={connect}><Icon name="login" class="text-[16px]" /> Reconnect</button>
             {:else if phase === 'pending'}
               <button type="button" class="btn-primary py-2" onclick={firstSync}><Icon name="sync" class="text-[16px]" /> Start Syncing</button>
             {:else if phase === 'conflict'}
@@ -195,7 +195,7 @@
             {:else if phase === 'syncing'}
               <button type="button" class="btn-primary py-2" disabled><Icon name="progress_activity" class="animate-spin text-[16px]" /> Syncing…</button>
             {:else}
-              <button type="button" class="btn-outline py-2" onclick={() => syncFromClick()}><Icon name="sync" class="text-[16px]" /> Sync Now</button>
+              <button type="button" data-signs-in class="btn-outline py-2" onclick={() => syncFromClick()}><Icon name="sync" class="text-[16px]" /> Sync Now</button>
             {/if}
           </div>
         </div>
