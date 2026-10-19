@@ -1,6 +1,8 @@
 // Where the Google Sheets connection stands, and what the header button and the
 // connection steps offer in each state. Plain module (no runes) so it can be tested.
 
+import { text } from '../text.js';
+
 /**
  * @typedef {'unavailable' | 'unlinked' | 'signedOut' | 'syncing' | 'pending' | 'synced' | 'error' | 'conflict' | 'choose'} SyncPhase
  */
@@ -39,15 +41,15 @@ export function phaseOf({ configured, busy, spreadsheet, token, choice, conflict
  * @type {Record<SyncPhase, { tone: 'ok' | 'busy' | 'warn' | 'bad' | 'off', icon: string, short: string }>}
  */
 export const PHASE_LOOK = {
-  synced: { tone: 'ok', icon: 'cloud_done', short: 'Synced' },
-  syncing: { tone: 'busy', icon: 'sync', short: 'Syncing' },
-  pending: { tone: 'warn', icon: 'pending', short: 'Not synced yet' },
-  signedOut: { tone: 'warn', icon: 'login', short: 'Reconnect' },
-  choose: { tone: 'warn', icon: 'help', short: 'Needs you' },
-  conflict: { tone: 'bad', icon: 'sync_problem', short: 'Paused' },
-  error: { tone: 'bad', icon: 'sync_problem', short: 'Sync problem' },
-  unlinked: { tone: 'off', icon: 'cloud_off', short: 'Not connected' },
-  unavailable: { tone: 'off', icon: 'cloud_off', short: 'Not connected' },
+  synced: { tone: 'ok', icon: 'cloud_done', short: text.header.phase.synced },
+  syncing: { tone: 'busy', icon: 'sync', short: text.header.phase.syncing },
+  pending: { tone: 'warn', icon: 'pending', short: text.header.phase.pending },
+  signedOut: { tone: 'warn', icon: 'login', short: text.header.phase.signedOut },
+  choose: { tone: 'warn', icon: 'help', short: text.header.phase.choose },
+  conflict: { tone: 'bad', icon: 'sync_problem', short: text.header.phase.conflict },
+  error: { tone: 'bad', icon: 'sync_problem', short: text.header.phase.error },
+  unlinked: { tone: 'off', icon: 'cloud_off', short: text.header.phase.notConnected },
+  unavailable: { tone: 'off', icon: 'cloud_off', short: text.header.phase.notConnected },
 };
 
 /**
@@ -57,14 +59,14 @@ export const PHASE_LOOK = {
 
 /** @type {Record<ActionId, Action>} */
 const ACTIONS = {
-  setup: { id: 'setup', label: 'Connect Google Sheets', icon: 'add_link' },
-  reconnect: { id: 'reconnect', label: 'Reconnect', icon: 'login' },
-  syncNow: { id: 'syncNow', label: 'Sync Now', icon: 'sync' },
-  resolveColumns: { id: 'resolveColumns', label: 'Resolve Columns', icon: 'difference' },
-  review: { id: 'review', label: 'Finish Connecting', icon: 'help' },
-  settings: { id: 'settings', label: 'Connection Settings', icon: 'settings' },
-  openSheet: { id: 'openSheet', label: 'Open in Google Sheets', icon: 'open_in_new' },
-  disconnect: { id: 'disconnect', label: 'Disconnect…', icon: 'link_off' },
+  setup: { id: 'setup', label: text.header.actions.setup, icon: 'add_link' },
+  reconnect: { id: 'reconnect', label: text.header.actions.reconnect, icon: 'login' },
+  syncNow: { id: 'syncNow', label: text.header.actions.syncNow, icon: 'sync' },
+  resolveColumns: { id: 'resolveColumns', label: text.header.actions.resolveColumns, icon: 'difference' },
+  review: { id: 'review', label: text.header.actions.review, icon: 'help' },
+  settings: { id: 'settings', label: text.header.actions.settings, icon: 'settings' },
+  openSheet: { id: 'openSheet', label: text.header.actions.openSheet, icon: 'open_in_new' },
+  disconnect: { id: 'disconnect', label: text.header.actions.disconnect, icon: 'link_off' },
 };
 
 /** @type {Record<SyncPhase, ActionId>} */

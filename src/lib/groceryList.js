@@ -3,6 +3,7 @@
 // Ingredients in stock are left off (listed apart). Plain module (no runes) so it can be tested;
 // grocery.svelte.js feeds it the stores.
 
+import * as sheetText from './sheetText.js';
 import { shoppingName, unitLabel } from './ingredients.js';
 import { formatQty } from './format.js';
 import { formatWeekday, fromISO } from './dates.js';
@@ -133,7 +134,7 @@ export function buildWeekList({ week, thisWeek, list, dinners, recipeOf, ingredi
   for (const day of dinners) {
     planned.add(day.recipe.id);
     const weekday = fromISO(day.iso).getDay();
-    addRecipe(day.recipe, { label: `${formatWeekday(day.iso).slice(0, 3)}: ${day.recipe.shortTitle}`, tone: DAY_TONES[weekday] });
+    addRecipe(day.recipe, { label: sheetText.sourceDinner(formatWeekday(day.iso).slice(0, 3), day.recipe.shortTitle), tone: DAY_TONES[weekday] });
   }
   for (const pair of list.pushed) {
     const [recipeId, ingredientId] = pair.split(':');
@@ -148,14 +149,14 @@ export function buildWeekList({ week, thisWeek, list, dinners, recipeOf, ingredi
     const e = entry(id);
     e.optional = false;
     e.added = note;
-    e.sources.push({ label: 'Added by you', tone: 'neutral', ...(note ? { note } : {}) });
+    e.sources.push({ label: sheetText.sourceAddedByYou, tone: 'neutral', ...(note ? { note } : {}) });
   }
   for (const item of every) {
     if (!everyWeekShows(item, week, thisWeek)) continue;
     const e = entry(item.ingredientId);
     e.optional = false;
     e.every = item.note;
-    e.sources.push({ label: 'Every week', tone: 'neutral', ...(item.note ? { note: item.note } : {}) });
+    e.sources.push({ label: sheetText.sourceEveryWeek, tone: 'neutral', ...(item.note ? { note: item.note } : {}) });
   }
 
   const lines = [];

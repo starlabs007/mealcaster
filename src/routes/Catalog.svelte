@@ -22,6 +22,7 @@
   import { route, href, navigate, left } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { settings } from '../lib/settings.svelte.js';
+  import { text } from '../lib/text.js';
   import { formatLong, formatWeekday, weekStartOf, fromISO, weekDates } from '../lib/dates.js';
 
   const PAGE_SIZE = 9;
@@ -29,17 +30,17 @@
   const sorts = [
     {
       id: 'most-cooked',
-      label: 'Most Cooked in Household',
+      label: text.catalog.sorts.mostCooked,
       // From the plan history; ties go to the one made most recently, then A–Z.
       compare: (a, b) =>
         timesMade(b.id) - timesMade(a.id) ||
         (lastMadeOn(b.id) ?? '').localeCompare(lastMadeOn(a.id) ?? '') ||
         a.title.localeCompare(b.title),
     },
-    { id: 'quickest', label: 'Quickest Prep Time', compare: (a, b) => a.minutes - b.minutes },
-    { id: 'name', label: 'Name (A–Z)', compare: byTitle },
-    { id: 'name-desc', label: 'Name (Z–A)', compare: (a, b) => byTitle(b, a) },
-    { id: 'recent', label: 'Recently Added to Box', compare: (a, b) => b.addedAt.localeCompare(a.addedAt) },
+    { id: 'quickest', label: text.catalog.sorts.quickest, compare: (a, b) => a.minutes - b.minutes },
+    { id: 'name', label: text.catalog.sorts.nameAsc, compare: byTitle },
+    { id: 'name-desc', label: text.catalog.sorts.nameDesc, compare: (a, b) => byTitle(b, a) },
+    { id: 'recent', label: text.catalog.sorts.recent, compare: (a, b) => b.addedAt.localeCompare(a.addedAt) },
   ];
 
   let query = $state('');
@@ -156,8 +157,8 @@
             return ingredient ? [ingredient.name, ingredient.plural] : [];
           })),
         ];
-        const text = foldKey(haystack.join(' '));
-        return words.every((w) => text.includes(w));
+        const searchable = foldKey(haystack.join(' '));
+        return words.every((w) => searchable.includes(w));
       })
       .sort(sorts.find((s) => s.id === sort).compare);
   });
@@ -194,21 +195,21 @@
     const iso = targetDay;
     if (!iso) return;
     const recipe = surpriseMe(iso, results.length ? results : undefined);
-    if (recipe) announce(iso, recipe, 'Surprise! ');
+    if (recipe) announce(iso, recipe, true);
   }
 
   /**
    * Back to the planner (the default; see Profile), or a toast rather than a banner so it's seen
    * wherever the catalog is scrolled to.
    */
-  function announce(iso, recipe, prefix = '') {
+  function announce(iso, recipe, surprised = false) {
     if (settings.returnToPlanner) {
       spotlightDay(iso);
       navigate('/');
       return;
     }
-    showToast(`${prefix}${recipe.shortTitle} added to ${formatLong(iso)} dinner and your grocery basket was updated.`, {
-      label: 'Go to Weekly View',
+    showToast(text.catalog.toasts.added(surprised ? text.planner.toasts.surprise(recipe.shortTitle) : recipe.shortTitle, formatLong(iso)), {
+      label: text.catalog.toasts.goToWeekly,
       run: () => navigate('/'),
     });
   }
@@ -218,7 +219,7 @@
     const status = statusOf(iso);
     const id = planner.entries[iso]?.recipeId;
     const detail =
-      status === 'open' ? 'open' : status === 'diningOut' ? 'dining out' : (recipeById.get(id)?.shortTitle ?? '');
+      status === 'open' ? text.catalog.dayOpen : status === 'diningOut' ? text.catalog.dayDiningOut : (recipeById.get(id)?.shortTitle ?? '');
     return `${formatLong(iso)} — ${detail}`;
   }
 </script>
@@ -228,28 +229,28 @@
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>
       <a href={href('/')} class="inline-flex items-center gap-1 text-label-md text-on-surface-variant hover:text-primary">
-        <Icon name="arrow_back" class="text-[16px]" /> Weekly Dinner Plan
+        <Icon name="arrow_back" class="text-[16px]" /> {text.catalog.backToPlanner}
       </a>
       <h1 class="mt-1 font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">
         {#if !targetDay}
-          Recipe Catalog
+          {text.catalog.titles.catalog}
         {:else if currentPick}
-          Swap {targetName}’s Dinner
+          {text.catalog.titles.swap(targetName)}
         {:else}
-          Choose a Dinner Meal
+          {text.catalog.titles.choose}
         {/if}
       </h1>
     </div>
     <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
     {#if plannable.length}
       <label class="flex min-w-0 items-center gap-2 text-label-md text-on-surface-variant">
-        <span class="shrink-0">Planning for</span>
+        <span class="shrink-0">{text.catalog.planningFor}</span>
         <select
           class="min-w-0 max-w-full flex-1 truncate rounded-lg sm:max-w-sm border border-outline-variant bg-surface-container-lowest py-2 pl-3 pr-8 text-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
           value={targetDay ?? ''}
           onchange={chooseDay}
         >
-          {#if !targetDay}<option value="" disabled>Pick a day…</option>{/if}
+          {#if !targetDay}<option value="" disabled>{text.catalog.pickDay}</option>{/if}
           {#each plannable as iso (iso)}
             <option value={iso}>{dayOption(iso)}</option>
           {/each}
@@ -257,7 +258,7 @@
       </label>
     {/if}
       <a href={href('/recipe/new')} class="btn-outline shrink-0 self-start py-2 sm:self-auto">
-        <Icon name="add" class="text-[16px]" /> Add Custom Recipe
+        <Icon name="add" class="text-[16px]" /> {text.catalog.addCustom}
       </a>
     </div>
   </div>
@@ -270,14 +271,14 @@
         type="search"
         bind:value={query}
         oninput={() => (pages = 1)}
-        aria-label="Search recipes and ingredients"
-        placeholder="Search recipes, ingredients (e.g. salmon, pasta, lemon, tofu)..."
+        aria-label={text.catalog.searchAria}
+        placeholder={text.catalog.searchPlaceholder}
         class="w-full rounded-xl border border-outline bg-surface-container-low py-3 pl-11 pr-4 text-body-md text-on-surface placeholder:text-on-surface-variant focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container"
       />
     </div>
     <div class="flex flex-wrap items-center gap-4">
       <label class="flex items-center gap-2 text-label-sm text-on-surface-variant">
-        Sort by:
+        {text.catalog.sortBy}
         <select
           bind:value={sort}
           class="rounded-lg border border-outline-variant bg-surface-container-lowest py-2 pl-3 pr-8 text-body-sm font-medium text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
@@ -289,7 +290,7 @@
       </label>
       <span class="flex items-center gap-2 text-body-sm text-on-surface-variant" aria-live="polite">
         <span class="h-1.5 w-1.5 rounded-full bg-on-surface-variant"></span>
-        Displaying <strong class="text-on-surface">{visible.length}</strong> of {results.length} meals
+        {@html text.catalog.displaying(visible.length, results.length)}
       </span>
     </div>
   </div>
@@ -297,10 +298,10 @@
   <!-- Filter pills -->
   <div class="flex flex-col gap-3">
     <div class="flex items-center justify-between">
-      <span class="text-label-caps uppercase text-on-surface-variant">Filter by Culinary Attributes</span>
+      <span class="text-label-caps uppercase text-on-surface-variant">{text.catalog.filters.heading}</span>
       {#if activeCount}
         <button type="button" class="text-label-sm text-secondary underline underline-offset-4 hover:text-on-surface" onclick={clearFilters}>
-          Clear all filters ({activeCount} active)
+          {text.catalog.filters.clearAll(activeCount)}
         </button>
       {/if}
     </div>
@@ -319,16 +320,16 @@
       </button>
     {/snippet}
     <div class="flex flex-wrap gap-2">
-      {@render pill(favoritesOnly, 'Favorites', 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
-      {@render pill(hidePlanned, 'Unplanned this week', 'event_busy', () => (setHidePlanned(!hidePlanned), (pages = 1)))}
-      {@render pill(hideRecent, 'Not made recently', 'history', () => toggleHideRecent(!hideRecent))}
+      {@render pill(favoritesOnly, text.catalog.filters.favorites, 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
+      {@render pill(hidePlanned, text.catalog.filters.unplanned, 'event_busy', () => (setHidePlanned(!hidePlanned), (pages = 1)))}
+      {@render pill(hideRecent, text.catalog.filters.notMadeRecently, 'history', () => toggleHideRecent(!hideRecent))}
       {#each filters as tag (tag)}
         {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
       {/each}
     </div>
     {#if categories.length > 1 || category}
       <label class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
-        <span class="text-label-caps uppercase text-on-surface-variant">Filter by Category</span>
+        <span class="text-label-caps uppercase text-on-surface-variant">{text.catalog.filters.categoryHeading}</span>
         <select
           bind:value={category}
           onchange={() => (pages = 1)}
@@ -336,7 +337,7 @@
             ? 'border-primary bg-primary-container/30 text-on-surface'
             : 'border-outline-variant bg-surface-container-lowest text-on-surface'}"
         >
-          <option value="">Any category</option>
+          <option value="">{text.catalog.filters.anyCategory}</option>
           {#each categories as c (c)}
             <option value={c}>{c}</option>
           {/each}
@@ -366,22 +367,22 @@
     <!-- A new household: nothing in the catalog yet. -->
     <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-16 text-center">
       <Icon name="menu_book" class="text-[36px] text-outline" />
-      <h2 class="font-display text-headline-sm text-on-surface">Your recipe catalog is empty</h2>
+      <h2 class="font-display text-headline-sm text-on-surface">{text.catalog.empty.title}</h2>
       <p class="max-w-md text-body-sm text-on-surface-variant">
-        Add your first family recipe, or connect a Google Sheet that already has your recipes.
+        {text.catalog.empty.body}
       </p>
       <div class="mt-2 flex flex-wrap justify-center gap-2">
-        <a href={href('/recipe/new')} class="btn-primary"><Icon name="add" class="text-[16px]" /> Add a Recipe</a>
-        <a href={href('/sheets-sync')} class="btn-outline"><Icon name="table_chart" class="text-[16px]" /> Connect Google Sheets</a>
+        <a href={href('/recipe/new')} class="btn-primary"><Icon name="add" class="text-[16px]" /> {text.catalog.empty.addRecipe}</a>
+        <a href={href('/sheets-sync')} class="btn-outline"><Icon name="table_chart" class="text-[16px]" /> {text.catalog.empty.connectSheets}</a>
       </div>
     </div>
   {:else}
     <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-16 text-center">
       <Icon name="search_off" class="text-[36px] text-outline" />
-      <h2 class="font-display text-headline-sm text-on-surface">No recipes match those filters</h2>
-      <p class="max-w-md text-body-sm text-on-surface-variant">Try a different ingredient or loosen a filter or two.</p>
+      <h2 class="font-display text-headline-sm text-on-surface">{text.catalog.noMatch.title}</h2>
+      <p class="max-w-md text-body-sm text-on-surface-variant">{text.catalog.noMatch.body}</p>
       <button type="button" class="btn-outline mt-2" onclick={() => (clearFilters(), (query = ''))}>
-        <Icon name="filter_alt_off" class="text-[16px]" /> Clear search & filters
+        <Icon name="filter_alt_off" class="text-[16px]" /> {text.catalog.noMatch.clear}
       </button>
     </div>
   {/if}
@@ -393,9 +394,9 @@
           <Icon name="auto_stories" class="text-[28px]" />
         </div>
         <div>
-          <h3 class="font-display text-headline-sm text-on-surface">Can’t decide on {targetName}’s Dinner?</h3>
+          <h3 class="font-display text-headline-sm text-on-surface">{text.catalog.surprise.title(targetName)}</h3>
           <p class="mt-1 max-w-xl text-body-md text-on-surface-variant">
-            Roll for a random pick from the meals matching your current search and filters.
+            {text.catalog.surprise.body}
           </p>
         </div>
       </div>
@@ -404,7 +405,7 @@
         onclick={surprise}
         class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-label-md text-on-secondary shadow-md transition-all hover:bg-[#b34728] sm:w-auto"
       >
-        <Icon name="casino" class="text-[18px]" /> Surprise Me & Assign
+        <Icon name="casino" class="text-[18px]" /> {text.catalog.surprise.button}
       </button>
     </div>
   {/if}

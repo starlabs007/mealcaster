@@ -13,6 +13,7 @@ import { restoreSampleIngredients } from './ingredients.svelte.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { sampleData, storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
+import { text } from './text.js';
 
 export { formatMinutes } from './data/recipes.js';
 export { suggestedTags, isSuggestedTag, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX, normalizeCategory, categoryChoices } from './tags.js';
@@ -80,7 +81,7 @@ function store() {
 
 function persist() {
   // Most likely the quota — large uploaded photos are the usual culprit.
-  if (!store()) throw new Error('This device ran out of space for saved recipes. Try a smaller photo or an image link.');
+  if (!store()) throw new Error(text.catalog.errors.outOfSpace);
 }
 
 /**

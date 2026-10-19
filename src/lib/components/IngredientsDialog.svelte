@@ -10,6 +10,7 @@
   import { foldKey, suggest, tidyIngredientName } from '../ingredients.js';
   import { guessAisle } from '../ingredientText.js';
   import { showToast } from '../toast.svelte.js';
+  import { text } from '../text.js';
 
   /** @type {{ onclose: () => void }} */
   let { onclose } = $props();
@@ -48,7 +49,7 @@
     );
   });
 
-  const recipeCount = (n) => (n ? `${n} recipe${n === 1 ? '' : 's'}` : 'Not in a recipe');
+  const recipeCount = text.ingredientsDialog.recipeCount;
 
   function add(event) {
     event.preventDefault();
@@ -58,11 +59,11 @@
     if (existing) {
       query = existing.name;
       filter = 'all';
-      showToast(`You already have ${existing.name}.`);
+      showToast(text.ingredientsDialog.toasts.already(existing.name));
       return;
     }
     const added = addIngredient({ name, aisle: draft.aisle });
-    showToast(`Added ${added.name} (${aisleLabel(added.aisle)}).`);
+    showToast(text.ingredientsDialog.toasts.added(added.name, aisleLabel(added.aisle)));
     draft = { name: '', aisle: draft.aisle };
     aislePicked = false;
   }
@@ -76,9 +77,9 @@
     editing = { id: i.id, name: i.name, plural: i.plural, aisle: i.aisle, merging: false, into: '', confirmDelete: false };
   }
 
-  /** Another ingredient already called `text` (name or plural), if any. */
-  const takenBy = (text, id) => {
-    const other = text.trim() ? findIngredient(text) : undefined;
+  /** Another ingredient already called `word` (name or plural), if any. */
+  const takenBy = (word, id) => {
+    const other = word.trim() ? findIngredient(word) : undefined;
     return other && other.id !== id ? other : undefined;
   };
   const nameClash = $derived(editing && !editing.merging ? takenBy(editing.name, editing.id) : undefined);
@@ -88,7 +89,7 @@
     event.preventDefault();
     if (!editing || nameClash || pluralClash || !tidyIngredientName(editing.name)) return;
     updateIngredient(editing.id, { name: editing.name, plural: editing.plural, aisle: editing.aisle });
-    showToast(`Saved ${ingredientOf(editing.id)?.name}.`);
+    showToast(text.ingredientsDialog.toasts.saved(ingredientOf(editing.id)?.name));
     editing = null;
   }
 
@@ -108,7 +109,7 @@
     const undo = mergeIngredient(from, into.id);
     if (!undo) return;
     editing = null;
-    showToast(`Merged ${name} into ${into.name}${n ? ` (${recipeCount(n)} updated)` : ''}.`, { label: 'Undo', run: undo });
+    showToast(text.ingredientsDialog.toasts.merged(name, into.name, n), { label: text.common.undo, run: undo });
   }
 
   /** @param {import('../ingredients.js').Ingredient} i */
@@ -116,7 +117,7 @@
     const undo = deleteIngredient(i.id);
     if (!undo) return;
     editing = null;
-    showToast(`Deleted ${i.name}.`, { label: 'Undo', run: undo });
+    showToast(text.ingredientsDialog.toasts.deleted(i.name), { label: text.common.undo, run: undo });
   }
 
   function onkeydown(e) {
@@ -142,10 +143,10 @@
   >
     <div class="flex items-center justify-between gap-3 px-5 pb-3 pt-5">
       <h2 id="ingredients-dialog-title" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-        <Icon name="grocery" class="text-[20px] text-primary" /> Ingredients
+        <Icon name="grocery" class="text-[20px] text-primary" /> {text.ingredientsDialog.title}
         <span class="font-sans text-body-sm text-outline">{all.length}</span>
       </h2>
-      <button type="button" aria-label="Close" class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high" onclick={onclose}>
+      <button type="button" aria-label={text.common.close} class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high" onclick={onclose}>
         <Icon name="close" class="text-[20px]" />
       </button>
     </div>
@@ -156,23 +157,23 @@
         required
         bind:value={draft.name}
         oninput={onDraftName}
-        aria-label="New ingredient"
-        placeholder="New ingredient, e.g. bananas"
+        aria-label={text.ingredientsDialog.newAria}
+        placeholder={text.ingredientsDialog.newPlaceholder}
         autocomplete="off"
         class="{inputClass} col-span-2 sm:col-span-1"
       />
-      <select bind:value={draft.aisle} onchange={() => (aislePicked = true)} aria-label="Aisle" class={inputClass}>
+      <select bind:value={draft.aisle} onchange={() => (aislePicked = true)} aria-label={text.ingredientsDialog.aisleAria} class={inputClass}>
         {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
       </select>
-      <button type="submit" class="btn-primary py-2.5"><span class="sm:hidden">Add</span><span class="hidden sm:inline">Add Ingredient</span></button>
+      <button type="submit" class="btn-primary py-2.5"><span class="sm:hidden">{text.ingredientsDialog.addShort}</span><span class="hidden sm:inline">{text.ingredientsDialog.add}</span></button>
     </form>
 
     <div class="flex flex-col gap-2 px-5 pb-3">
       {#if all.length > 6}
-        <input type="search" bind:value={query} aria-label="Search ingredients" placeholder="Search {all.length} ingredients" class="{inputClass} w-full" />
+        <input type="search" bind:value={query} aria-label={text.ingredientsDialog.searchAria} placeholder={text.ingredientsDialog.searchPlaceholder(all.length)} class="{inputClass} w-full" />
       {/if}
-      <div class="flex flex-wrap gap-1" role="group" aria-label="Show">
-        {#each [{ id: 'all', label: `All (${all.length})` }, { id: 'stock', label: `In stock (${counts.stock})` }, { id: 'unused', label: `Not in a recipe (${counts.unused})` }] as f (f.id)}
+      <div class="flex flex-wrap gap-1" role="group" aria-label={text.ingredientsDialog.showAria}>
+        {#each [{ id: 'all', label: text.ingredientsDialog.filters.all(all.length) }, { id: 'stock', label: text.ingredientsDialog.filters.stock(counts.stock) }, { id: 'unused', label: text.ingredientsDialog.filters.unused(counts.unused) }] as f (f.id)}
           <button
             type="button"
             aria-pressed={filter === f.id}
@@ -195,12 +196,12 @@
             {@const n = uses.get(i.id) ?? 0}
             <li class="px-4 py-2.5">
               <div class="flex items-center gap-3">
-                <label class="flex shrink-0 cursor-pointer items-center" title={i.onHand ? 'In stock — untick when you run out' : 'Tick when you have it at home'}>
+                <label class="flex shrink-0 cursor-pointer items-center" title={i.onHand ? text.ingredientsDialog.inStockTitle : text.ingredientsDialog.notInStockTitle}>
                   <input
                     type="checkbox"
                     class="peer sr-only"
                     checked={i.onHand}
-                    aria-label="{i.name} in stock"
+                    aria-label={text.ingredientsDialog.inStockAria(i.name)}
                     onchange={(e) => setOnHand(i.id, e.currentTarget.checked)}
                   />
                   <span
@@ -219,7 +220,7 @@
                 </span>
                 <button
                   type="button"
-                  aria-label="Edit {i.name}"
+                  aria-label={text.ingredientsDialog.editAria(i.name)}
                   aria-expanded={editing?.id === i.id}
                   class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
                   onclick={() => (editing?.id === i.id ? (editing = null) : edit(i))}
@@ -232,15 +233,15 @@
                 {#if !editing.merging}
                   <form onsubmit={save} class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
                     <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
-                      Name
+                      {text.ingredientsDialog.name}
                       <input required bind:value={editing.name} autocomplete="off" class="{inputClass} py-1.5 {nameClash ? 'border-secondary' : ''}" />
                     </label>
                     <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
-                      Plural <span class="sr-only">(optional)</span>
-                      <input bind:value={editing.plural} autocomplete="off" placeholder="None" class="{inputClass} py-1.5 {pluralClash ? 'border-secondary' : ''}" />
+                      {text.ingredientsDialog.plural} <span class="sr-only">{text.ingredientsDialog.optional}</span>
+                      <input bind:value={editing.plural} autocomplete="off" placeholder={text.ingredientsDialog.pluralPlaceholder} class="{inputClass} py-1.5 {pluralClash ? 'border-secondary' : ''}" />
                     </label>
                     <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
-                      Aisle
+                      {text.ingredientsDialog.aisle}
                       <select bind:value={editing.aisle} class="{inputClass} py-1.5">
                         {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
                       </select>
@@ -248,69 +249,69 @@
                     {#if nameClash ?? pluralClash}
                       {@const other = nameClash ?? pluralClash}
                       <p class="flex flex-wrap items-center gap-x-2 text-body-sm text-secondary sm:col-span-3">
-                        “{other.name}” is already an ingredient.
+                        {text.ingredientsDialog.isAlready(other.name)}
                         <button type="button" class="text-label-md text-primary hover:underline" onclick={() => merge(i.id, other)}>
-                          Merge {i.name} into it
+                          {text.ingredientsDialog.mergeIntoIt(i.name)}
                         </button>
                       </p>
                     {/if}
                     <p class="text-body-sm text-on-surface-variant sm:col-span-3">
-                      Changes show in every recipe that uses it{n ? ` (${recipeCount(n)})` : ''}. Leave Plural empty for words like rice or mint.
+                      {text.ingredientsDialog.changesShow(n)}
                     </p>
                     <div class="flex flex-wrap items-center gap-2 sm:col-span-3">
-                      <button type="submit" class="btn-primary py-1.5" disabled={!!(nameClash ?? pluralClash)}>Save</button>
-                      <button type="button" class="btn-outline py-1.5" onclick={() => (editing = null)}>Cancel</button>
+                      <button type="submit" class="btn-primary py-1.5" disabled={!!(nameClash ?? pluralClash)}>{text.ingredientsDialog.save}</button>
+                      <button type="button" class="btn-outline py-1.5" onclick={() => (editing = null)}>{text.common.cancel}</button>
                       <span class="flex-1"></span>
                       <button type="button" class="btn-outline py-1.5" onclick={() => (editing.merging = true)}>
-                        <Icon name="call_merge" class="text-[16px]" /> Merge into…
+                        <Icon name="call_merge" class="text-[16px]" /> {text.ingredientsDialog.mergeInto}
                       </button>
                       <button
                         type="button"
                         class="btn-outline py-1.5 text-secondary disabled:opacity-50"
                         disabled={n > 0}
-                        title={n ? `Used by ${recipeCount(n)} — merge it into another ingredient instead` : undefined}
+                        title={n ? text.ingredientsDialog.usedByTitle(n) : undefined}
                         onclick={() => (editing.confirmDelete = true)}
                       >
-                        <Icon name="delete" class="text-[16px]" /> Delete
+                        <Icon name="delete" class="text-[16px]" /> {text.common.delete}
                       </button>
                     </div>
                     {#if editing.confirmDelete}
                       <div class="flex flex-wrap items-center gap-3 rounded-lg bg-secondary-fixed/50 p-3 sm:col-span-3" role="alert">
                         <p class="flex flex-1 items-center gap-2 text-body-sm text-on-surface">
-                          <Icon name="warning" class="shrink-0 text-[18px] text-secondary" /> Delete {i.name}?
+                          <Icon name="warning" class="shrink-0 text-[18px] text-secondary" /> {text.ingredientsDialog.deleteQuestion(i.name)}
                         </p>
-                        <button type="button" class="btn-outline py-1.5" onclick={() => (editing.confirmDelete = false)}>Cancel</button>
+                        <button type="button" class="btn-outline py-1.5" onclick={() => (editing.confirmDelete = false)}>{text.common.cancel}</button>
                         <button type="button" class="btn bg-secondary py-1.5 text-on-secondary hover:bg-secondary/90" onclick={() => remove(i)}>
-                          Delete
+                          {text.common.delete}
                         </button>
                       </div>
                     {/if}
                     {#if n > 0}
-                      <p class="text-body-sm text-outline sm:col-span-3">Only ingredients no recipe uses can be deleted.</p>
+                      <p class="text-body-sm text-outline sm:col-span-3">{text.ingredientsDialog.onlyUnused}</p>
                     {/if}
                   </form>
                 {:else}
                   <div class="mt-3 flex flex-col gap-2">
                     <p class="text-body-sm text-on-surface-variant">
-                      Every recipe line and grocery item using <strong class="text-on-surface">{i.name}</strong> will use the ingredient you pick, and
-                      {i.name} is removed. Use it for duplicates, like “yellow onion” and “onion” (put “yellow” in the recipe’s note).
+                      {text.ingredientsDialog.mergeBefore} <strong class="text-on-surface">{i.name}</strong> {text.ingredientsDialog.mergeMiddle}
+                      {i.name} {text.ingredientsDialog.mergeAfter}
                     </p>
                     <div class="flex flex-wrap items-center gap-2">
                       <Combobox
-                        label="Merge {i.name} into"
-                        placeholder="Ingredient to keep"
+                        label={text.ingredientsDialog.mergeAria(i.name)}
+                        placeholder={text.ingredientsDialog.mergePlaceholder}
                         suggestions={mergeTargets}
                         bind:value={editing.into}
                         class="min-w-0 flex-1"
                         inputClass="{inputClass} w-full py-1.5"
                       />
                       <button type="button" class="btn-primary py-1.5" disabled={!mergeInto} onclick={() => merge(i.id, mergeInto)}>
-                        Merge
+                        {text.ingredientsDialog.merge}
                       </button>
-                      <button type="button" class="btn-outline py-1.5" onclick={() => (editing.merging = false)}>Back</button>
+                      <button type="button" class="btn-outline py-1.5" onclick={() => (editing.merging = false)}>{text.ingredientsDialog.back}</button>
                     </div>
                     {#if editing.into.trim() && !mergeInto && !suggest(mergeTargets, editing.into, 1).length}
-                      <p class="text-body-sm text-secondary">No ingredient by that name.</p>
+                      <p class="text-body-sm text-secondary">{text.ingredientsDialog.noMatchName}</p>
                     {/if}
                   </div>
                 {/if}
@@ -320,7 +321,7 @@
         </ul>
       {:else}
         <p class="rounded-xl border border-dashed border-outline-variant px-4 py-6 text-center text-body-sm text-outline">
-          {all.length ? 'No ingredient matches.' : 'No ingredients yet — they’re added with your recipes.'}
+          {all.length ? text.ingredientsDialog.noMatch : text.ingredientsDialog.empty}
         </p>
       {/if}
     </div>

@@ -5,16 +5,17 @@
   import { lineParts } from '../ingredients.js';
   import { ingredientOf } from '../ingredients.svelte.js';
   import { renderMarkdown } from '../markdown.js';
+  import { text } from '../text.js';
 
   /** @type {{ recipe: any, servings: number, scale: number, image: string | undefined, imageScale: number, textDelta: number, mins: (m: number) => string }} */
   let { recipe, servings, scale, image, imageScale, textDelta, mins } = $props();
 
   const meta = $derived(
     [
-      recipe.prepMinutes && `Prep ${mins(recipe.prepMinutes)}`,
-      recipe.cookMinutes && `Cook ${mins(recipe.cookMinutes)}`,
-      recipe.minutes && `Total ${mins(recipe.minutes)}`,
-      `${servings} ${servings === 1 ? 'serving' : 'servings'}`,
+      recipe.prepMinutes && text.recipe.print.simplePage.prep(mins(recipe.prepMinutes)),
+      recipe.cookMinutes && text.recipe.print.simplePage.cook(mins(recipe.cookMinutes)),
+      recipe.minutes && text.recipe.print.simplePage.total(mins(recipe.minutes)),
+      text.recipe.print.simplePage.servings(servings),
     ].filter(Boolean),
   );
 </script>
@@ -29,7 +30,7 @@
   {/if}
 
   <section>
-    <h2 class="mb-[0.4em] mt-[1.1em] break-after-avoid font-display text-[1.6em] font-bold leading-tight">Ingredients</h2>
+    <h2 class="mb-[0.4em] mt-[1.1em] break-after-avoid font-display text-[1.6em] font-bold leading-tight">{text.recipe.print.simplePage.ingredients}</h2>
     {#each recipe.ingredients as group (group.title)}
       <div class="mb-[0.6em] break-inside-avoid">
         {#if recipe.ingredients.length > 1}<h3 class="font-bold">{group.title}</h3>{/if}
@@ -38,7 +39,7 @@
             {@const line = lineParts(item, ingredientOf(item.id), scale)}
             <li>
               {#if line.amount}<strong>{line.amount}</strong>{/if}
-              {line.name}{#if line.note}{' '}({line.note}){/if}{#if line.prep}, {line.prep}{/if}{#if line.optional}{' '}(optional){/if}
+              {line.name}{#if line.note}{' '}({line.note}){/if}{#if line.prep}, {line.prep}{/if}{#if line.optional}{' '}({text.recipe.print.simplePage.optional}){/if}
             </li>
           {/each}
         </ul>
@@ -48,7 +49,7 @@
 
   {#if recipe.steps.length}
   <section>
-    <h2 class="mb-[0.4em] mt-[1.1em] break-after-avoid font-display text-[1.6em] font-bold leading-tight">Method</h2>
+    <h2 class="mb-[0.4em] mt-[1.1em] break-after-avoid font-display text-[1.6em] font-bold leading-tight">{text.recipe.print.simplePage.method}</h2>
     <ol>
       {#each recipe.steps as step, i (i)}
         <li class="mb-[0.7em] break-inside-avoid">
@@ -64,7 +65,7 @@
 
   {#if recipe.notes?.trim()}
     <section class="break-inside-avoid">
-      <h2 class="mb-[0.4em] mt-[1.1em] break-after-avoid font-display text-[1.6em] font-bold leading-tight">Cook’s Secrets</h2>
+      <h2 class="mb-[0.4em] mt-[1.1em] break-after-avoid font-display text-[1.6em] font-bold leading-tight">{text.recipe.notes.title}</h2>
       <div class="notes-md">{@html renderMarkdown(recipe.notes)}</div>
     </section>
   {/if}

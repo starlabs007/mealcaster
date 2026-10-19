@@ -3,6 +3,8 @@
   // tab of the Google Sheet (tag names live on the recipes), ingredients to the [Ingredients] tab;
   // everything under "This device" is remembered here only.
   import { untrack } from 'svelte';
+  import { tagColourName, weekdays } from '../lib/sheetText.js';
+  import { text } from '../lib/text.js';
   import Icon from '../lib/components/Icon.svelte';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
   import PrintOptionsFields from '../lib/components/PrintOptionsFields.svelte';
@@ -37,25 +39,23 @@
 
   // Export: everything on this device as a workbook with the tabs (and tab names) the sheet uses.
   const exportContents = $derived(
-    [`${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'}`, `${recipes.length} recipe${recipes.length === 1 ? '' : 's'}`, 'planned dinners', sheets.syncProvisions && 'the viewed week’s grocery list', 'settings']
+    [text.profile.device.export.ingredients(ingredients.length), text.profile.device.export.recipes(recipes.length), text.profile.device.export.plannedDinners, sheets.syncProvisions && text.profile.device.export.groceryList, text.profile.device.export.settings]
       .filter(Boolean)
       .join(', ')
-      .replace(/, ([^,]*)$/, ' and $1'),
+      .replace(/, ([^,]*)$/, `${text.profile.device.export.and}$1`),
   );
   function exportData() {
     downloadBlob(dataWorkbook($state.snapshot(sheets)), `MealCaster_Export_${toISO(new Date())}.xlsx`);
-    showToast('Workbook downloaded.');
+    showToast(text.profile.device.export.downloaded);
   }
   const inStock = $derived(ingredients.filter((i) => i.onHand).length);
   const synced = $derived(Boolean(sheets.spreadsheet));
-
-  const weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
   function changeWeekStart(event) {
     const wasThisWeek = planner.weekStart === weekStartOf(new Date());
     setWeekStartDay(Number(event.currentTarget.value));
     realignWeeks(wasThisWeek);
-    showToast(`Weeks now start on ${weekdays[settings.weekStartDay]}.`);
+    showToast(text.profile.planning.weekStartChanged(weekdays[settings.weekStartDay]));
   }
 
   // Print defaults save as they change.
@@ -76,13 +76,13 @@
 
   async function askToKeep() {
     await protectStorage({ ask: true });
-    if (storageState.persisted) showToast('This browser will keep MealCaster’s data.');
-    else showToast('The browser said no. Browsers decide this themselves, often by how much you use a site.');
+    if (storageState.persisted) showToast(text.profile.storage.keepYes);
+    else showToast(text.profile.storage.keepNo);
   }
 
   function resetColors() {
     resetTagColors();
-    showToast('Tag colours reset.');
+    showToast(text.profile.tags.toasts.coloursReset);
   }
 
   // Recipe tags: every tag in use, built-in suggestions first. Only the person's own can change.
@@ -92,24 +92,24 @@
       .filter((t) => t.count),
   );
   const samplesShown = $derived(recipes.some((r) => isSample(r.id)));
-  const recipeCount = (n) => `${n} recipe${n === 1 ? '' : 's'}`;
+  const recipeCount = text.profile.tags.recipeCount;
   /** @type {{ from: string, text: string } | null} */
   let renaming = $state(null);
 
   function rename(event) {
     event.preventDefault();
     if (!renaming) return;
-    const { from, text } = renaming;
+    const { from, text: typed } = renaming;
     const count = recipes.filter((r) => r.tags.includes(from)).length;
-    const merging = tagRows.find((t) => t.tag !== from && t.tag === normalizeTag(text));
+    const merging = tagRows.find((t) => t.tag !== from && t.tag === normalizeTag(typed));
     try {
-      const undo = renameTag(from, text);
+      const undo = renameTag(from, typed);
       renaming = null;
       if (!undo) return;
-      const message = merging ? `Merged “${from}” into “${merging.tag}”.` : `Renamed “${from}” to “${normalizeTag(text)}” on ${recipeCount(count)}.`;
-      showToast(message, { label: 'Undo', run: undo });
+      const message = merging ? text.profile.tags.toasts.merged(from, merging.tag) : text.profile.tags.toasts.renamed(from, normalizeTag(typed), recipeCount(count));
+      showToast(message, { label: text.common.undo, run: undo });
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Couldn’t rename the tag.');
+      showToast(error instanceof Error ? error.message : text.profile.tags.toasts.renameFailed);
     }
   }
 
@@ -117,9 +117,9 @@
     if (renaming?.from === tag) renaming = null;
     try {
       const undo = deleteTag(tag);
-      if (undo) showToast(`Removed “${tag}” from ${recipeCount(count)}.`, { label: 'Undo', run: undo });
+      if (undo) showToast(text.profile.tags.toasts.removed(tag, recipeCount(count)), { label: text.common.undo, run: undo });
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Couldn’t delete the tag.');
+      showToast(error instanceof Error ? error.message : text.profile.tags.toasts.deleteFailed);
     }
   }
 </script>
@@ -144,19 +144,18 @@
 {/snippet}
 
 <div class="mx-auto flex w-full max-w-[960px] flex-col gap-6 px-4 py-6 md:px-gutter-desktop">
-  <nav aria-label="Breadcrumb" class="flex items-center gap-1.5 text-label-md text-on-surface-variant">
+  <nav aria-label={text.profile.breadcrumbAria} class="flex items-center gap-1.5 text-label-md text-on-surface-variant">
     <Icon name="calendar_view_week" class="text-[16px]" />
-    <a href={href('/')} class="hover:text-primary">Weekly Dinner Plan</a>
+    <a href={href('/')} class="hover:text-primary">{text.profile.weeklyPlan}</a>
     <span class="text-outline">/</span>
     <Icon name="person" class="text-[16px] text-primary" />
-    <span class="text-on-surface" aria-current="page">Profile &amp; Settings</span>
+    <span class="text-on-surface" aria-current="page">{text.profile.title}</span>
   </nav>
 
   <div>
-    <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">Profile &amp; Settings</h1>
+    <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">{text.profile.title}</h1>
     <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-      Planning, Ingredients and Recipe Tags are shared through your Google Sheet; the rest stay on this
-      device.
+      {text.profile.intro}
     </p>
   </div>
 
@@ -164,23 +163,23 @@
   <section class="flex flex-col gap-2 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="planning-heading">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 id="planning-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-        <Icon name="calendar_month" class="text-[20px] text-primary" /> Planning
+        <Icon name="calendar_month" class="text-[20px] text-primary" /> {text.profile.planning.title}
       </h2>
       <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
-        {synced ? `Synced · [${sheets.tabs.settings}]` : 'Saved on this device'}
+        {synced ? text.profile.badges.synced(sheets.tabs.settings) : text.profile.badges.savedOnDevice}
       </span>
     </div>
     {@render switchRow(
       settings.returnToPlanner,
-      'Return to the planner after choosing a meal',
-      'In the catalog, picking a meal (or Surprise Me) takes you back to the weekly plan. Switch off to stay in the catalog and see a confirmation instead.',
+      text.profile.planning.returnToPlanner,
+      text.profile.planning.returnToPlannerHint,
       setReturnToPlanner,
     )}
     <label class="flex items-start justify-between gap-4 py-3">
       <span class="flex flex-col">
-        <span class="text-label-md text-on-surface">Week starts on</span>
+        <span class="text-label-md text-on-surface">{text.profile.planning.weekStarts}</span>
         <span class="text-body-sm text-on-surface-variant">
-          The first day of the weekly plan and the grocery week. Your plan keeps its dates; grocery lists move to the new weeks.
+          {text.profile.planning.weekStartsHint}
         </span>
       </span>
       <select value={settings.weekStartDay} onchange={changeWeekStart} class="{inputClass} shrink-0">
@@ -192,23 +191,21 @@
   <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="ingredients-heading">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 id="ingredients-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-        <Icon name="grocery" class="text-[20px] text-primary" /> Ingredients
+        <Icon name="grocery" class="text-[20px] text-primary" /> {text.profile.ingredients.title}
       </h2>
       <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
-        {synced ? `Synced · [${sheets.tabs.ingredients}]` : 'Saved on this device'}
+        {synced ? text.profile.badges.synced(sheets.tabs.ingredients) : text.profile.badges.savedOnDevice}
       </span>
     </div>
     <p class="max-w-2xl text-body-sm text-on-surface-variant">
-      Everything your recipes and grocery lists use, each with its store aisle. An ingredient in stock stays off every
-      grocery list until you untick it — here, on a recipe that uses it, or with Need it on the grocery list. Edit names
-      and aisles, merge duplicates, or delete ones no recipe uses.
+      {text.profile.ingredients.intro}
     </p>
     <div class="flex flex-wrap items-center justify-between gap-3">
       <span class="text-label-md {ingredients.length ? 'text-on-surface' : 'text-outline'}">
-        {ingredients.length ? `${ingredients.length} ingredient${ingredients.length === 1 ? '' : 's'} · ${inStock} in stock` : 'None yet — they’re added with your recipes.'}
+        {ingredients.length ? text.profile.ingredients.count(ingredients.length, inStock) : text.profile.ingredients.none}
       </span>
       <button type="button" class="btn-outline py-1.5" onclick={() => (editingIngredients = true)}>
-        <Icon name="edit" class="text-[16px]" /> View / Edit
+        <Icon name="edit" class="text-[16px]" /> {text.profile.ingredients.viewEdit}
       </button>
     </div>
   </section>
@@ -216,16 +213,14 @@
   <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="tags-heading">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 id="tags-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-        <Icon name="sell" class="text-[20px] text-primary" /> Recipe Tags
+        <Icon name="sell" class="text-[20px] text-primary" /> {text.profile.tags.title}
       </h2>
       <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
-        {synced ? `Synced · [${sheets.tabs.settings}]` : 'Saved on this device'}
+        {synced ? text.profile.badges.synced(sheets.tabs.settings) : text.profile.badges.savedOnDevice}
       </span>
     </div>
     <p class="max-w-2xl text-body-sm text-on-surface-variant">
-      Every tag your recipes use. Pick a colour for your own tags, or rename or delete them: renaming or deleting changes every
-      recipe with that tag{samplesShown ? ', sample recipes included (their editor then offers Revert to Original)' : ''}, and renaming to a
-      tag you already use merges the two. The built-in tags can’t be changed. New tags get a colour as they appear.
+      {text.profile.tags.intro(samplesShown)}
     </p>
 
     {#if tagRows.length}
@@ -237,7 +232,7 @@
               <form onsubmit={rename} class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                 <!-- svelte-ignore a11y_autofocus -->
                 <input
-                  aria-label="New name for {tag}"
+                  aria-label={text.profile.tags.newNameAria(tag)}
                   required
                   autofocus
                   maxlength={TAG_MAX}
@@ -245,8 +240,8 @@
                   onkeydown={(e) => e.key === 'Escape' && (renaming = null)}
                   class="{inputClass} min-w-0 flex-1 py-1.5"
                 />
-                <button type="submit" class="btn-primary py-1.5">Rename</button>
-                <button type="button" class="btn-outline py-1.5" onclick={() => (renaming = null)}>Cancel</button>
+                <button type="submit" class="btn-primary py-1.5">{text.profile.tags.rename}</button>
+                <button type="button" class="btn-outline py-1.5" onclick={() => (renaming = null)}>{text.common.cancel}</button>
               </form>
             {:else}
               <span class="flex min-w-0 flex-1 items-center gap-2">
@@ -254,17 +249,17 @@
                 <span class="shrink-0 text-body-sm text-outline">{recipeCount(count)}</span>
               </span>
               {#if builtIn}
-                <span class="text-label-sm text-outline">Built-in</span>
+                <span class="text-label-sm text-outline">{text.profile.tags.builtIn}</span>
               {:else}
-                <span role="radiogroup" aria-label="Colour for {tag}" class="flex items-center gap-1.5">
+                <span role="radiogroup" aria-label={text.profile.tags.colourAria(tag)} class="flex items-center gap-1.5">
                   {#each TONES as tone (tone)}
                     {@const on = settings.tagColors[tag] === tone}
                     <button
                       type="button"
                       role="radio"
                       aria-checked={on}
-                      aria-label={tone[0].toUpperCase() + tone.slice(1)}
-                      title={tone[0].toUpperCase() + tone.slice(1)}
+                      aria-label={tagColourName(tone)}
+                      title={tagColourName(tone)}
                       class="flex h-6 w-6 items-center justify-center rounded-full border border-outline-variant {toneClassOf(tone)} {on
                         ? 'ring-2 ring-primary ring-offset-1'
                         : ''}"
@@ -277,7 +272,7 @@
                 <span class="flex items-center">
                   <button
                     type="button"
-                    aria-label="Rename {tag}"
+                    aria-label={text.profile.tags.renameAria(tag)}
                     class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
                     onclick={() => (renaming = { from: tag, text: tag })}
                   >
@@ -285,7 +280,7 @@
                   </button>
                   <button
                     type="button"
-                    aria-label="Delete {tag}"
+                    aria-label={text.profile.tags.deleteAria(tag)}
                     class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
                     onclick={() => remove(tag, count)}
                   >
@@ -299,13 +294,13 @@
       </ul>
     {:else}
       <p class="rounded-xl border border-dashed border-outline-variant px-4 py-6 text-center text-body-sm text-outline">
-        No recipe uses a tag yet.
+        {text.profile.tags.none}
       </p>
     {/if}
 
     <div class="flex items-start justify-between gap-4">
-      <span class="text-body-sm text-on-surface-variant">Reset hands every tag a colour again, from scratch, for everyone sharing the sheet.</span>
-      <button type="button" class="btn-outline shrink-0 py-2" onclick={resetColors}>Reset Colours</button>
+      <span class="text-body-sm text-on-surface-variant">{text.profile.tags.resetHint}</span>
+      <button type="button" class="btn-outline shrink-0 py-2" onclick={resetColors}>{text.profile.tags.resetColours}</button>
     </div>
   </section>
 
@@ -313,76 +308,72 @@
   <section class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-5 shadow-card" aria-labelledby="device-heading">
     <div class="flex flex-wrap items-center justify-between gap-2">
       <h2 id="device-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-        <Icon name="devices" class="text-[20px] text-primary" /> This Device
+        <Icon name="devices" class="text-[20px] text-primary" /> {text.profile.device.title}
       </h2>
-      <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">Not synced</span>
+      <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.profile.badges.notSynced}</span>
     </div>
 
     <!-- One card per group of related options. -->
     <div class="flex flex-col gap-3">
       <div class="{deviceCard}">
-        {@render cardHeading('print', 'Recipe Printing', 'Defaults for the Print Options dialog on a recipe.')}
+        {@render cardHeading('print', text.profile.device.printing.title, text.profile.device.printing.hint)}
         <PrintOptionsFields bind:draft={print} rowClass="max-w-md" />
       </div>
 
       <div class="{deviceCard} gap-2" id="storage">
-        {@render cardHeading('storage', 'Storage')}
+        {@render cardHeading('storage', text.profile.storage.title)}
         {#if overBudget}
           <p class="text-body-sm text-on-surface-variant">
-            About {mb(used)} used, shared with other apps on the same site. This browser allows more than the usual {mb(STORAGE_BUDGET)}.
+            {text.profile.storage.overBudget(mb(used), mb(STORAGE_BUDGET))}
           </p>
         {:else}
           <p class="text-body-sm text-on-surface-variant">
-            About {mb(used)} of the roughly {mb(STORAGE_BUDGET)} this browser allows the site (other apps on the same site share it).
+            {text.profile.storage.used(mb(used), mb(STORAGE_BUDGET))}
           </p>
-          <div class="h-2 max-w-md overflow-hidden rounded-full bg-surface-container-high" role="meter" aria-label="Storage used" aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(usedShare * 100)}>
+          <div class="h-2 max-w-md overflow-hidden rounded-full bg-surface-container-high" role="meter" aria-label={text.profile.storage.meterAria} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(usedShare * 100)}>
             <div class="h-full rounded-full {storageState.unsaved || usedShare >= NEARLY_FULL ? 'bg-secondary' : 'bg-primary'}" style="width: {Math.max(2, usedShare * 100)}%"></div>
           </div>
         {/if}
         {#if storageState.unsaved}
           <p class="flex items-start gap-2 text-body-sm text-secondary">
             <Icon name="warning" class="mt-0.5 text-[16px]" />
-            <span>
-              <strong class="font-bold">Out of space:</strong> recent changes aren’t saved on this device and are lost if the page
-              reloads{synced ? ' (apart from what has synced to your Google Sheet)' : ''}. Free up space by removing uploaded photos or
-              data from other apps on this site.
-            </span>
+            <span>{@html text.profile.storage.outOfSpace(synced)}</span>
           </p>
         {:else if usedShare >= NEARLY_FULL && !overBudget}
           <p class="flex items-start gap-2 text-body-sm text-secondary">
             <Icon name="warning" class="mt-0.5 text-[16px]" />
-            <span><strong class="font-bold">Nearly full.</strong> New changes may soon stop saving on this device.</span>
+            <span>{@html text.profile.storage.nearlyFull}</span>
           </p>
         {/if}
         {#if pendingPhotos.length}
           <p class="text-body-sm text-on-surface-variant">
-            {pendingPhotos.length} uploaded photo{pendingPhotos.length === 1 ? ' is' : 's are'} waiting for Google Drive ({mb(pendingPhotoSize)}).
-            {synced ? 'They upload on the next sync.' : `Connect a Google Sheet to move ${pendingPhotos.length === 1 ? 'it' : 'them'} off this device.`}
+            {text.profile.storage.photosWaiting(pendingPhotos.length, mb(pendingPhotoSize))}
+            {synced ? text.profile.storage.photosUpload : text.profile.storage.photosConnect(pendingPhotos.length)}
           </p>
         {/if}
         {#if storageState.persisted === true}
-          <p class="text-body-sm text-on-surface-variant">The browser keeps this data rather than clearing it to free up space.</p>
+          <p class="text-body-sm text-on-surface-variant">{text.profile.storage.persisted}</p>
         {:else if storageState.persisted === false}
           <div class="flex items-start justify-between gap-4">
-            <span class="text-body-sm text-on-surface-variant">The browser may clear this data when the device runs low on space.</span>
-            <button type="button" class="btn-outline shrink-0 py-2" onclick={askToKeep}>Ask to Keep It</button>
+            <span class="text-body-sm text-on-surface-variant">{text.profile.storage.notPersisted}</span>
+            <button type="button" class="btn-outline shrink-0 py-2" onclick={askToKeep}>{text.profile.storage.askToKeep}</button>
           </div>
         {/if}
       </div>
 
       <div class="{deviceCard}">
-        {@render cardHeading('menu_book', 'Catalog')}
+        {@render cardHeading('menu_book', text.profile.device.catalog.title)}
         <div class="-mb-3 divide-y divide-outline-variant/40">
           {@render switchRow(
             devicePrefs.hidePlanned,
-            'Hide meals already planned this week',
-            'Starts the catalog with “Unplanned this week” switched on. The meal on the day you’re swapping stays listed.',
+            text.profile.device.catalog.hidePlanned,
+            text.profile.device.catalog.hidePlannedHint,
             setHidePlanned,
           )}
           {@render switchRow(
             devicePrefs.hideRecent,
-            'Hide recently made recipes',
-            `Starts the catalog with “Not made recently” (nothing made in the last ${RECENT_DAYS} days) switched on.`,
+            text.profile.device.catalog.hideRecent,
+            text.profile.device.catalog.hideRecentHint(RECENT_DAYS),
             setHideRecent,
           )}
         </div>
@@ -390,14 +381,13 @@
 
       <div class="{deviceCard} gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4" id="export">
         <div class="flex flex-col">
-          {@render cardHeading('download', 'Export')}
+          {@render cardHeading('download', text.profile.device.export.title)}
           <p class="text-body-sm text-on-surface-variant">
-            Download your {exportContents} as an .xlsx workbook with MealCaster’s tabs — a backup, or something to open in Excel or
-            Numbers. Uploaded photos that haven’t reached Google Drive are left out.
+            {text.profile.device.export.description(exportContents)}
           </p>
         </div>
         <button type="button" class="btn-outline shrink-0 self-start py-2 sm:self-auto" onclick={exportData}>
-          <Icon name="download" class="text-[16px]" /> Export (.xlsx)
+          <Icon name="download" class="text-[16px]" /> {text.profile.device.export.button}
         </button>
       </div>
     </div>
@@ -406,16 +396,14 @@
   <!-- Danger zone -->
   <section class="flex flex-col gap-3 rounded-2xl border-2 border-secondary/40 bg-surface-container-lowest p-5" aria-labelledby="danger-heading">
     <h2 id="danger-heading" class="flex items-center gap-2 font-display text-headline-sm text-secondary">
-      <Icon name="warning" class="text-[20px]" /> Danger Zone
+      <Icon name="warning" class="text-[20px]" /> {text.profile.danger.title}
     </h2>
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <p class="max-w-xl text-body-sm text-on-surface-variant">
-        <strong class="text-on-surface">Disconnect and erase all local data.</strong> Signs out of Google and permanently removes
-        every recipe, plan, grocery list and setting saved in this browser, then starts MealCaster fresh. Your Google Sheet is not
-        changed. This can’t be undone — handy for testing a clean start.
+        {@html text.profile.danger.description}
       </p>
       <button type="button" class="btn shrink-0 bg-secondary py-2.5 text-on-secondary hover:bg-[#b34728]" onclick={() => (confirmingWipe = true)}>
-        <Icon name="delete_forever" class="text-[16px]" /> Disconnect &amp; Erase…
+        <Icon name="delete_forever" class="text-[16px]" /> {text.profile.danger.button}
       </button>
     </div>
   </section>

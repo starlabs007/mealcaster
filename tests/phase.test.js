@@ -3,6 +3,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { text } from '../src/lib/text.js';
 import { PHASE_LOOK, headerActions, phaseOf, startStep } from '../src/lib/sync/phase.js';
 
 /** Connected, signed in and in sync; each test changes what it needs. */
@@ -109,8 +110,8 @@ describe('headerActions', () => {
   it('hands out copies, so a caller can’t change the next result', () => {
     headerActions('syncing').primary.label = 'changed';
     headerActions('synced').menu[0].label = 'changed';
-    assert.equal(headerActions('syncing').primary.label, 'Sync Now');
-    assert.equal(headerActions('synced').menu[0].label, 'Connection Settings');
+    assert.equal(headerActions('syncing').primary.label, text.header.actions.syncNow);
+    assert.equal(headerActions('synced').menu[0].label, text.header.actions.settings);
   });
 });
 

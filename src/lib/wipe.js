@@ -5,6 +5,7 @@
 import { signOut } from './google/auth.svelte.js';
 import { storageKey } from './env.js';
 import { showToast } from './toast.svelte.js';
+import { text } from './text.js';
 
 const WIPED_FLAG = storageKey('wiped');
 // The dev-mode marker only records which build flavour wrote the data; keeping it stops the dev
@@ -49,7 +50,7 @@ export function wipeLocalData() {
 try {
   if (sessionStorage.getItem(WIPED_FLAG)) {
     sessionStorage.removeItem(WIPED_FLAG);
-    showToast('Disconnected and erased all local data on this device.');
+    showToast(text.profile.wipe.toast);
   }
 } catch {
   // No storage, no toast.

@@ -14,6 +14,7 @@ import { TONES, normalizeAisle, normalizeCategory, normalizeTag, normalizeTags }
 import { aisles } from '../data/aisles.js';
 import { canonicalUnit, ingredientIdFor, recipeIdFor, tidyIngredientName } from '../ingredients.js';
 import { SCHEMA_VERSION } from '../schema.js';
+import * as sheetText from '../sheetText.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -142,14 +143,14 @@ export function parseIngredients(value) {
     return data.map((g) => {
       const kept = items(g.items);
       return {
-        title: str(g.title) || 'Ingredients',
-        category: str(g.category) || `${kept.length} ${kept.length === 1 ? 'item' : 'items'}`,
+        title: str(g.title) || sheetText.defaultGroupTitle,
+        category: str(g.category) || sheetText.groupCategory(kept.length),
         items: kept,
       };
     });
   }
   const flat = items(data);
-  return flat.length ? [{ title: 'Ingredients', category: `${flat.length} items`, items: flat }] : [];
+  return flat.length ? [{ title: sheetText.defaultGroupTitle, category: sheetText.flatGroupCategory(flat.length), items: flat }] : [];
 }
 
 /**
@@ -162,7 +163,7 @@ const RECIPE_COLUMNS = {
   Title: {
     get: (r) => r.title,
     set: (r, v) => {
-      r.title = str(v) || 'Untitled recipe';
+      r.title = str(v) || sheetText.untitledRecipe;
       r.shortTitle = r.title;
     },
   },
@@ -247,7 +248,7 @@ export function recipeFromRow(row, existing, { columns, favorites, today }) {
     if (!c || (written && cellText(written[col]) === cellText(row[col]))) continue;
     c.set(recipe, row[col], ctx);
   }
-  if (!recipe.title) recipe.title = recipe.shortTitle = 'Untitled recipe';
+  if (!recipe.title) recipe.title = recipe.shortTitle = sheetText.untitledRecipe;
   recipe.minutes = recipe.prepMinutes + recipe.cookMinutes;
   return { recipe, favorite: ctx.favorite };
 }
@@ -295,7 +296,7 @@ export function ingredientFromRow(row, existing, columns) {
   const id = str(row.Ingredient_ID);
   const written = existing ? ingredientToRow(existing) : null;
   const changed = (col) => columns.includes(col) && !(written && cellText(written[col]) === cellText(row[col]));
-  const next = existing ? { ...existing } : { id, name: '', plural: '', aisle: 'Pantry', onHand: false };
+  const next = existing ? { ...existing } : { id, name: '', plural: '', aisle: sheetText.defaultAisle, onHand: false };
   if (changed('Name')) next.name = tidyIngredientName(str(row.Name)) || next.name;
   if (changed('Plural')) next.plural = tidyIngredientName(str(row.Plural));
   // An aisle MealCaster doesn't know keeps the one it had.
@@ -319,7 +320,7 @@ export function planToRow(iso, entry) {
     Day_Of_Week: formatWeekday(iso),
     Recipe_ID_Assigned: entry.recipeId ?? '',
     Completed_Flag: Boolean(entry.completed),
-    Custom_Notes: entry.notes ?? (entry.diningOut ? 'Dining out' : ''),
+    Custom_Notes: entry.notes ?? (entry.diningOut ? sheetText.diningOutNote : ''),
   };
 }
 
@@ -364,8 +365,8 @@ export function planFromRow(row, existing, columns) {
 /** @returns {'need' | 'bought' | 'owned'} 'owned' = an "On hand" row */
 export function parseStatus(v) {
   const t = str(v).toLowerCase();
-  if (v === true || /^(bought|done|got|checked|true|x|✓)/.test(t)) return 'bought';
-  if (/on hand|pantry|owned|have|stock/.test(t)) return 'owned';
+  if (v === true || sheetText.statusPatterns.bought.test(t)) return 'bought';
+  if (sheetText.statusPatterns.owned.test(t)) return 'owned';
   return 'need';
 }
 
@@ -402,9 +403,9 @@ export function provisionToRow(week, line, inStock = false) {
   return {
     Week_Of: week,
     Item: line.name,
-    Detail: [line.amount, line.optional && 'optional'].filter(Boolean).join(' · '),
-    Department: departments.find((d) => d.id === line.dept)?.short ?? 'Pantry',
-    Status: inStock ? 'On hand' : line.status === 'bought' ? 'Bought' : 'To buy',
+    Detail: [line.amount, line.optional && sheetText.detailOptional].filter(Boolean).join(' · '),
+    Department: departments.find((d) => d.id === line.dept)?.short ?? sheetText.defaultDepartmentShort,
+    Status: inStock ? sheetText.status.onHand : line.status === 'bought' ? sheetText.status.bought : sheetText.status.toBuy,
     Source: line.sources.map((s) => (s.note ? `${s.label} (${s.note})` : s.label)).join(', '),
     Line_Key: line.key,
     Added: addedCell(line),
@@ -498,18 +499,18 @@ export function parseAisle(v) {
 }
 
 /** [Settings] row for "go back to the planner after choosing a meal". */
-export const RETURN_TO_PLANNER = { Section: 'Preference', Name: 'Return to planner after choosing a meal' };
+export const RETURN_TO_PLANNER = sheetText.returnToPlannerRow;
 
 /** [Settings] row holding the schema version the sheet was written with. */
-export const SCHEMA_VERSION_ROW = { Section: 'Schema', Name: 'Version' };
+export const SCHEMA_VERSION_ROW = sheetText.schemaVersionRow;
 
 /** [Settings] row for the weekday the planner's weeks start on. */
-export const WEEK_STARTS_ON = { Section: 'Preference', Name: 'Week starts on' };
+export const WEEK_STARTS_ON = sheetText.weekStartsOnRow;
 
 /** [Settings] section for tag colours: one row per tag, Value = the colour's name ("Saffron"). */
-export const TAG_COLOUR_SECTION = 'Tag Colour';
+export const TAG_COLOUR_SECTION = sheetText.tagColourSection;
 
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const WEEKDAYS = sheetText.weekdays;
 
 /** Weekday number (0 Sunday … 6 Saturday) for "Monday" / "mon" in any case, or -1. */
 export const parseWeekday = (v) => {
@@ -534,7 +535,7 @@ export function settingsToRows(settings) {
     Value: WEEKDAYS[settings.weekStartDay ?? DEFAULT_WEEK_START_DAY],
   });
   for (const [tag, tone] of Object.entries(settings.tagColors ?? {})) {
-    rows.set(settingKey(TAG_COLOUR_SECTION, tag), { Section: TAG_COLOUR_SECTION, Name: tag, Value: tone[0].toUpperCase() + tone.slice(1) });
+    rows.set(settingKey(TAG_COLOUR_SECTION, tag), { Section: TAG_COLOUR_SECTION, Name: tag, Value: sheetText.tagColourName(tone) });
   }
   return rows;
 }
@@ -558,7 +559,7 @@ export function settingsFromRows(rows) {
   const returnKey = settingKey(RETURN_TO_PLANNER.Section, RETURN_TO_PLANNER.Name);
   for (const row of rows) {
     const section = str(row.Section).toLowerCase();
-    if (section === 'preference') {
+    if (section === sheetText.weekStartsOnRow.Section.toLowerCase()) {
       const value = str(row.Value).toLowerCase();
       if (settingKey(row.Section, row.Name) === returnKey && /^(true|false|yes|no|y|n|1|0|on|off)$/.test(value)) {
         returnToPlanner = /^(true|yes|y|1|on)$/.test(value);
@@ -566,7 +567,7 @@ export function settingsFromRows(rows) {
       if (settingKey(row.Section, row.Name) === weekKey && parseWeekday(row.Value) >= 0) weekStartDay = parseWeekday(row.Value);
       continue;
     }
-    if (section === 'schema') {
+    if (section === sheetText.schemaVersionRow.Section.toLowerCase()) {
       if (settingKey(row.Section, row.Name) === settingKey(SCHEMA_VERSION_ROW.Section, SCHEMA_VERSION_ROW.Name)) {
         const n = Number.parseInt(str(row.Value), 10);
         if (n > 0) schemaVersion = n;
