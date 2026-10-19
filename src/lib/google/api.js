@@ -1,6 +1,7 @@
 // Minimal Google Sheets + Drive REST client (fetch, no gapi client library).
 
 import { currentToken, expire } from './auth.svelte.js';
+import { text } from '../text.js';
 
 const SHEETS = 'https://sheets.googleapis.com/v4/spreadsheets';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
@@ -20,7 +21,7 @@ export class GoogleApiError extends Error {
  */
 async function call(url, { method = 'GET', json, body, headers = {} } = {}) {
   const token = currentToken();
-  if (!token) throw new GoogleApiError('Not signed in to Google.', 401);
+  if (!token) throw new GoogleApiError(text.sheets.errors.notSignedIn, 401);
   let response;
   try {
     response = await fetch(url, {
@@ -29,7 +30,7 @@ async function call(url, { method = 'GET', json, body, headers = {} } = {}) {
       body: json !== undefined ? JSON.stringify(json) : body,
     });
   } catch {
-    throw new GoogleApiError('Couldn’t reach Google.', 0);
+    throw new GoogleApiError(text.sheets.errors.cantReach, 0);
   }
   if (response.status === 401) expire();
   if (!response.ok) {
@@ -113,7 +114,7 @@ export async function getAccount() {
 /** Name of a spreadsheet the app can open (or throws). @param {string} id */
 export async function getFileName(id) {
   const data = await call(`${DRIVE}/files/${encodeURIComponent(id)}?fields=name,trashed`);
-  if (data.trashed) throw new GoogleApiError('That spreadsheet is in the trash.', 404);
+  if (data.trashed) throw new GoogleApiError(text.sheets.errors.inTrash, 404);
   return data.name;
 }
 
@@ -145,7 +146,7 @@ export const isPhotoDataUrl = (url) => /^data:image\/(jpeg|png|webp)[;,]/.test(u
  * @returns {Promise<string>} image URL for the Image_URL column
  */
 export async function uploadPhoto(dataUrl, name, folderId) {
-  if (!isPhotoDataUrl(dataUrl)) throw new Error('Only JPG, PNG or WebP photos can be uploaded.');
+  if (!isPhotoDataUrl(dataUrl)) throw new Error(text.sheets.errors.photoType);
   const image = await (await fetch(dataUrl)).blob();
   const boundary = `mealcaster${Math.random().toString(36).slice(2)}`;
   const metadata = { name, parents: [folderId], mimeType: image.type || 'image/jpeg' };

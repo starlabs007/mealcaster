@@ -20,6 +20,7 @@ import { settings, replaceSettings } from '../settings.svelte.js';
 import { realignWeeks } from '../weekStart.svelte.js';
 import { addDays, weekStartOf } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
+import { text } from '../text.js';
 import { storageKey } from '../env.js';
 import { allSaved } from '../storage.svelte.js';
 import {
@@ -264,20 +265,20 @@ async function uploadPendingPhotos() {
 /** Plain-language message for a failed pass. */
 function describe(error) {
   if (error instanceof GoogleApiError) {
-    if (error.status === 401) return 'Your Google session ended — reconnect to keep syncing.';
-    if (error.status === 403) return 'MealCaster doesn’t have access to this spreadsheet. Choose it again from Google Drive.';
-    if (error.status === 404) return 'This spreadsheet can’t be found — it may have been deleted. Choose another one.';
-    if (error.status === 429 || error.status >= 500) return 'Google Sheets is busy right now. Try again in a minute.';
-    if (error.status === 0) return 'You’re offline. Changes are kept on this device and sync when you’re back.';
-    return `Google Sheets said: ${error.message}`;
+    if (error.status === 401) return text.sheets.errors.sessionEnded;
+    if (error.status === 403) return text.sheets.errors.noAccess;
+    if (error.status === 404) return text.sheets.errors.notFound;
+    if (error.status === 429 || error.status >= 500) return text.sheets.errors.busy;
+    if (error.status === 0) return text.sheets.errors.offline;
+    return text.sheets.errors.googleSaid(error.message);
   }
-  return error instanceof Error ? error.message : 'Sync failed.';
+  return error instanceof Error ? error.message : text.sheets.errors.syncFailed;
 }
 
 /** Why a spreadsheet in another layout isn't synced. @param {number} sheetVersion 0 when it has no version row */
 function versionMessage(sheetVersion) {
-  if (sheetVersion > SCHEMA_VERSION) return 'This spreadsheet was set up by a newer MealCaster. Reload the app to update it, then sync again.';
-  return 'This spreadsheet uses an older MealCaster layout, so it can’t be synced. Convert it first, or choose another spreadsheet.';
+  if (sheetVersion > SCHEMA_VERSION) return text.sheets.errors.newerVersion;
+  return text.sheets.errors.olderVersion;
 }
 
 /**
@@ -319,7 +320,7 @@ export function syncNow(options = {}) {
         syncState.lastSyncedAt = new Date().toISOString();
         saveBase(result.base);
         lastFingerprint = deviceFingerprint();
-        if (!options.quiet && result.pulled) showToast(`Updated from Google Sheets (${result.pulled} change${result.pulled === 1 ? '' : 's'}).`);
+        if (!options.quiet && result.pulled) showToast(text.sheets.toasts.updated(result.pulled));
       }
     } catch (error) {
       syncState.error = describe(error);
@@ -426,7 +427,7 @@ export async function switchAccount() {
   await afterSignIn();
   if (sheets.spreadsheet && before && sheets.accountEmail !== before) {
     unlink();
-    showToast(`Signed in as ${sheets.accountEmail}. Choose a spreadsheet for this account.`);
+    showToast(text.sheets.toasts.signedInAs(sheets.accountEmail));
   }
   return true;
 }
@@ -497,7 +498,7 @@ export function disconnect() {
   signOut();
   unlink();
   syncState.account = null;
-  showToast('Disconnected from Google Sheets. Your data stays on this device.');
+  showToast(text.sheets.toasts.disconnected);
 }
 
 /** Backup-sync confirm, "restore" answer: switch to bidirectional and take the spreadsheet's data. */

@@ -5,6 +5,7 @@
   // to match the device; restoring is offered only if the device is empty. Nothing is written before
   // an answer. "Don't Connect" unlinks the spreadsheet (staying signed in) to choose another.
   import Icon from './Icon.svelte';
+  import { text } from '../text.js';
   import { sheets } from '../sheets.svelte.js';
   import { syncState, syncNow, cancelFirstSync, restoreFromSheet } from '../sync/sync.svelte.js';
 
@@ -18,11 +19,11 @@
   const deviceEmpty = $derived(!counts || counts.device.ingredients + counts.device.recipes + counts.device.weeklyPlan + counts.device.provisions === 0);
   const rows = $derived(
     [
-      { key: 'ingredients', label: 'Ingredients', icon: 'grocery' },
-      { key: 'recipes', label: 'Recipes', icon: 'menu_book' },
-      { key: 'weeklyPlan', label: 'Planned dinners', icon: 'calendar_month' },
-      sheets.syncProvisions && { key: 'provisions', label: 'Grocery lines', icon: 'shopping_basket' },
-      { key: 'settings', label: 'Settings', icon: 'tune' },
+      { key: 'ingredients', label: text.sheets.firstSync.rows.ingredients, icon: 'grocery' },
+      { key: 'recipes', label: text.sheets.firstSync.rows.recipes, icon: 'menu_book' },
+      { key: 'weeklyPlan', label: text.sheets.firstSync.rows.weeklyPlan, icon: 'calendar_month' },
+      sheets.syncProvisions && { key: 'provisions', label: text.sheets.firstSync.rows.provisions, icon: 'shopping_basket' },
+      { key: 'settings', label: text.sheets.firstSync.rows.settings, icon: 'tune' },
     ].filter(Boolean),
   );
 
@@ -41,20 +42,19 @@
     <Icon name={backup ? 'warning' : 'merge'} class="mt-0.5 text-[22px] text-tertiary" />
     <div class="flex flex-col gap-1">
       <h3 id="first-sync-title" class="text-label-md text-on-surface">
-        {backup ? (deviceEmpty ? 'Empty' : 'Overwrite') : 'Combine with'} “{sheets.spreadsheetName || 'your spreadsheet'}”{backup ? ' to match this device?' : '?'}
+        {backup ? text.sheets.firstSync.titleBackup(deviceEmpty, sheets.spreadsheetName || text.sheets.firstSync.yourSpreadsheet) : text.sheets.firstSync.titleCombine(sheets.spreadsheetName || text.sheets.firstSync.yourSpreadsheet)}
       </h3>
       <p class="text-body-sm text-on-surface-variant">
         {#if backup}
           {#if deviceEmpty}
-            This device has no ingredients, recipes, plan or grocery list, but the spreadsheet does.
+            {text.sheets.firstSync.backupEmpty}
           {:else}
-            The spreadsheet already has data.
+            {text.sheets.firstSync.backupHasData}
           {/if}
-          In Sheets as Backup mode the spreadsheet is a copy of this device, so syncing will overwrite matching rows and delete the rest
-          of what is listed under Spreadsheet.
-          {#if deviceEmpty}To get that data onto this device instead, restore it: sync switches to Bidirectional.{/if}
+          {text.sheets.firstSync.backupExplain}
+          {#if deviceEmpty}{text.sheets.firstSync.backupRestore}{/if}
         {:else}
-          The spreadsheet and this device both have data. Choose what happens on this first sync.
+          {text.sheets.firstSync.both}
         {/if}
       </p>
     </div>
@@ -63,7 +63,7 @@
   {#if counts}
     <div class="overflow-hidden rounded-xl bg-surface-container-lowest shadow-card">
       <div class="grid grid-cols-[1fr_auto_auto] gap-x-6 bg-surface-container-low px-4 py-2 text-label-caps uppercase text-on-surface-variant">
-        <span></span><span class="text-right">Spreadsheet</span><span class="text-right">This device</span>
+        <span></span><span class="text-right">{text.sheets.firstSync.columns.spreadsheet}</span><span class="text-right">{text.sheets.firstSync.columns.device}</span>
       </div>
       {#each rows as row (row.key)}
         <div class="grid grid-cols-[1fr_auto_auto] items-center gap-x-6 border-t border-surface-container-high px-4 py-2 text-body-md">
@@ -76,10 +76,10 @@
   {/if}
 
   {#if !backup}
-    <div class="flex flex-col gap-2" role="radiogroup" aria-label="First sync">
+    <div class="flex flex-col gap-2" role="radiogroup" aria-label={text.sheets.firstSync.aria}>
       {#each [
-        { value: 'merge', title: 'Merge both', text: 'Add what’s only on this device to the spreadsheet. Where both have the same recipe, dinner or grocery line, the spreadsheet’s version is kept.', icon: 'join' },
-        { value: 'sheetOnly', title: 'Use the spreadsheet only', text: 'Replace this device’s ingredients, recipes, plan and grocery list with the spreadsheet’s. Anything only on this device is removed.', icon: 'cloud_download' },
+        { value: 'merge', title: text.sheets.firstSync.options.merge.title, text: text.sheets.firstSync.options.merge.body, icon: 'join' },
+        { value: 'sheetOnly', title: text.sheets.firstSync.options.sheetOnly.title, text: text.sheets.firstSync.options.sheetOnly.body, icon: 'cloud_download' },
       ] as option (option.value)}
         <label
           class="flex cursor-pointer items-start gap-3 rounded-lg bg-surface-container-lowest p-3 transition-colors {choice === option.value
@@ -103,11 +103,11 @@
 
   <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
     <button type="button" class="btn px-4 py-2 text-body-md text-on-surface hover:bg-surface-container-high" disabled={syncState.busy} onclick={cancel}>
-      Don’t Connect
+      {text.sheets.firstSync.dontConnect}
     </button>
     {#if backup && deviceEmpty}
       <button type="button" class="btn-outline px-4 py-2 text-body-md" disabled={syncState.busy} onclick={restoreFromSheet}>
-        <Icon name="cloud_download" class="text-[18px]" /> Restore From Spreadsheet
+        <Icon name="cloud_download" class="text-[18px]" /> {text.sheets.firstSync.restore}
       </button>
     {/if}
     <button
@@ -117,7 +117,7 @@
       onclick={go}
     >
       <Icon name={syncState.busy ? 'progress_activity' : 'sync'} class="text-[18px] {syncState.busy ? 'animate-spin' : ''}" />
-      {syncState.busy ? 'Syncing…' : backup ? (deviceEmpty ? 'Empty Spreadsheet' : 'Overwrite Spreadsheet') : choice === 'merge' ? 'Merge & Sync' : 'Replace This Device'}
+      {syncState.busy ? text.sheets.firstSync.syncing : backup ? (deviceEmpty ? text.sheets.firstSync.emptySpreadsheet : text.sheets.firstSync.overwriteSpreadsheet) : choice === 'merge' ? text.sheets.firstSync.mergeAndSync : text.sheets.firstSync.replaceDevice}
     </button>
   </div>
 </section>

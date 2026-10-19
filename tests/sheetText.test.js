@@ -8,6 +8,7 @@ import { aisles } from '../src/lib/data/aisles.js';
 import { departments } from '../src/lib/data/departments.js';
 import { parseStatus, parseDept, parseAisle, parseWeekday } from '../src/lib/sync/codec.js';
 import { TONES } from '../src/lib/tags.js';
+import { COLUMN_INFO } from '../src/lib/schemaCheck.js';
 
 const HINT = ' (sheet text changed: see the comment at the top of src/lib/sheetText.js)';
 
@@ -104,5 +105,12 @@ describe('sheetText', () => {
     assert.equal(t.defaultStepTitle(3), 'Step 3', HINT);
     assert.equal(t.defaultAisle, 'Pantry', HINT);
     assert.equal(t.defaultDepartmentShort, 'Pantry', HINT);
+  });
+
+  it('column help in Column Conflicts quotes the same sheet values', () => {
+    const { provisions, settings } = COLUMN_INFO;
+    assert.ok(provisions.Status.note.includes(`${t.status.toBuy} or ${t.status.bought}. ${t.status.onHand}`), HINT);
+    assert.ok(provisions.Source.note.includes(t.sourceAddedByYou) && provisions.Source.note.includes(t.sourceEveryWeek), HINT);
+    assert.ok(settings.Name.note.includes(t.weekStartsOnRow.Name) && settings.Section.note.includes(t.returnToPlannerRow.Section), HINT);
   });
 });

@@ -1,6 +1,7 @@
 <script>
   import { onMount } from 'svelte';
   import Icon from '../lib/components/Icon.svelte';
+  import { text } from '../lib/text.js';
   import { SCHEMA, sheets, saveSchemaCheck } from '../lib/sheets.svelte.js';
   import { defaultAisle, status, tagColourName, tagColourSection, weekStartsOnRow, weekdays } from '../lib/sheetText.js';
   import {
@@ -148,10 +149,10 @@
   function analyze(rows, key = active, strict = true) {
     const headers = (rows[0] ?? []).map((h) => String(h ?? '').trim());
     while (headers.length && !headers.at(-1)) headers.pop();
-    if (!headers.length) return 'The first row is empty — copy starting from row 1, the header row.';
+    if (!headers.length) return text.sheets.columns.errors.firstRowEmpty;
     const resolution = suggestMapping(key, headers, { autoAppendOptional: autoAppend });
     if (strict && !Object.values(resolution).some((r) => r.index !== null)) {
-      return 'None of these look like MealCaster headers. Make sure the copy starts at row 1 of the tab.';
+      return text.sheets.columns.errors.notMealCaster;
     }
     const sample = rows.slice(1, 3).map((r) => headers.map((_, i) => String(r[i] ?? '')));
     checks[key] = { headers, rows: sample, resolution };
@@ -175,7 +176,7 @@
       }
       blankTabs = blanks;
     } catch (error) {
-      readError = `Couldn’t read the spreadsheet: ${error.message}`;
+      readError = text.sheets.columns.errors.readFailed(error.message);
     } finally {
       loading = false;
     }
@@ -183,7 +184,7 @@
 
   function checkPasted() {
     const rows = parsePastedRows(pasteText);
-    pasteError = rows.length ? analyze(rows) : 'Paste the copied rows first.';
+    pasteError = rows.length ? analyze(rows) : text.sheets.columns.errors.pasteFirst;
     if (!pasteError) pasteText = '';
   }
 
@@ -243,7 +244,7 @@
       else await navigator.clipboard.writeText(row.join('\t'));
     } catch (error) {
       checks[key] = previous;
-      showToast(live ? `Couldn’t update the sheet: ${error.message}` : 'Couldn’t copy to the clipboard from this browser.');
+      showToast(live ? text.sheets.columns.toasts.updateFailed(error.message) : text.sheets.columns.toasts.clipboardFailed);
       return;
     }
     // From here on the check describes the repaired sheet (once the row is pasted, when copied).
@@ -251,8 +252,8 @@
     const resolution = suggestMapping(key, row, { autoAppendOptional: autoAppend });
     for (const column of ignored) resolution[column].action = 'ignore';
     checks[key] = { headers: row, rows: current.rows.map((r) => [...r, ...Array(row.length - r.length).fill('')]), resolution };
-    showToast(live ? `Header row of “${tab}” repaired in your sheet.` : `Repaired header row copied — paste it into cell A1 of the “${tab}” tab.`, {
-      label: 'Undo',
+    showToast(live ? text.sheets.columns.toasts.repairedLive(tab) : text.sheets.columns.toasts.repairedCopied(tab), {
+      label: text.common.undo,
       run: async () => {
         checks[key] = previous;
         // Put the old headers back, blanking the cells repair added.
@@ -282,7 +283,7 @@
       }),
     );
     saveSchemaCheck(result, autoAppend);
-    showToast(live ? 'Column mapping saved — syncing with your sheet.' : 'Column mapping saved — sync will read your sheet this way.');
+    showToast(live ? text.sheets.columns.toasts.savedLive : text.sheets.columns.toasts.savedPaste);
     close();
     syncNow();
   }
@@ -292,18 +293,18 @@
   }
 
   const BADGE = {
-    bound: { icon: 'verified', label: 'Bound', class: 'bg-primary-fixed/60 text-primary' },
-    mapped: { icon: 'link', label: 'Mapped', class: 'bg-primary-fixed/60 text-primary' },
-    suggested: { icon: 'alt_route', label: 'Fuzzy match', class: 'bg-[#ffdead] text-tertiary' },
-    missing: { icon: 'error', label: 'Missing header', class: 'bg-secondary-fixed text-secondary' },
-    append: { icon: 'add_column_right', label: 'Will be added', class: 'bg-surface-container-high text-primary' },
-    ignored: { icon: 'block', label: 'Left out', class: 'bg-surface-container-high text-on-surface-variant' },
+    bound: { icon: 'verified', label: text.sheets.columns.badges.bound, class: 'bg-primary-fixed/60 text-primary' },
+    mapped: { icon: 'link', label: text.sheets.columns.badges.mapped, class: 'bg-primary-fixed/60 text-primary' },
+    suggested: { icon: 'alt_route', label: text.sheets.columns.badges.suggested, class: 'bg-[#ffdead] text-tertiary' },
+    missing: { icon: 'error', label: text.sheets.columns.badges.missing, class: 'bg-secondary-fixed text-secondary' },
+    append: { icon: 'add_column_right', label: text.sheets.columns.badges.append, class: 'bg-surface-container-high text-primary' },
+    ignored: { icon: 'block', label: text.sheets.columns.badges.ignored, class: 'bg-surface-container-high text-on-surface-variant' },
   };
 
   const detectedText = (s) =>
-    [s.missing && `${s.missing} missing`, s.renamed && `${s.renamed} renamed`, s.extras.length && `${s.extras.length} unrecognized`]
+    [s.missing && text.sheets.columns.missing(s.missing), s.renamed && text.sheets.columns.renamed(s.renamed), s.extras.length && text.sheets.columns.unrecognized(s.extras.length)]
       .filter(Boolean)
-      .join(', ') || 'all headers match';
+      .join(', ') || text.sheets.columns.allMatch;
 
   const truncate = (v, n = 70) => (v.length > n ? `${v.slice(0, n - 1)}…` : v);
 </script>
@@ -338,7 +339,7 @@
             ? 'bg-secondary-fixed text-secondary'
             : 'bg-surface-container-high text-on-surface-variant'}"
         >
-          {info.required ? 'Required' : 'Optional'}
+          {info.required ? text.sheets.columns.required : text.sheets.columns.optional}
         </span>
       </div>
       <span class="text-body-sm text-on-surface-variant">{info.note}</span>
@@ -347,7 +348,7 @@
     <div>{@render statusBadge(status, r.score)}</div>
 
     <div class="flex flex-col gap-1.5">
-      <label class="sr-only" for="col-{column}">Sheet column for {column}</label>
+      <label class="sr-only" for="col-{column}">{text.sheets.columns.columnLabel(column)}</label>
       <select
         id="col-{column}"
         value={r.index === null ? '' : String(r.index)}
@@ -355,20 +356,20 @@
         class="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-2.5 py-2 text-body-sm text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
       >
         {#each current.headers as header, index (index)}
-          {#if header}<option value={String(index)}>{header} (Col {columnLetter(index)})</option>{/if}
+          {#if header}<option value={String(index)}>{text.sheets.columns.colOption(header, columnLetter(index))}</option>{/if}
         {/each}
-        <option value="">— None (column missing) —</option>
+        <option value="">{text.sheets.columns.none}</option>
       </select>
       {#if status === 'suggested'}
         <span class="flex items-start gap-1 text-body-sm text-on-surface-variant">
-          <Icon name="auto_awesome" class="mt-0.5 text-[14px] text-tertiary" /> Suggested from a similar header name
+          <Icon name="auto_awesome" class="mt-0.5 text-[14px] text-tertiary" /> {text.sheets.columns.suggestedFrom}
         </span>
       {:else if status === 'missing'}
-        <span class="text-body-sm text-secondary">No such column in row 1 of the sheet.</span>
+        <span class="text-body-sm text-secondary">{text.sheets.columns.noSuchColumn}</span>
       {:else if status === 'append'}
-        <span class="text-body-sm text-on-surface-variant">Added as column {appendSlots[column]} when you repair the header row.</span>
+        <span class="text-body-sm text-on-surface-variant">{text.sheets.columns.addedAs(appendSlots[column])}</span>
       {:else if status === 'ignored'}
-        <span class="text-body-sm text-on-surface-variant">MealCaster will leave this field empty.</span>
+        <span class="text-body-sm text-on-surface-variant">{text.sheets.columns.leftEmpty}</span>
       {/if}
     </div>
 
@@ -378,34 +379,34 @@
           {#each current.rows as row, i (i)}
             <span class="truncate" title={row[r.index] ?? ''}>
               <span class="text-outline">R{i + 2}:</span>
-              {row[r.index] ? truncate(row[r.index]) : '(empty)'}
+              {row[r.index] ? truncate(row[r.index]) : text.sheets.columns.empty}
             </span>
           {/each}
         </div>
       {:else if r.index !== null}
-        <span class="text-body-sm italic text-outline">Paste rows 2–3 as well to preview values.</span>
+        <span class="text-body-sm italic text-outline">{text.sheets.columns.pasteMore}</span>
       {:else}
-        <span class="text-body-sm italic text-outline">No data mapped yet</span>
+        <span class="text-body-sm italic text-outline">{text.sheets.columns.noData}</span>
       {/if}
     </div>
 
     <div class="flex flex-wrap items-center gap-2 md:justify-end">
       {#if status === 'suggested'}
         <button type="button" class="btn-primary py-2" onclick={() => update(column, { match: 'confirmed' })}>
-          <Icon name="check" class="text-[16px]" /> Confirm
+          <Icon name="check" class="text-[16px]" /> {text.sheets.columns.confirm}
         </button>
       {:else if status === 'missing'}
         {#if !info.required}
           <button type="button" class="btn bg-surface-container-high py-2 text-on-surface-variant hover:bg-surface-container-highest" onclick={() => update(column, { action: 'ignore' })}>
-            Ignore
+            {text.sheets.columns.ignore}
           </button>
         {/if}
         <button type="button" class="btn bg-secondary py-2 text-on-secondary hover:bg-secondary/90" onclick={() => update(column, { action: 'append' })}>
-          <Icon name="add_column_right" class="text-[16px]" /> Append Header
+          <Icon name="add_column_right" class="text-[16px]" /> {text.sheets.columns.appendHeader}
         </button>
       {:else if status === 'append' || status === 'ignored'}
         <button type="button" class="btn py-2 text-on-surface-variant hover:bg-surface-container-high" onclick={() => update(column, { action: null })}>
-          <Icon name="undo" class="text-[16px]" /> Undo
+          <Icon name="undo" class="text-[16px]" /> {text.common.undo}
         </button>
       {:else}
         <Icon name="check_circle" class="icon-filled text-[22px] text-primary-container" />
@@ -439,32 +440,31 @@
         <div class="flex flex-col gap-1">
           <div class="flex flex-wrap items-center gap-2">
             <h2 id="conflicts-title" class="font-display text-headline-sm text-on-surface sm:text-headline-md">
-              Resolve Spreadsheet Column Conflicts
+              {text.sheets.columns.title}
             </h2>
             {#if !checkedTabs.length}
               <span class="inline-flex items-center gap-1.5 rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">
-                <span class="h-1.5 w-1.5 rounded-full bg-outline"></span> Not checked yet
+                <span class="h-1.5 w-1.5 rounded-full bg-outline"></span> {text.sheets.columns.notChecked}
               </span>
             {:else if totalConflicts}
               <span class="inline-flex items-center gap-1.5 rounded-full bg-secondary-fixed px-2 py-0.5 text-label-caps uppercase text-secondary">
                 <span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>
-                {totalConflicts} conflict{totalConflicts === 1 ? '' : 's'} to resolve
+                {text.sheets.columns.conflicts(totalConflicts)}
               </span>
             {:else}
               <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/70 px-2 py-0.5 text-label-caps uppercase text-primary">
-                <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> Headers resolved
+                <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> {text.sheets.columns.resolved}
               </span>
             {/if}
           </div>
           <p id="conflicts-subtitle" class="max-w-3xl text-body-md text-on-surface-variant">
-            Check that the header row of each tab matches what MealCaster expects. Map renamed columns below, or repair
-            the sheet’s header row in one step.
+            {text.sheets.columns.subtitle}
           </p>
         </div>
       </div>
       <button
         type="button"
-        aria-label="Close column conflicts"
+        aria-label={text.sheets.columns.closeAria}
         class="shrink-0 rounded-lg p-2 text-outline transition-colors hover:bg-surface-container hover:text-on-surface"
         onclick={close}
       >
@@ -482,7 +482,7 @@
           </span>
           <div class="flex flex-col gap-0.5 text-body-md text-on-surface-variant">
             <span class="text-label-md text-on-surface">
-              {live ? `Read from “${sheets.spreadsheetName || 'your spreadsheet'}”:` : 'Detected from the rows you pasted:'}
+              {live ? text.sheets.columns.readFrom(sheets.spreadsheetName || text.sheets.columns.yourSpreadsheet) : text.sheets.columns.detectedFromPaste}
             </span>
             <span class="flex flex-wrap items-center gap-x-1.5 gap-y-1">
               {#each tabKeys as key, i (key)}
@@ -492,12 +492,12 @@
                   ({summaries[key]
                     ? detectedText(summaries[key])
                     : blankTabs[key] === 'missing'
-                      ? 'tab will be created'
+                      ? text.sheets.columns.willBeCreated
                       : blankTabs[key] === 'empty'
-                        ? 'empty — headers will be added'
+                        ? text.sheets.columns.emptyAddHeaders
                         : loading
-                          ? 'reading…'
-                          : 'not checked'})
+                          ? text.sheets.columns.reading
+                          : text.sheets.columns.notCheckedShort})
                 </span>
               {/each}
             </span>
@@ -509,16 +509,16 @@
               type="button"
               class="btn bg-secondary px-4 py-2.5 text-body-md text-on-secondary shadow-sm hover:bg-secondary/90"
               disabled={!repairable || loading}
-              title={repairable ? (live ? 'Renames and adds headers in row 1 of the sheet' : 'Copies a corrected row 1 to paste into the sheet') : 'This tab’s headers already match'}
+              title={repairable ? (live ? text.sheets.columns.repairTitleLive : text.sheets.columns.repairTitlePaste) : text.sheets.columns.repairTitleMatch}
               onclick={repair}
             >
-              <Icon name="build_circle" class="text-[18px]" /> Repair Header Row
+              <Icon name="build_circle" class="text-[18px]" /> {text.sheets.columns.repair}
             </button>
             <button
               type="button"
               class="rounded-lg p-2 text-outline transition-colors hover:bg-surface-container-high hover:text-on-surface"
-              aria-label={live ? 'Read the sheet again' : 'Paste new rows for this tab'}
-              title={live ? 'Read the sheet again' : 'Paste new rows for this tab'}
+              aria-label={live ? text.sheets.columns.readAgain : text.sheets.columns.pasteNew}
+              title={live ? text.sheets.columns.readAgain : text.sheets.columns.pasteNew}
               onclick={startOver}
             >
               <Icon name="refresh" class="text-[20px]" />
@@ -528,7 +528,7 @@
       </div>
 
       <!-- Tabs -->
-      <div role="tablist" aria-label="Sheet tabs" class="flex w-fit max-w-full gap-1 overflow-x-auto rounded-xl [scrollbar-width:none] bg-surface-container-low p-1">
+      <div role="tablist" aria-label={text.sheets.columns.tabsAria} class="flex w-fit max-w-full gap-1 overflow-x-auto rounded-xl [scrollbar-width:none] bg-surface-container-low p-1">
         {#each tabKeys as key (key)}
           {@const s = summaries[key]}
           <button
@@ -545,7 +545,7 @@
             }}
           >
             <Icon name={TAB_ICON[key]} class="text-[18px] {key === active ? 'text-primary' : ''}" />
-            Tab: {sheets.tabs[key]}
+            {text.sheets.columns.tab(sheets.tabs[key])}
             {#if !s}
               <span class="rounded-full bg-surface-container-high px-1.5 text-label-sm text-outline">–</span>
             {:else if s.conflicts}
@@ -566,16 +566,16 @@
           />
           <div class="flex flex-col gap-1">
             {#if loading}
-              <span class="text-label-md text-on-surface">Reading your spreadsheet…</span>
+              <span class="text-label-md text-on-surface">{text.sheets.columns.readingSheet}</span>
             {:else if readError}
               <span class="text-label-md text-secondary">{readError}</span>
-              <button type="button" class="btn w-fit px-0 text-body-sm text-primary hover:underline" onclick={readSheet}>Try again</button>
+              <button type="button" class="btn w-fit px-0 text-body-sm text-primary hover:underline" onclick={readSheet}>{text.sheets.columns.tryAgain}</button>
             {:else}
               <span class="text-label-md text-on-surface">
-                {blankTabs[active] === 'missing' ? `There’s no “${sheets.tabs[active]}” tab yet` : `The “${sheets.tabs[active]}” tab is empty`}
+                {blankTabs[active] === 'missing' ? text.sheets.columns.noTab(sheets.tabs[active]) : text.sheets.columns.tabEmpty(sheets.tabs[active])}
               </span>
               <span class="text-body-sm text-on-surface-variant">
-                Nothing to resolve — the next sync {blankTabs[active] === 'missing' ? 'creates the tab and ' : ''}writes MealCaster’s column headers.
+                {text.sheets.columns.nothingToResolve(blankTabs[active] === 'missing')}
               </span>
             {/if}
           </div>
@@ -584,22 +584,22 @@
         <!-- Paste step -->
         <div class="grid gap-5 rounded-xl bg-surface-container-lowest p-4 shadow-card sm:p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
           <div class="flex flex-col gap-3">
-            <h3 class="font-display text-headline-sm text-on-surface">Copy the top of your “{sheets.tabs[active]}” tab</h3>
+            <h3 class="font-display text-headline-sm text-on-surface">{text.sheets.columns.copyTop(sheets.tabs[active])}</h3>
             <p class="text-body-sm text-on-surface-variant">
-              Google sign-in isn’t set up yet, so MealCaster can’t read your sheet directly. Copy the first rows instead:
+              {text.sheets.columns.noSignIn}
             </p>
             <ol class="flex flex-col gap-2 text-body-sm text-on-surface-variant">
-              {#each ['Open your spreadsheet on the “' + sheets.tabs[active] + '” tab.', 'Click row number 1, then Shift-click row number 3 to select the header row and two rows of data.', 'Copy (⌘C / Ctrl+C) and paste here.'] as step, i (i)}
+              {#each text.sheets.columns.pasteSteps as makeStep, i (i)}
                 <li class="flex items-start gap-2">
                   <span class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary-fixed/70 text-label-sm text-primary">{i + 1}</span>
-                  {step}
+                  {makeStep(sheets.tabs[active])}
                 </li>
               {/each}
             </ol>
-            <p class="text-body-sm text-outline">A CSV export of the tab works too. Nothing you paste leaves this device.</p>
+            <p class="text-body-sm text-outline">{text.sheets.columns.csvNote}</p>
           </div>
           <div class="flex flex-col gap-2">
-            <label for="paste-rows" class="text-label-md text-on-surface">Rows 1–3 of {sheets.tabs[active]}</label>
+            <label for="paste-rows" class="text-label-md text-on-surface">{text.sheets.columns.rowsLabel(sheets.tabs[active])}</label>
             <textarea
               id="paste-rows"
               rows="6"
@@ -615,10 +615,10 @@
             {#if pasteError}<span id="paste-error" class="text-body-sm text-secondary">{pasteError}</span>{/if}
             <div class="flex flex-wrap items-center justify-between gap-2">
               <button type="button" class="btn px-0 text-body-sm text-primary hover:underline" onclick={useExample}>
-                <Icon name="science" class="text-[16px]" /> Try with example rows
+                <Icon name="science" class="text-[16px]" /> {text.sheets.columns.tryExample}
               </button>
               <button type="button" class="btn-primary px-4 py-2 text-body-md" disabled={!pasteText.trim()} onclick={checkPasted}>
-                <Icon name="fact_check" class="text-[18px]" /> Check Headers
+                <Icon name="fact_check" class="text-[18px]" /> {text.sheets.columns.checkHeaders}
               </button>
             </div>
           </div>
@@ -629,11 +629,11 @@
           <div
             class="hidden gap-4 bg-surface-container-low px-5 py-3 text-label-caps uppercase tracking-wider text-on-surface-variant md:grid md:grid-cols-[minmax(0,1.25fr)_minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,1fr)]"
           >
-            <span>Expected column</span>
-            <span>Status</span>
-            <span>Sheet column</span>
-            <span>Cell preview (rows 2–3)</span>
-            <span class="text-right">Mapping action</span>
+            <span>{text.sheets.columns.header.expected}</span>
+            <span>{text.sheets.columns.header.status}</span>
+            <span>{text.sheets.columns.header.sheetColumn}</span>
+            <span>{text.sheets.columns.header.preview}</span>
+            <span class="text-right">{text.sheets.columns.header.action}</span>
           </div>
           <ul class="divide-y divide-surface-container-high">
             {#each SCHEMA[active] as column (column)}
@@ -644,9 +644,9 @@
             <div class="flex items-start gap-2 border-t border-surface-container-high bg-surface-container-low/60 px-5 py-3 text-body-sm text-on-surface-variant">
               <Icon name="help" class="mt-0.5 text-[16px] text-outline" />
               <span>
-                Unrecognized:
-                {#each summary.extras as extra, i (extra.index)}{i ? ', ' : ''}<span class="font-mono text-on-surface">{extra.header}</span> (Col {columnLetter(extra.index)}){/each}
-                — MealCaster ignores {summary.extras.length === 1 ? 'this column' : 'these columns'} and leaves {summary.extras.length === 1 ? 'it' : 'them'} untouched.
+                {text.sheets.columns.unrecognizedBefore}
+                {#each summary.extras as extra, i (extra.index)}{i ? ', ' : ''}<span class="font-mono text-on-surface">{extra.header}</span>{text.sheets.columns.unrecognizedCol(columnLetter(extra.index))}{/each}
+                {text.sheets.columns.ignoresColumns(summary.extras.length)}
               </span>
             </div>
           {/if}
@@ -658,14 +658,12 @@
         <div class="flex items-start gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-card">
           <Icon name="shield" class="mt-0.5 text-[20px] text-primary" />
           <div class="flex flex-col gap-1">
-            <span class="text-label-md text-on-surface">Safe, reversible header fixes</span>
+            <span class="text-label-md text-on-surface">{text.sheets.columns.safeTitle}</span>
             <span class="text-body-sm text-on-surface-variant">
               {#if live}
-                “Repair Header Row” only renames or adds headers in row 1 of the tab — it never touches cell values or
-                past dinners, and Undo puts the old headers back.
+                {text.sheets.columns.safeLive}
               {:else}
-                Nothing is written to your sheet from here. “Repair Header Row” copies a corrected row 1 for you to paste
-                into cell A1 — it only renames or adds headers and never touches cell values or past dinners.
+                {text.sheets.columns.safePaste}
               {/if}
             </span>
           </div>
@@ -679,8 +677,8 @@
               class="mt-0.5 h-4 w-4 rounded accent-primary"
             />
             <span class="flex flex-col">
-              <span class="text-label-md text-on-surface">Auto-add missing optional headers</span>
-              <span class="text-body-sm text-on-surface-variant">Optional columns the sheet lacks are appended instead of flagged.</span>
+              <span class="text-label-md text-on-surface">{text.sheets.columns.autoAdd}</span>
+              <span class="text-body-sm text-on-surface-variant">{text.sheets.columns.autoAddHint}</span>
             </span>
           </span>
           <Icon name="bolt" class="text-[20px] text-tertiary" />
@@ -693,20 +691,20 @@
       <div>
         {#if summary && !live}
           <button type="button" class="btn px-0 text-body-md text-on-surface-variant hover:text-on-surface hover:underline" onclick={startOver}>
-            <Icon name="history" class="text-[18px]" /> Paste {sheets.tabs[active]} Again
+            <Icon name="history" class="text-[18px]" /> {text.sheets.columns.pasteAgain(sheets.tabs[active])}
           </button>
         {/if}
       </div>
       <div class="flex flex-wrap items-center justify-end gap-2">
-        <button type="button" class="btn px-4 py-2 text-body-md text-on-surface hover:bg-surface-container-high" onclick={close}>Cancel</button>
+        <button type="button" class="btn px-4 py-2 text-body-md text-on-surface hover:bg-surface-container-high" onclick={close}>{text.common.cancel}</button>
         <button
           type="button"
           class="btn-primary px-5 py-2 text-body-md"
           disabled={totalConflicts > 0 || !checkedTabs.length}
-          title={totalConflicts ? 'Resolve every conflict first' : checkedTabs.length ? undefined : 'Check at least one tab first'}
+          title={totalConflicts ? text.sheets.columns.saveTitleConflicts : checkedTabs.length ? undefined : text.sheets.columns.saveTitleNone}
           onclick={save}
         >
-          <Icon name="task_alt" class="text-[18px]" /> Save Column Mapping
+          <Icon name="task_alt" class="text-[18px]" /> {text.sheets.columns.save}
         </button>
       </div>
     </div>

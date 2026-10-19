@@ -5,6 +5,7 @@
 // remains for when that fails.
 
 import { googleConfig, googleConfigured, SCOPE } from './config.js';
+import { text } from '../text.js';
 
 export const auth = $state({
   /** GIS script loaded and ready for a sign-in click. */
@@ -28,7 +29,7 @@ export function loadScript(src) {
         el.onload = () => resolve();
         el.onerror = () => {
           scripts.delete(src);
-          reject(new Error('Couldn’t reach Google — check your connection.'));
+          reject(new Error(text.sheets.errors.connectionCheck));
         };
         document.head.append(el);
       }),
@@ -54,7 +55,7 @@ export async function prepareAuth() {
       const done = pending;
       pending = null;
       if (response.error || !oauth2.hasGrantedAllScopes(response, SCOPE)) {
-        done?.reject(new Error('Google access wasn’t granted, so MealCaster can’t sync.'));
+        done?.reject(new Error(text.sheets.errors.notGranted));
         return;
       }
       auth.token = response.access_token;
@@ -70,8 +71,8 @@ export async function prepareAuth() {
       done?.reject(
         new Error(
           error?.type === 'popup_failed_to_open'
-            ? 'The Google sign-in window was blocked — allow pop-ups for this site and try again.'
-            : 'Google sign-in was closed before it finished.',
+            ? text.sheets.errors.popupBlocked
+            : text.sheets.errors.popupClosed,
         ),
       );
     },
@@ -87,8 +88,8 @@ export async function prepareAuth() {
  * @returns {Promise<string>} access token
  */
 export function signIn(hint, { chooseAccount = false } = {}) {
-  if (!client) return Promise.reject(new Error('Google sign-in is still loading — try again in a moment.'));
-  pending?.reject(new Error('Sign-in restarted.'));
+  if (!client) return Promise.reject(new Error(text.sheets.errors.stillLoading));
+  pending?.reject(new Error(text.sheets.errors.restarted));
   return new Promise((resolve, reject) => {
     pending = { resolve, reject };
     client.requestAccessToken(chooseAccount ? { prompt: 'select_account' } : { prompt: '', ...(hint && { login_hint: hint }) });

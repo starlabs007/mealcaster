@@ -3,6 +3,7 @@
 
 import { googleConfig } from './config.js';
 import { loadScript } from './auth.svelte.js';
+import { text } from '../text.js';
 
 let loaded;
 
@@ -32,7 +33,7 @@ export async function pickSpreadsheet(token) {
       .setDeveloperKey(googleConfig.apiKey)
       .setAppId(googleConfig.appId)
       .setOrigin(window.location.origin)
-      .setTitle('Choose your MealCaster spreadsheet')
+      .setTitle(text.sheets.picker.title)
       .setCallback((data) => {
         const action = data[picker.Response.ACTION];
         if (action === picker.Action.PICKED) {

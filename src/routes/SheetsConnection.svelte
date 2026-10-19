@@ -4,6 +4,7 @@
   // other in history, so Back / close return to where the screen was opened from.
   // #/sheets-sync opens the step that fits (startStep): setup from the start, else step 3.
   import { onMount } from 'svelte';
+  import { text } from '../lib/text.js';
   import Icon from '../lib/components/Icon.svelte';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
   import AccountStep from '../lib/components/AccountStep.svelte';
@@ -19,9 +20,9 @@
   /** @typedef {import('../lib/sync/phase.js').ConnectionStep} ConnectionStep */
 
   const STEPS = /** @type {const} */ ([
-    { id: 'account', label: 'Google account', subtitle: 'Sign in with the Google account whose Drive holds your spreadsheet.' },
-    { id: 'sheet', label: 'Spreadsheet', subtitle: 'Choose the spreadsheet MealCaster keeps your recipes, plans and grocery lists in.' },
-    { id: 'sync', label: 'Sync', subtitle: 'Choose how syncing works, then sync.' },
+    { id: 'account', ...text.sheets.connection.steps.account },
+    { id: 'sheet', ...text.sheets.connection.steps.sheet },
+    { id: 'sync', ...text.sheets.connection.steps.sync },
   ]);
 
   const step = $derived(STEPS.find((s) => route.path === `/sheets-sync/${s.id}`));
@@ -78,14 +79,14 @@
     <div class="flex items-start justify-between gap-3 px-4 pt-4 sm:px-8 sm:pt-6">
       <div class="flex min-w-0 flex-col gap-1">
         <div class="flex flex-wrap items-center gap-2">
-          <h2 id="sheets-dialog-title" class="font-display text-headline-sm text-on-surface sm:text-headline-md">Google Sheets</h2>
+          <h2 id="sheets-dialog-title" class="font-display text-headline-sm text-on-surface sm:text-headline-md">{text.sheets.connection.title}</h2>
           <SyncStatus variant="badge" />
         </div>
         <p id="sheets-dialog-subtitle" class="text-body-md text-on-surface-variant">{step?.subtitle ?? ''}</p>
       </div>
       <button
         type="button"
-        aria-label="Close"
+        aria-label={text.sheets.connection.closeAria}
         class="shrink-0 rounded-lg p-2 text-outline transition-colors hover:bg-surface-container hover:text-on-surface"
         onclick={close}
       >
@@ -94,7 +95,7 @@
     </div>
 
     <!-- Steps -->
-    <nav aria-label="Connection steps" class="px-4 pb-2 pt-4 sm:px-8">
+    <nav aria-label={text.sheets.connection.stepsAria} class="px-4 pb-2 pt-4 sm:px-8">
       <ol class="flex items-center gap-2">
         {#each STEPS as s, i (s.id)}
           {@const current = s.id === step?.id}
@@ -115,7 +116,7 @@
                 {#if done[s.id] && !current}<Icon name="check" class="text-[16px]" />{:else}{i + 1}{/if}
               </span>
               <span class="truncate text-label-md {current ? 'text-on-surface' : 'text-on-surface-variant max-sm:sr-only'}">
-                {s.label}{#if done[s.id] && !current}<span class="sr-only"> (done)</span>{/if}
+                {s.label}{#if done[s.id] && !current}<span class="sr-only">{text.sheets.connection.done}</span>{/if}
               </span>
             </button>
             {#if i < STEPS.length - 1}<span class="h-px min-w-3 flex-1 bg-outline-variant/60" aria-hidden="true"></span>{/if}
