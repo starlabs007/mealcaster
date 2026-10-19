@@ -5,6 +5,7 @@ const STORAGE_KEY = storageKey('sheetsSettings.v1');
 
 import { SCHEMA } from './schema.js';
 import { storageKey } from './env.js';
+import { text } from './text.js';
 
 export { SCHEMA };
 
@@ -140,9 +141,9 @@ export const shortId = (id) => (id.length > 12 ? `${id.slice(0, 4)}…${id.slice
  */
 export function tabNameError(name, others) {
   const value = name.trim();
-  if (!value) return 'Enter a tab name.';
-  if (value.length > 31) return 'Keep tab names to 31 characters.';
-  if (/[[\]:*?/\\]/.test(value)) return 'Tab names can’t contain [ ] : * ? / \\';
-  if (others.some((o) => o.trim().toLowerCase() === value.toLowerCase())) return 'Each tab needs its own name.';
+  if (!value) return text.sheets.tabErrors.enter;
+  if (value.length > 31) return text.sheets.tabErrors.tooLong;
+  if (/[[\]:*?/\\]/.test(value)) return text.sheets.tabErrors.badChars;
+  if (others.some((o) => o.trim().toLowerCase() === value.toLowerCase())) return text.sheets.tabErrors.duplicate;
   return null;
 }

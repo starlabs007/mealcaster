@@ -5,6 +5,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import { sampleIngredients } from './data/ingredients.js';
 import { aisles } from './data/aisles.js';
+import { defaultAisle } from './sheetText.js';
 import { sampleData, storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { findByName, ingredientIdFor, tidyIngredientName } from './ingredients.js';
@@ -15,7 +16,7 @@ const STORAGE_KEY = storageKey('ingredients.v1');
 
 const builtIn = sampleData ? sampleIngredients : [];
 
-const validAisle = (tag) => (aisles.some((a) => a.tag === tag) ? tag : 'Pantry');
+const validAisle = (tag) => (aisles.some((a) => a.tag === tag) ? tag : defaultAisle);
 
 /** A stored or synced ingredient, tidied. @param {any} i @returns {Ingredient} */
 export const cleanIngredient = (i) => ({
@@ -73,7 +74,7 @@ function reindex() {
  * @param {{ name: string, plural?: string, aisle?: string, onHand?: boolean }} fields
  * @returns {Ingredient}
  */
-export function addIngredient({ name, plural = '', aisle = 'Pantry', onHand = false }) {
+export function addIngredient({ name, plural = '', aisle = defaultAisle, onHand = false }) {
   const existing = findIngredient(name);
   if (existing) return existing;
   const ingredient = cleanIngredient({ id: ingredientIdFor(name, (id) => byId.has(id)), name, plural, aisle, onHand });

@@ -11,6 +11,7 @@
   import { syncState, syncPhase, syncFromClick, connect, initialized } from '../sync/sync.svelte.js';
   import { navigate } from '../router.svelte.js';
   import { showToast } from '../toast.svelte.js';
+  import { text } from '../text.js';
 
   /** @type {{ onback: () => void, go: (step: import('../sync/phase.js').ConnectionStep) => void, onclose: () => void }} */
   let { onback, go, onclose } = $props();
@@ -43,20 +44,20 @@
 
   async function firstSync() {
     await syncFromClick();
-    if (syncPhase() === 'synced') showToast(`Connected to “${sheets.spreadsheetName || 'your spreadsheet'}”.`);
+    if (syncPhase() === 'synced') showToast(text.sheets.sync.connected(sheets.spreadsheetName || text.sheets.sync.yourSpreadsheet));
   }
 
   const DIRECTIONS = [
     {
       value: 'bidirectional',
-      title: 'Bidirectional Sync',
-      text: 'Changes in Sheets or MealCaster reflect in both. If both changed the same row, the Google Sheet wins.',
+      title: text.sheets.sync.directions.bidirectional.title,
+      text: text.sheets.sync.directions.bidirectional.body,
       icon: 'sync_alt',
     },
     {
       value: 'pushOnly',
-      title: 'Sheets as Backup',
-      text: 'The sheet is an online backup that mirrors this device; edits made in the sheet are overwritten.',
+      title: text.sheets.sync.directions.pushOnly.title,
+      text: text.sheets.sync.directions.pushOnly.body,
       icon: 'arrow_forward',
     },
   ];
@@ -71,30 +72,30 @@
       {#if extra}{@render extra()}{/if}
     </div>
     <button type="button" class="btn shrink-0 px-2 py-1 text-body-sm text-primary hover:bg-surface-container-high" onclick={() => go(step)}>
-      Change
+      {text.sheets.sync.change}
     </button>
   </div>
 {/snippet}
 
 {#snippet openLink()}
   <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="inline-flex w-fit items-center gap-1 text-body-sm text-primary underline underline-offset-2 hover:text-primary-container">
-    Open in Google Sheets <Icon name="open_in_new" class="text-[14px]" />
+    {text.sheets.sheet.openInSheets} <Icon name="open_in_new" class="text-[14px]" />
   </a>
 {/snippet}
 
 <div bind:this={scroller} class="flex flex-col gap-5 overflow-y-auto px-4 py-4 sm:px-8">
   {#if !sheets.spreadsheet}
     <div class="flex flex-col items-start gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-card">
-      <p class="text-body-md text-on-surface-variant">No spreadsheet is linked yet, so everything is saved on this device.</p>
+      <p class="text-body-md text-on-surface-variant">{text.sheets.sync.noneLinked}</p>
       <button type="button" class="btn-primary py-2" onclick={() => go('sheet')}>
-        <Icon name="table_chart" class="text-[16px]" /> Choose a Spreadsheet
+        <Icon name="table_chart" class="text-[16px]" /> {text.sheets.sync.chooseSpreadsheet}
       </button>
     </div>
   {:else}
     <!-- What's connected -->
     <div class="divide-y divide-surface-container-high rounded-xl bg-surface-container-lowest shadow-card">
-      {@render summaryRow('person', 'Google account', syncState.account?.email || sheets.accountEmail || (signedIn ? 'Signed in' : 'Signed out'), 'account')}
-      {@render summaryRow('table_chart', 'Spreadsheet', sheets.spreadsheetName || shortId(sheets.spreadsheet), 'sheet', openLink)}
+      {@render summaryRow('person', text.sheets.sync.googleAccount, syncState.account?.email || sheets.accountEmail || (signedIn ? text.sheets.sync.signedIn : text.sheets.sync.signedOut), 'account')}
+      {@render summaryRow('table_chart', text.sheets.sync.spreadsheet, sheets.spreadsheetName || shortId(sheets.spreadsheet), 'sheet', openLink)}
     </div>
 
     {#if phase === 'choose'}
@@ -102,9 +103,9 @@
     {:else}
       <!-- How it syncs -->
       <section class="flex flex-col gap-2" aria-labelledby="sync-how">
-        <h3 id="sync-how" class="text-label-caps uppercase tracking-wider text-primary">How to sync</h3>
+        <h3 id="sync-how" class="text-label-caps uppercase tracking-wider text-primary">{text.sheets.sync.howTitle}</h3>
         <div class="flex flex-col gap-2 rounded-xl bg-surface-container-lowest p-3 shadow-card">
-          <div class="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Sync direction">
+          <div class="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label={text.sheets.sync.directionAria}>
             {#each DIRECTIONS as option (option.value)}
               {@const selected = (confirmBackup ? 'pushOnly' : sheets.direction) === option.value}
               <label
@@ -134,13 +135,12 @@
               <p class="flex items-start gap-2 text-body-sm text-on-surface">
                 <Icon name="warning" class="shrink-0 text-[18px] text-secondary" />
                 <span>
-                  The next sync will make “{sheets.spreadsheetName || 'the spreadsheet'}” match this device: rows that differ are
-                  overwritten and rows only in the spreadsheet are deleted, including edits made there by other devices.
+                  {text.sheets.sync.confirmBackup(sheets.spreadsheetName || text.sheets.sync.theSpreadsheet)}
                 </span>
               </p>
               <div class="flex flex-wrap justify-end gap-2">
                 <button type="button" class="btn px-3 py-1.5 text-body-sm text-on-surface hover:bg-surface-container-high" onclick={() => (confirmBackup = false)}>
-                  Keep Bidirectional
+                  {text.sheets.sync.keepBidirectional}
                 </button>
                 <button
                   type="button"
@@ -150,17 +150,16 @@
                     save({ direction: 'pushOnly' });
                   }}
                 >
-                  Switch to Backup
+                  {text.sheets.sync.switchToBackup}
                 </button>
               </div>
             </div>
           {/if}
           <label class="flex cursor-pointer items-start justify-between gap-4 border-t border-surface-container-high px-1 pt-3">
             <span class="flex flex-col">
-              <span class="text-label-md text-on-surface">Instant Reactive Push</span>
+              <span class="text-label-md text-on-surface">{text.sheets.sync.instantPush}</span>
               <span class="text-body-sm text-on-surface-variant">
-                Push changes a moment after you make them. Off means syncing only on connect, when you return to the app, or when you
-                press Sync Now.
+                {text.sheets.sync.instantPushHint}
               </span>
             </span>
             <span class="relative mt-0.5 inline-flex shrink-0">
@@ -180,33 +179,33 @@
 
       <!-- Sync -->
       <section class="flex flex-col gap-2" aria-labelledby="sync-now">
-        <h3 id="sync-now" class="text-label-caps uppercase tracking-wider text-primary">Sync</h3>
+        <h3 id="sync-now" class="text-label-caps uppercase tracking-wider text-primary">{text.sheets.sync.syncTitle}</h3>
         <div class="flex flex-col gap-3 rounded-xl bg-surface-container-lowest p-4 shadow-card sm:flex-row sm:items-center sm:justify-between">
           <SyncStatus variant="line" />
           <div class="shrink-0">
             {#if phase === 'signedOut'}
-              <button type="button" data-signs-in class="btn-primary py-2" onclick={connect}><Icon name="login" class="text-[16px]" /> Reconnect</button>
+              <button type="button" data-signs-in class="btn-primary py-2" onclick={connect}><Icon name="login" class="text-[16px]" /> {text.common.reconnect}</button>
             {:else if phase === 'pending'}
-              <button type="button" class="btn-primary py-2" onclick={firstSync}><Icon name="sync" class="text-[16px]" /> Start Syncing</button>
+              <button type="button" class="btn-primary py-2" onclick={firstSync}><Icon name="sync" class="text-[16px]" /> {text.sheets.sync.startSyncing}</button>
             {:else if phase === 'conflict'}
               <button type="button" class="btn bg-secondary py-2 text-on-secondary hover:bg-secondary/90" onclick={() => navigate('/sheets-sync/columns')}>
-                <Icon name="difference" class="text-[16px]" /> Resolve Columns
+                <Icon name="difference" class="text-[16px]" /> {text.sheets.sync.resolveColumns}
               </button>
             {:else if phase === 'syncing'}
-              <button type="button" class="btn-primary py-2" disabled><Icon name="progress_activity" class="animate-spin text-[16px]" /> Syncing…</button>
+              <button type="button" class="btn-primary py-2" disabled><Icon name="progress_activity" class="animate-spin text-[16px]" /> {text.sheets.sync.syncing}</button>
             {:else}
-              <button type="button" data-signs-in class="btn-outline py-2" onclick={() => syncFromClick()}><Icon name="sync" class="text-[16px]" /> Sync Now</button>
+              <button type="button" data-signs-in class="btn-outline py-2" onclick={() => syncFromClick()}><Icon name="sync" class="text-[16px]" /> {text.common.syncNow}</button>
             {/if}
           </div>
         </div>
         <div class="flex flex-col gap-2 px-1 text-body-sm text-on-surface-variant sm:flex-row sm:items-center sm:justify-between">
           <span>
             {checkedTabs
-              ? `Column mapping saved for ${checkedTabs} tab${checkedTabs === 1 ? '' : 's'}.`
-              : 'Renamed or moved columns in your sheet?'}
+              ? text.sheets.sync.mappingSaved(checkedTabs)
+              : text.sheets.sync.renamedColumns}
           </span>
           <button type="button" class="btn w-fit px-0 text-body-sm text-primary hover:underline" disabled={phase === 'syncing'} onclick={() => navigate('/sheets-sync/columns')}>
-            <Icon name="fact_check" class="text-[16px]" /> Check Column Headers
+            <Icon name="fact_check" class="text-[16px]" /> {text.sheets.sync.checkHeaders}
           </button>
         </div>
       </section>
@@ -217,7 +216,7 @@
 <div class="mt-auto flex items-center justify-between gap-2 border-t border-surface-container-high bg-surface-container-low px-4 py-3 sm:px-8 sm:py-4">
   <div class="flex items-center gap-1">
     <button type="button" class="btn px-3 py-2 text-body-md text-on-surface hover:bg-surface-container-high" onclick={onback}>
-      <Icon name="arrow_back" class="text-[18px]" /> Back
+      <Icon name="arrow_back" class="text-[18px]" /> {text.sheets.sync.back}
     </button>
     {#if sheets.spreadsheet}
       <button
@@ -225,9 +224,9 @@
         class="btn px-3 py-2 text-body-md text-secondary hover:bg-secondary-fixed/50"
         onclick={(e) => Object.assign(disconnectPrompt, { open: true, returnFocus: e.currentTarget })}
       >
-        <Icon name="link_off" class="text-[18px]" /> Disconnect…
+        <Icon name="link_off" class="text-[18px]" /> {text.sheets.sync.disconnect}
       </button>
     {/if}
   </div>
-  <button type="button" class="btn-primary px-5 py-2 text-body-md" onclick={onclose}>Done</button>
+  <button type="button" class="btn-primary px-5 py-2 text-body-md" onclick={onclose}>{text.sheets.sync.done}</button>
 </div>

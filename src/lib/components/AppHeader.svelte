@@ -5,11 +5,12 @@
   import { settings } from '../settings.svelte.js';
   import { groceryCount } from '../grocery.svelte.js';
   import { route, href, navigate } from '../router.svelte.js';
+  import { text } from '../text.js';
   import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
 
   const tabs = [
-    { id: 'weekly-menu', label: 'Weekly Menu', path: '/' },
-    { id: 'recipe-catalog', label: 'Recipe Catalog', path: '/catalog' },
+    { id: 'weekly-menu', label: text.header.tabs.weeklyMenu, path: '/' },
+    { id: 'recipe-catalog', label: text.header.tabs.recipeCatalog, path: '/catalog' },
   ];
   // Recipe Detail lives under the catalog tab.
   const active = $derived(
@@ -45,7 +46,7 @@
 </script>
 
 {#snippet navTabs(extra = '')}
-  <nav aria-label="Primary" class="items-center gap-1 rounded-xl bg-surface-container-low p-1 {extra}">
+  <nav aria-label={text.header.primaryNavAria} class="items-center gap-1 rounded-xl bg-surface-container-low p-1 {extra}">
     {#each tabs as tab (tab.id)}
       <a
         href={href(tab.path, tab.id === 'recipe-catalog' ? { day: planningDay } : {})}
@@ -62,9 +63,9 @@
 <header class="fixed left-0 top-0 z-50 w-full print:hidden bg-surface/90 shadow-header backdrop-blur-xl">
   <div class="flex h-20 w-full items-center justify-between gap-4 px-4 md:px-gutter-desktop">
     <div class="flex items-center gap-6">
-      <a href={href('/')} class="flex items-center gap-2" aria-label="MealCaster home">
+      <a href={href('/')} class="flex items-center gap-2" aria-label={text.header.homeAria}>
         <img src="./logo-mark.png" alt="" class="h-8 w-8 rounded-lg object-cover shadow-sm" />
-        <span class="hidden font-display text-headline-sm tracking-tight text-primary sm:inline">MealCaster</span>
+        <span class="hidden font-display text-headline-sm tracking-tight text-primary sm:inline">{text.header.appName}</span>
       </a>
       {@render navTabs('hidden xl:flex')}
     </div>
@@ -76,26 +77,26 @@
         <input
           type="search"
           bind:value={search}
-          aria-label="Search recipes"
-          placeholder="Search culinary recipes, ingredients..."
+          aria-label={text.header.search.aria}
+          placeholder={text.header.search.placeholder}
           class="w-60 rounded-lg border border-outline-variant/60 bg-surface-container-lowest py-1.5 pl-9 pr-3 text-body-sm text-on-surface shadow-card placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container xl:w-72"
         />
       </form>
 
       <div class="flex items-center gap-1 rounded-lg bg-surface-container-low px-1 py-1 sm:px-2">
-        <button type="button" aria-label="Previous week" class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(-1)}>
+        <button type="button" aria-label={text.header.week.previous} class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(-1)}>
           <Icon name="chevron_left" class="text-[18px]" />
         </button>
         <button
           type="button"
           class="select-none whitespace-nowrap rounded-md px-1 text-label-md text-on-surface {isThisWeek ? 'cursor-default' : 'hover:underline'}"
-          title={isThisWeek ? 'This week' : 'Back to this week'}
+          title={isThisWeek ? text.header.week.thisWeek : text.header.week.backToThisWeek}
           onclick={goToThisWeek}
         >
           <span class="hidden sm:inline">{formatRange(planner.weekStart)}</span>
           <span class="sm:hidden">{formatRangeCompact(planner.weekStart)}</span>
         </button>
-        <button type="button" aria-label="Next week" class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(1)}>
+        <button type="button" aria-label={text.header.week.next} class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(1)}>
           <Icon name="chevron_right" class="text-[18px]" />
         </button>
       </div>
@@ -104,16 +105,16 @@
         href={href('/grocery')}
         aria-current={active === 'grocery' ? 'page' : undefined}
         class="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-label-md text-on-secondary shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] transition-all hover:bg-[#b34728] sm:px-4 {active === 'grocery' ? 'ring-2 ring-secondary/30 ring-offset-2 ring-offset-surface' : ''}"
-        aria-label="Quick Grocery List, {groceries} items"
+        aria-label={text.header.grocery.aria(groceries)}
       >
         <Icon name="shopping_basket" class="text-[16px]" />
-        <span class="hidden whitespace-nowrap sm:inline">Quick Grocery List</span>
+        <span class="hidden whitespace-nowrap sm:inline">{text.header.grocery.label}</span>
         <span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">{groceries}</span>
       </a>
 
       <a
         href={href('/profile')}
-        aria-label="Profile & Settings"
+        aria-label={text.header.profile}
         aria-current={route.path === '/profile' ? 'page' : undefined}
         class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-primary ring-2 sm:flex {route.path === '/profile' ? 'ring-primary' : 'ring-surface-container-high'}"
       >

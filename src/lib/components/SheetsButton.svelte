@@ -5,6 +5,7 @@
   // icon-only and a tap opens the menu, which then lists the main action first.
   import { tick } from 'svelte';
   import Icon from './Icon.svelte';
+  import { text } from '../text.js';
   import { sheets, spreadsheetUrl } from '../sheets.svelte.js';
   import { syncPhase, syncFromClick, connect, PHASE_LOOK } from '../sync/sync.svelte.js';
   import { headerActions } from '../sync/phase.js';
@@ -15,7 +16,7 @@
   const look = $derived(PHASE_LOOK[phase]);
   const actions = $derived(headerActions(phase));
   const current = $derived(route.path.startsWith('/sheets-sync'));
-  const label = $derived(`Google Sheets: ${look.short}`);
+  const label = $derived(text.header.sheets.label(look.short));
 
   // Coloured by sync status rather than by being the current page.
   const TONE = {
@@ -195,7 +196,7 @@
         class="inline-flex items-center gap-1.5 rounded-l-lg py-2 pl-4 pr-3 max-sm:hidden {segment}"
         onclick={() => run(actions.primary.id)}
       >
-        {@render statusIcon()}{actions.primary.disabled ? 'Syncing…' : actions.primary.label}
+        {@render statusIcon()}{actions.primary.disabled ? text.header.sheets.syncing : actions.primary.label}
       </button>
     {/if}
     <span class="my-2 w-px bg-current opacity-25 max-sm:hidden" aria-hidden="true"></span>
@@ -205,8 +206,8 @@
       aria-haspopup="menu"
       aria-expanded={open}
       aria-controls={open ? menuId : undefined}
-      aria-label="{label} — more options"
-      title="More options"
+      aria-label={text.header.sheets.moreOptionsAria(label)}
+      title={text.header.sheets.moreOptionsTitle}
       class="inline-flex items-center rounded-lg px-3 py-2 sm:rounded-l-none sm:px-1.5 {segment}"
       onclick={() => (open ? close() : show())}
       onkeydown={onToggleKey}
@@ -222,7 +223,7 @@
       id={menuId}
       role="menu"
       tabindex="-1"
-      aria-label="Google Sheets"
+      aria-label={text.header.sheets.menuAria}
       class="fixed z-[55] min-w-56 overflow-hidden rounded-xl bg-surface-container-lowest py-1 shadow-lift ring-1 ring-outline-variant/40"
       style="top: {position.top}px; right: {position.right}px"
       onkeydown={onMenuKey}

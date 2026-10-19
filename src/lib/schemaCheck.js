@@ -3,6 +3,7 @@
 // Rows come from the connected sheet, or from a copy/paste of the tab when not signed in.
 
 import { SCHEMA } from './schema.js';
+import { text } from './text.js';
 
 /**
  * What each expected column holds, whether sync can work without it, and other
@@ -11,48 +12,48 @@ import { SCHEMA } from './schema.js';
  */
 export const COLUMN_INFO = {
   ingredients: {
-    Ingredient_ID: { note: 'Unique ID recipes point to — keep it as is once made.', required: true, aliases: ['id', 'ingredient id', 'key', 'slug'] },
-    Name: { note: 'Ingredient name, singular (e.g. green onion).', required: true, aliases: ['ingredient', 'ingredient name', 'item', 'singular'] },
-    Plural: { note: 'Plural name (green onions); blank when it has none.', aliases: ['plural name', 'plural form', 'plurals'] },
-    Aisle: { note: 'Store aisle, e.g. Produce or Meat & Seafood.', aliases: ['department', 'section', 'dept', 'store aisle'] },
-    On_Hand: { note: 'TRUE while it’s in stock at home (kept off the grocery list).', aliases: ['in stock', 'stock', 'have', 'on hand', 'have it'] },
+    Ingredient_ID: { note: text.sheets.columns.notes.ingredients.Ingredient_ID, required: true, aliases: ['id', 'ingredient id', 'key', 'slug'] },
+    Name: { note: text.sheets.columns.notes.ingredients.Name, required: true, aliases: ['ingredient', 'ingredient name', 'item', 'singular'] },
+    Plural: { note: text.sheets.columns.notes.ingredients.Plural, aliases: ['plural name', 'plural form', 'plurals'] },
+    Aisle: { note: text.sheets.columns.notes.ingredients.Aisle, aliases: ['department', 'section', 'dept', 'store aisle'] },
+    On_Hand: { note: text.sheets.columns.notes.ingredients.On_Hand, aliases: ['in stock', 'stock', 'have', 'on hand', 'have it'] },
   },
   weeklyPlan: {
-    Date_ISO: { note: 'The dinner’s date, e.g. 2026-10-21.', required: true, aliases: ['date', 'dinner date', 'planned date', 'day date'] },
-    Day_Of_Week: { note: 'Weekday name, for reading the sheet.', aliases: ['day', 'weekday', 'day name'] },
-    Recipe_ID_Assigned: { note: 'Recipe_ID of the dinner planned that day.', required: true, aliases: ['recipe id', 'recipe', 'dinner', 'meal', 'meal id', 'recipe assigned'] },
-    Completed_Flag: { note: 'TRUE once the dinner has been cooked.', aliases: ['completed', 'done', 'cooked', 'complete'] },
-    Custom_Notes: { note: 'Free-text notes for that evening.', aliases: ['notes', 'note', 'comments'] },
+    Date_ISO: { note: text.sheets.columns.notes.weeklyPlan.Date_ISO, required: true, aliases: ['date', 'dinner date', 'planned date', 'day date'] },
+    Day_Of_Week: { note: text.sheets.columns.notes.weeklyPlan.Day_Of_Week, aliases: ['day', 'weekday', 'day name'] },
+    Recipe_ID_Assigned: { note: text.sheets.columns.notes.weeklyPlan.Recipe_ID_Assigned, required: true, aliases: ['recipe id', 'recipe', 'dinner', 'meal', 'meal id', 'recipe assigned'] },
+    Completed_Flag: { note: text.sheets.columns.notes.weeklyPlan.Completed_Flag, aliases: ['completed', 'done', 'cooked', 'complete'] },
+    Custom_Notes: { note: text.sheets.columns.notes.weeklyPlan.Custom_Notes, aliases: ['notes', 'note', 'comments'] },
   },
   recipes: {
-    Recipe_ID: { note: 'Unique ID the weekly plan points to.', required: true, aliases: ['id', 'recipe id', 'slug', 'key'] },
-    Title: { note: 'Recipe name shown on cards.', required: true, aliases: ['name', 'recipe name', 'recipe title', 'dish'] },
-    Description: { note: 'One or two sentences about the dish.', aliases: ['summary', 'about', 'blurb', 'intro'] },
-    Ingredients_JSON: { note: 'Ingredient lines: Ingredient_ID, amount, unit, note, prep, optional.', required: true, aliases: ['ingredients', 'ingredient list', 'ingredients list'] },
-    Method_Steps: { note: 'Numbered step-by-step prep & cooking.', required: true, aliases: ['steps', 'instructions', 'method', 'directions', 'preparation', 'preparation steps', 'instructions arr'] },
-    Image_URL: { note: 'Link to a photo of the dish.', aliases: ['image', 'photo', 'picture', 'img', 'photo url'] },
-    Tags: { note: 'Comma-separated recipe tags (e.g. Vegetarian, Gluten-Free).', aliases: ['tags csv', 'labels', 'dietary labels', 'flags', 'diet'] },
-    Favorite_Flag: { note: 'TRUE for starred recipes.', aliases: ['favorite', 'favourite', 'starred', 'fav', 'favourite flag'] },
-    Category: { note: 'Optional category such as Dinner, Lunch or Dessert.', aliases: ['course', 'type', 'course type', 'meal type'] },
-    Servings: { note: 'How many people the recipe feeds.', aliases: ['serves', 'yield', 'portions'] },
-    Prep_Minutes: { note: 'Hands-on prep time in minutes.', aliases: ['prep', 'prep time', 'prep mins'] },
-    Cook_Minutes: { note: 'Cooking time in minutes.', aliases: ['cook', 'cook time', 'cooking time', 'cook mins'] },
-    Notes: { note: 'Cook’s secrets, in Markdown.', aliases: ['recipe notes', 'tips', 'comments'] },
+    Recipe_ID: { note: text.sheets.columns.notes.recipes.Recipe_ID, required: true, aliases: ['id', 'recipe id', 'slug', 'key'] },
+    Title: { note: text.sheets.columns.notes.recipes.Title, required: true, aliases: ['name', 'recipe name', 'recipe title', 'dish'] },
+    Description: { note: text.sheets.columns.notes.recipes.Description, aliases: ['summary', 'about', 'blurb', 'intro'] },
+    Ingredients_JSON: { note: text.sheets.columns.notes.recipes.Ingredients_JSON, required: true, aliases: ['ingredients', 'ingredient list', 'ingredients list'] },
+    Method_Steps: { note: text.sheets.columns.notes.recipes.Method_Steps, required: true, aliases: ['steps', 'instructions', 'method', 'directions', 'preparation', 'preparation steps', 'instructions arr'] },
+    Image_URL: { note: text.sheets.columns.notes.recipes.Image_URL, aliases: ['image', 'photo', 'picture', 'img', 'photo url'] },
+    Tags: { note: text.sheets.columns.notes.recipes.Tags, aliases: ['tags csv', 'labels', 'dietary labels', 'flags', 'diet'] },
+    Favorite_Flag: { note: text.sheets.columns.notes.recipes.Favorite_Flag, aliases: ['favorite', 'favourite', 'starred', 'fav', 'favourite flag'] },
+    Category: { note: text.sheets.columns.notes.recipes.Category, aliases: ['course', 'type', 'course type', 'meal type'] },
+    Servings: { note: text.sheets.columns.notes.recipes.Servings, aliases: ['serves', 'yield', 'portions'] },
+    Prep_Minutes: { note: text.sheets.columns.notes.recipes.Prep_Minutes, aliases: ['prep', 'prep time', 'prep mins'] },
+    Cook_Minutes: { note: text.sheets.columns.notes.recipes.Cook_Minutes, aliases: ['cook', 'cook time', 'cooking time', 'cook mins'] },
+    Notes: { note: text.sheets.columns.notes.recipes.Notes, aliases: ['recipe notes', 'tips', 'comments'] },
   },
   provisions: {
-    Week_Of: { note: 'First day of the grocery week (Saturday unless changed in Profile & Settings).', required: true, aliases: ['week', 'week start', 'week starting'] },
-    Item: { note: 'Ingredient or product to buy.', required: true, aliases: ['ingredient', 'name', 'product', 'item name'] },
-    Detail: { note: 'Amount and notes, e.g. 450 g.', aliases: ['qty', 'quantity', 'amount', 'details'] },
-    Department: { note: 'Store aisle the item is filed under.', aliases: ['aisle', 'section', 'dept'] },
-    Status: { note: 'To buy or Bought. On hand: left off the list because it’s in stock (change that in [Ingredients]).', aliases: ['state', 'bought', 'checked'] },
-    Source: { note: 'Meals the item is for, “Added by you” or “Every week”.', aliases: ['recipe', 'for', 'from'] },
-    Line_Key: { note: 'MealCaster’s ID for the line — leave it as is.', required: true, aliases: ['key', 'line id', 'id'] },
-    Added: { note: 'What was added by hand, for MealCaster — leave it as is.', aliases: ['added by hand'] },
+    Week_Of: { note: text.sheets.columns.notes.provisions.Week_Of, required: true, aliases: ['week', 'week start', 'week starting'] },
+    Item: { note: text.sheets.columns.notes.provisions.Item, required: true, aliases: ['ingredient', 'name', 'product', 'item name'] },
+    Detail: { note: text.sheets.columns.notes.provisions.Detail, aliases: ['qty', 'quantity', 'amount', 'details'] },
+    Department: { note: text.sheets.columns.notes.provisions.Department, aliases: ['aisle', 'section', 'dept'] },
+    Status: { note: text.sheets.columns.notes.provisions.Status, aliases: ['state', 'bought', 'checked'] },
+    Source: { note: text.sheets.columns.notes.provisions.Source, aliases: ['recipe', 'for', 'from'] },
+    Line_Key: { note: text.sheets.columns.notes.provisions.Line_Key, required: true, aliases: ['key', 'line id', 'id'] },
+    Added: { note: text.sheets.columns.notes.provisions.Added, aliases: ['added by hand'] },
   },
   settings: {
-    Section: { note: 'What kind of setting the row is, e.g. Preference.', required: true, aliases: ['group', 'type', 'category', 'kind'] },
-    Name: { note: 'The setting’s name, e.g. Week starts on.', required: true, aliases: ['key', 'setting', 'item'] },
-    Value: { note: 'The setting’s value, e.g. Saturday.', required: true, aliases: ['setting value', 'val'] },
+    Section: { note: text.sheets.columns.notes.settings.Section, required: true, aliases: ['group', 'type', 'category', 'kind'] },
+    Name: { note: text.sheets.columns.notes.settings.Name, required: true, aliases: ['key', 'setting', 'item'] },
+    Value: { note: text.sheets.columns.notes.settings.Value, required: true, aliases: ['setting value', 'val'] },
   },
 };
 
@@ -108,27 +109,27 @@ export function columnLetter(index) {
 /**
  * Parses cells copied from Google Sheets (tab-separated, with quoted multi-line
  * cells) or a CSV export.
- * @param {string} text
+ * @param {string} pasted
  * @returns {string[][]}
  */
-export function parsePastedRows(text) {
-  const delimiter = text.includes('\t') ? '\t' : ',';
+export function parsePastedRows(pasted) {
+  const delimiter = pasted.includes('\t') ? '\t' : ',';
   const rows = [];
   let row = [];
   let cell = '';
   let quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
+  for (let i = 0; i < pasted.length; i++) {
+    const c = pasted[i];
     if (quoted) {
       if (c !== '"') cell += c;
-      else if (text[i + 1] === '"') cell += text[++i];
+      else if (pasted[i + 1] === '"') cell += pasted[++i];
       else quoted = false;
     } else if (c === '"' && cell === '') quoted = true;
     else if (c === delimiter) {
       row.push(cell);
       cell = '';
     } else if (c === '\n' || c === '\r') {
-      if (c === '\r' && text[i + 1] === '\n') i++;
+      if (c === '\r' && pasted[i + 1] === '\n') i++;
       row.push(cell);
       rows.push(row);
       row = [];

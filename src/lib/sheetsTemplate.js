@@ -12,6 +12,7 @@ import { SCHEMA } from './sheets.svelte.js';
 import { settings as profile } from './settings.svelte.js';
 import { ingredientToRow, provisionToRow, settingsToRows } from './sync/codec.js';
 import { buildXlsx } from './xlsx.js';
+import { diningOutNote } from './sheetText.js';
 
 /** @param {import('./sheets.svelte.js').SheetsSettings} settings */
 export function dataWorkbook(settings) {
@@ -40,7 +41,7 @@ export function dataWorkbook(settings) {
       formatWeekday(iso),
       e.recipeId ?? '',
       Boolean(e.completed),
-      e.diningOut ? 'Dining out' : '',
+      e.diningOut ? diningOutNote : '',
     ]);
 
   const provisionRows = [

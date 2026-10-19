@@ -1,6 +1,8 @@
 // Local-time date helpers. Plans are keyed by ISO date (YYYY-MM-DD), matching
 // the Date_ISO column of the Google Sheets [WeeklyPlan] tab.
 
+import { text } from './text.js';
+
 const pad = (n) => String(n).padStart(2, '0');
 
 /** @param {Date} d */
@@ -32,15 +34,14 @@ export function daysBetween(from, to) {
  * @param {string | undefined} iso @param {string} today
  */
 export function formatLastMade(iso, today) {
-  if (!iso) return 'Not made yet';
+  if (!iso) return text.lastMade.never;
   const days = daysBetween(iso, today);
-  const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
-  if (days <= 0) return 'Last made today';
-  if (days === 1) return 'Last made yesterday';
-  if (days < 14) return `Last made ${plural(days, 'day')}`;
-  if (days < 60) return `Last made ${plural(Math.floor(days / 7), 'week')}`;
-  if (days < 365) return `Last made ${plural(Math.floor(days / 30), 'month')}`;
-  return 'Last made over a year ago';
+  if (days <= 0) return text.lastMade.today;
+  if (days === 1) return text.lastMade.yesterday;
+  if (days < 14) return text.lastMade.ago(days, 'day');
+  if (days < 60) return text.lastMade.ago(Math.floor(days / 7), 'week');
+  if (days < 365) return text.lastMade.ago(Math.floor(days / 30), 'month');
+  return text.lastMade.overAYear;
 }
 
 export const DEFAULT_WEEK_START_DAY = 6;

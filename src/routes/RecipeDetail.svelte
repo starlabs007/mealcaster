@@ -19,6 +19,7 @@
   import { sheetTabOf, syncPhase, PHASE_LOOK } from '../lib/sync/sync.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
   import { tick } from 'svelte';
+  import { text } from '../lib/text.js';
 
   /** @type {{ id: string, day?: string }} */
   let { id, day: dayParam } = $props();
@@ -61,14 +62,13 @@
     for (const key of allKeys) setChecked(key, on);
   }
 
-  function push(keys, what) {
-    const added = addToGrocery(keys);
-    showToast(`Added ${added} ${added === 1 ? 'ingredient' : 'ingredients'} ${what} to your grocery list.`);
+  function push(keys, message) {
+    showToast(message(addToGrocery(keys)));
   }
 
   function planOn(iso) {
     assignRecipe(iso, recipe.id);
-    showToast(`${recipe.shortTitle} planned for ${formatLong(iso)}.`);
+    showToast(text.recipe.toasts.planned(recipe.shortTitle, formatLong(iso)));
   }
 
   let confirmingDelete = $state(false);
@@ -83,7 +83,7 @@
     confirmingDelete = false;
     const removed = deleteRecipe(recipe.id);
     navigate('/catalog');
-    showToast(`${recipe.shortTitle} deleted.`, { label: 'Undo', run: () => restoreRecipe(removed) }, 10000);
+    showToast(text.recipe.toasts.deleted(recipe.shortTitle), { label: text.common.undo, run: () => restoreRecipe(removed) }, 10000);
   }
 
   let choosingPrint = $state(false);
@@ -106,13 +106,13 @@
   }
 
   /** "15 mins", "1 min", "3.5 hrs" */
-  const mins = (m) => (m >= 60 ? formatMinutes(m) : `${m} ${m === 1 ? 'min' : 'mins'}`);
+  const mins = (m) => (m >= 60 ? formatMinutes(m) : text.recipe.minutes(m));
 
   const stats = recipe
     ? [
-        { icon: 'emoji_symbols', label: 'Prep Time', value: mins(recipe.prepMinutes) },
-        { icon: 'skillet', label: 'Cook Time', value: mins(recipe.cookMinutes) },
-        { icon: 'schedule', label: 'Total Time', value: mins(recipe.minutes) },
+        { icon: 'emoji_symbols', label: text.recipe.stats.prep, value: mins(recipe.prepMinutes) },
+        { icon: 'skillet', label: text.recipe.stats.cook, value: mins(recipe.cookMinutes) },
+        { icon: 'schedule', label: text.recipe.stats.total, value: mins(recipe.minutes) },
       ]
     : [];
 </script>
@@ -120,22 +120,22 @@
 {#if !recipe}
   <div class="mx-auto flex max-w-xl flex-col items-center gap-3 px-4 py-24 text-center">
     <Icon name="menu_book" class="text-[40px] text-outline" />
-    <h1 class="font-display text-headline-lg text-on-surface">Recipe not found</h1>
-    <p class="text-body-md text-on-surface-variant">It may have been removed from the household recipe box.</p>
-    <a href={href('/catalog')} class="btn-primary mt-2 py-2">Browse the Recipe Catalog</a>
+    <h1 class="font-display text-headline-lg text-on-surface">{text.recipe.notFound.title}</h1>
+    <p class="text-body-md text-on-surface-variant">{text.recipe.notFound.body}</p>
+    <a href={href('/catalog')} class="btn-primary mt-2 py-2">{text.recipe.notFound.browse}</a>
   </div>
 {:else}
   <!-- Breadcrumb & actions bar -->
   <div class="border-b border-surface-container-high bg-surface-container-low/60 print:hidden">
     <div class="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-gutter-desktop">
-      <nav aria-label="Breadcrumb" class="flex min-w-0 items-center gap-1.5 text-label-md text-on-surface-variant">
+      <nav aria-label={text.recipe.breadcrumbAria} class="flex min-w-0 items-center gap-1.5 text-label-md text-on-surface-variant">
         <Icon name="arrow_back" class="text-[16px]" />
         {#if day}
-          <a href={href('/')} class="shrink-0 font-semibold text-on-surface hover:text-primary">Weekly Dinner Plan</a>
+          <a href={href('/')} class="shrink-0 font-semibold text-on-surface hover:text-primary">{text.recipe.weeklyPlan}</a>
           <span class="text-outline">/</span>
-          <span class="shrink-0">{formatWeekday(day)} Dinner</span>
+          <span class="shrink-0">{text.recipe.dayDinner(formatWeekday(day))}</span>
         {:else}
-          <a href={href('/catalog', { day: planningDay })} class="shrink-0 font-semibold text-on-surface hover:text-primary">Recipe Catalog</a>
+          <a href={href('/catalog', { day: planningDay })} class="shrink-0 font-semibold text-on-surface hover:text-primary">{text.recipe.catalog}</a>
         {/if}
         <span class="text-outline">/</span>
         <span class="truncate text-on-surface" aria-current="page">{recipe.shortTitle}</span>
@@ -143,10 +143,10 @@
 
       <div class="flex flex-wrap items-center gap-2">
         <a href={href(`/recipe/${recipe.id}/edit`)} class="btn-outline">
-          <Icon name="edit" class="text-[16px]" /> Edit
+          <Icon name="edit" class="text-[16px]" /> {text.recipe.buttons.edit}
         </a>
         <button type="button" class="btn-outline hover:text-secondary" onclick={() => (confirmingDelete = true)}>
-          <Icon name="delete" class="text-[16px]" /> Delete
+          <Icon name="delete" class="text-[16px]" /> {text.recipe.buttons.delete}
         </button>
         <button
           type="button"
@@ -155,32 +155,32 @@
           class="btn-outline {favorite ? 'text-secondary' : ''}"
         >
           <Icon name="favorite" class="text-[16px] text-secondary {favorite ? 'icon-filled' : ''}" />
-          {favorite ? 'Favorited' : 'Favorite'}
+          {favorite ? text.recipe.buttons.favorited : text.recipe.buttons.favorite}
         </button>
         {#if editable}
           <a href={href('/catalog', { day })} class="btn-outline">
-            <Icon name="swap_horiz" class="text-[16px]" /> Swap Meal
+            <Icon name="swap_horiz" class="text-[16px]" /> {text.recipe.buttons.swapMeal}
           </a>
         {:else if openDay}
           <button type="button" class="btn-outline" onclick={() => planOn(openDay)}>
-            <Icon name="event_available" class="text-[16px]" /> Plan for {formatWeekday(openDay)}
+            <Icon name="event_available" class="text-[16px]" /> {text.recipe.buttons.planFor(formatWeekday(openDay))}
           </button>
         {/if}
         <button type="button" class="btn-outline" onclick={() => (choosingPrint = true)}>
-          <Icon name="print" class="text-[16px]" /> Print
+          <Icon name="print" class="text-[16px]" /> {text.recipe.buttons.print}
         </button>
         <button
           type="button"
           disabled={!notOnList.length}
-          onclick={() => push(notOnList, `from ${recipe.shortTitle}`)}
+          onclick={() => push(notOnList, (n) => text.recipe.toasts.addedFromRecipe(n, recipe.shortTitle))}
           class="btn bg-secondary text-on-secondary shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] hover:bg-[#b34728]"
         >
           <Icon name={notOnList.length ? 'add_shopping_cart' : 'check'} class="text-[16px]" />
           {#if notOnList.length}
-            Add to List
+            {text.recipe.buttons.addToList}
             <span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">+{notOnList.length}</span>
           {:else}
-            All on List
+            {text.recipe.buttons.allOnList}
           {/if}
         </button>
       </div>
@@ -198,20 +198,20 @@
       <div class="flex flex-wrap items-center gap-2 print:hidden">
         {#if day}
           <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/60 px-2.5 py-1 text-label-caps uppercase text-primary">
-            <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> Scheduled: {formatLong(day)}
+            <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> {text.recipe.badges.scheduled(formatLong(day))}
           </span>
         {/if}
         {#if recipe.custom && sheetTabOf('recipes', recipe.id)}
           <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-high px-2.5 py-1 text-label-sm text-on-surface-variant">
-            <Icon name="table_chart" class="text-[13px]" /> Custom recipe · in [{sheetTabOf('recipes', recipe.id)}] sheet
+            <Icon name="table_chart" class="text-[13px]" /> {text.recipe.badges.customInSheet(sheetTabOf('recipes', recipe.id))}
           </span>
         {:else if recipe.custom}
           <span class="inline-flex items-center gap-1 rounded-full bg-secondary-fixed/60 px-2.5 py-1 text-label-sm text-secondary">
-            <Icon name="family_restroom" class="text-[13px]" /> Custom recipe · saved on this device
+            <Icon name="family_restroom" class="text-[13px]" /> {text.recipe.badges.customOnDevice}
           </span>
         {:else if recipe.edited}
           <span class="inline-flex items-center gap-1 rounded-full bg-secondary-fixed/60 px-2.5 py-1 text-label-sm text-secondary">
-            <Icon name="edit" class="text-[13px]" /> Edited on this device
+            <Icon name="edit" class="text-[13px]" /> {text.recipe.badges.edited}
           </span>
         {/if}
       </div>
@@ -219,12 +219,12 @@
       {#if recipe.description}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
       <LastMade recipeId={recipe.id} class="-mt-1 text-label-md print:hidden" />
       {#if recipe.tags.length}
-        <ul class="flex max-w-4xl flex-wrap gap-1.5 print:hidden" aria-label="Tags">
+        <ul class="flex max-w-4xl flex-wrap gap-1.5 print:hidden" aria-label={text.recipe.tagsAria}>
           {#each recipe.tags as tag (tag)}
             <li class="max-w-full">
               <a
                 href={href('/catalog', { filter: tag, day: planningDay })}
-                title="Browse recipes tagged {tag}"
+                title={text.recipe.tagTitle(tag)}
                 class="inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-label-caps transition-opacity hover:opacity-80 {tagClass(tag)}"
               >
                 {#if tagIcon(tag)}<Icon name={tagIcon(tag)} class="text-[13px]" />{/if}
@@ -249,15 +249,15 @@
         {/each}
         <div class="flex items-center justify-between gap-2 rounded-xl bg-surface-container-low px-4 py-3">
           <div>
-            <div class="text-label-caps uppercase text-outline">Servings</div>
-            <div class="text-body-sm font-semibold text-on-surface">{servings} Servings</div>
+            <div class="text-label-caps uppercase text-outline">{text.recipe.stats.servings}</div>
+            <div class="text-body-sm font-semibold text-on-surface">{text.recipe.stats.servingsValue(servings)}</div>
           </div>
           <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest print:hidden">
-            <button type="button" aria-label="Fewer servings" class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40" disabled={servings <= 1} onclick={() => servings--}>
+            <button type="button" aria-label={text.recipe.stats.fewer} class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40" disabled={servings <= 1} onclick={() => servings--}>
               <Icon name="remove" class="text-[16px]" />
             </button>
             <span class="w-6 text-center text-label-md text-on-surface" aria-live="polite">{servings}</span>
-            <button type="button" aria-label="More servings" class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40" disabled={servings >= 12} onclick={() => servings++}>
+            <button type="button" aria-label={text.recipe.stats.more} class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40" disabled={servings >= 12} onclick={() => servings++}>
               <Icon name="add" class="text-[16px]" />
             </button>
           </div>
@@ -278,7 +278,7 @@
             <RecipeImage src={recipe.hero ?? recipe.image} alt={recipe.title} class="h-full w-full" />
             <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
               <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md">
-                <Icon name="restaurant_menu" class="text-[13px]" /> {formatMinutes(recipe.minutes)} · Serves {recipe.serves}
+                <Icon name="restaurant_menu" class="text-[13px]" /> {text.recipe.photoMeta(formatMinutes(recipe.minutes), recipe.serves)}
               </span>
               {#if recipe.badge.label}
                 <span class="rounded-full bg-primary-container/90 px-2.5 py-1 text-label-caps text-on-primary shadow-sm backdrop-blur-md">
@@ -296,8 +296,8 @@
               <Icon name="auto_awesome" class="text-[18px]" />
             </span>
             <div>
-              <h2 class="font-display text-headline-sm text-on-surface">Cook’s Secrets</h2>
-              <p class="text-label-caps uppercase text-outline">Notes</p>
+              <h2 class="font-display text-headline-sm text-on-surface">{text.recipe.notes.title}</h2>
+              <p class="text-label-caps uppercase text-outline">{text.recipe.notes.label}</p>
             </div>
           </div>
           <div class="notes-md rounded-r-lg border-l-4 border-secondary bg-surface-container-low p-4 text-body-sm text-on-surface-variant">
@@ -314,13 +314,13 @@
             <div class="flex items-start gap-3">
               <Icon name="receipt_long" class="mt-0.5 text-[22px] text-secondary" />
               <div>
-                <h2 class="font-display text-headline-sm text-on-surface">Mise en Place Ingredients</h2>
-                <p class="text-body-sm text-on-surface-variant print:hidden">Check what you have in stock to keep it off your grocery list</p>
+                <h2 class="font-display text-headline-sm text-on-surface">{text.recipe.ingredients.title}</h2>
+                <p class="text-body-sm text-on-surface-variant print:hidden">{text.recipe.ingredients.hint}</p>
               </div>
             </div>
             <button type="button" class="inline-flex shrink-0 items-center gap-1 text-label-sm text-on-surface-variant hover:text-primary print:hidden" onclick={toggleAll}>
               <Icon name={checked.length === allKeys.length ? 'remove_done' : 'done_all'} class="text-[16px]" />
-              {checked.length === allKeys.length ? 'Clear all' : 'Checkmark all'}
+              {checked.length === allKeys.length ? text.recipe.ingredients.clearAll : text.recipe.ingredients.checkAll}
             </button>
           </div>
 
@@ -351,7 +351,7 @@
                         <span class="flex-1 text-body-sm text-on-surface">
                           {#if line.amount}<strong class="font-semibold">{line.amount}</strong>{/if}
                           <span class={ingredient ? '' : 'italic'}>{line.name}</span>{#if line.note}{' '}<span class="text-on-surface-variant">({line.note})</span>{/if}{#if line.prep}, {line.prep}{/if}
-                          {#if line.optional}<span class="ml-1 text-label-sm text-outline">optional</span>{/if}
+                          {#if line.optional}<span class="ml-1 text-label-sm text-outline">{text.recipe.ingredients.optional}</span>{/if}
                         </span>
                         {#if ingredient}
                           <span class="shrink-0 rounded bg-surface-container-highest px-1.5 py-0.5 text-label-caps text-on-surface-variant">
@@ -368,18 +368,18 @@
 
           <div class="mt-5 flex flex-col gap-3 border-t border-surface-container-high pt-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
             <p class="text-body-sm text-on-surface-variant">
-              Missing something? Push every unchecked ingredient to your grocery list.
+              {text.recipe.ingredients.pushHint}
             </p>
             <button
               type="button"
               disabled={!uncheckedToPush.length}
-              onclick={() => push(uncheckedToPush, 'you haven’t checked off')}
+              onclick={() => push(uncheckedToPush, text.recipe.toasts.addedUnchecked)}
               class="btn shrink-0 border border-outline-variant bg-surface-container-high py-2 text-on-surface hover:bg-surface-dim"
             >
               <Icon name="check_circle" class="text-[16px]" />
               {uncheckedToPush.length
-                ? `Push Unchecked to Grocery (${uncheckedToPush.length} ${uncheckedToPush.length === 1 ? 'item' : 'items'})`
-                : 'Unchecked items are on your list'}
+                ? text.recipe.ingredients.push(uncheckedToPush.length)
+                : text.recipe.ingredients.pushed}
             </button>
           </div>
         </section>
@@ -388,9 +388,9 @@
         <section>
           <div class="mb-4 flex items-center justify-between">
             <h2 class="flex items-center gap-2 font-display text-headline-md text-on-surface">
-              <Icon name="outdoor_grill" class="text-[22px] text-primary" /> Step-by-Step Method
+              <Icon name="outdoor_grill" class="text-[22px] text-primary" /> {text.recipe.method.title}
             </h2>
-            <span class="text-label-caps uppercase text-outline">{recipe.steps.length} Essential Movements</span>
+            <span class="text-label-caps uppercase text-outline">{text.recipe.method.count(recipe.steps.length)}</span>
           </div>
           <ol class="flex flex-col gap-4 print:gap-3">
             {#each recipe.steps as step, i (i)}
@@ -428,21 +428,21 @@
           <Icon name={PHASE_LOOK[syncPhase()].icon} class="text-[20px]" />
         </span>
         <div>
-          <p class="text-label-md text-on-surface">Google Sheets sync</p>
+          <p class="text-label-md text-on-surface">{text.recipe.sync}</p>
           <SyncStatus />
         </div>
       </div>
       <div class="flex flex-wrap gap-2">
         {#if editable}
-          <a href={href('/catalog', { day })} class="btn-outline py-2 text-on-surface">Swap Recipe from Catalog</a>
+          <a href={href('/catalog', { day })} class="btn-outline py-2 text-on-surface">{text.recipe.buttons.swapFromCatalog}</a>
         {/if}
         {#if next}
           <a href={href(`/recipe/${next.recipe.id}`, { day: next.iso })} class="btn-primary py-2">
-            Next: {formatWeekday(next.iso)} {next.recipe.shortTitle} <Icon name="arrow_forward" class="text-[16px]" />
+            {text.recipe.buttons.next(formatWeekday(next.iso), next.recipe.shortTitle)} <Icon name="arrow_forward" class="text-[16px]" />
           </a>
         {:else}
           <a href={href('/')} class="btn-primary py-2">
-            Back to Weekly Menu <Icon name="arrow_forward" class="text-[16px]" />
+            {text.recipe.buttons.backToWeekly} <Icon name="arrow_forward" class="text-[16px]" />
           </a>
         {/if}
       </div>
@@ -483,14 +483,14 @@
       tabindex="-1"
       class="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-lift focus:outline-none"
     >
-      <h2 id="delete-title" class="font-display text-headline-sm text-on-surface">Delete this recipe?</h2>
+      <h2 id="delete-title" class="font-display text-headline-sm text-on-surface">{text.recipe.deleteDialog.title}</h2>
       <p id="delete-body" class="mt-2 text-body-sm text-on-surface-variant">
-        <strong>{recipe.title}</strong> will be removed from your recipes. You can undo this right after.
+        <strong>{recipe.title}</strong>{text.recipe.deleteDialog.afterTitle}
       </p>
       <div class="mt-5 flex justify-end gap-2">
-        <button type="button" class="btn-outline" onclick={() => (confirmingDelete = false)}>Cancel</button>
+        <button type="button" class="btn-outline" onclick={() => (confirmingDelete = false)}>{text.common.cancel}</button>
         <button type="button" class="btn bg-secondary text-on-secondary shadow-sm hover:opacity-90" onclick={remove}>
-          <Icon name="delete" class="text-[16px]" /> Delete
+          <Icon name="delete" class="text-[16px]" /> {text.common.delete}
         </button>
       </div>
     </div>

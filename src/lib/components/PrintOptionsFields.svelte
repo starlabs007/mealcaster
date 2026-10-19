@@ -1,6 +1,7 @@
 <script>
   // The print-option controls, shared by the Print Options dialog and the Profile page.
   import Icon from './Icon.svelte';
+  import { text } from '../text.js';
   import { IMAGE_SCALE, clampScale } from '../printOptions.svelte.js';
 
   /**
@@ -13,9 +14,9 @@
   const stepScale = (by) => (draft.imageScale = clampScale(draft.imageScale + by));
 
   const sizes = [
-    { value: 'small', label: 'Small', hint: '1 size smaller' },
-    { value: 'regular', label: 'Regular', hint: 'As on screen' },
-    { value: 'large', label: 'Large', hint: '3 sizes bigger' },
+    { value: 'small', ...text.recipe.print.sizes.small },
+    { value: 'regular', ...text.recipe.print.sizes.regular },
+    { value: 'large', ...text.recipe.print.sizes.large },
   ];
 </script>
 
@@ -35,14 +36,14 @@
 
 <div class="divide-y divide-surface-container-high">
   <div>
-    {@render toggle('image', 'Print recipe image', hasImage ? 'Include the photo on the page.' : 'This recipe has no photo.', !hasImage)}
+    {@render toggle('image', text.recipe.print.image, hasImage ? text.recipe.print.imageIncluded : text.recipe.print.imageNone, !hasImage)}
     {#if hasImage}
       <div class="flex items-center justify-between gap-4 pb-3 pl-4 {rowClass} {draft.image ? '' : 'opacity-50'}">
-        <label for="print-scale" class="text-body-sm text-on-surface-variant">Image scaling</label>
+        <label for="print-scale" class="text-body-sm text-on-surface-variant">{text.recipe.print.imageScaling}</label>
         <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest">
           <button
             type="button"
-            aria-label="Smaller image"
+            aria-label={text.recipe.print.smallerImage}
             class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40"
             disabled={!draft.image || draft.imageScale <= IMAGE_SCALE.min}
             onclick={() => stepScale(-IMAGE_SCALE.step)}
@@ -64,7 +65,7 @@
           <span class="pr-1 text-label-md text-on-surface-variant">%</span>
           <button
             type="button"
-            aria-label="Larger image"
+            aria-label={text.recipe.print.largerImage}
             class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40"
             disabled={!draft.image || draft.imageScale >= IMAGE_SCALE.max}
             onclick={() => stepScale(IMAGE_SCALE.step)}
@@ -77,12 +78,12 @@
   </div>
 
   <div>
-    {@render toggle('simple', 'Simple layout', 'One column, no tinted backgrounds or shadows, sections headed by large bold titles.')}
+    {@render toggle('simple', text.recipe.print.simple, text.recipe.print.simpleHint)}
   </div>
 
   <div class="py-3">
     <fieldset class={rowClass}>
-      <legend class="text-label-md text-on-surface">Text size</legend>
+      <legend class="text-label-md text-on-surface">{text.recipe.print.textSize}</legend>
       <div class="mt-2 grid grid-cols-3 gap-2">
         {#each sizes as size (size.value)}
           <label

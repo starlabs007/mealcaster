@@ -3,6 +3,8 @@
   // headed by a large bold title, an empty box to tick beside each item. Only what
   // is still to buy; bought and in-stock items stay off the paper. Never shown on screen.
 
+  import { text } from '../text.js';
+
   /** @type {{ week: string, sections: { id: string, label: string, where: string, items: import('../grocery.svelte.js').GroceryLine[] }[], sources: string[] }} */
   let { week, sections, sources } = $props();
 
@@ -13,9 +15,9 @@
 </script>
 
 <article class="hidden text-on-surface print:block" style="font-size: 11pt; line-height: 1.4">
-  <h1 class="font-display text-[2.2em] font-bold leading-tight">Kitchen Checklist</h1>
+  <h1 class="font-display text-[2.2em] font-bold leading-tight">{text.grocery.print.title}</h1>
   <p class="mt-[0.4em] text-[0.95em] text-on-surface-variant">
-    {week} · {count} {count === 1 ? 'item' : 'items'} to buy{#if sources.length}&nbsp;· for {sources.join(', ')}{/if}
+    {text.grocery.print.summary(week, count, sources)}
   </p>
 
   {#each toBuy as section (section.id)}
@@ -29,7 +31,7 @@
           <li class="flex break-inside-avoid items-baseline gap-[0.6em] py-[0.15em]">
             <span class="inline-block h-[0.85em] w-[0.85em] shrink-0 translate-y-[0.1em] border border-on-surface"></span>
             <span class="flex-1">
-              <strong class="font-semibold">{item.name}</strong>{#if item.amount}&nbsp;— {item.amount}{/if}{#if item.optional}&nbsp;(optional){/if}
+              <strong class="font-semibold">{item.name}</strong>{#if item.amount}&nbsp;— {item.amount}{/if}{#if item.optional}&nbsp;({text.grocery.print.optional}){/if}
             </span>
             <span class="max-w-[45%] text-right text-[0.9em] text-on-surface-variant">{item.sources.map((s) => s.label).join(', ')}</span>
           </li>
@@ -37,6 +39,6 @@
       </ul>
     </section>
   {:else}
-    <p class="mt-[1.1em]">Nothing left to buy.</p>
+    <p class="mt-[1.1em]">{text.grocery.print.nothingLeft}</p>
   {/each}
 </article>
