@@ -403,7 +403,7 @@ export function provisionToRow(week, line, inStock = false) {
   return {
     Week_Of: week,
     Item: line.name,
-    Detail: [line.amount, line.optional && 'optional'].filter(Boolean).join(' · '),
+    Detail: [line.amount, line.optional && sheetText.detailOptional].filter(Boolean).join(' · '),
     Department: departments.find((d) => d.id === line.dept)?.short ?? sheetText.defaultDepartmentShort,
     Status: inStock ? sheetText.status.onHand : line.status === 'bought' ? sheetText.status.bought : sheetText.status.toBuy,
     Source: line.sources.map((s) => (s.note ? `${s.label} (${s.note})` : s.label)).join(', '),

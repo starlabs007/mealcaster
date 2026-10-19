@@ -94,6 +94,10 @@ describe('sheetText', () => {
     assert.equal(t.groupCategory(5), '5 items', HINT);
     assert.equal(t.flatGroupCategory(1), '1 items', HINT);
     assert.equal(t.flatGroupCategory(5), '5 items', HINT);
+    assert.equal(t.sourceAddedByYou, 'Added by you', HINT);
+    assert.equal(t.sourceEveryWeek, 'Every week', HINT);
+    assert.equal(t.sourceDinner('Mon', 'Pasta'), 'Mon: Pasta', HINT);
+    assert.equal(t.detailOptional, 'optional', HINT);
     assert.equal(t.untitledRecipe, 'Untitled recipe', HINT);
     assert.equal(t.diningOutNote, 'Dining out', HINT);
     assert.equal(t.defaultIngredientGroup, 'Main', HINT);

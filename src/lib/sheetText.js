@@ -121,6 +121,23 @@ export const defaultIngredientGroup = 'Main';
 /** Title given to a method step with no title: "Step 1". @param {number} n 1-based */
 export const defaultStepTitle = (n) => `Step ${n}`;
 
+// ---- Written for reading only: the Provisions tab's Source and Detail columns ---------------------------------------
+// The codec writes these but never parses them back (Line_Key and Added carry the data), so changing one cannot lose
+// data; rows already in the sheet just keep the old words until the next sync rewrites them. The grocery screen
+// shows the same labels on its meal pills.
+
+/** Source label of a line the person added by hand for one week. */
+export const sourceAddedByYou = 'Added by you';
+
+/** Source label of a standing "every week" line. */
+export const sourceEveryWeek = 'Every week';
+
+/** Source label of a planned dinner: "Mon: Pasta". @param {string} weekday3 first three letters @param {string} title */
+export const sourceDinner = (weekday3, title) => `${weekday3}: ${title}`;
+
+/** Detail-column marker for an optional ingredient. */
+export const detailOptional = 'optional';
+
 /** Aisle tag of a new ingredient, and of an ingredient the sheet doesn't give one for. */
 export const defaultAisle = 'Pantry';
 
