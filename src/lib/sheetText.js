@@ -115,6 +115,12 @@ export const untitledRecipe = 'Untitled recipe';
 /** Custom_Notes text written for a dining-out evening that has no notes of its own. */
 export const diningOutNote = 'Dining out';
 
+/** Title of the ingredient group for a line with no group name. */
+export const defaultIngredientGroup = 'Main';
+
+/** Title given to a method step with no title: "Step 1". @param {number} n 1-based */
+export const defaultStepTitle = (n) => `Step ${n}`;
+
 /** Aisle tag of a new ingredient, and of an ingredient the sheet doesn't give one for. */
 export const defaultAisle = 'Pantry';
 

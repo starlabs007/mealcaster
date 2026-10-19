@@ -2,28 +2,12 @@
   import { storageKey } from '../lib/env.js';
 
   const DRAFT_KEY = storageKey('recipeDraft.v2');
-
-  /** Which form field fills each [Recipes] column. */
-  const COLUMN_SOURCE = {
-    Recipe_ID: 'Generated',
-    Title: 'Recipe Title',
-    Description: 'Description',
-    Ingredients_JSON: 'Ingredients',
-    Method_Steps: 'Method',
-    Image_URL: 'Photo link',
-    Tags: 'Tags',
-    Favorite_Flag: '♥ on card',
-    Category: 'Category',
-    Servings: 'Servings',
-    Prep_Minutes: 'Prep Time',
-    Cook_Minutes: 'Cook Time',
-    Notes: 'Cook’s Secrets',
-  };
 </script>
 
 <script>
   import { tick } from 'svelte';
-  import { defaultAisle, groupCategory } from '../lib/sheetText.js';
+  import { defaultAisle, defaultIngredientGroup, defaultStepTitle, groupCategory } from '../lib/sheetText.js';
+  import { text } from '../lib/text.js';
   import { SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
@@ -216,12 +200,12 @@
   const filledIngredients = $derived(form.ingredients.filter((r) => r.text.trim()));
   const qtyInvalid = $derived(new Set(form.ingredients.filter((r) => Number.isNaN(parseQty(r.qty))).map((r) => r.key)));
   const errors = $derived({
-    title: form.title.trim() ? '' : 'Give the recipe a title.',
-    serves: Number.isInteger(form.serves) && form.serves >= 1 && form.serves <= 50 ? '' : 'Servings must be 1–50.',
-    prepMinutes: Number.isInteger(form.prepMinutes) && form.prepMinutes >= 0 ? '' : 'Enter whole minutes.',
-    cookMinutes: Number.isInteger(form.cookMinutes) && form.cookMinutes >= 0 ? '' : 'Enter whole minutes.',
-    ingredients: filledIngredients.length ? '' : 'Add at least one ingredient.',
-    qty: qtyInvalid.size ? 'Use amounts like 2, 1.5, 1/2 or 1 1/2 — or leave blank for “to taste”.' : '',
+    title: form.title.trim() ? '' : text.editor.errors.title,
+    serves: Number.isInteger(form.serves) && form.serves >= 1 && form.serves <= 50 ? '' : text.editor.errors.serves,
+    prepMinutes: Number.isInteger(form.prepMinutes) && form.prepMinutes >= 0 ? '' : text.editor.errors.minutes,
+    cookMinutes: Number.isInteger(form.cookMinutes) && form.cookMinutes >= 0 ? '' : text.editor.errors.minutes,
+    ingredients: filledIngredients.length ? '' : text.editor.errors.ingredients,
+    qty: qtyInvalid.size ? text.editor.errors.qty : '',
   });
   const valid = $derived(Object.values(errors).every((e) => !e));
   const show = (key) => submitted && errors[key];
@@ -254,7 +238,7 @@
 
   /** "(flank or ribeye), sliced · optional" — the hidden details at a glance. @param {IngredientRow} row */
   const detailsSummary = (row) =>
-    [[row.note.trim() && `(${row.note.trim()})`, row.prep.trim()].filter(Boolean).join(', '), row.optional && 'optional']
+    [[row.note.trim() && `(${row.note.trim()})`, row.prep.trim()].filter(Boolean).join(', '), row.optional && text.editor.ingredients.optionalWord]
       .filter(Boolean)
       .join(' · ');
 
@@ -288,7 +272,7 @@
     const lastGroup = form.ingredients.findLast((r) => r.text.trim())?.group ?? '';
     const parsed = parseIngredientLines(bulkText, lastGroup);
     if (!parsed.length) {
-      showToast('No ingredients found — put one per line, e.g. “1 lb rigatoni”.');
+      showToast(text.editor.toasts.noIngredientsFound);
       return;
     }
     const added = parsed.map((row) => {
@@ -297,7 +281,7 @@
     });
     form.ingredients = [...form.ingredients.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim()), ...added];
     for (const row of added) if (detailsSummary(row)) detailsOpen.add(row.key);
-    showToast(`Added ${parsed.length} ${parsed.length === 1 ? 'ingredient' : 'ingredients'} — check the amounts and aisles.`);
+    showToast(text.editor.toasts.addedIngredients(parsed.length));
     bulkText = '';
     bulkOpen = false;
   }
@@ -324,11 +308,11 @@
     photoError = '';
     if (!file) return;
     if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(file.type)) {
-      photoError = 'Choose a JPG, PNG or WebP image.';
+      photoError = text.editor.photo.wrongType;
       return;
     }
     if (file.size > 10 * 1024 * 1024) {
-      photoError = 'That photo is over 10 MB.';
+      photoError = text.editor.photo.tooBig;
       return;
     }
     try {
@@ -342,7 +326,7 @@
       bitmap.close();
       form.image = canvas.toDataURL('image/jpeg', 0.8);
     } catch {
-      photoError = 'Couldn’t read that image.';
+      photoError = text.editor.photo.unreadable;
     }
   }
 
@@ -373,7 +357,7 @@
     /** @type {import('../lib/data/recipes.js').IngredientGroup[]} */
     const groups = [];
     for (const row of filledIngredients) {
-      const title = row.group.trim() || 'Main';
+      const title = row.group.trim() || defaultIngredientGroup;
       let group = groups.find((g) => g.title.toLowerCase() === title.toLowerCase());
       if (!group) groups.push((group = { title, category: '', items: [] }));
       const qty = parseQty(row.qty);
@@ -419,7 +403,7 @@
       steps: form.steps
         .filter((s) => s.text.trim())
         .map((s, i) => ({
-          title: s.title.trim() || `Step ${i + 1}`,
+          title: s.title.trim() || defaultStepTitle(i + 1),
           minutes: Number(s.minutes) || 0,
           text: s.text.trim(),
           ...(s.critical && { critical: true }),
@@ -444,7 +428,7 @@
       return;
     }
     if (!editing) clearDraft();
-    showToast(editing ? 'Recipe updated.' : `${recipe.title} added to your recipe box.`);
+    showToast(editing ? text.editor.toasts.updated : text.editor.toasts.added(recipe.title));
     navigate(`/recipe/${recipe.id}`);
   }
 
@@ -452,8 +436,8 @@
     const previous = $state.snapshot(editing);
     revertSample(editing.id);
     navigate(`/recipe/${editing.id}`);
-    showToast('Recipe reverted to the original.', {
-      label: 'Undo',
+    showToast(text.editor.toasts.reverted, {
+      label: text.common.undo,
       run: () => {
         const { minutes, ...recipe } = previous;
         saveRecipe(recipe);
@@ -464,9 +448,9 @@
   function saveDraft() {
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify($state.snapshot(form)));
-      showToast('Draft saved on this device.');
+      showToast(text.editor.toasts.draftSaved);
     } catch {
-      showToast('This device ran out of space for the draft. Try a smaller photo or an image link.');
+      showToast(text.editor.toasts.draftNoSpace);
     }
   }
 
@@ -485,8 +469,8 @@
     clearDraft();
     form = blankForm();
     submitted = false;
-    showToast('Draft discarded.', {
-      label: 'Undo',
+    showToast(text.editor.toasts.draftDiscarded, {
+      label: text.common.undo,
       run: () => {
         form = previous;
         if (hadDraft) saveDraft();
@@ -504,10 +488,10 @@
     'min-w-0 rounded-md border bg-surface-container-lowest px-2 py-1.5 text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container';
 </script>
 
-{#snippet fieldLabel(text, column, forId = undefined, required = false)}
+{#snippet fieldLabel(label, column, forId = undefined, required = false)}
   <label for={forId} class="mb-1.5 flex items-baseline justify-between gap-2">
-    <span class="text-label-md text-on-surface">{text}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-outline">&nbsp;(optional)</span>{/if}</span>
-    {#if column}<span class="text-body-sm text-outline">Column: {column}</span>{/if}
+    <span class="text-label-md text-on-surface">{label}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-outline">&nbsp;{text.editor.optional}</span>{/if}</span>
+    {#if column}<span class="text-body-sm text-outline">{text.editor.column(column)}</span>{/if}
   </label>
 {/snippet}
 
@@ -540,11 +524,11 @@
 {#if missing}
   <div class="mx-auto flex max-w-xl flex-col items-center gap-3 px-4 py-24 text-center">
     <Icon name="edit_off" class="text-[40px] text-outline" />
-    <h1 class="font-display text-headline-lg text-on-surface">Recipe not found</h1>
-    <p class="text-body-md text-on-surface-variant">It may have been removed from the household recipe box.</p>
+    <h1 class="font-display text-headline-lg text-on-surface">{text.editor.notFound.title}</h1>
+    <p class="text-body-md text-on-surface-variant">{text.editor.notFound.body}</p>
     <div class="mt-2 flex flex-wrap justify-center gap-2">
-      <a href={href('/recipe/new')} class="btn-primary py-2"><Icon name="add" class="text-[16px]" /> Add a Custom Recipe</a>
-      <a href={href('/catalog')} class="btn-outline py-2">Browse the Recipe Catalog</a>
+      <a href={href('/recipe/new')} class="btn-primary py-2"><Icon name="add" class="text-[16px]" /> {text.editor.notFound.addCustom}</a>
+      <a href={href('/catalog')} class="btn-outline py-2">{text.editor.notFound.browse}</a>
     </div>
   </div>
 {:else}
@@ -553,22 +537,22 @@
     <div class="flex flex-col gap-3 rounded-xl bg-surface-container-low px-4 py-3 md:flex-row md:items-center md:justify-between">
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
         <span class="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-3 py-1.5 text-label-md text-on-surface shadow-card">
-          <Icon name="table_chart" class="text-[16px] text-primary" /> [{sheets.tabs.recipes}] tab
+          <Icon name="table_chart" class="text-[16px] text-primary" /> {text.editor.banner.tab(sheets.tabs.recipes)}
         </span>
         <SyncStatus />
         {#if sheets.spreadsheet}
           <span class="hidden items-center gap-1.5 text-body-sm text-on-surface-variant lg:inline-flex">
-            <Icon name="sync_alt" class="text-[16px]" /> Saving writes this recipe’s row in your sheet
+            <Icon name="sync_alt" class="text-[16px]" /> {text.editor.banner.savingWrites}
           </span>
         {/if}
       </div>
       <div class="flex flex-wrap gap-2">
         <a href={href('/sheets-sync')} class="btn text-on-surface-variant hover:bg-surface-container-high">
-          <Icon name="settings" class="text-[16px]" /> Sheets Settings
+          <Icon name="settings" class="text-[16px]" /> {text.editor.banner.sheetsSettings}
         </a>
         {#if sheets.spreadsheet}
           <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="btn text-on-surface-variant hover:bg-surface-container-high">
-            View Google Sheet <Icon name="open_in_new" class="text-[16px]" />
+            {text.editor.banner.viewSheet} <Icon name="open_in_new" class="text-[16px]" />
           </a>
         {/if}
       </div>
@@ -577,28 +561,28 @@
     <!-- Title -->
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
-        <nav aria-label="Breadcrumb" class="flex flex-wrap items-center gap-1 text-label-md text-on-surface-variant">
-          <a href={href('/catalog')} class="hover:text-primary">Recipe Catalog</a>
+        <nav aria-label={text.editor.header.breadcrumbAria} class="flex flex-wrap items-center gap-1 text-label-md text-on-surface-variant">
+          <a href={href('/catalog')} class="hover:text-primary">{text.editor.header.catalog}</a>
           <Icon name="chevron_right" class="text-[16px] text-outline" />
           {#if editing}
             <a href={href(`/recipe/${editing.id}`)} class="max-w-[16rem] truncate hover:text-primary">{editing.title}</a>
             <Icon name="chevron_right" class="text-[16px] text-outline" />
-            <span class="text-primary" aria-current="page">Edit</span>
+            <span class="text-primary" aria-current="page">{text.editor.header.edit}</span>
           {:else}
-            <span class="text-primary" aria-current="page">Create New Recipe</span>
+            <span class="text-primary" aria-current="page">{text.editor.header.createNew}</span>
           {/if}
         </nav>
         <h1 class="mt-2 font-display text-headline-lg-mobile tracking-tight text-primary md:text-headline-xl">
-          {editing ? 'Edit Recipe' : 'Add a Custom Family Recipe'}
+          {editing ? text.editor.header.titleEdit : text.editor.header.titleNew}
         </h1>
         <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-          Document signature dinners, treasured family heirlooms, or handpicked online finds — laid out to match the
-          columns of your <code class="rounded bg-surface-container-high px-1 text-[12px]">[{sheets.tabs.recipes}]</code> sheet.
+          {text.editor.header.introBefore}
+          <code class="rounded bg-surface-container-high px-1 text-[12px]">[{sheets.tabs.recipes}]</code>{text.editor.header.introAfter}
         </p>
       </div>
       {#if savedDraft}
         <span class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-primary-fixed/60 px-3 py-1 text-label-sm text-primary md:self-auto">
-          <Icon name="history" class="text-[15px]" /> Restored your saved draft
+          <Icon name="history" class="text-[15px]" /> {text.editor.header.restoredDraft}
         </span>
       {/if}
     </div>
@@ -609,19 +593,19 @@
         <section class="flex flex-col gap-5 rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="flex items-center justify-between gap-2">
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="restaurant_menu" class="text-[20px] text-primary" /> Recipe Essentials
+              <Icon name="restaurant_menu" class="text-[20px] text-primary" /> {text.editor.essentials.title}
             </h2>
-            <span class="text-body-sm text-outline"><span class="text-secondary">*</span> Required</span>
+            <span class="text-body-sm text-outline"><span class="text-secondary">*</span> {text.editor.required}</span>
           </div>
 
           <div>
-            {@render fieldLabel('Recipe Title', 'Title', 'recipe-title', true)}
+            {@render fieldLabel(text.editor.essentials.recipeTitle, 'Title', 'recipe-title', true)}
             <input
               id="recipe-title"
               type="text"
               bind:value={form.title}
               maxlength="120"
-              placeholder="e.g., Mom’s Lemon Basil Ricotta Rigatoni"
+              placeholder={text.editor.essentials.titlePlaceholder}
               aria-invalid={show('title') ? 'true' : undefined}
               class="{field} {border(show('title'))}"
             />
@@ -629,19 +613,19 @@
           </div>
 
           <div>
-            {@render fieldLabel('Description', 'Description', 'recipe-description')}
+            {@render fieldLabel(text.editor.essentials.description, 'Description', 'recipe-description')}
             <textarea
               id="recipe-description"
               rows="2"
               bind:value={form.description}
               maxlength="400"
-              placeholder="One or two lines that make you want to cook it tonight."
+              placeholder={text.editor.essentials.descriptionPlaceholder}
               class="{field} {border(false)} resize-y"
             ></textarea>
           </div>
 
           <div>
-            {@render fieldLabel('Culinary Photo', 'Image_URL')}
+            {@render fieldLabel(text.editor.photo.label, 'Image_URL')}
             <!-- svelte-ignore a11y_no_static_element_interactions (drop target; the button inside is the keyboard path) -->
             <div
               class="relative h-48 overflow-hidden rounded-xl border-2 border-dashed transition-colors {dragging
@@ -653,14 +637,14 @@
             >
               {#if form.image}
                 {#key form.image}
-                  <RecipeImage src={form.image} alt="Recipe photo preview" class="h-full w-full" />
+                  <RecipeImage src={form.image} alt={text.editor.photo.previewAlt} class="h-full w-full" />
                 {/key}
                 <div class="absolute bottom-2 right-2 flex gap-1.5">
                   <button type="button" class="btn bg-surface-container-lowest/90 text-on-surface shadow-sm backdrop-blur hover:bg-surface-container-lowest" onclick={() => fileInput.click()}>
-                    <Icon name="photo_camera" class="text-[15px]" /> Replace
+                    <Icon name="photo_camera" class="text-[15px]" /> {text.editor.photo.replace}
                   </button>
                   <button type="button" class="btn bg-surface-container-lowest/90 text-secondary shadow-sm backdrop-blur hover:bg-surface-container-lowest" onclick={() => (form.image = '')}>
-                    <Icon name="delete" class="text-[15px]" /> Remove
+                    <Icon name="delete" class="text-[15px]" /> {text.editor.photo.remove}
                   </button>
                 </div>
               {:else}
@@ -672,8 +656,8 @@
                   <span class="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-lowest shadow-card">
                     <Icon name="photo_camera" class="text-[22px]" />
                   </span>
-                  <span class="text-label-md">Drop a kitchen snapshot or click to upload</span>
-                  <span class="text-body-sm text-outline">JPG, WebP or PNG up to 10 MB</span>
+                  <span class="text-label-md">{text.editor.photo.drop}</span>
+                  <span class="text-body-sm text-outline">{text.editor.photo.limits}</span>
                 </button>
               {/if}
             </div>
@@ -682,30 +666,30 @@
               <Icon name="link" class="text-[18px] text-outline" />
               <input
                 type="url"
-                aria-label="Image link"
+                aria-label={text.editor.photo.linkAria}
                 value={uploaded ? '' : form.image}
                 oninput={(e) => (form.image = e.currentTarget.value)}
-                placeholder={uploaded ? 'Using the uploaded photo' : 'Or paste a public image link (Drive, Unsplash…)'}
+                placeholder={uploaded ? text.editor.photo.usingUploaded : text.editor.photo.linkPlaceholder}
                 class="{cellField} {border(false)} flex-1 py-2"
               />
             </div>
             {#if photoError}
               <p class="mt-1 text-body-sm text-secondary">{photoError}</p>
             {:else if uploaded}
-              <p class="mt-1 text-body-sm text-outline">{sheets.spreadsheet ? 'Uploaded photos go to a “MealCaster Photos” folder in your Google Drive, viewable by anyone with the link.' : 'Uploaded photos stay on this device until you connect a Google Sheet.'}</p>
+              <p class="mt-1 text-body-sm text-outline">{sheets.spreadsheet ? text.editor.photo.uploadedConnected : text.editor.photo.uploadedLocal}</p>
             {/if}
           </div>
 
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div class="sm:col-span-2 sm:max-w-[calc(50%-0.5rem)]">{@render numberField('serves', 'Yield / Servings', '', 'servings')}</div>
-            {@render numberField('prepMinutes', 'Prep Time', 'timer', 'min')}
-            {@render numberField('cookMinutes', 'Cook Time', 'skillet', 'min')}
+            <div class="sm:col-span-2 sm:max-w-[calc(50%-0.5rem)]">{@render numberField('serves', text.editor.essentials.servings, '', text.editor.essentials.servingsUnit)}</div>
+            {@render numberField('prepMinutes', text.editor.essentials.prep, 'timer', text.editor.essentials.minutesUnit)}
+            {@render numberField('cookMinutes', text.editor.essentials.cook, 'skillet', text.editor.essentials.minutesUnit)}
           </div>
 
           <fieldset>
             <legend class="mb-2 flex w-full items-baseline justify-between gap-2">
-              <span class="text-label-md text-on-surface">Category <span class="text-outline">(optional)</span></span>
-              <span class="text-body-sm text-outline">Column: Category</span>
+              <span class="text-label-md text-on-surface">{text.editor.category.label} <span class="text-outline">{text.editor.optional}</span></span>
+              <span class="text-body-sm text-outline">{text.editor.column('Category')}</span>
             </legend>
             <div class="flex flex-wrap gap-1.5">
               {#each categoryOptions as category (category)}
@@ -727,7 +711,7 @@
             <div class="mt-2 flex gap-2">
               <input
                 type="text"
-                aria-label="New category"
+                aria-label={text.editor.category.newAria}
                 bind:value={newCategory}
                 onkeydown={(e) => {
                   if (e.key === 'Enter') {
@@ -735,7 +719,7 @@
                     addCategory();
                   }
                 }}
-                placeholder="Add your own category, e.g. Breakfast"
+                placeholder={text.editor.category.placeholder}
                 class="{field} {border(false)} flex-1 py-2"
               />
               <button
@@ -744,16 +728,16 @@
                 onclick={addCategory}
                 class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-surface-container px-3 text-label-md text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
               >
-                <Icon name="add" class="text-[16px]" /> Add
+                <Icon name="add" class="text-[16px]" /> {text.editor.category.add}
               </button>
             </div>
-            <p class="mt-1 text-body-sm text-outline">One per recipe; tap the selected one again to clear it.</p>
+            <p class="mt-1 text-body-sm text-outline">{text.editor.category.hint}</p>
           </fieldset>
 
           <fieldset>
             <legend class="mb-2 flex w-full items-baseline justify-between gap-2">
-              <span class="text-label-md text-on-surface">Tags <span class="text-outline">(optional)</span></span>
-              <span class="text-body-sm text-outline">Column: Tags</span>
+              <span class="text-label-md text-on-surface">{text.editor.tags.label} <span class="text-outline">{text.editor.optional}</span></span>
+              <span class="text-body-sm text-outline">{text.editor.column('Tags')}</span>
             </legend>
             <div class="flex flex-wrap gap-1.5">
               {#each tagOptions as tag (tag)}
@@ -775,7 +759,7 @@
             <div class="mt-2 flex gap-2">
               <input
                 type="text"
-                aria-label="New tag"
+                aria-label={text.editor.tags.newAria}
                                 bind:value={newTag}
                 onkeydown={(e) => {
                   if (e.key === 'Enter' || e.key === ',') {
@@ -783,7 +767,7 @@
                     addTag();
                   }
                 }}
-                placeholder="Add your own tag, e.g. Date Night"
+                placeholder={text.editor.tags.placeholder}
                 class="{field} {border(false)} flex-1 py-2"
               />
               <button
@@ -792,17 +776,17 @@
                 onclick={addTag}
                 class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-surface-container px-3 text-label-md text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
               >
-                <Icon name="add" class="text-[16px]" /> Add
+                <Icon name="add" class="text-[16px]" /> {text.editor.tags.add}
               </button>
             </div>
-            <p class="mt-1 text-body-sm text-outline">Press Enter to add. Words are capitalized for you; up to {TAG_MAX} characters per tag, commas separate tags.</p>
+            <p class="mt-1 text-body-sm text-outline">{text.editor.tags.hint(TAG_MAX)}</p>
           </fieldset>
         </section>
 
         <section class="rounded-2xl bg-surface-container-low p-5">
           <div class="flex items-center justify-between gap-2">
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="view_column" class="text-[20px] text-primary" /> Sheet Column Mapping
+              <Icon name="view_column" class="text-[20px] text-primary" /> {text.editor.mapping.title}
             </h2>
             <div class="flex items-center gap-3">
               <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">
@@ -815,13 +799,13 @@
                 onclick={() => (showMapping = !showMapping)}
                 class="inline-flex items-center gap-0.5 text-label-md text-on-surface-variant hover:text-on-surface"
               >
-                {showMapping ? 'Hide' : 'Show'} <Icon name={showMapping ? 'expand_less' : 'expand_more'} class="text-[18px]" />
+                {showMapping ? text.editor.mapping.hide : text.editor.mapping.show} <Icon name={showMapping ? 'expand_less' : 'expand_more'} class="text-[18px]" />
               </button>
             </div>
           </div>
           {#if showMapping}
             <div id="column-mapping" class="mt-2">
-              <p class="mb-3 text-body-sm text-on-surface-variant">Each field fills one column of your recipes tab:</p>
+              <p class="mb-3 text-body-sm text-on-surface-variant">{text.editor.mapping.intro}</p>
               <dl class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                 {#each SCHEMA.recipes as column, i (column)}
                   <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-lowest px-3 py-2">
@@ -829,7 +813,7 @@
                       <span class="text-label-sm text-outline">{columnLetter(i)}</span>
                       <span class="truncate font-mono text-[12px] text-on-surface">{column}</span>
                     </dt>
-                    <dd class="shrink-0 text-body-sm text-on-surface-variant">{COLUMN_SOURCE[column]}</dd>
+                    <dd class="shrink-0 text-body-sm text-on-surface-variant">{text.editor.mapping.source[column]}</dd>
                   </div>
                 {/each}
               </dl>
@@ -845,29 +829,29 @@
           <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
               <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-                <Icon name="grocery" class="text-[20px] text-primary" /> <span>Ingredients &amp; Mise en Place<span class="text-secondary">&nbsp;*</span></span>
+                <Icon name="grocery" class="text-[20px] text-primary" /> <span>{text.editor.ingredients.title}<span class="text-secondary">&nbsp;*</span></span>
               </h2>
-              <p class="text-body-sm text-on-surface-variant">Qty · Unit · Ingredient · Note (for the store) · Prep (for the kitchen) · Component group · Store aisle</p>
+              <p class="text-body-sm text-on-surface-variant">{text.editor.ingredients.columns}</p>
             </div>
             <button type="button" class="btn text-primary hover:bg-surface-container-low" aria-expanded={bulkOpen} onclick={() => (bulkOpen = !bulkOpen)}>
-              <Icon name={bulkOpen ? 'close' : 'content_paste'} class="text-[16px]" /> {bulkOpen ? 'Close' : 'Paste bulk text'}
+              <Icon name={bulkOpen ? 'close' : 'content_paste'} class="text-[16px]" /> {bulkOpen ? text.editor.ingredients.closePaste : text.editor.ingredients.paste}
             </button>
           </div>
 
           {#if bulkOpen}
             <div class="mb-4 flex flex-col gap-2 rounded-xl bg-surface-container-low p-3">
-              <label for="bulk-ingredients" class="text-label-md text-on-surface">Paste an ingredient list — one per line</label>
+              <label for="bulk-ingredients" class="text-label-md text-on-surface">{text.editor.paste.label}</label>
               <textarea
                 id="bulk-ingredients"
                 rows="6"
                 bind:value={bulkText}
-                placeholder={'Pasta:\n1 lb rigatoni\n\nLemon ricotta cream:\n1 1/2 cups whole-milk ricotta\n2 lemons, zested and juiced\nSalt and black pepper'}
+                placeholder={text.editor.paste.placeholder}
                 class="{field} {border(false)} font-mono text-body-sm"
               ></textarea>
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <button
                   type="button"
-                  aria-label="How pasted lines are read"
+                  aria-label={text.editor.paste.helpAria}
                   aria-expanded={pasteHelpOpen}
                   aria-controls="paste-help"
                   class="inline-flex items-center rounded-md p-1 hover:bg-surface-container-high hover:text-primary {pasteHelpOpen ? 'text-primary' : 'text-on-surface-variant'}"
@@ -877,19 +861,12 @@
                   <Icon name={pasteHelpOpen ? 'expand_less' : 'expand_more'} class="text-[16px]" />
                 </button>
                 <button type="button" class="btn-primary py-2" disabled={!bulkText.trim()} onclick={addBulk}>
-                  <Icon name="playlist_add" class="text-[16px]" /> Add Ingredients
+                  <Icon name="playlist_add" class="text-[16px]" /> {text.editor.paste.add}
                 </button>
               </div>
               {#if pasteHelpOpen}
                 <ul id="paste-help" class="flex list-disc flex-col gap-1.5 rounded-lg bg-surface-container-lowest py-3 pl-8 pr-3 text-body-sm text-on-surface-variant">
-                  <li>One ingredient per line. Bullets and numbering are ignored.</li>
-                  <li>A line ending in “:” starts a component group, e.g. <em>Sauce:</em></li>
-                  <li>Amount and unit come first: <em>1 1/2 cups rice</em>, <em>½ tsp salt</em>.</li>
-                  <li>Brackets become the note: <em>beef (flank or ribeye)</em>. Kitchen words in them go to prep: <em>(…, sliced)</em>.</li>
-                  <li>After a comma is prep: <em>shallot, finely minced</em>. So is a prep word before the name: <em>shredded chicken</em>.</li>
-                  <li><em>(optional)</em> marks the line optional.</li>
-                  <li>A container becomes the unit: <em>6 oz can of tomato paste</em> → 1 can, note “6 oz”.</li>
-                  <li>Check the rows after adding: new ingredients are marked <strong class="text-tertiary">New</strong>, and look-alikes offer “Did you mean…”.</li>
+                  {#each text.editor.paste.help as item (item)}<li>{@html item}</li>{/each}
                 </ul>
               {/if}
             </div>
@@ -908,10 +885,10 @@
               {@const similar = isNew ? similarIngredients(ingredients, row.text) : []}
               <li class="flex flex-col gap-2 rounded-lg bg-surface-container-low p-2">
                 <div class="flex min-w-0 flex-1 items-center gap-2">
-                  <input type="text" aria-label="Quantity, row {i + 1}" placeholder="Qty" bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} class="{cellField} {border(badQty)} w-14 shrink-0 text-center" />
+                  <input type="text" aria-label={text.editor.ingredients.qtyAria(i + 1)} placeholder={text.editor.ingredients.qtyPlaceholder} bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} class="{cellField} {border(badQty)} w-14 shrink-0 text-center" />
                   <Combobox
-                    label="Unit, row {i + 1}"
-                    placeholder="Unit"
+                    label={text.editor.ingredients.unitAria(i + 1)}
+                    placeholder={text.editor.ingredients.unitPlaceholder}
                     suggestions={UNIT_SUGGESTIONS}
                     limit={UNIT_SUGGESTIONS.length}
                     openOnFocus
@@ -921,8 +898,8 @@
                     listClass="w-44"
                   />
                   <Combobox
-                    label="Ingredient, row {i + 1}"
-                    placeholder="Ingredient (e.g. green onion)"
+                    label={text.editor.ingredients.nameAria(i + 1)}
+                    placeholder={text.editor.ingredients.namePlaceholder}
                     suggestions={ingredientSuggestions}
                     bind:value={row.text}
                     oninput={() => onIngredientText(row)}
@@ -935,20 +912,20 @@
                 </div>
                 {#if similar.length}
                   <p class="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-body-sm text-on-surface-variant">
-                    <Icon name="info" class="text-[16px] text-tertiary" /> New ingredient. Did you mean
+                    <Icon name="info" class="text-[16px] text-tertiary" /> {text.editor.ingredients.newIngredientDidYouMean}
                     {#each similar as match (match.ingredient.id)}
                       <button type="button" class="rounded-full border border-outline-variant bg-surface-container-lowest px-2 py-0.5 text-label-sm text-primary hover:bg-surface-container-high" onclick={() => useExisting(row, match)}>
-                        {match.ingredient.name}{#if match.note}<span class="text-on-surface-variant">&nbsp;+ note “{match.note}”</span>{/if}
+                        {match.ingredient.name}{#if match.note}<span class="text-on-surface-variant">&nbsp;{text.editor.ingredients.plusNote(match.note)}</span>{/if}
                       </button>
                     {/each}
                   </p>
                 {/if}
                 {#if detailsOpen.has(row.key)}
                 <div id="details-{row.key}" class="flex flex-wrap items-center gap-2">
-                  <input type="text" aria-label="Note for the store, row {i + 1}" placeholder="Note (e.g. flank or ribeye)" bind:value={row.note} class="{cellField} {border(false)} min-w-0 flex-1 basis-40" />
-                  <input type="text" aria-label="Prep, row {i + 1}" placeholder="Prep (e.g. sliced)" bind:value={row.prep} class="{cellField} {border(false)} min-w-0 flex-1 basis-32" />
+                  <input type="text" aria-label={text.editor.ingredients.noteAria(i + 1)} placeholder={text.editor.ingredients.notePlaceholder} bind:value={row.note} class="{cellField} {border(false)} min-w-0 flex-1 basis-40" />
+                  <input type="text" aria-label={text.editor.ingredients.prepAria(i + 1)} placeholder={text.editor.ingredients.prepPlaceholder} bind:value={row.prep} class="{cellField} {border(false)} min-w-0 flex-1 basis-32" />
                   <label class="inline-flex shrink-0 items-center gap-1.5 px-1 text-body-sm text-on-surface-variant">
-                    <input type="checkbox" bind:checked={row.optional} class="accent-primary" /> Optional
+                    <input type="checkbox" bind:checked={row.optional} class="accent-primary" /> {text.editor.ingredients.optionalCheckbox}
                   </label>
                 </div>
                 {:else if summary}
@@ -957,13 +934,13 @@
                   </button>
                 {/if}
                 <div class="flex items-center gap-2">
-                  <input type="text" aria-label="Component group, row {i + 1}" placeholder="Group (e.g. Sauce)" list="ingredient-groups" bind:value={row.group} class="{cellField} {border(false)} flex-1 md:w-36 md:flex-none" />
+                  <input type="text" aria-label={text.editor.ingredients.groupAria(i + 1)} placeholder={text.editor.ingredients.groupPlaceholder} list="ingredient-groups" bind:value={row.group} class="{cellField} {border(false)} flex-1 md:w-36 md:flex-none" />
                   {#if isNew}
-                    <span class="shrink-0 rounded bg-[#ffdead] px-1.5 py-0.5 text-label-caps uppercase text-tertiary" title="Saving adds “{row.text.trim()}” to your ingredients, in this aisle">New</span>
+                    <span class="shrink-0 rounded bg-[#ffdead] px-1.5 py-0.5 text-label-caps uppercase text-tertiary" title={text.editor.ingredients.newBadgeTitle(row.text.trim())}>{text.editor.ingredients.newBadge}</span>
                   {/if}
                   <select
-                    aria-label="Store aisle, row {i + 1}"
-                    title={known ? `The aisle of “${known.name}”, shared by every recipe that uses it` : 'Store aisle for this new ingredient'}
+                    aria-label={text.editor.ingredients.aisleAria(i + 1)}
+                    title={known ? text.editor.ingredients.aisleKnownTitle(known.name) : text.editor.ingredients.aisleNewTitle}
                     disabled={Boolean(known)}
                     bind:value={row.aisle}
                     onchange={() => (row.aisleSet = true)}
@@ -975,17 +952,17 @@
                     type="button"
                     aria-expanded={detailsOpen.has(row.key)}
                     aria-controls="details-{row.key}"
-                    aria-label="Note, prep and optional, row {i + 1}"
-                    title="Note, prep, optional"
+                    aria-label={text.editor.ingredients.detailsAria(i + 1)}
+                    title={text.editor.ingredients.detailsTitle}
                     class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-label-sm hover:bg-surface-container-high {detailsOpen.has(row.key) || summary ? 'text-primary' : 'text-outline'}"
                     onclick={() => (detailsOpen.has(row.key) ? detailsOpen.delete(row.key) : detailsOpen.add(row.key))}
                   >
-                    <Icon name={detailsOpen.has(row.key) ? 'expand_less' : 'tune'} class="text-[18px]" /><span class="hidden sm:inline">Details</span>
+                    <Icon name={detailsOpen.has(row.key) ? 'expand_less' : 'tune'} class="text-[18px]" /><span class="hidden sm:inline">{text.editor.ingredients.details}</span>
                   </button>
                   <button
                     type="button"
-                    aria-label="Remove ingredient row {i + 1}"
-                    title="Remove ingredient"
+                    aria-label={text.editor.ingredients.removeAria(i + 1)}
+                    title={text.editor.ingredients.removeTitle}
                     class="ml-auto shrink-0 rounded-md p-1.5 text-outline hover:bg-surface-container-high hover:text-secondary"
                     onclick={() => removeIngredient(row.key)}
                   >
@@ -999,10 +976,10 @@
           {@render error('qty')}
 
           <button type="button" class="btn mt-3 w-full bg-surface-container-low py-2.5 text-body-md text-on-surface hover:bg-surface-container-high" onclick={addIngredient}>
-            <Icon name="add" class="text-[18px]" /> Add Ingredient Row
+            <Icon name="add" class="text-[18px]" /> {text.editor.ingredients.addRow}
           </button>
           <p class="mt-3 flex items-center gap-1.5 text-label-sm text-on-surface-variant">
-            <Icon name="account_tree" class="text-[16px]" /> Component groups become the numbered Mise en Place sections in the recipe view.
+            <Icon name="account_tree" class="text-[16px]" /> {text.editor.ingredients.groupsHint}
           </p>
         </section>
 
@@ -1010,18 +987,18 @@
         <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="skillet" class="text-[20px] text-primary" /> <span>Preparation &amp; Method <span class="font-sans text-label-md text-outline">(optional)</span></span>
+              <Icon name="skillet" class="text-[20px] text-primary" /> <span>{text.editor.method.title} <span class="font-sans text-label-md text-outline">{text.editor.optional}</span></span>
             </h2>
-            <span class="text-label-caps uppercase text-outline">Column: Method_Steps</span>
+            <span class="text-label-caps uppercase text-outline">{text.editor.column(text.editor.method.column)}</span>
           </div>
-          <p class="text-body-sm text-on-surface-variant">Ordered steps</p>
+          <p class="text-body-sm text-on-surface-variant">{text.editor.method.ordered}</p>
           <p class="mb-3 text-body-sm text-on-surface-variant">
-            Supports Markdown:
+            {text.editor.method.markdown}
             <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
           </p>
           <div class="mb-3 flex items-center justify-between gap-3">
             <div class="inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
-              {#each [[false, 'Write'], [true, 'Preview']] as [on, label] (label)}
+              {#each [[false, text.editor.method.write], [true, text.editor.method.preview]] as [on, label] (label)}
                 <button
                   type="button"
                   class="rounded-md px-3 py-1 {stepPreview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}"
@@ -1029,7 +1006,7 @@
                 >{label}</button>
               {/each}
             </div>
-            <span class="text-label-caps uppercase text-outline">{form.steps.length} {form.steps.length === 1 ? 'step' : 'steps'}</span>
+            <span class="text-label-caps uppercase text-outline">{text.editor.method.count(form.steps.length)}</span>
           </div>
 
           <ol class="flex flex-col gap-3">
@@ -1039,19 +1016,19 @@
                   <span class="font-display text-headline-sm text-primary">{String(i + 1).padStart(2, '0')}.</span>
                   <input
                     type="text"
-                    aria-label="Step {i + 1} title"
-                    placeholder="Step title (e.g. Boil pasta & reserve liquid)"
+                    aria-label={text.editor.method.titleAria(i + 1)}
+                    placeholder={text.editor.method.titlePlaceholder}
                     bind:value={step.title}
                     class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 font-display text-headline-sm text-on-surface placeholder:font-sans placeholder:text-body-md placeholder:text-outline hover:border-outline-variant focus:border-outline-variant focus:bg-surface-container-lowest focus:outline-none"
                   />
                   <div class="flex shrink-0 items-center">
-                    <button type="button" aria-label="Move step {i + 1} up" disabled={i === 0} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30" onclick={() => moveStep(i, -1)}>
+                    <button type="button" aria-label={text.editor.method.moveUp(i + 1)} disabled={i === 0} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30" onclick={() => moveStep(i, -1)}>
                       <Icon name="arrow_upward" class="text-[18px]" />
                     </button>
-                    <button type="button" aria-label="Move step {i + 1} down" disabled={i === form.steps.length - 1} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30" onclick={() => moveStep(i, 1)}>
+                    <button type="button" aria-label={text.editor.method.moveDown(i + 1)} disabled={i === form.steps.length - 1} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30" onclick={() => moveStep(i, 1)}>
                       <Icon name="arrow_downward" class="text-[18px]" />
                     </button>
-                    <button type="button" aria-label="Remove step {i + 1}" class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-secondary" onclick={() => removeStep(step.key)}>
+                    <button type="button" aria-label={text.editor.method.remove(i + 1)} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-secondary" onclick={() => removeStep(step.key)}>
                       <Icon name="delete" class="text-[18px]" />
                     </button>
                   </div>
@@ -1061,22 +1038,22 @@
                     {#if step.text.trim()}
                       {@html renderMarkdown(step.text)}
                     {:else}
-                      <p class="text-outline">Nothing to preview yet.</p>
+                      <p class="text-outline">{text.editor.method.nothingToPreview}</p>
                     {/if}
                   </div>
                 {:else}
                   <textarea
                     rows="2"
-                    aria-label="Step {i + 1} directions"
-                    placeholder="Describe the technique, temperatures and timing… (Markdown supported)"
+                    aria-label={text.editor.method.directionsAria(i + 1)}
+                    placeholder={text.editor.method.directionsPlaceholder}
                     bind:value={step.text}
                     class="{field} {border(false)} resize-y"
                   ></textarea>
                 {/if}
                 <label class="flex items-center gap-2 self-end text-body-sm text-outline">
                   <Icon name="schedule" class="text-[16px]" />
-                  <input type="number" min="0" step="1" inputmode="numeric" placeholder="—" bind:value={step.minutes} class="{cellField} {border(false)} w-16 text-center" />
-                  min
+                  <input type="number" min="0" step="1" inputmode="numeric" placeholder={text.editor.method.minutesPlaceholder} bind:value={step.minutes} class="{cellField} {border(false)} w-16 text-center" />
+                  {text.editor.method.minutes}
                 </label>
               </li>
             {/each}
@@ -1087,7 +1064,7 @@
             class="btn mt-3 w-full bg-surface-container-low py-2.5 text-body-md text-on-surface hover:bg-surface-container-high"
             onclick={() => form.steps.push(blankStep())}
           >
-            <Icon name="add_circle" class="text-[18px]" /> Add Step {String(form.steps.length + 1).padStart(2, '0')}
+            <Icon name="add_circle" class="text-[18px]" /> {text.editor.method.add(String(form.steps.length + 1).padStart(2, '0'))}
           </button>
         </section>
 
@@ -1095,17 +1072,17 @@
         <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
             <label for="recipe-notes" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="stylus_note" class="text-[20px] text-primary" /> <span>Cook’s Secrets <span class="font-sans text-label-md text-outline">(optional)</span></span>
+              <Icon name="stylus_note" class="text-[20px] text-primary" /> <span>{text.editor.notes.title} <span class="font-sans text-label-md text-outline">{text.editor.optional}</span></span>
             </label>
-            <span class="text-label-caps uppercase text-outline">Column: Notes</span>
+            <span class="text-label-caps uppercase text-outline">{text.editor.column(text.editor.notes.column)}</span>
           </div>
-          <p class="mb-1 text-body-sm text-on-surface-variant">Family adjustments, the best brand of ricotta, or a side dish that always works.</p>
+          <p class="mb-1 text-body-sm text-on-surface-variant">{text.editor.notes.hint}</p>
           <p class="mb-3 text-body-sm text-on-surface-variant">
-            Supports Markdown:
+            {text.editor.method.markdown}
             <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
           </p>
           <div class="mb-2 inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
-            {#each [[false, 'Write'], [true, 'Preview']] as [on, label] (label)}
+            {#each [[false, text.editor.method.write], [true, text.editor.method.preview]] as [on, label] (label)}
               <button
                 type="button"
                 class="rounded-md px-3 py-1 {notesPreview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}"
@@ -1118,7 +1095,7 @@
               {#if form.notes.trim()}
                 {@html renderMarkdown(form.notes)}
               {:else}
-                <p class="text-outline">Nothing to preview yet.</p>
+                <p class="text-outline">{text.editor.method.nothingToPreview}</p>
               {/if}
             </div>
           {:else}
@@ -1126,7 +1103,7 @@
               id="recipe-notes"
               rows="5"
               bind:value={form.notes}
-              placeholder="e.g., Serve with a crisp chilled **Vermentino**. Don’t boil the ricotta directly or it may curdle."
+              placeholder={text.editor.notes.placeholder}
               class="{field} {border(false)} resize-y"
             ></textarea>
           {/if}
@@ -1138,30 +1115,30 @@
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1 max-sm:contents">
           <button type="button" class="btn justify-center whitespace-nowrap max-sm:order-2 {editing?.edited ? '' : 'max-sm:col-span-2'} border border-secondary/50 bg-transparent px-4 py-2 text-body-md text-secondary hover:bg-secondary/10" onclick={discard}>
             <Icon name="delete_sweep" class="text-[18px]" />
-            {editing ? 'Discard Changes' : 'Discard Draft'}
+            {editing ? text.editor.actions.discardChanges : text.editor.actions.discardDraft}
           </button>
           {#if editing?.edited}
             <button type="button" class="inline-flex items-center justify-center gap-1 text-body-md text-on-surface-variant hover:text-secondary max-sm:order-2 max-sm:rounded-full max-sm:border max-sm:border-outline-variant max-sm:px-4 max-sm:py-2" onclick={revert}>
-              <Icon name="restore" class="text-[18px]" /> Revert to Original
+              <Icon name="restore" class="text-[18px]" /> {text.editor.actions.revert}
             </button>
           {/if}
           <span class="flex items-center gap-1.5 text-body-sm text-outline max-sm:order-3 max-sm:col-span-2 max-sm:justify-center">
             <Icon name="cloud_off" class="text-[16px]" />
             {#if editing}
-              Changes are saved on this device
+              {text.editor.actions.savedOnDevice}
             {:else}
-              {customRecipeCount()} custom {customRecipeCount() === 1 ? 'recipe' : 'recipes'} saved on this device
+              {text.editor.actions.customSaved(customRecipeCount())}
             {/if}
           </span>
         </div>
         <div class="flex items-center justify-end gap-2 max-sm:order-1 max-sm:col-span-2">
           {#if !editing}
             <button type="button" class="btn justify-center whitespace-nowrap max-sm:flex-1 bg-surface-container-high px-4 py-2 text-body-md text-on-surface hover:bg-surface-dim" onclick={saveDraft}>
-              Save Draft
+              {text.editor.actions.saveDraft}
             </button>
           {/if}
           <button type="submit" class="btn-primary justify-center whitespace-nowrap max-sm:flex-1 px-5 py-2 text-body-md">
-            <Icon name="save" class="text-[18px]" /> {editing ? 'Save Changes' : 'Save Recipe'}
+            <Icon name="save" class="text-[18px]" /> {editing ? text.editor.actions.saveChanges : text.editor.actions.saveRecipe}
           </button>
         </div>
       </div>

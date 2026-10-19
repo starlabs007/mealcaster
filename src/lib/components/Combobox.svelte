@@ -3,6 +3,7 @@
   // <datalist>, whose matching the browser does on its own. Free text is always allowed. Keyboard: ↓/↑ move,
   // Enter picks, Esc closes. Touch: options keep the field focused, so iOS Safari's keyboard stays up.
   import { foldKey, suggest } from '../ingredients.js';
+  import { text } from '../text.js';
 
   /**
    * @type {{
@@ -110,7 +111,7 @@
     <ul
       id="{uid}-list"
       role="listbox"
-      aria-label="{label}: suggestions"
+      aria-label={text.editor.comboboxSuggestionsAria(label)}
       class="absolute {align === 'right' ? 'right-0' : 'left-0'} top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-outline-variant bg-surface-container-lowest py-1 shadow-lg {listClass}"
     >
       {#each options as option, i (option.value)}
