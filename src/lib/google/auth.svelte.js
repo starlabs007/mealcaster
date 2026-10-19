@@ -1,6 +1,8 @@
 // Google sign-in with Google Identity Services (token model). Access tokens last
-// about an hour and are kept in memory only — after a reload, or once the
-// token expires, the person clicks Reconnect (usually no password needed).
+// about an hour and are kept in memory only. A linked spreadsheet stays connected
+// by renewing the token from the person's next click (startSync in sync.svelte.js
+// does that quietly: the popup opens and closes without a password); Reconnect
+// remains for when that fails.
 
 import { googleConfig, googleConfigured, SCOPE } from './config.js';
 
@@ -92,6 +94,9 @@ export function signIn(hint, { chooseAccount = false } = {}) {
     client.requestAccessToken(chooseAccount ? { prompt: 'select_account' } : { prompt: '', ...(hint && { login_hint: hint }) });
   });
 }
+
+/** Whether a sign-in popup is open and waiting for Google. */
+export const signingIn = () => pending !== null;
 
 /** A usable token, or '' when the person needs to reconnect. */
 export const currentToken = () => (auth.token && Date.now() < auth.expiresAt ? auth.token : '');

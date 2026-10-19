@@ -6,7 +6,7 @@
 
 import { flushSync } from 'svelte';
 import { googleConfigured } from '../google/config.js';
-import { auth, checkToken, currentToken, prepareAuth, signIn, signOut } from '../google/auth.svelte.js';
+import { auth, checkToken, currentToken, prepareAuth, signIn, signingIn, signOut } from '../google/auth.svelte.js';
 import { GoogleApiError, createSpreadsheet, ensurePhotoFolder, getAccount, isPhotoDataUrl, sheetsApi, uploadPhoto } from '../google/api.js';
 import { pickSpreadsheet, preparePicker } from '../google/picker.js';
 import { sheets, updateSheetsSettings } from '../sheets.svelte.js';
@@ -39,6 +39,7 @@ import {
 import { emptyBase, runSync } from './run.js';
 import { SCHEMA_VERSION } from '../schema.js';
 import { PHASE_LOOK, phaseOf } from './phase.js';
+import { BACKOFF_MS, shouldQuietReconnect } from './quietReconnect.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
 /** @typedef {import('./run.js').SyncBase} SyncBase */
@@ -346,6 +347,47 @@ async function afterSignIn() {
   }
 }
 
+/** No quiet reconnect before this time (ms): set after one failed, cleared by a deliberate sign-in. */
+let quietBackoffUntil = 0;
+
+/**
+ * Renews the Google token from an ordinary click, so a linked spreadsheet stays connected.
+ * Runs in the capture phase, and signIn() opens the popup synchronously, as browsers require.
+ * Controls that sign in themselves are marked `data-signs-in` and skipped.
+ * @param {MouseEvent} event
+ */
+function quietReconnect(event) {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!event.isTrusted || !target) return;
+  const go = shouldQuietReconnect({
+    configured: googleConfigured,
+    ready: auth.ready,
+    linked: Boolean(sheets.spreadsheet),
+    token: auth.token,
+    expiresAt: auth.expiresAt,
+    now: Date.now(),
+    signingIn: signingIn(),
+    backoffUntil: quietBackoffUntil,
+    onSignInControl: Boolean(target.closest('[data-signs-in]')),
+  });
+  if (!go) return;
+  signIn(sheets.accountEmail || undefined).then(
+    async () => {
+      await afterSignIn();
+      // Catch up on edits made while signed out, or a sheet that moved on.
+      const last = syncState.lastSyncedAt ? Date.parse(syncState.lastSyncedAt) : 0;
+      const stale = Date.now() - last > 20_000;
+      if (initialized() && !syncState.busy && !syncState.choice && !syncState.conflict && (deviceFingerprint() !== lastFingerprint || stale)) {
+        await syncNow({ quiet: true });
+      }
+    },
+    (error) => {
+      quietBackoffUntil = Date.now() + BACKOFF_MS;
+      showToast(describe(error));
+    },
+  );
+}
+
 /**
  * Sync Now from a click: reconnects first if the Google session ran out while the page sat idle
  * (a click can open the sign-in popup, so one click still syncs).
@@ -356,6 +398,7 @@ export function syncFromClick() {
 
 /** Sign in (or reconnect) — call from a click. Syncs if a spreadsheet is linked. */
 export async function connect() {
+  quietBackoffUntil = 0;
   try {
     await signIn(sheets.accountEmail || undefined);
   } catch (error) {
@@ -373,6 +416,7 @@ export async function connect() {
  */
 export async function switchAccount() {
   const before = sheets.accountEmail;
+  quietBackoffUntil = 0;
   try {
     await signIn(undefined, { chooseAccount: true });
   } catch (error) {
@@ -397,6 +441,7 @@ function link(file) {
 /** Sign in first if needed; resolves false if that didn't work. */
 async function ensureSignedIn() {
   if (currentToken()) return true;
+  quietBackoffUntil = 0;
   try {
     await signIn(sheets.accountEmail || undefined);
   } catch (error) {
@@ -493,6 +538,9 @@ export function startSync() {
   // The expiry timer doesn't run while the computer sleeps: notice a token that ran out meanwhile,
   // so the header shows Reconnect.
   setInterval(checkToken, 60_000);
+
+  // Any click renews a token that ran out or is about to (see quietReconnect).
+  document.addEventListener('click', quietReconnect, true);
 
   // Pick up changes made in the sheet when coming back to the app.
   const onFocus = () => {
