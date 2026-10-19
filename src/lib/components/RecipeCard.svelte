@@ -5,6 +5,7 @@
   import { tagClass } from '../tagColors.svelte.js';
   import { isFavorite, toggleFavorite } from '../favorites.svelte.js';
   import { href } from '../router.svelte.js';
+  import { text } from '../text.js';
   import LastMade from './LastMade.svelte';
 
   /**
@@ -49,7 +50,7 @@
 
       <button
         type="button"
-        aria-label={favorite ? `Remove ${recipe.shortTitle} from favorites` : `Add ${recipe.shortTitle} to favorites`}
+        aria-label={favorite ? text.catalog.card.removeFavoriteAria(recipe.shortTitle) : text.catalog.card.addFavoriteAria(recipe.shortTitle)}
         aria-pressed={favorite}
         onclick={() => toggleFavorite(recipe.id)}
         class="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-lowest/90 shadow-sm backdrop-blur-md transition-colors {favorite
@@ -60,9 +61,9 @@
       </button>
 
       <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-on-primary">
-        <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">Serves {recipe.serves}</span>
+        <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">{text.catalog.card.serves(recipe.serves)}</span>
         {#if recipe.custom}
-          <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">Your recipe</span>
+          <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">{text.catalog.card.yourRecipe}</span>
         {/if}
       </div>
     </div>
@@ -86,7 +87,7 @@
   <div class="flex items-center gap-2 px-5 pb-5 pt-1">
     {#if selected}
       <span class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary-fixed/60 px-4 py-2.5 text-label-md text-primary">
-        <Icon name="check_circle" class="text-[17px]" /> Planned for {dayName}
+        <Icon name="check_circle" class="text-[17px]" /> {text.catalog.card.plannedFor(dayName)}
       </span>
     {:else}
       <button
@@ -96,13 +97,13 @@
         class="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-label-md text-on-primary shadow-sm transition-all hover:bg-primary-container disabled:cursor-not-allowed disabled:opacity-50"
       >
         <Icon name="event_available" class="text-[17px]" />
-        {dayName ? `+ Select for ${dayName}` : 'No open day to assign'}
+        {dayName ? text.catalog.card.selectFor(dayName) : text.catalog.card.noOpenDay}
       </button>
     {/if}
     <a
       href={href(`/recipe/${recipe.id}`, { day })}
-      title="Preview recipe details and ingredients"
-      aria-label="Open {recipe.shortTitle} recipe"
+      title={text.catalog.card.previewTitle}
+      aria-label={text.catalog.card.openAria(recipe.shortTitle)}
       class="rounded-xl bg-surface-container-low p-2.5 text-on-surface-variant transition-colors hover:bg-surface-container-high"
     >
       <Icon name="open_in_full" class="text-[18px]" />

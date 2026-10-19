@@ -208,6 +208,78 @@ export const text = {
     },
   },
 
+  // Recipe catalog: page, filters, empty states, recipe cards, and the toast after picking a meal.
+  // LastMade (shared with the recipe page) uses `lastMade` below.
+  catalog: {
+    backToPlanner: 'Weekly Dinner Plan',
+    titles: {
+      catalog: 'Recipe Catalog',
+      swap: (/** @type {string} */ weekday) => `Swap ${weekday}’s Dinner`,
+      choose: 'Choose a Dinner Meal',
+    },
+    planningFor: 'Planning for',
+    pickDay: 'Pick a day…',
+    dayOpen: 'open',
+    dayDiningOut: 'dining out',
+    addCustom: 'Add Custom Recipe',
+    searchAria: 'Search recipes and ingredients',
+    searchPlaceholder: 'Search recipes, ingredients (e.g. salmon, pasta, lemon, tofu)...',
+    sortBy: 'Sort by:',
+    sorts: {
+      mostCooked: 'Most Cooked in Household',
+      quickest: 'Quickest Prep Time',
+      nameAsc: 'Name (A–Z)',
+      nameDesc: 'Name (Z–A)',
+      recent: 'Recently Added to Box',
+    },
+    /** Rendered with {@html}: only numbers are inserted. */
+    displaying: (/** @type {number} */ shown, /** @type {number} */ total) =>
+      `Displaying <strong class="text-on-surface">${shown}</strong> of ${total} meals`,
+    filters: {
+      heading: 'Filter by Culinary Attributes',
+      clearAll: (/** @type {number} */ n) => `Clear all filters (${n} active)`,
+      favorites: 'Favorites',
+      unplanned: 'Unplanned this week',
+      notMadeRecently: 'Not made recently',
+      categoryHeading: 'Filter by Category',
+      anyCategory: 'Any category',
+    },
+    empty: {
+      title: 'Your recipe catalog is empty',
+      body: 'Add your first family recipe, or connect a Google Sheet that already has your recipes.',
+      addRecipe: 'Add a Recipe',
+      connectSheets: 'Connect Google Sheets',
+    },
+    noMatch: {
+      title: 'No recipes match those filters',
+      body: 'Try a different ingredient or loosen a filter or two.',
+      clear: 'Clear search & filters',
+    },
+    surprise: {
+      title: (/** @type {string} */ weekday) => `Can’t decide on ${weekday}’s Dinner?`,
+      body: 'Roll for a random pick from the meals matching your current search and filters.',
+      button: 'Surprise Me & Assign',
+    },
+    toasts: {
+      added: (/** @type {string} */ title, /** @type {string} */ date) => `${title} added to ${date} dinner and your grocery basket was updated.`,
+      goToWeekly: 'Go to Weekly View',
+    },
+    errors: {
+      outOfSpace: 'This device ran out of space for saved recipes. Try a smaller photo or an image link.',
+    },
+    card: {
+      removeFavoriteAria: (/** @type {string} */ title) => `Remove ${title} from favorites`,
+      addFavoriteAria: (/** @type {string} */ title) => `Add ${title} to favorites`,
+      serves: (/** @type {number} */ n) => `Serves ${n}`,
+      yourRecipe: 'Your recipe',
+      plannedFor: (/** @type {string} */ weekday) => `Planned for ${weekday}`,
+      selectFor: (/** @type {string} */ weekday) => `+ Select for ${weekday}`,
+      noOpenDay: 'No open day to assign',
+      previewTitle: 'Preview recipe details and ingredients',
+      openAria: (/** @type {string} */ title) => `Open ${title} recipe`,
+    },
+  },
+
   // Relative-time wording used by dates.js (formatLastMade) and the LastMade component.
   lastMade: {
     never: 'Not made yet',
