@@ -2,6 +2,7 @@
   // Google Sheets sync status, as a header badge or a one-line summary.
   import { onMount } from 'svelte';
   import { sheets } from '../sheets.svelte.js';
+  import { text } from '../text.js';
   import { syncState, syncPhase, PHASE_LOOK } from '../sync/sync.svelte.js';
 
   /** @type {{ variant?: 'badge' | 'line' }} */
@@ -18,10 +19,10 @@
 
   function ago(iso) {
     const minutes = Math.floor((now - Date.parse(iso)) / 60_000);
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes} min ago`;
+    if (minutes < 1) return text.header.syncStatus.justNow;
+    if (minutes < 60) return text.header.syncStatus.minutesAgo(minutes);
     const hours = Math.floor(minutes / 60);
-    return hours < 24 ? `${hours} h ago` : new Date(iso).toLocaleDateString();
+    return hours < 24 ? text.header.syncStatus.hoursAgo(hours) : new Date(iso).toLocaleDateString();
   }
 
   const TONE = {
@@ -32,31 +33,31 @@
     off: { dot: 'bg-outline', badge: 'bg-surface-container-high text-on-surface-variant' },
   };
 
-  const text = $derived.by(() => {
+  const summary = $derived.by(() => {
     switch (phase) {
       case 'synced':
-        return syncState.lastSyncedAt ? `Synced with Google Sheets · ${ago(syncState.lastSyncedAt)}` : 'Connected to Google Sheets';
+        return syncState.lastSyncedAt ? text.header.syncStatus.syncedAt(ago(syncState.lastSyncedAt)) : text.header.syncStatus.connected;
       case 'syncing':
-        return 'Syncing with Google Sheets…';
+        return text.header.syncStatus.syncing;
       case 'pending':
-        return 'Spreadsheet linked, not synced yet. Changes stay on this device until you start syncing.';
+        return text.header.syncStatus.pending;
       case 'signedOut':
-        return 'Reconnect to sync — changes are kept on this device until then.';
+        return text.header.syncStatus.signedOut;
       case 'choose':
         return syncState.choice?.backup
-          ? 'Confirm before the spreadsheet is overwritten to match this device.'
-          : 'Choose how to combine this device with the spreadsheet.';
+          ? text.header.syncStatus.chooseBackup
+          : text.header.syncStatus.choose;
       case 'conflict': {
         const tab = syncState.conflict ? sheets.tabs[syncState.conflict.tab] : '';
-        return `Sync paused: column conflicts in “${tab}” (${syncState.conflict?.columns.join(', ')}).`;
+        return text.header.syncStatus.conflict(tab, syncState.conflict?.columns.join(', ') ?? '');
       }
       case 'error':
         return syncState.error;
       default:
-        return 'Not connected · saved on this device';
+        return text.header.syncStatus.notConnected;
     }
   });
-  const info = $derived({ ...PHASE_LOOK[phase], text });
+  const info = $derived({ ...PHASE_LOOK[phase], text: summary });
 </script>
 
 {#if variant === 'badge'}

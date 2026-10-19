@@ -53,6 +53,89 @@ export const text = {
     reconnect: 'Reconnect',
   },
 
+  // App shell: header, footer, Sheets button and menu, sync status, disconnect dialog, sync-phase labels (phase.js).
+  header: {
+    appName: 'MealCaster',
+    homeAria: 'MealCaster home',
+    primaryNavAria: 'Primary',
+    tabs: { weeklyMenu: 'Weekly Menu', recipeCatalog: 'Recipe Catalog' },
+    search: { aria: 'Search recipes', placeholder: 'Search culinary recipes, ingredients...' },
+    week: {
+      previous: 'Previous week',
+      next: 'Next week',
+      thisWeek: 'This week',
+      backToThisWeek: 'Back to this week',
+    },
+    grocery: {
+      label: 'Quick Grocery List',
+      aria: (/** @type {number} */ n) => `Quick Grocery List, ${n} items`,
+    },
+    profile: 'Profile & Settings',
+
+    footer: {
+      tagline: '— Mindful kitchen choreography & nourishment',
+      copyright: (/** @type {number} */ year) => `© ${year} MealCaster. Culinary Mise en Place.`,
+    },
+
+    // The Google Sheets button. Its aria-label / title are the only text it has on mobile (icon-only).
+    sheets: {
+      label: (/** @type {string} */ phase) => `Google Sheets: ${phase}`,
+      moreOptionsAria: (/** @type {string} */ label) => `${label} — more options`,
+      moreOptionsTitle: 'More options',
+      menuAria: 'Google Sheets',
+      syncing: 'Syncing…',
+    },
+
+    // Short name of each sync phase (badge, header button, menu heading).
+    phase: {
+      synced: 'Synced',
+      syncing: 'Syncing',
+      pending: 'Not synced yet',
+      signedOut: 'Reconnect',
+      choose: 'Needs you',
+      conflict: 'Paused',
+      error: 'Sync problem',
+      notConnected: 'Not connected',
+    },
+
+    // Header button and menu actions.
+    actions: {
+      setup: 'Connect Google Sheets',
+      reconnect: 'Reconnect',
+      syncNow: 'Sync Now',
+      resolveColumns: 'Resolve Columns',
+      review: 'Finish Connecting',
+      settings: 'Connection Settings',
+      openSheet: 'Open in Google Sheets',
+      disconnect: 'Disconnect…',
+    },
+
+    // One-line sync summary (SyncStatus, shared by Profile, Recipe, Editor, Grocery and Sheets screens).
+    syncStatus: {
+      justNow: 'just now',
+      minutesAgo: (/** @type {number} */ n) => `${n} min ago`,
+      hoursAgo: (/** @type {number} */ n) => `${n} h ago`,
+      syncedAt: (/** @type {string} */ ago) => `Synced with Google Sheets · ${ago}`,
+      connected: 'Connected to Google Sheets',
+      syncing: 'Syncing with Google Sheets…',
+      pending: 'Spreadsheet linked, not synced yet. Changes stay on this device until you start syncing.',
+      signedOut: 'Reconnect to sync — changes are kept on this device until then.',
+      chooseBackup: 'Confirm before the spreadsheet is overwritten to match this device.',
+      choose: 'Choose how to combine this device with the spreadsheet.',
+      conflict: (/** @type {string} */ tab, /** @type {string} */ columns) => `Sync paused: column conflicts in “${tab}” (${columns}).`,
+      notConnected: 'Not connected · saved on this device',
+    },
+
+    disconnect: {
+      title: 'Disconnect from Google Sheets?',
+      beforeName: 'This signs you out of Google and stops syncing with',
+      quoted: (/** @type {string} */ name) => `“${name}”`,
+      yourSpreadsheet: 'your spreadsheet',
+      stays: 'Your recipes, plans and grocery lists stay on this device, and the spreadsheet isn’t changed. You can connect to it again later.',
+      confirm: 'Disconnect',
+    },
+  },
+
   // Relative-time wording used by dates.js (formatLastMade) and the LastMade component.
   lastMade: {
     never: 'Not made yet',

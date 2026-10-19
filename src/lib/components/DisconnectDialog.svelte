@@ -6,6 +6,7 @@
 
 <script>
   import Icon from './Icon.svelte';
+  import { text } from '../text.js';
   import { sheets } from '../sheets.svelte.js';
   import { disconnect } from '../sync/sync.svelte.js';
 
@@ -44,24 +45,23 @@
         <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary-fixed/70 text-secondary">
           <Icon name="link_off" class="text-[20px]" />
         </span>
-        <h2 id="disconnect-title" class="font-display text-headline-sm text-on-surface">Disconnect from Google Sheets?</h2>
+        <h2 id="disconnect-title" class="font-display text-headline-sm text-on-surface">{text.header.disconnect.title}</h2>
       </div>
 
       <div id="disconnect-desc" class="mt-3 flex flex-col gap-3 text-body-sm text-on-surface-variant">
         <p>
-          This signs you out of Google and stops syncing with
-          <strong class="text-on-surface">“{sheets.spreadsheetName || 'your spreadsheet'}”</strong>.
+          {text.header.disconnect.beforeName}
+          <strong class="text-on-surface">{text.header.disconnect.quoted(sheets.spreadsheetName || text.header.disconnect.yourSpreadsheet)}</strong>.
         </p>
         <p>
-          Your recipes, plans and grocery lists stay on this device, and the spreadsheet isn’t changed. You can connect to it again
-          later.
+          {text.header.disconnect.stays}
         </p>
       </div>
 
       <div class="mt-5 flex justify-end gap-2">
-        <button bind:this={cancel} type="button" class="btn-outline" onclick={close}>Cancel</button>
+        <button bind:this={cancel} type="button" class="btn-outline" onclick={close}>{text.common.cancel}</button>
         <button type="button" class="btn bg-secondary text-on-secondary hover:bg-[#b34728]" onclick={confirm}>
-          <Icon name="link_off" class="text-[16px]" /> Disconnect
+          <Icon name="link_off" class="text-[16px]" /> {text.header.disconnect.confirm}
         </button>
       </div>
     </div>
