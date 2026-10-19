@@ -136,6 +136,78 @@ export const text = {
     },
   },
 
+  // Weekly planner: page, toolbar, day cards, Switch Days dialog and the toasts planner.svelte.js raises.
+  // Dates and weekday names arrive already formatted (dates.js); only the words around them live here.
+  planner: {
+    daysAria: 'Dinners this week',
+    minimalView: 'Minimal view',
+
+    header: {
+      eyebrow: 'Weekly Schedule',
+      thisWeek: 'This Week’s Dinner Plan',
+      lastWeek: 'Last Week’s Dinner Plan',
+      nextWeek: 'Next Week’s Dinner Plan',
+      weekOf: (/** @type {string} */ date) => `Week of ${date}`,
+      dinners: (/** @type {number} */ planned) => `${planned} of 7 Dinners`,
+      openLeft: (/** @type {number} */ n) => `${n} Open ${plural(n, 'slot')} left`,
+      allSet: 'All set',
+      autoFill: 'Auto-fill Remaining',
+      copyLastWeek: 'Copy Last Week',
+      resetWeek: 'Reset Week',
+    },
+
+    card: {
+      aria: (/** @type {string} */ weekday, /** @type {string} */ date, /** @type {boolean} */ isToday) => `${weekday} ${date}${isToday ? ' (today)' : ''}`,
+      completed: 'Completed',
+      today: '• TODAY',
+      planned: 'Planned',
+      nightOff: 'Night off',
+      notLogged: 'Not logged',
+      open: 'Open',
+      meta: (/** @type {string} */ badge, /** @type {number} */ minutes, /** @type {number} */ serves) =>
+        [badge, `${minutes} min`, `Serves ${serves}`].filter(Boolean).join(' · '),
+      viewRecipe: 'View Recipe',
+      viewRecipeAria: (/** @type {string} */ title) => `View recipe: ${title}`,
+      done: 'Done',
+      markDone: 'Mark Done',
+      swapMeal: 'Swap Meal',
+      surpriseMe: 'Surprise Me',
+      diningOut: 'Dining Out',
+      switchDays: 'Switch Days…',
+      diningOutTitle: 'Dining out or leftovers',
+      diningOutNote: 'A night off from the stove — nothing to prep or shop for.',
+      missedTitle: 'No dinner was logged',
+      missedNote: 'This evening has passed without a planned meal.',
+      openTitle: (/** @type {string} */ weekday) => `No dinner planned yet for ${weekday}`,
+      openNote: 'Choose a meal, let the app pick one, or take the night off.',
+      chooseMeal: 'Choose a Meal',
+      planInstead: 'Plan a Meal Instead',
+    },
+
+    switchDialog: {
+      title: 'Switch Days',
+      thisMeal: 'this meal',
+      moveBefore: 'Move',
+      moveAfter: (/** @type {string} */ weekday) => `from ${weekday} to:`,
+      nightOff: 'Night off',
+      open: 'Open',
+      note: (/** @type {string} */ weekday) => `If that evening has a meal or a night off, it moves to ${weekday}.`,
+    },
+
+    toasts: {
+      noRecipes: 'Add a recipe to the catalog first.',
+      surprise: (/** @type {string} */ title) => `Surprise! ${title}`,
+      nightOff: (/** @type {string} */ date) => `${date} is now a night off.`,
+      switched: (/** @type {string} */ a, /** @type {string} */ b) => `Switched ${a} and ${b}.`,
+      allPlanned: 'Every dinner this week is already planned.',
+      filled: (/** @type {number} */ n) => `Filled ${n} open ${plural(n, 'slot')}.`,
+      noLastWeek: 'No dinners were planned last week.',
+      copied: 'Copied last week’s dinners.',
+      nothingToReset: 'Nothing to reset — this week is already clear.',
+      reset: 'Weekly plan reset.',
+    },
+  },
+
   // Relative-time wording used by dates.js (formatLastMade) and the LastMade component.
   lastMade: {
     never: 'Not made yet',

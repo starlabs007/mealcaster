@@ -4,6 +4,7 @@
   import RecipeImage from './RecipeImage.svelte';
   import { planner, statusOf, switchDays, switchTargets } from '../planner.svelte.js';
   import { recipeById } from '../recipes.svelte.js';
+  import { text } from '../text.js';
   import { formatShort, formatWeekday } from '../dates.js';
 
   /** @type {{ iso: string, onclose: () => void }} */
@@ -19,8 +20,8 @@
   /** @param {string} d */
   function describe(d) {
     const status = statusOf(d);
-    if (status === 'diningOut') return { icon: 'storefront', text: 'Night off' };
-    if (status === 'open') return { icon: 'restaurant', text: 'Open' };
+    if (status === 'diningOut') return { icon: 'storefront', label: text.planner.switchDialog.nightOff };
+    if (status === 'open') return { icon: 'restaurant', label: text.planner.switchDialog.open };
     return { recipe: recipeById.get(planner.entries[d].recipeId) };
   }
 
@@ -47,16 +48,16 @@
     <div class="flex items-start justify-between gap-3 px-5 pb-3 pt-5">
       <div class="min-w-0">
         <h2 id="switch-dialog-title" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-          <Icon name="swap_vert" class="text-[20px] text-primary" /> Switch Days
+          <Icon name="swap_vert" class="text-[20px] text-primary" /> {text.planner.switchDialog.title}
         </h2>
         <div class="mt-3 flex items-center gap-3">
           {#if moving}<RecipeImage src={moving.image} alt="" class="h-12 w-12 flex-shrink-0 rounded-lg" />{/if}
           <p class="text-body-sm text-on-surface-variant">
-            Move <span class="font-semibold text-on-surface">{moving?.title ?? 'this meal'}</span> from {formatWeekday(iso)} to:
+            {text.planner.switchDialog.moveBefore} <span class="font-semibold text-on-surface">{moving?.title ?? text.planner.switchDialog.thisMeal}</span> {text.planner.switchDialog.moveAfter(formatWeekday(iso))}
           </p>
         </div>
       </div>
-      <button type="button" aria-label="Close" class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high" onclick={onclose}>
+      <button type="button" aria-label={text.common.close} class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high" onclick={onclose}>
         <Icon name="close" class="text-[20px]" />
       </button>
     </div>
@@ -64,7 +65,7 @@
     <div class="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
       <ul bind:this={list} class="divide-y divide-surface-container-high overflow-hidden rounded-xl border border-surface-container-high">
         {#each targets as d (d)}
-          {@const { icon, text, recipe } = describe(d)}
+          {@const { icon, label, recipe } = describe(d)}
           <li>
             <button
               type="button"
@@ -82,13 +83,13 @@
                 <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-highest text-outline">
                   <Icon name={icon} class="text-2xl" />
                 </span>
-                <span class="min-w-0 flex-1 truncate text-body-md text-on-surface-variant">{text}</span>
+                <span class="min-w-0 flex-1 truncate text-body-md text-on-surface-variant">{label}</span>
               {/if}
             </button>
           </li>
         {/each}
       </ul>
-      <p class="mt-3 text-xs text-on-surface-variant">If that evening has a meal or a night off, it moves to {formatWeekday(iso)}.</p>
+      <p class="mt-3 text-xs text-on-surface-variant">{text.planner.switchDialog.note(formatWeekday(iso))}</p>
     </div>
   </div>
 </div>
