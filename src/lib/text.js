@@ -280,6 +280,108 @@ export const text = {
     },
   },
 
+  // Recipe page, its delete confirm, and the print options (Print Options dialog, Profile, Simple layout).
+  recipe: {
+    notFound: {
+      title: 'Recipe not found',
+      body: 'It may have been removed from the household recipe box.',
+      browse: 'Browse the Recipe Catalog',
+    },
+    breadcrumbAria: 'Breadcrumb',
+    weeklyPlan: 'Weekly Dinner Plan',
+    dayDinner: (/** @type {string} */ weekday) => `${weekday} Dinner`,
+    catalog: 'Recipe Catalog',
+    buttons: {
+      edit: 'Edit',
+      delete: 'Delete',
+      favorited: 'Favorited',
+      favorite: 'Favorite',
+      swapMeal: 'Swap Meal',
+      planFor: (/** @type {string} */ weekday) => `Plan for ${weekday}`,
+      print: 'Print',
+      addToList: 'Add to List',
+      allOnList: 'All on List',
+      swapFromCatalog: 'Swap Recipe from Catalog',
+      next: (/** @type {string} */ weekday, /** @type {string} */ title) => `Next: ${weekday} ${title}`,
+      backToWeekly: 'Back to Weekly Menu',
+    },
+    badges: {
+      scheduled: (/** @type {string} */ date) => `Scheduled: ${date}`,
+      customInSheet: (/** @type {string} */ tab) => `Custom recipe · in [${tab}] sheet`,
+      customOnDevice: 'Custom recipe · saved on this device',
+      edited: 'Edited on this device',
+    },
+    tagsAria: 'Tags',
+    tagTitle: (/** @type {string} */ tag) => `Browse recipes tagged ${tag}`,
+    stats: {
+      prep: 'Prep Time',
+      cook: 'Cook Time',
+      total: 'Total Time',
+      servings: 'Servings',
+      servingsValue: (/** @type {number} */ n) => `${n} Servings`,
+      fewer: 'Fewer servings',
+      more: 'More servings',
+    },
+    /** "15 mins", "1 min" (60 minutes and over use formatMinutes). */
+    minutes: (/** @type {number} */ m) => `${m} ${plural(m, 'min', 'mins')}`,
+    photoMeta: (/** @type {string} */ time, /** @type {number} */ serves) => `${time} · Serves ${serves}`,
+    notes: { title: 'Cook’s Secrets', label: 'Notes' },
+    ingredients: {
+      title: 'Mise en Place Ingredients',
+      hint: 'Check what you have in stock to keep it off your grocery list',
+      clearAll: 'Clear all',
+      checkAll: 'Checkmark all',
+      optional: 'optional',
+      pushHint: 'Missing something? Push every unchecked ingredient to your grocery list.',
+      push: (/** @type {number} */ n) => `Push Unchecked to Grocery (${n} ${plural(n, 'item')})`,
+      pushed: 'Unchecked items are on your list',
+    },
+    method: {
+      title: 'Step-by-Step Method',
+      count: (/** @type {number} */ n) => `${n} Essential Movements`,
+    },
+    sync: 'Google Sheets sync',
+    deleteDialog: {
+      title: 'Delete this recipe?',
+      afterTitle: ' will be removed from your recipes. You can undo this right after.',
+    },
+    toasts: {
+      addedFromRecipe: (/** @type {number} */ n, /** @type {string} */ title) => `Added ${n} ${plural(n, 'ingredient')} from ${title} to your grocery list.`,
+      addedUnchecked: (/** @type {number} */ n) => `Added ${n} ${plural(n, 'ingredient')} you haven’t checked off to your grocery list.`,
+      planned: (/** @type {string} */ title, /** @type {string} */ date) => `${title} planned for ${date}.`,
+      deleted: (/** @type {string} */ title) => `${title} deleted.`,
+    },
+
+    // Print options: the Print Options dialog, the Profile page and the Simple layout printout.
+    print: {
+      title: 'Print Options',
+      print: 'Print',
+      image: 'Print recipe image',
+      imageIncluded: 'Include the photo on the page.',
+      imageNone: 'This recipe has no photo.',
+      imageScaling: 'Image scaling',
+      smallerImage: 'Smaller image',
+      largerImage: 'Larger image',
+      simple: 'Simple layout',
+      simpleHint: 'One column, no tinted backgrounds or shadows, sections headed by large bold titles.',
+      textSize: 'Text size',
+      sizes: {
+        small: { label: 'Small', hint: '1 size smaller' },
+        regular: { label: 'Regular', hint: 'As on screen' },
+        large: { label: 'Large', hint: '3 sizes bigger' },
+      },
+      simplePage: {
+        prep: (/** @type {string} */ time) => `Prep ${time}`,
+        cook: (/** @type {string} */ time) => `Cook ${time}`,
+        total: (/** @type {string} */ time) => `Total ${time}`,
+        servings: (/** @type {number} */ n) => `${n} ${plural(n, 'serving')}`,
+        ingredients: 'Ingredients',
+        optional: 'optional',
+        method: 'Method',
+      },
+    },
+  },
+
   // Relative-time wording used by dates.js (formatLastMade) and the LastMade component.
   lastMade: {
     never: 'Not made yet',

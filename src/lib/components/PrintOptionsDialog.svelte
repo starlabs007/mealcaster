@@ -1,6 +1,7 @@
 <script>
   import Icon from './Icon.svelte';
   import PrintOptionsFields from './PrintOptionsFields.svelte';
+  import { text } from '../text.js';
   import { printOptions, clampScale } from '../printOptions.svelte.js';
 
   /** @type {{ hasImage: boolean, onprint: (options: import('../printOptions.svelte.js').PrintOptions) => void, onclose: () => void }} */
@@ -33,7 +34,7 @@
       <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-low text-primary">
         <Icon name="print" class="text-[18px]" />
       </span>
-      <h2 id="print-title" class="font-display text-headline-sm text-on-surface">Print Options</h2>
+      <h2 id="print-title" class="font-display text-headline-sm text-on-surface">{text.recipe.print.title}</h2>
     </div>
 
     <div class="mt-3">
@@ -41,9 +42,9 @@
     </div>
 
     <div class="mt-4 flex justify-end gap-2">
-      <button type="button" class="btn-outline" onclick={onclose}>Cancel</button>
+      <button type="button" class="btn-outline" onclick={onclose}>{text.common.cancel}</button>
       <button type="button" class="btn-primary" onclick={() => onprint({ ...draft, imageScale: clampScale(draft.imageScale) })}>
-        <Icon name="print" class="text-[16px]" /> Print
+        <Icon name="print" class="text-[16px]" /> {text.recipe.print.print}
       </button>
     </div>
   </div>
