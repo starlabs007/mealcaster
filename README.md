@@ -8,7 +8,7 @@ Built with **Svelte 5 + Vite + Tailwind CSS**, deployed as a static site to GitH
 
 ## Run it locally
 
-Requires Node 18.18+ (`.nvmrc` pins 18).
+Requires Node 20+ (`.nvmrc` pins 20).
 
 ```bash
 nvm use
