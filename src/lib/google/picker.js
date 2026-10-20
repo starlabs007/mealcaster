@@ -27,7 +27,8 @@ export async function pickSpreadsheet(token) {
   const { picker } = /** @type {any} */ (window).google;
   return new Promise((resolve) => {
     const view = new picker.DocsView(picker.ViewId.SPREADSHEETS).setMode(picker.DocsViewMode.LIST);
-    new picker.PickerBuilder()
+    // Disposed when done: a hidden Picker keeps its frame's history, which Back would step through.
+    const dialog = new picker.PickerBuilder()
       .addView(view)
       .setOAuthToken(token)
       .setDeveloperKey(googleConfig.apiKey)
@@ -40,8 +41,10 @@ export async function pickSpreadsheet(token) {
           const doc = data[picker.Response.DOCUMENTS][0];
           resolve({ id: doc[picker.Document.ID], name: doc[picker.Document.NAME] });
         } else if (action === picker.Action.CANCEL) resolve(null);
+        else return;
+        setTimeout(() => dialog.dispose());
       })
-      .build()
-      .setVisible(true);
+      .build();
+    dialog.setVisible(true);
   });
 }
