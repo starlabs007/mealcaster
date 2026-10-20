@@ -7,6 +7,9 @@ import { text } from '../text.js';
 
 let loaded;
 
+/** How long the Picker gets to open before it counts as blocked. */
+const OPEN_TIMEOUT_MS = 10_000;
+
 /** Loads the Picker ahead of a click. */
 export function preparePicker() {
   loaded ??= loadScript('https://apis.google.com/js/api.js')
@@ -20,14 +23,21 @@ export function preparePicker() {
 
 /**
  * @param {string} token OAuth access token
- * @returns {Promise<{ id: string, name: string } | null>} null if cancelled
+ * @returns {Promise<{ id: string, name: string } | null>} null if cancelled; rejects if it never opens
  */
 export async function pickSpreadsheet(token) {
   await preparePicker();
   const { picker } = /** @type {any} */ (window).google;
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    // Safari / Firefox tracking protection can block the Picker's frame so it never shows (#79):
+    // give up rather than leave the connection screen waiting forever.
+    const openTimer = setTimeout(() => {
+      reject(new Error(text.sheets.picker.blocked));
+      dialog.dispose();
+    }, OPEN_TIMEOUT_MS);
     const view = new picker.DocsView(picker.ViewId.SPREADSHEETS).setMode(picker.DocsViewMode.LIST);
-    new picker.PickerBuilder()
+    // Disposed when done: a hidden Picker keeps its frame's history, which Back would step through.
+    const dialog = new picker.PickerBuilder()
       .addView(view)
       .setOAuthToken(token)
       .setDeveloperKey(googleConfig.apiKey)
@@ -36,12 +46,16 @@ export async function pickSpreadsheet(token) {
       .setTitle(text.sheets.picker.title)
       .setCallback((data) => {
         const action = data[picker.Response.ACTION];
+        if (action === picker.Action.LOADED) return clearTimeout(openTimer);
         if (action === picker.Action.PICKED) {
           const doc = data[picker.Response.DOCUMENTS][0];
           resolve({ id: doc[picker.Document.ID], name: doc[picker.Document.NAME] });
         } else if (action === picker.Action.CANCEL) resolve(null);
+        else return;
+        clearTimeout(openTimer);
+        setTimeout(() => dialog.dispose());
       })
-      .build()
-      .setVisible(true);
+      .build();
+    dialog.setVisible(true);
   });
 }

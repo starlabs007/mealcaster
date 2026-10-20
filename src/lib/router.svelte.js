@@ -17,7 +17,11 @@ let inAppHistory = false;
 /** The page the latest navigation left, and how far it was scrolled (pages that restore their place read it). */
 export const left = { path: '', scrollY: 0 };
 
+/** goBack's check that Back reached an app page (see there). */
+let backCheck;
+
 window.addEventListener('hashchange', () => {
+  clearTimeout(backCheck);
   inAppHistory = true;
   left.path = route.path;
   left.scrollY = window.scrollY;
@@ -27,8 +31,15 @@ window.addEventListener('hashchange', () => {
 
 /** Back to the previous in-app page, or `fallback` when the app was opened here. */
 export function goBack(fallback = '/') {
-  if (inAppHistory) history.back();
-  else navigate(fallback);
+  if (!inAppHistory) return navigate(fallback);
+  // Back can step through an embedded frame's own history instead (the Google Picker's, on
+  // iOS Safari), which changes nothing on screen: go to `fallback` when the page stays put.
+  const from = location.hash;
+  history.back();
+  clearTimeout(backCheck);
+  backCheck = setTimeout(() => {
+    if (location.hash === from) navigate(fallback);
+  }, 400);
 }
 
 /** @param {string} path @param {Record<string, string | undefined | null>} [query] */
