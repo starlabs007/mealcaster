@@ -26,6 +26,13 @@
     font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20;
   }
 
+  /* Weekly planner: what dropping the dragged meal will do, on the floating card (see WeeklyPlanner.svelte). */
+  [data-drop-label]::after {
+    content: attr(data-drop-label);
+    @apply absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap rounded-full bg-secondary px-4 py-1.5
+      text-label-md font-semibold text-on-secondary shadow-lift;
+  }
+
   .btn {
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all
       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-1

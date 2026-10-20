@@ -71,6 +71,13 @@ npm run preview    # http://localhost:4173
   - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Dining Out**.
   - **Planned meal** (including today): **View Recipe**, **Swap Meal** (opens the catalog), **Surprise Me**,
     **Dining Out** and **Switch Days…**.
+    - **Drag to another day**: a planned meal that can move has a drag handle (⠿, top right on phones, right
+      edge on wider screens), in the normal and the minimal view. Drag it onto another evening of the week (today
+      onward, not yet completed): the evenings it can go to are outlined, the rest dimmed, and the floating card
+      says what letting go does (**Move to …** for an open evening, **Switch with …** otherwise). It's the same
+      move as Switch Days…, with an Undo toast. The page scrolls near the top or bottom of the screen; Escape or
+      letting go anywhere else cancels. Pressing the handle without dragging opens the Switch Days… picker — the
+      keyboard and screen-reader way, and the only one in the minimal view.
     - **Surprise Me** replaces the meal with a random one, preferring meals not already on the week's plan or
       made recently. It skips the meal being replaced unless that is the only recipe available.
     - **Dining Out** turns the evening into a night off.
@@ -333,6 +340,7 @@ src/
     router.svelte.js         hash router (works on GitHub Pages)
     planner.svelte.js        weekly plan state + actions, last made / times made (Svelte runes)
     switchDays.js            entries after two evenings switch (pure, tested)
+    pointerDrag.js           drag-and-drop on pointer events (mouse + touch), standalone and reusable (tested)
     recipes.svelte.js        live recipe list (samples + saved), save/delete/revert
     ingredients.js           ingredient helpers: foldKey, slugs, units, plural rule, line display (plain, tested)
     ingredients.svelte.js    ingredient store (synced), stock changes

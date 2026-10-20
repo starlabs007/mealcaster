@@ -138,7 +138,7 @@ export const text = {
     },
   },
 
-  // Weekly planner: page, toolbar, day cards, Switch Days dialog and the toasts planner.svelte.js raises.
+  // Weekly planner: page, toolbar, day cards, dragging a meal, Switch Days dialog and the toasts planner.svelte.js raises.
   // Dates and weekday names arrive already formatted (dates.js); only the words around them live here.
   planner: {
     daysAria: 'Dinners this week',
@@ -176,6 +176,8 @@ export const text = {
       surpriseMe: 'Surprise Me',
       diningOut: 'Dining Out',
       switchDays: 'Switch Days…',
+      moveHandle: (/** @type {string} */ weekday) => `Move ${weekday}’s dinner`,
+      moveHandleHint: 'Drag to another evening, or press to pick one',
       diningOutTitle: 'Dining out or leftovers',
       diningOutNote: 'A night off from the stove — nothing to prep or shop for.',
       missedTitle: 'No dinner was logged',
@@ -184,6 +186,11 @@ export const text = {
       openNote: 'Choose a meal, let the app pick one, or take the night off.',
       chooseMeal: 'Choose a Meal',
       planInstead: 'Plan a Meal Instead',
+    },
+
+    drop: {
+      moveTo: (/** @type {string} */ weekday) => `Move to ${weekday}`,
+      switchWith: (/** @type {string} */ weekday) => `Switch with ${weekday}`,
     },
 
     switchDialog: {
