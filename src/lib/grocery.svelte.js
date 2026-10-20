@@ -186,11 +186,23 @@ export function addItem(ingredientId, note, everyWeek) {
   weekList().status[ingredientId] = 'need';
 }
 
-/** Removes what you added of an ingredient: the viewed week's item, and its every-week item (from every week). @param {string} ingredientId */
+/**
+ * Removes what you added of an ingredient: the viewed week's item, and its every-week item (from every week).
+ * @param {string} ingredientId
+ * @returns {() => void} undo
+ */
 export function removeAdded(ingredientId) {
   const week = grocery.weeks[planner.weekStart];
+  const weekKey = planner.weekStart;
+  const hadNote = week && ingredientId in week.added;
+  const note = hadNote ? week.added[ingredientId] : undefined;
+  const everyBefore = grocery.every;
   if (week) delete week.added[ingredientId];
   grocery.every = grocery.every.filter((i) => i.ingredientId !== ingredientId);
+  return () => {
+    if (hadNote) (grocery.weeks[weekKey] ??= emptyWeek()).added[ingredientId] = note;
+    grocery.every = everyBefore;
+  };
 }
 
 /**

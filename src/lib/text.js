@@ -685,18 +685,13 @@ export const text = {
       spreadItem: (/** @type {string} */ name, /** @type {number} */ pct) => `${name} (${pct}%)`,
       print: 'Print Kitchen Checklist',
     },
-    sources: {
-      title: 'Meal Sources',
-      dinners: (/** @type {number} */ n) => `${n} ${plural(n, 'dinner')}`,
-      today: 'Today',
-      none: (/** @type {string} */ week) => `No dinners planned for ${week}.`,
-      openSchedule: 'Open weekly dinner schedule',
-    },
     toasts: {
       added: (/** @type {string} */ name, /** @type {boolean} */ everyWeek, /** @type {string} */ week, /** @type {boolean} */ wasOnHand) =>
         `Added ${name} to ${everyWeek ? 'your list until you buy it' : `the list for ${week}`}.` + (wasOnHand ? ' It’s no longer marked on hand.' : ''),
       onHand: (/** @type {string} */ name) => `${name} is on hand: it stays off every week’s list until you say you need it.`,
       needIt: (/** @type {string} */ name) => `${name} is back on the list.`,
+      removed: (/** @type {string} */ name, /** @type {boolean} */ everyWeek) =>
+        `Removed ${name} from ${everyWeek ? 'every week’s list' : 'this week’s list'}.`,
       copied: 'Grocery list copied to your clipboard.',
       shareFailed: 'Couldn’t share the list from this browser.',
     },
