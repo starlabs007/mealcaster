@@ -1,11 +1,13 @@
 // Mirrors the Favorite_Flag column of the [Recipes] tab; cached locally.
 
-import { sampleData, storageKey } from './env.js';
+import { samples } from 'virtual:sample-data';
+import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 
 const STORAGE_KEY = storageKey('favorites.v2');
-// Sample favorites exist only alongside the sample recipes.
-const SEED = sampleData ? ['sheet-pan-chicken', 'salmon-risotto', 'sourdough-pizza'] : [];
+// Sample favorites (dev only) point at the sample recipes.
+/** @type {string[]} */
+const SEED = samples.favorites;
 
 function load() {
   try {
@@ -14,7 +16,7 @@ function load() {
   } catch {
     // Fall back to the seed favorites.
   }
-  return SEED;
+  return [...SEED];
 }
 
 export const favorites = $state({ /** @type {string[]} */ ids: load() });

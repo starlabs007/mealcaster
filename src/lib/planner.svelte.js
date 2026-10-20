@@ -8,7 +8,8 @@ import { addDays, daysBetween, formatLong, formatWeekday, fromISO, weekStartOf, 
 import { switchedEntries } from './switchDays.js';
 import { showToast } from './toast.svelte.js';
 import { text } from './text.js';
-import { sampleData, storageKey } from './env.js';
+import { samples } from 'virtual:sample-data';
+import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 
 const STORAGE_KEY = storageKey('weeklyPlan.v2');
@@ -22,20 +23,13 @@ const STORAGE_KEY = storageKey('weeklyPlan.v2');
 const today = toISO(new Date());
 const thisWeek = weekStartOf(new Date());
 
-/** @returns {Record<string, PlanEntry>} */
+/** The sample plan (dev only), placed around this week. @returns {Record<string, PlanEntry>} */
 function seedEntries() {
   /** @type {Record<string, PlanEntry>} */
   const entries = {};
-  const assign = (weekStart, ids) =>
-    ids.forEach((id, i) => {
-      if (id === 'out') entries[addDays(weekStart, i)] = { diningOut: true };
-      else if (id) entries[addDays(weekStart, i)] = { recipeId: id };
-    });
-
-  assign(addDays(thisWeek, -7), [
-    'sheet-pan-chicken', 'lentil-dal', 'miso-eggplant', 'tuscan-ragu', 'sourdough-pizza', 'out', 'short-ribs',
-  ]);
-  assign(thisWeek, ['salmon-risotto', 'poblano-enchiladas', null, 'tuscan-ragu', 'sourdough-pizza', null, null]);
+  for (const { weekOffset, day, recipeId, diningOut } of samples.plan) {
+    entries[addDays(thisWeek, weekOffset * 7 + day)] = diningOut ? { diningOut: true } : { recipeId };
+  }
   return entries;
 }
 
@@ -46,8 +40,8 @@ function load() {
   } catch {
     // Storage unavailable or corrupt — fall back to the sample plan.
   }
-  // The sample plan points at sample recipes, which only exist in the sample dev build.
-  return sampleData ? seedEntries() : {};
+  // Empty outside dev: the sample plan points at sample recipes.
+  return seedEntries();
 }
 
 export const planner = $state({
