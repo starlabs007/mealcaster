@@ -36,7 +36,7 @@
   let aisle = $state('all');
   let showBought = $state(true);
   let adding = $state(false);
-  let draft = $state({ name: '', note: '', aisle: 'Produce', everyWeek: true });
+  let draft = $state({ name: '', note: '', aisle: 'Produce', everyWeek: false });
   // The aisle follows the item's name until you pick one yourself; an existing ingredient keeps its own.
   let aislePicked = false;
   const draftIngredient = $derived(draft.name.trim() ? findIngredient(draft.name) : undefined);
@@ -64,7 +64,7 @@
   const pastWeek = $derived(planner.weekStart < thisWeekStart());
 
   const lines = $derived(groceryLines());
-  const haveHidden = $derived(stockHiddenLines());
+  const haveHidden = $derived([...stockHiddenLines()].sort((a, b) => a.name.localeCompare(b.name)));
   // Bought lines leave the aisle lists for the Bought ledger.
   const shopping = $derived(lines.filter((l) => l.status === 'need'));
   const acquired = $derived(lines.filter((l) => l.status === 'bought'));
@@ -109,7 +109,14 @@
   /** @param {import('../lib/grocery.svelte.js').GroceryLine} item */
   function markOnHand(item) {
     setOnHand(item.ingredientId, true);
-    showToast(text.grocery.toasts.onHand(item.name));
+    showToast(text.grocery.toasts.onHand(item.name), { label: text.common.undo, run: () => setOnHand(item.ingredientId, false) });
+  }
+
+  /** @param {import('../lib/grocery.svelte.js').GroceryLine} item */
+  function removeItem(item) {
+    const everyWeek = item.every != null;
+    const undo = removeAdded(item.ingredientId);
+    showToast(text.grocery.toasts.removed(item.name, everyWeek), { label: text.common.undo, run: undo });
   }
 
   /** @param {import('../lib/grocery.svelte.js').GroceryLine} item */
@@ -216,7 +223,7 @@
           title={item.every != null ? text.grocery.line.removeEveryTitle : text.grocery.line.removeTitle}
           aria-label={text.grocery.line.removeAria(item.name)}
           class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
-          onclick={() => removeAdded(item.ingredientId)}
+          onclick={() => removeItem(item)}
         >
           <Icon name="delete" class="text-[18px]" />
         </button>
@@ -245,6 +252,7 @@
       <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">
         {text.grocery.title}
       </h1>
+      {#if !devicePrefs.groceryMinimal}
       <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
         {text.grocery.introBefore(weekName)} <strong class="text-on-surface">({formatRange(planner.weekStart)})</strong>.
         {#if sheets.spreadsheet && sheets.syncProvisions}
@@ -253,6 +261,7 @@
           {text.grocery.savedOnDevice(!!sheets.spreadsheet)}
         {/if}
       </p>
+      {/if}
       <div class="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label={text.grocery.weekPicker.aria}>
         <div class="inline-flex rounded-lg bg-surface-container-low p-1">
           {#each weekChoices as choice (choice.offset)}
@@ -284,9 +293,11 @@
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-2 md:justify-end">
-      <button type="button" class="btn-outline" onclick={share}>
-        <Icon name="share" class="text-[16px]" /> {text.grocery.share}
-      </button>
+      {#if !devicePrefs.groceryMinimal}
+        <button type="button" class="btn-outline" onclick={share}>
+          <Icon name="share" class="text-[16px]" /> {text.grocery.share}
+        </button>
+      {/if}
       <button type="button" class="btn-primary" aria-expanded={adding} onclick={() => (adding = !adding)}>
         <Icon name={adding ? 'close' : 'add'} class="text-[16px]" /> {adding ? text.grocery.closeForm : text.grocery.addItem}
       </button>
@@ -340,12 +351,12 @@
       <fieldset class="flex flex-wrap gap-x-5 gap-y-1 text-body-sm text-on-surface sm:col-span-full">
         <legend class="sr-only">{text.grocery.form.weeksLegend}</legend>
         <label class="flex items-center gap-2">
-          <input type="radio" name="item-weeks" checked={draft.everyWeek} onchange={() => (draft.everyWeek = true)} class="accent-primary-container" />
-          <span>{text.grocery.form.everyWeek} <span class="text-on-surface-variant">{text.grocery.form.everyWeekHint}</span></span>
-        </label>
-        <label class="flex items-center gap-2">
           <input type="radio" name="item-weeks" checked={!draft.everyWeek} onchange={() => (draft.everyWeek = false)} class="accent-primary-container" />
           {text.grocery.form.justWeek(weekName)}
+        </label>
+        <label class="flex items-center gap-2">
+          <input type="radio" name="item-weeks" checked={draft.everyWeek} onchange={() => (draft.everyWeek = true)} class="accent-primary-container" />
+          <span>{text.grocery.form.everyWeek} <span class="text-on-surface-variant">{text.grocery.form.everyWeekHint}</span></span>
         </label>
       </fieldset>
     </form>
@@ -536,44 +547,6 @@
             <Icon name="print" class="text-[18px]" /> {text.grocery.overview.print}
           </button>
         </div>
-      </section>
-
-      <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card">
-        <div class="mb-3 flex items-center justify-between">
-          <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-            <Icon name="restaurant_menu" class="text-[20px]" /> {text.grocery.sources.title}
-          </h2>
-          <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">
-            {text.grocery.sources.dinners(sources.length)}
-          </span>
-        </div>
-        {#if sources.length}
-          <ul class="flex flex-col gap-1">
-            {#each sources as { day, count } (day.iso)}
-              <li>
-                <a
-                  href={href(`/recipe/${day.recipe.id}`, { day: day.iso })}
-                  class="flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-surface-container-low"
-                >
-                  <span class="min-w-0">
-                    <span class="block text-label-caps uppercase {day.isToday ? 'text-secondary' : 'text-on-surface-variant'}">
-                      {day.isToday ? text.grocery.sources.today : formatWeekday(day.iso)}
-                    </span>
-                    <span class="block truncate text-body-sm text-on-surface">{day.recipe.shortTitle}</span>
-                  </span>
-                  <span class="shrink-0 rounded-full bg-surface-container-high px-2 py-0.5 text-label-sm text-on-surface-variant">
-                    {text.grocery.itemCount(count)}
-                  </span>
-                </a>
-              </li>
-            {/each}
-          </ul>
-        {:else}
-          <p class="text-body-sm text-on-surface-variant">{text.grocery.sources.none(weekName)}</p>
-        {/if}
-        <a href={href('/')} class="mt-3 inline-flex items-center gap-1 text-label-md text-primary hover:underline">
-          {text.grocery.sources.openSchedule} <Icon name="arrow_forward" class="text-[16px]" />
-        </a>
       </section>
     </aside>
     {/if}

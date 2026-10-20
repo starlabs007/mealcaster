@@ -141,9 +141,11 @@ for every recipe and the grocery list.
   Bought is per week and leaves stock alone.
 - **Past weeks are frozen**: changing stock never changes a past week's list (each past week keeps a snapshot of what
   it left off; Need it and the box icon are hidden there).
-- **Add Item** picks an ingredient or creates one (with its aisle), for **every week** (default — from this week on
-  until you buy it, then only in the week you bought it) or **just the viewed week**. Adding an in-stock ingredient
-  clears its stock. **Share** (native share sheet or clipboard), **Print Kitchen Checklist** (print-friendly layout).
+- **Add Item** picks an ingredient or creates one (with its aisle), for **just the viewed week** (default) or **every
+  week** (from this week on until you buy it, then only in the week you bought it). Adding an in-stock ingredient
+  clears its stock. Removing an added item (trash icon) or marking it in stock shows a toast with **Undo**. The
+  ingredients left off because they're in stock are listed alphabetically. **Share** (native share sheet or clipboard),
+  **Print Kitchen Checklist** (print-friendly layout). **Minimal view** also hides the intro text and Share.
 - Synced to the optional `[Provisions]` tab, one row per ingredient per week (`Line_Key` = `ing:<Ingredient_ID>`,
   `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
   future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
