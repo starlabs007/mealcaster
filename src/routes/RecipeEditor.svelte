@@ -381,13 +381,11 @@
 
     // Start from the existing recipe so fields the form doesn't show (
     // cook count, sheet row…) are kept; new recipes start blank.
-    const { minutes, hero, ...base } = editing
+    const { minutes, ...base } = editing
       ? $state.snapshot(editing)
-      : { minutes: 0, hero: undefined, addedAt: toISO(new Date()), custom: true };
+      : { minutes: 0, addedAt: toISO(new Date()), custom: true };
     const recipe = {
       ...base,
-      // The hero shot belongs to the original photo.
-      ...(hero && image === (editing?.image ?? '') && { hero }),
       id: editing?.id ?? newRecipeId(title),
       title,
       shortTitle: editing && title === editing.title ? editing.shortTitle : title,

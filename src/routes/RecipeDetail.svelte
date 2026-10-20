@@ -87,7 +87,7 @@
   }
 
   let choosingPrint = $state(false);
-  const photo = recipe ? (recipe.hero ?? recipe.image) : undefined;
+  const photo = recipe?.image;
   const textDelta = $derived(TEXT_DELTA[printOptions.textSize] ?? 0);
 
   /** @param {import('../lib/printOptions.svelte.js').PrintOptions} options */
@@ -274,8 +274,8 @@
             {printOptions.image && photo ? '' : 'print:hidden'}"
         >
           <!-- Photo-less (custom) recipes get a shorter placeholder until the column layout kicks in. -->
-          <div class="relative {recipe.hero ?? recipe.image ? 'aspect-[4/3]' : 'aspect-[3/1] lg:aspect-[4/3]'}">
-            <RecipeImage src={recipe.hero ?? recipe.image} alt={recipe.title} class="h-full w-full" />
+          <div class="relative {recipe.image ? 'aspect-[4/3]' : 'aspect-[3/1] lg:aspect-[4/3]'}">
+            <RecipeImage src={recipe.image} alt={recipe.title} class="h-full w-full" />
             <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
               <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md">
                 <Icon name="restaurant_menu" class="text-[13px]" /> {text.recipe.photoMeta(formatMinutes(recipe.minutes), recipe.serves)}

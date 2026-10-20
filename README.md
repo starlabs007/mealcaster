@@ -3,8 +3,8 @@
 Weekly dinner menu planner — plan, prep and shop for the week's dinners.
 Built with **Svelte 5 + Vite + Tailwind CSS**, deployed as a static site to GitHub Pages.
 
-> Status: all screens are implemented, including two-way **Google Sheets sync**. Sample recipes and
-> a sample plan exist only in `npm run dev`; `npm run dev:empty` and production builds start empty.
+> Status: all screens are implemented, including two-way **Google Sheets sync**. Generated sample data
+> exists only in `npm run dev`; `npm run dev:empty` and production builds start empty.
 
 ## Run it locally
 
@@ -14,16 +14,37 @@ Requires Node 18.18+ (`.nvmrc` pins 18).
 nvm use
 npm install
 cp .env.example .env.local   # then fill in the Google values (see below)
-npm run dev        # http://localhost:5173 — with sample recipes, plan and favorites
+npm run dev        # http://localhost:5173 — with generated sample data
 npm run dev:empty  # same, but starts empty like production
 ```
 
 Without `.env.local` the app still runs; Google sync is just unavailable.
 
-Both dev modes run on `localhost:5173` (run one at a time) and use the same localStorage keys.
-Switching mode clears this browser's saved recipes, plan, favorites, grocery list and sync history
-(Sheets settings are kept) — the sample mode re-seeds, the empty mode starts blank. Within a mode, data
-survives reloads. Production runs on its own origin, so its saved data is never touched.
+### Sample data
+
+`npm run dev` generates sample data when the dev server starts: varied recipes from about 50 dish templates and ten
+cuisines (Chinese and Vietnamese included), the ingredients they use, four past weeks and part of this week planned,
+some favorites, and grocery extras (two every-week items, one addition this week). It comes from the seeded generator
+in `dev/samples/` (served to the app as `virtual:sample-data` by a plugin in `vite.config.js`); production builds get
+empty data from the plugin and never load the generator.
+
+```bash
+SAMPLE_COUNT=500 npm run dev   # how many recipes (default 60; 0 = empty, same as npm run dev:empty)
+SAMPLE_SEED=2 npm run dev      # another set of recipes (default 1)
+SAMPLE_DATE=2026-01-15 npm run dev  # "added" dates count back from this day instead of today
+npm run samples:images         # refresh the photo cache (see below)
+```
+
+The same seed and count always give the same recipes and ids. Recipe photos come from
+[TheMealDB](https://www.themealdb.com/) through its official API (free development key; the website itself may not be
+scraped). The photo list is fetched once into `.cache/sample-images.json`, which is gitignored: no TheMealDB data is
+committed. Without the cache and a network connection, recipes are generated without photos and dev still starts.
+
+Both dev modes run on `localhost:5173` (run one at a time) and use the same localStorage keys. When the sample data
+changes (dev ↔ dev:empty, another `SAMPLE_COUNT` or `SAMPLE_SEED`, or a new generator version), the next load clears
+this browser's saved recipes, plan, favorites, grocery list and sync history (Sheets settings are kept) and says so in
+the console; the device then starts from the new samples. Refreshing the photo cache doesn't. Otherwise data survives
+reloads. Production runs on its own origin, so its saved data is never touched.
 
 Tests (Node's built-in runner, no extra dependencies):
 
@@ -330,8 +351,11 @@ src/
     text.js                  all on-screen wording (plain module; plural() helper, one group per screen)
     sheetText.js             wording stored in the Google Sheet and parsed back by sync/codec.js (changing it may need a migration)
     format.js                quantity formatting (1/3, 3 1/2)
-    data/recipes.js          sample recipes (dev only); data/ingredients.js their ingredient catalog
+    data/recipes.js          recipe types, formatMinutes
     components/              AppHeader, DayCard, RecipeCard, LastMade, ...
+dev/samples/                 dev sample data generator (plain Node modules, never bundled): generate.js, dish
+                             templates, cuisines, ingredient catalog, phrases, images.js (TheMealDB photo cache)
+.cache/                      gitignored: sample-images.json
 ```
 
 **Which text file?** Words a person only reads on screen go in `text.js`; words written to or read back from the
@@ -354,5 +378,5 @@ The build job runs in the `production` environment to read the three `GOOGLE_*` 
 ## To do
 
 - **Dinner picks ignore the category.** Auto-fill and Surprise Me choose from every recipe, so a Lunch or
-  Dessert recipe (e.g. the New York Cheesecake sample) can land on a dinner day. Limit both to recipes in the
+  Dessert recipe can land on a dinner day. Limit both to recipes in the
   Dinner category or with no category.

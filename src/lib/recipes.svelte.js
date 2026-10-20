@@ -1,17 +1,17 @@
-// Live recipe list: the sample pool (sample dev build only) plus the user's own
+// Live recipe list: the generated sample recipes (dev only, `virtual:sample-data`) plus the user's own
 // recipes. Every recipe is editable: edits to a sample are saved under the
 // sample's id and deleted samples are remembered. This is the on-device cache;
 // when a Google Sheet is connected, sync replaces it with the sheet's recipes.
 
 import { SvelteMap } from 'svelte/reactivity';
-import { sampleRecipes } from './data/recipes.js';
+import { samples } from 'virtual:sample-data';
 import { migrateNotes } from './markdown.js';
 import { normalizeCategory, normalizeTags, retag } from './tags.js';
 import { aisles } from './data/aisles.js';
 import { recipeIdFor } from './ingredients.js';
 import { restoreSampleIngredients } from './ingredients.svelte.js';
 import { cellText, recipeToRow } from './sync/codec.js';
-import { sampleData, storageKey } from './env.js';
+import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { text } from './text.js';
 
@@ -23,8 +23,9 @@ export { suggestedTags, isSuggestedTag, tagIcon, normalizeTag, normalizeTags, ta
 
 const STORAGE_KEY = storageKey('recipeBox.v2');
 
-// Sample recipes are development data only (`npm run dev`) — production starts empty.
-const builtIn = sampleData ? sampleRecipes : [];
+// Sample recipes are development data only (`npm run dev`) — production builds get none.
+/** @type {Recipe[]} */
+const builtIn = samples.recipes;
 const sampleById = new Map(builtIn.map((r) => [r.id, r]));
 export const isSample = (id) => sampleById.has(id);
 
@@ -33,8 +34,8 @@ const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes });
 
 /** Brings a recipe saved by an earlier build up to date. @param {SavedRecipe} r */
 const migrate = (r) => {
-  // Mock-only sample fields, since removed (cook counts now come from the plan).
-  const { highlight, prep, stat, rating, ratings, cookCount, ...rest } = migrateNotes(r);
+  // Mock-only sample fields, since removed (cook counts now come from the plan; `hero` was a second photo).
+  const { highlight, prep, stat, rating, ratings, cookCount, hero, ...rest } = migrateNotes(r);
   return {
     ...rest,
     badge: { label: normalizeCategory(rest.badge?.label ?? 'Dinner') },
