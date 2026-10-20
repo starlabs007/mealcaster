@@ -183,7 +183,6 @@ const RECIPE_COLUMNS = {
       const url = imageUrl(v);
       if (url) r.image = url;
       else delete r.image;
-      delete r.hero;
     },
   },
   Tags: {

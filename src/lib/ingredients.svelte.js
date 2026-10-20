@@ -1,12 +1,12 @@
 // Live ingredient list (synced as the [Ingredients] tab): what recipe lines point at, with each
-// ingredient's aisle and whether it's in stock. The sample build starts with the sample catalog so
-// the sample recipes resolve. Helpers that don't need runes are in ingredients.js.
+// ingredient's aisle and whether it's in stock. In dev it starts with the generated sample ingredients
+// (`virtual:sample-data`) so the sample recipes resolve. Helpers that don't need runes are in ingredients.js.
 
 import { SvelteMap } from 'svelte/reactivity';
-import { sampleIngredients } from './data/ingredients.js';
+import { samples } from 'virtual:sample-data';
 import { aisles } from './data/aisles.js';
 import { defaultAisle } from './sheetText.js';
-import { sampleData, storageKey } from './env.js';
+import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { findByName, ingredientIdFor, tidyIngredientName } from './ingredients.js';
 
@@ -14,7 +14,8 @@ import { findByName, ingredientIdFor, tidyIngredientName } from './ingredients.j
 
 const STORAGE_KEY = storageKey('ingredients.v1');
 
-const builtIn = sampleData ? sampleIngredients : [];
+/** @type {Ingredient[]} */
+const builtIn = samples.ingredients;
 
 const validAisle = (tag) => (aisles.some((a) => a.tag === tag) ? tag : defaultAisle);
 

@@ -494,7 +494,7 @@
       {/if}
     </div>
 
-    <!-- Right: overview, sources, sync -->
+    <!-- Right: overview + print -->
     {#if !devicePrefs.groceryMinimal}
     <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-4">
       <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card">

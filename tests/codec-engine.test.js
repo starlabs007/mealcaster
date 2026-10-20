@@ -106,13 +106,12 @@ describe('codec', () => {
   });
 
   it('keeps fields of unchanged cells and re-reads changed ones', () => {
-    const existing = recipe('r1', 'Pasta', { prep: { label: 'Mise en place', text: 'Chop', icon: 'x', tone: 'tertiary' }, hero: 'hero.jpg', image: 'a.jpg' });
+    const existing = recipe('r1', 'Pasta', { prep: { label: 'Mise en place', text: 'Chop', icon: 'x', tone: 'tertiary' }, image: 'a.jpg' });
     const row = codec.recipeToRow(existing, new Set());
     row.Description = 'New description';
     const { recipe: next, favorite } = codec.recipeFromRow(row, existing, { columns: SCHEMA.recipes, favorites: new Set(), today: '2026-09-30' });
     assert.equal(next.description, 'New description');
     assert.deepEqual(next.prep, existing.prep);
-    assert.equal(next.hero, 'hero.jpg', 'the hero shot stays while the image is unchanged');
     assert.equal(favorite, undefined, 'an unchanged flag leaves favorites alone');
   });
 

@@ -15,8 +15,9 @@
 import { recipeById } from './recipes.svelte.js';
 import { ingredientOf, onBeforeStockChange, setOnHand } from './ingredients.svelte.js';
 import { planner, currentWeek } from './planner.svelte.js';
-import { fromISO, weekStartOf } from './dates.js';
+import { addDays, fromISO, weekStartOf } from './dates.js';
 import { departments } from './data/departments.js';
+import { samples } from 'virtual:sample-data';
 import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { rekeyGroceryWeeks } from './sync/codec.js';
@@ -42,9 +43,13 @@ function load() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) return rekeyGroceryWeeks(JSON.parse(raw));
   } catch {
-    // Start empty.
+    // Start from the samples.
   }
-  return {};
+  // Sample additions (dev only), placed around this week.
+  const thisWeek = weekStartOf(fromISO(planner.today));
+  return Object.fromEntries(
+    samples.grocery.weeks.map(({ weekOffset, added }) => [addDays(thisWeek, weekOffset * 7), { ...emptyWeek(), added: { ...added } }]),
+  );
 }
 
 function loadEvery() {
@@ -52,9 +57,9 @@ function loadEvery() {
     const raw = localStorage.getItem(EVERY_KEY);
     if (raw) return JSON.parse(raw).filter((i) => i && typeof i.ingredientId === 'string');
   } catch {
-    // Start empty.
+    // Start from the samples.
   }
-  return [];
+  return samples.grocery.every.map((i) => ({ ...i }));
 }
 
 /** @type {{ weeks: Record<string, WeekList>, every: EveryWeekItem[] }} */

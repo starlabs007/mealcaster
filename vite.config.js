@@ -47,6 +47,55 @@ function contentSecurityPolicy(dev) {
   };
 }
 
+/**
+ * Serves `virtual:sample-data`: `{ samples, sampleKey }`. In dev, recipes, ingredients, a plan, favorites and grocery
+ * extras from the seeded generator in dev/samples/ (SAMPLE_COUNT, default 60, and SAMPLE_SEED, default 1; count 0 with
+ * `--mode empty`). Builds get empty data without loading the generator, so production never contains samples.
+ * `sampleKey` names the data (`sample:<seed>:<count>:<generator version>`, '' when empty); env.js clears the device's
+ * saved data when it changes. Photos don't count: refreshing the image cache keeps the key.
+ * @param {{ command: string, mode: string }} options
+ */
+function sampleData({ command, mode }) {
+  const id = 'virtual:sample-data';
+  const resolved = `\0${id}`;
+  const empty = { recipes: [], ingredients: [], plan: [], favorites: [], grocery: { every: [], weeks: [] } };
+  /** @type {Promise<string> | undefined} */
+  let code;
+
+  /** @param {string} name @param {number} fallback @param {number} min */
+  const envNumber = (name, fallback, min) => {
+    const raw = process.env[name];
+    if (raw === undefined || raw.trim() === '') return fallback;
+    const n = Number(raw);
+    if (Number.isInteger(n) && n >= min) return n;
+    console.warn(`Sample data: ignoring ${name}="${raw}" (expected a whole number from ${min}); using ${fallback}.`);
+    return fallback;
+  };
+
+  async function generate() {
+    const count = mode === 'empty' ? 0 : envNumber('SAMPLE_COUNT', 60, 0);
+    const seed = envNumber('SAMPLE_SEED', 1, 0);
+    if (!count) return { samples: empty, sampleKey: '' };
+    const { loadImages } = await import('./dev/samples/images.js');
+    const { generateSamples, GENERATOR_VERSION } = await import('./dev/samples/generate.js');
+    const samples = generateSamples({ seed, count, images: await loadImages() });
+    return { samples, sampleKey: `sample:${seed}:${count}:${GENERATOR_VERSION}` };
+  }
+
+  return {
+    name: 'mealcaster-sample-data',
+    resolveId: (source) => (source === id ? resolved : undefined),
+    load(loaded) {
+      if (loaded !== resolved) return;
+      code ??= (command === 'serve' ? generate() : Promise.resolve({ samples: empty, sampleKey: '' })).then(
+        ({ samples, sampleKey }) =>
+          `export const samples = ${JSON.stringify(samples)};\nexport const sampleKey = ${JSON.stringify(sampleKey)};\n`,
+      );
+      return code;
+    },
+  };
+}
+
 // Relative base so the build works from any GitHub Pages sub-path (e.g. /mealcaster/).
 export default defineConfig(({ command, mode }) => {
   // Google credentials come from .env.local in dev and the `production` environment in CI.
@@ -61,11 +110,9 @@ export default defineConfig(({ command, mode }) => {
   return {
     root,
     base: './',
-    plugins: [svelte(), contentSecurityPolicy(command === 'serve')],
+    plugins: [svelte(), contentSecurityPolicy(command === 'serve'), sampleData({ command, mode })],
     define: {
       __GOOGLE_CONFIG__: JSON.stringify(google),
-      // Sample recipes/plan: `npm run dev` only. `npm run dev:empty` (mode "empty") and builds start empty.
-      __SAMPLE_DATA__: JSON.stringify(command === 'serve' && mode !== 'empty'),
     },
     css: {
       postcss: {

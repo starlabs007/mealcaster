@@ -11,6 +11,7 @@
     "dev:empty": "vite --mode empty",
     "build": "vite build",
     "preview": "vite preview",
+    "samples:images": "node dev/samples/images.js",
     "test": "node --test tests/*.test.js"
   },
   "devDependencies": {

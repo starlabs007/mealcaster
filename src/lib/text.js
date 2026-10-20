@@ -6,7 +6,7 @@
 //   - Not here: text that is written to or read from the Google Sheet or the .xlsx export. It lives in
 //     sheetText.js, where changing it can need a data migration. If a screen shows such a word (an aisle name, a
 //     department, a tag colour), it imports it from sheetText.js rather than copying it.
-//   - Not here: sample recipe content (data/recipes.js), icon names, colours, CSS classes, sheet tab and column
+//   - Not here: sample recipe content (dev/samples/), icon names, colours, CSS classes, sheet tab and column
 //     names, and the month / weekday names that Intl.DateTimeFormat produces in dates.js.
 //
 // Grouping
