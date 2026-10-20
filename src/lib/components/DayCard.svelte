@@ -15,13 +15,26 @@
    *   isPast: boolean,
    *   status: import('../planner.svelte.js').DayStatus,
    *   recipe?: import('../data/recipes.js').Recipe,
-   * }, minimal?: boolean, onswitch?: (iso: string) => void }}
+   * }, minimal?: boolean, onswitch?: (iso: string) => void,
+   *   draghandle?: (iso: string) => (el: HTMLElement) => () => void, drop?: '' | 'source' | 'over' | 'target' | 'off' }}
    */
-  let { day, minimal = false, onswitch } = $props();
+  let { day, minimal = false, onswitch, draghandle, drop = '' } = $props();
 
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
   const dimmed = $derived(day.status === 'completed' || day.status === 'missed');
+  // A planned meal that some other evening of the week can take (Switch Days… or dragging).
+  const movable = $derived(day.status === 'planned' && switchTargets(day.iso).length > 0);
+  const handle = $derived(movable && !!onswitch && !!draghandle);
+
+  // While a meal is dragged: the card it came from, the one under the pointer, the ones it can go to, the rest.
+  const dropClass = {
+    '': '',
+    source: '!opacity-30',
+    over: 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100',
+    target: 'outline-dashed outline-2 outline-offset-2 outline-primary/40',
+    off: '!opacity-40',
+  };
 
   const cardClass = $derived(
     day.isToday
@@ -37,15 +50,17 @@
 
 <article
   id="day-{day.iso}"
+  data-drag-source
+  data-drop-id={day.iso}
   aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
-  class="flex flex-col rounded-xl transition-all sm:flex-row {minimal ? 'gap-3 p-3 sm:items-center' : 'gap-4 p-4'} {minimal ? '' : 'md:p-5'} {hasMeal && !minimal ? '' : 'sm:items-center'} {cardClass} {spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : ''}"
+  class="relative flex flex-col rounded-xl transition-all sm:flex-row {minimal ? 'gap-3 p-3 sm:items-center' : 'gap-4 p-4'} {minimal ? '' : 'md:p-5'} {hasMeal && !minimal ? '' : 'sm:items-center'} {cardClass} {spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : ''} {dropClass[drop]}"
 >
   {#if day.isToday}
     <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
   {/if}
 
   <!-- Day label column -->
-  <div class="flex flex-shrink-0 items-start justify-between gap-1 sm:w-36 sm:flex-col {minimal ? '' : 'sm:self-stretch'} {day.isToday ? 'pl-1' : ''}">
+  <div class="flex flex-shrink-0 items-start justify-between gap-1 sm:w-36 sm:flex-col {minimal ? '' : 'sm:self-stretch'} {day.isToday ? 'pl-1' : ''} {handle ? 'pr-9 sm:pr-0' : ''}">
     <div>
       <div
         class="text-sm uppercase tracking-wide {day.isToday
@@ -140,7 +155,7 @@
             >
               <Icon name="storefront" class="text-[14px]" /> {text.planner.card.diningOut}
             </button>
-            {#if onswitch && switchTargets(day.iso).length}
+            {#if onswitch && movable}
               <button
                 type="button"
                 class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
@@ -209,4 +224,19 @@
       {/if}
     </div>
   {/if}
+
+  {#if handle}
+    <!-- Drag to another evening; a press opens the Switch Days picker (the keyboard and screen-reader way). -->
+    <button
+      type="button"
+      {@attach draghandle(day.iso)}
+      aria-label={text.planner.card.moveHandle(weekdayName)}
+      title={text.planner.card.moveHandleHint}
+      class="absolute right-2 top-2 flex h-8 w-8 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing sm:static sm:h-10 sm:flex-shrink-0 sm:self-center"
+      onclick={() => onswitch(day.iso)}
+    >
+      <Icon name="drag_indicator" class="text-[20px]" />
+    </button>
+  {/if}
+
 </article>
