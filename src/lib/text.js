@@ -940,6 +940,8 @@ export const text = {
       createButton: 'Create New Sheet',
       firefoxLead: 'Using Firefox?',
       firefoxBody: 'If the Google Drive window stays blank or says the API developer key is invalid, click the shield icon in the address bar, turn off Enhanced Tracking Protection for this site, then reload.',
+      safariLead: 'Using Safari or the Home Screen app?',
+      safariBody: 'Safari can block the Google Drive window: it doesn’t open, or asks to let docs.google.com use cookies and then says the API developer key is invalid. Use Create New Sheet instead, or turn off Prevent Cross-Site Tracking in Safari’s privacy settings while you choose, then turn it back on.',
       templateLead: 'Setting one up yourself?',
       templateBody: 'Download an empty template with just the header rows, upload it to Google Drive, open it as a Google Sheet, then choose it here.',
       templateButton: 'Empty Template (.xlsx)',
@@ -1179,7 +1181,10 @@ export const text = {
       badChars: 'Tab names can’t contain [ ] : * ? / \\',
       duplicate: 'Each tab needs its own name.',
     },
-    picker: { title: 'Choose your MealCaster spreadsheet' },
+    picker: {
+      title: 'Choose your MealCaster spreadsheet',
+      blocked: 'The Google Drive window didn’t open — your browser may be blocking it. Try again, or create a new spreadsheet instead.',
+    },
     toasts: {
       updated: (/** @type {number} */ n) => `Updated from Google Sheets (${n} ${plural(n, 'change')}).`,
       signedInAs: (/** @type {string} */ email) => `Signed in as ${email}. Choose a spreadsheet for this account.`,

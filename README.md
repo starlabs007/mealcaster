@@ -222,6 +222,14 @@ Browser-only: Google Identity Services for sign-in, the Sheets and Drive REST AP
 Picker. The OAuth scope is `drive.file`, so MealCaster only sees spreadsheets the person picks in the
 Picker or that it creates ("Create New Sheet").
 
+**Picker and tracking protection** — the Picker is a `docs.google.com` frame that needs Google's sign-in
+cookies, which Safari (worst in the Home Screen app, which has its own cookies) and Firefox's Enhanced
+Tracking Protection block. It then never opens, or asks to let docs.google.com use cookies and then says
+"API developer key is invalid" (Google's error for the missing cookies, not a bad key). Step 2 shows a
+hint on those browsers, and if the Picker hasn't opened after 10 s it is closed and step 2 is enabled
+again with a toast. Workarounds: Create New Sheet (no Picker), or turn tracking protection off while
+choosing.
+
 **Credentials** — three build-time values, all public by design in a browser app:
 
 | Variable | What |
