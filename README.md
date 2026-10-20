@@ -150,7 +150,7 @@ for every recipe and the grocery list.
   `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
   future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
   `On hand` rows of this week and later are read-only — stock lives in `[Ingredients]`.
-- Sidebar: items to buy, completion, department spread and the dinners feeding the list.
+- Sidebar: items to buy and in stock, completion, department spread and **Print Kitchen Checklist**.
 
 ## Profile & Settings (`#/profile`)
 
