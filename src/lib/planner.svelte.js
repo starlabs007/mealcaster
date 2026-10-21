@@ -200,15 +200,44 @@ export const weekOffset = () => Math.round(daysBetween(weekStartOf(new Date()), 
 
 // The planner's toasts (and their Undo) are about the viewed week, so they close when another week is shown.
 let weekToastId = 0;
+// Undo stays up longer after a change to several evenings.
+const BULK_UNDO_MS = 10_000;
 
-/** @param {string} message @param {import('./toast.svelte.js').ToastAction} [action] */
-function showWeekToast(message, action) {
-  weekToastId = showToast(message, action);
+// The last change that can still be taken back: by its toast's Undo, or by Cmd/Ctrl+Z after the toast has gone.
+/** @type {{ message: string, run: () => void } | null} */
+let lastChange = null;
+
+/** @param {string} message @param {import('./toast.svelte.js').ToastAction} [action] @param {number} [duration] ms */
+function showWeekToast(message, action, duration) {
+  if (action) {
+    const run = action.run;
+    lastChange = { message, run };
+    action = { ...action, run: () => ((lastChange = null), run()) };
+  }
+  weekToastId = showToast(message, action, duration);
+}
+
+/** Takes back the last planner change and says so (Cmd/Ctrl+Z). @returns {boolean} false when there's none */
+export function undoLastChange() {
+  if (!lastChange) return false;
+  const { message, run } = lastChange;
+  lastChange = null;
+  run();
+  showWeekToast(text.planner.toasts.undone(message));
+  return true;
+}
+
+/** A change without Undo, another week or leaving the planner ends what Cmd/Ctrl+Z can take back. */
+export function forgetLastChange() {
+  lastChange = null;
 }
 
 /** @param {string} weekStart */
 function viewWeek(weekStart) {
-  if (weekStart !== planner.weekStart && toast.id === weekToastId) dismissToast();
+  if (weekStart !== planner.weekStart) {
+    if (toast.id === weekToastId) dismissToast();
+    forgetLastChange();
+  }
   planner.weekStart = weekStart;
 }
 
@@ -227,6 +256,7 @@ export function goToThisWeek() {
 
 /** @param {string} iso @param {string} recipeId */
 export function assignRecipe(iso, recipeId) {
+  forgetLastChange();
   planner.entries[iso] = { recipeId };
 }
 
@@ -265,6 +295,7 @@ function undoDay(iso, previous) {
 export function setDone(iso, done) {
   const entry = planner.entries[iso];
   if (!entry?.recipeId || iso !== planner.today) return;
+  forgetLastChange();
   planner.entries[iso] = done ? { ...entry, completed: true } : (({ completed, ...rest }) => rest)(entry);
 }
 
@@ -301,6 +332,7 @@ export function switchDays(a, b) {
 
 /** @param {string} iso */
 export function clearDay(iso) {
+  forgetLastChange();
   delete planner.entries[iso];
 }
 
@@ -317,7 +349,7 @@ export function autoFillRemaining() {
   if (!recipes.length) return showWeekToast(NO_RECIPES);
   const undo = snapshotWeek();
   for (const iso of open) planner.entries[iso] = { recipeId: pickRecipe().id };
-  showWeekToast(text.planner.toasts.filled(open.length), { label: text.common.undo, run: undo });
+  showWeekToast(text.planner.toasts.filled(open.length), { label: text.common.undo, run: undo }, BULK_UNDO_MS);
 }
 
 /** Fills open upcoming evenings from last week; planned and finished ones stay as they are. */
@@ -328,19 +360,25 @@ export function copyLastWeek() {
   if (!count) return showWeekToast(text.planner.toasts.noLastWeek);
   const undo = snapshotWeek();
   Object.assign(planner.entries, changes);
-  showWeekToast(text.planner.toasts.copied(count), { label: text.common.undo, run: undo });
+  showWeekToast(text.planner.toasts.copied(count), { label: text.common.undo, run: undo }, BULK_UNDO_MS);
 }
+
+const resetTargets = () => resetDays(planner.entries, weekDates(planner.weekStart), planner.today, statusOf);
+
+/** How many evenings Reset Week would clear (its menu item says so, and hides at 0). */
+export const resetCount = () => resetTargets().length;
 
 /** Wipes upcoming assignments; finished dinners, today's included, stay as history. */
 export function resetWeek() {
-  const targets = resetDays(planner.entries, weekDates(planner.weekStart), planner.today, statusOf);
-  if (!targets.length) return showWeekToast(text.planner.toasts.nothingToReset);
+  const targets = resetTargets();
+  if (!targets.length) return;
   const undo = snapshotWeek();
   for (const iso of targets) delete planner.entries[iso];
-  showWeekToast(text.planner.toasts.reset(targets.length), { label: text.common.undo, run: undo });
+  showWeekToast(text.planner.toasts.reset(targets.length), { label: text.common.undo, run: undo }, BULK_UNDO_MS);
 }
 
 /** Replaces the whole plan (used by Google Sheets sync). @param {Record<string, PlanEntry>} entries */
 export function replacePlan(entries) {
+  forgetLastChange();
   planner.entries = entries;
 }

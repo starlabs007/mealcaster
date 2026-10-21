@@ -3,13 +3,15 @@
   import DayListCard from '../lib/components/DayListCard.svelte';
   import DayGridCard from '../lib/components/DayGridCard.svelte';
   import SwitchDaysDialog from '../lib/components/SwitchDaysDialog.svelte';
-  import { onMount, tick } from 'svelte';
+  import { onDestroy, onMount, tick } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
-  import { currentWeek, planner, spotlight, statusOf, switchDays, switchTargets } from '../lib/planner.svelte.js';
+  import { currentWeek, forgetLastChange, planner, spotlight, statusOf, switchDays, switchTargets, undoLastChange } from '../lib/planner.svelte.js';
   import { createPointerDrag } from '../lib/pointerDrag.js';
   import { text } from '../lib/text.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
   import { formatWeekday } from '../lib/dates.js';
+  import { isUndoShortcut } from '../lib/undoShortcut.js';
+  import { focusDay } from '../lib/focusDay.js';
 
   const days = $derived(currentWeek());
   let switching = $state('');
@@ -57,6 +59,19 @@
     return drag.targets.includes(iso) ? 'target' : 'off';
   }
 
+  // Cmd/Ctrl+Z takes back the last planner change, also after its toast has gone; leaving the planner forgets it.
+  // If the focused control goes with the change, focus moves to its day card's main control.
+  /** @param {KeyboardEvent} event */
+  async function undoKey(event) {
+    if (!isUndoShortcut(event)) return;
+    const day = document.activeElement?.closest('[id^="day-"]')?.id.slice(4);
+    if (!undoLastChange()) return;
+    event.preventDefault();
+    await tick();
+    if (day && !document.activeElement?.closest('[id^="day-"]')) focusDay(day);
+  }
+  onDestroy(forgetLastChange);
+
   // Coming back from the catalog with a meal just picked: bring that day into view (the highlight
   // itself is drawn by the day card and fades on its own). Otherwise the list (phones, Minimal view) brings
   // today into view when it's this week: scrolled just far enough to show the whole card, below the fixed header.
@@ -74,6 +89,8 @@
     if (by > 0) window.scrollTo({ top: window.scrollY + by, behavior });
   });
 </script>
+
+<svelte:window onkeydown={undoKey} />
 
 <div class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-6 md:px-gutter-desktop">
   <PlannerHeader />

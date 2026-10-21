@@ -156,7 +156,7 @@ export const text = {
       autoFill: 'Auto-fill Remaining',
       autoFillShort: 'Auto-fill',
       copyLastWeek: 'Copy Last Week',
-      resetWeek: 'Reset Week',
+      resetWeek: (/** @type {number} */ n) => `Clear ${n} Upcoming ${plural(n, 'Evening')}`,
       moreAria: 'More week actions',
       autoFillNote: (/** @type {number} */ days) => `Auto-fill picks dinners not made in the last ${days} days.`,
     },
@@ -218,8 +218,9 @@ export const text = {
       filled: (/** @type {number} */ n) => `Planned ${n} ${plural(n, 'evening')}.`,
       noLastWeek: 'Last week had nothing planned for this week’s open evenings.',
       copied: (/** @type {number} */ n) => `Copied ${n} ${plural(n, 'evening')} from last week.`,
-      nothingToReset: 'Nothing to reset — no upcoming evenings are planned.',
       reset: (/** @type {number} */ n) => `Cleared ${n} upcoming ${plural(n, 'evening')}.`,
+      // After Cmd/Ctrl+Z; `change` is the toast the change showed, e.g. "Moved to Thursday."
+      undone: (/** @type {string} */ change) => `Undone: ${change}`,
     },
   },
 
