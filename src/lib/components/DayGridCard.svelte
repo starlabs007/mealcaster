@@ -139,7 +139,7 @@
       class="aspect-[4/3] w-full flex-shrink-0 rounded-lg {day.status === 'completed' ? 'saturate-50' : ''} {lead ? 'shadow-sm' : 'xl:aspect-[4/5]'}"
     />
     <div class="flex min-w-0 flex-1 flex-col gap-2">
-      <h3 class="line-clamp-2 font-display text-on-surface {lead ? 'text-headline-md' : 'text-base leading-snug'}" title={recipe.title}>{recipe.title}</h3>
+      <h3 class="font-display text-on-surface {lead ? 'line-clamp-3 text-headline-md' : 'line-clamp-2 text-base leading-snug'}" title={recipe.title}>{recipe.title}</h3>
       {#if lead}
         <p class="text-xs text-on-surface-variant">{text.planner.card.meta(recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
       {/if}

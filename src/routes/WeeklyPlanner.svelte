@@ -73,7 +73,7 @@
 <div class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-6 md:px-gutter-desktop">
   <PlannerHeader />
 
-  <section aria-label={text.planner.daysAria} class="flex flex-col {devicePrefs.plannerMinimal ? 'gap-2.5' : 'gap-4'}">
+  <section aria-labelledby="planner-title" class="flex flex-col {devicePrefs.plannerMinimal ? 'gap-2.5' : 'gap-4'}">
     <label class="flex min-h-11 cursor-pointer items-center gap-2 self-end md:min-h-0 text-label-md text-on-surface-variant">
       <input type="checkbox" bind:checked={devicePrefs.plannerMinimal} class="h-4 w-4 rounded accent-primary" />
       {text.planner.minimalView}

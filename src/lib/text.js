@@ -141,7 +141,6 @@ export const text = {
   // Weekly planner: page, toolbar, day cards, dragging a meal, Switch Days dialog and the toasts planner.svelte.js raises.
   // Dates and weekday names arrive already formatted (dates.js); only the words around them live here.
   planner: {
-    daysAria: 'Dinners this week',
     minimalView: 'Minimal view',
 
     header: {
@@ -165,7 +164,6 @@ export const text = {
     card: {
       aria: (/** @type {string} */ weekday, /** @type {string} */ date, /** @type {boolean} */ isToday) => `${weekday} ${date}${isToday ? ' (today)' : ''}`,
       completed: 'Completed',
-      today: 'Today',
       tonight: 'Tonight',
       planned: 'Planned',
       nightOff: 'Night off',
@@ -185,8 +183,6 @@ export const text = {
       diningOutNote: 'A night off from the stove — nothing to prep or shop for.',
       missedTitle: 'No dinner was logged',
       missedNote: 'This evening has passed without a planned meal.',
-      openTitle: (/** @type {string} */ weekday) => `No dinner planned yet for ${weekday}`,
-      openNote: 'Choose a meal, let the app pick one, or take the night off.',
       nothingPlanned: 'Nothing planned',
       moreAria: (/** @type {string} */ weekday) => `More for ${weekday}`,
       chooseMeal: 'Choose a Meal',
