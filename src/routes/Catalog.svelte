@@ -224,7 +224,7 @@
   }
 </script>
 
-<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-gutter-desktop">
+<div class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-6 md:px-gutter-desktop">
   <!-- Planning context -->
   <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <div>

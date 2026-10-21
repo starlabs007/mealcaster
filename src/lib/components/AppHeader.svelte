@@ -61,7 +61,7 @@
 {/snippet}
 
 <header class="fixed left-0 top-0 z-50 w-full print:hidden bg-surface/90 shadow-header backdrop-blur-xl">
-  <div class="flex h-20 w-full items-center justify-between gap-4 px-4 md:px-gutter-desktop">
+  <div class="flex h-20 w-full items-center justify-between gap-4 px-gutter md:px-gutter-desktop">
     <div class="flex items-center gap-6">
       <a href={href('/')} class="flex items-center gap-2" aria-label={text.header.homeAria}>
         <img src="./logo-mark.png" alt="" class="h-8 w-8 rounded-lg object-cover shadow-sm" />
@@ -124,7 +124,7 @@
   </div>
 
   <!-- Below xl the primary tabs move to their own scrollable row. -->
-  <div class="overflow-x-auto border-t border-surface-container-high px-4 py-2 xl:hidden [scrollbar-width:none]">
+  <div class="overflow-x-auto border-t border-surface-container-high px-gutter py-2 md:px-gutter-desktop xl:hidden [scrollbar-width:none]">
     {@render navTabs('flex w-max')}
   </div>
 </header>
