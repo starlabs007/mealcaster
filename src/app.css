@@ -33,9 +33,12 @@
       text-label-md font-semibold text-on-secondary shadow-lift;
   }
 
+  /* The system keyboard focus ring (sage, 5.9:1 on white). */
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-1;
+  }
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all
-      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-1
+    @apply focus-ring inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all
       disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
