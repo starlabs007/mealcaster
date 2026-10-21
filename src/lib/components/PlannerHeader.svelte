@@ -1,10 +1,11 @@
 <script>
   import Icon from './Icon.svelte';
   import ActionMenu from './ActionMenu.svelte';
-  import { planner, weekSummary, weekOffset, autoFillRemaining, copyLastWeek, resetWeek, RECENT_DAYS } from '../planner.svelte.js';
+  import { planner, weekSummary, weekOffset, autoFillRemaining, copyLastWeek, resetWeek, resetCount, RECENT_DAYS } from '../planner.svelte.js';
   import { text } from '../text.js';
   import { addDays, formatLong, formatShort } from '../dates.js';
   import { MediaQuery } from 'svelte/reactivity';
+  import { tick } from 'svelte';
 
   const summary = $derived(weekSummary());
   const offset = $derived(weekOffset());
@@ -20,13 +21,24 @@
   // A week entirely in the past is read-only history.
   const editable = $derived(addDays(planner.weekStart, 6) >= planner.today);
 
-  // On phones the actions fit one row: Copy Last Week joins Reset Week in the ⋯ menu.
+  // On phones the actions fit one row: Copy Last Week joins Reset Week in the ⋯ menu. Reset Week says how many
+  // evenings it clears and is left out when there are none (on desktop the ⋯ menu then goes too).
   const wide = new MediaQuery('min-width: 768px');
+  const resettable = $derived(resetCount());
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const more = $derived([
     ...(wide.current ? [] : [{ id: 'copy', label: text.planner.header.copyLastWeek, icon: 'content_copy', onselect: copyLastWeek }]),
-    { id: 'reset', label: text.planner.header.resetWeek, icon: 'refresh', onselect: resetWeek },
+    ...(resettable ? [{ id: 'reset', label: text.planner.header.resetWeek(resettable), icon: 'refresh', onselect: reset }] : []),
   ]);
+
+  // When the ⋯ button goes with the reset, focus moves to Auto-fill rather than dropping to the page.
+  /** @type {HTMLButtonElement | undefined} */
+  let autoFillButton = $state();
+  async function reset() {
+    resetWeek();
+    await tick();
+    if (!more.length) autoFillButton?.focus();
+  }
 </script>
 
 <div class="flex flex-col justify-between gap-3 border-b border-surface-container-highest pb-4 md:flex-row md:items-end md:gap-4">
@@ -52,6 +64,7 @@
       {#if editable}
         <!-- aria-disabled, not disabled: pressing the last Auto-fill must not drop focus to <body>. A press on a full week just says so. -->
         <button
+          bind:this={autoFillButton}
           type="button"
           class="btn-primary ml-auto min-h-11 flex-shrink-0 md:ml-0 md:min-h-0 {summary.open ? '' : 'cursor-not-allowed opacity-50 hover:bg-primary'}"
           aria-disabled={!summary.open}
@@ -65,7 +78,9 @@
             <Icon name="content_copy" class="text-[16px]" /> {text.planner.header.copyLastWeek}
           </button>
         {/if}
-        <ActionMenu items={more} label={text.planner.header.moreAria} class="border border-outline-variant bg-surface-container-lowest" />
+        {#if more.length}
+          <ActionMenu items={more} label={text.planner.header.moreAria} class="border border-outline-variant bg-surface-container-lowest" />
+        {/if}
       {/if}
     </div>
     {#if editable && summary.open}
