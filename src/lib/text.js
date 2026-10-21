@@ -161,7 +161,7 @@ export const text = {
     card: {
       aria: (/** @type {string} */ weekday, /** @type {string} */ date, /** @type {boolean} */ isToday) => `${weekday} ${date}${isToday ? ' (today)' : ''}`,
       completed: 'Completed',
-      today: '• TODAY',
+      today: 'Today',
       planned: 'Planned',
       nightOff: 'Night off',
       notLogged: 'Not logged',
@@ -170,7 +170,6 @@ export const text = {
         [badge, `${minutes} min`, `Serves ${serves}`].filter(Boolean).join(' · '),
       viewRecipe: 'View Recipe',
       viewRecipeAria: (/** @type {string} */ title) => `View recipe: ${title}`,
-      done: 'Done',
       markDone: 'Mark Done',
       swapMeal: 'Swap Meal',
       surpriseMe: 'Surprise Me',

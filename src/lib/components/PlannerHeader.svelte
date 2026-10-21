@@ -33,7 +33,7 @@
 
   <div class="flex flex-wrap items-center gap-2 pt-2 md:max-w-[420px] md:justify-end md:pt-0 lg:max-w-none">
     <div class="inline-flex items-center gap-2 rounded-full bg-surface-container-high px-3 py-1.5 text-xs">
-      <span class="h-2 w-2 rounded-full bg-primary {summary.open ? 'animate-pulse' : ''}"></span>
+      <span class="h-2 w-2 rounded-full bg-primary {summary.open ? 'motion-safe:animate-pulse' : ''}"></span>
       <span class="font-semibold text-on-surface">{text.planner.header.dinners(summary.planned)}</span>
       {#if editable}
         <span class="text-[11px] text-outline">

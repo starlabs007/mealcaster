@@ -36,6 +36,10 @@
     off: '!opacity-40',
   };
 
+  // Small text actions: padding grows the hit area to 24 px (WCAG 2.5.8) and the negative margin keeps the look.
+  const quietAction =
+    'focus-ring -mx-1 -my-1 inline-flex min-h-6 items-center gap-1 rounded px-1 py-1 text-xs font-semibold text-on-surface-variant hover:text-secondary';
+
   const cardClass = $derived(
     day.isToday
       ? 'relative overflow-hidden border-2 border-primary/30 bg-surface-container-lowest shadow-sm'
@@ -81,7 +85,9 @@
         <Icon name="check_circle" class="text-[13px]" /> {text.planner.card.completed}
       </span>
     {:else if day.isToday}
-      <span class="inline-flex items-center rounded-full bg-primary px-2.5 py-0.5 text-label-sm text-on-primary shadow-sm">{text.planner.card.today}</span>
+      <span class="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">
+        <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.today}
+      </span>
     {:else if day.status === 'planned'}
       <span class="rounded bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">{text.planner.card.planned}</span>
     {:else}
@@ -114,43 +120,44 @@
         <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
           <a
             href={href(`/recipe/${recipe.id}`, { day: day.iso })}
-            class="inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday
+            class="focus-ring inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday
               ? 'rounded-md bg-primary-container px-3 py-1.5 text-on-primary shadow-sm hover:bg-primary'
               : day.status === 'planned'
                 ? 'rounded-md bg-surface-container-high px-3 py-1.5 text-on-surface hover:bg-surface-dim'
-                : 'text-primary hover:underline'}"
+                : '-mx-1 -my-1 min-h-6 rounded px-1 py-1 text-primary hover:underline'}"
           >
             {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
           </a>
           {#if day.isToday}
+            <!-- A fixed label with aria-pressed, so it's announced as "Mark Done, pressed" (not "Done, pressed"). -->
             <button
               type="button"
               aria-pressed={day.status === 'completed'}
-              class="inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {day.status === 'completed'
+              class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {day.status === 'completed'
                 ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
                 : 'border border-outline-variant text-on-surface hover:bg-surface-container-high'}"
               onclick={() => setDone(day.iso, day.status !== 'completed')}
             >
-              <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.planner.card.done : text.planner.card.markDone}
+              <Icon name="check_circle" class="text-[14px]" /> {text.planner.card.markDone}
             </button>
           {/if}
           {#if day.status === 'planned'}
             <a
               href={href('/catalog', { day: day.iso })}
-              class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+              class={quietAction}
             >
               <Icon name="sync_alt" class="text-[14px]" /> {text.planner.card.swapMeal}
             </a>
             <button
               type="button"
-              class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+              class={quietAction}
               onclick={() => surpriseMe(day.iso)}
             >
               <Icon name="casino" class="text-[14px]" /> {text.planner.card.surpriseMe}
             </button>
             <button
               type="button"
-              class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+              class={quietAction}
               onclick={() => markDiningOut(day.iso)}
             >
               <Icon name="storefront" class="text-[14px]" /> {text.planner.card.diningOut}
@@ -158,7 +165,8 @@
             {#if onswitch && movable}
               <button
                 type="button"
-                class="inline-flex items-center gap-1 text-xs font-semibold text-on-surface-variant hover:text-secondary"
+                data-switch-opener="button"
+                class={quietAction}
                 onclick={() => onswitch(day.iso)}
               >
                 <Icon name="swap_vert" class="text-[14px]" /> {text.planner.card.switchDays}
@@ -173,7 +181,7 @@
           href={href(`/recipe/${recipe.id}`, { day: day.iso })}
           aria-label={text.planner.card.viewRecipeAria(recipe.title)}
           title={text.planner.card.viewRecipe}
-          class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md transition-all {day.isToday
+          class="focus-ring flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md transition-all {day.isToday
             ? 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'
             : day.status === 'planned'
               ? 'bg-surface-container-high text-on-surface hover:bg-surface-dim'
@@ -230,9 +238,10 @@
     <button
       type="button"
       {@attach draghandle(day.iso)}
+      data-switch-opener="handle"
       aria-label={text.planner.card.moveHandle(weekdayName)}
       title={text.planner.card.moveHandleHint}
-      class="absolute right-2 top-2 flex h-8 w-8 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing sm:static sm:h-10 sm:flex-shrink-0 sm:self-center"
+      class="focus-ring absolute right-2 top-2 flex h-8 w-8 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing sm:static sm:h-10 sm:flex-shrink-0 sm:self-center"
       onclick={() => onswitch(day.iso)}
     >
       <Icon name="drag_indicator" class="text-[20px]" />
