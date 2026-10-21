@@ -35,7 +35,7 @@
     <p class="mb-1.5 hidden text-xs font-semibold text-on-surface-variant md:block">
       {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}
     </p>
-    <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">{title}</h1>
+    <h1 id="planner-title" class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">{title}</h1>
   </div>
 
   <div class="flex flex-col gap-1.5 md:items-end">

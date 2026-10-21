@@ -122,7 +122,7 @@
               </span>
             {:else if day.isToday}
               <span class="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">
-                <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.today}
+                <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.tonight}
               </span>
             {:else if day.status === 'diningOut'}
               <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
@@ -216,11 +216,8 @@
           {#if day.status === 'diningOut'}
             <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.diningOutTitle}</h3>
             {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.diningOutNote}</p>{/if}
-          {:else if minimal}
-            <h3 class="font-display text-sm text-on-surface">{text.planner.card.nothingPlanned}</h3>
           {:else}
-            <h3 class="font-display text-base text-on-surface">{text.planner.card.openTitle(weekdayName)}</h3>
-            <p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.openNote}</p>
+            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.nothingPlanned}</h3>
           {/if}
         </div>
         {#if minimal && day.status === 'open'}
@@ -255,7 +252,8 @@
 {/if}
 
 {#snippet pastWeekday()}
-  <span class="w-10 flex-shrink-0 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{formatWeekdayShort(day.iso)}</span>
+  <!-- Minimal view from `sm`: the same 9 rem label column as the upcoming rows, so the thumbnails line up. -->
+  <span class="w-10 flex-shrink-0 {minimal ? 'sm:w-36' : ''} text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{formatWeekdayShort(day.iso)}</span>
 {/snippet}
 
 {#snippet tagList(/** @type {string[]} */ tags, /** @type {string} */ extra)}
