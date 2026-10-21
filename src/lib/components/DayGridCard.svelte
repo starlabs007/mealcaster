@@ -1,6 +1,6 @@
 <script>
-  // One evening in the planner's week view (from `md` up): a column of the week, `lead` for tonight's (wider, with
-  // the larger title and Mark Done). Phones and Minimal view use DayCard's list instead. View Recipe (and Mark Done
+  // One evening in the planner's week grid (from `md` up): a column of the week, `lead` for tonight's (wider, with
+  // the larger title and Mark Done). Phones and Minimal view use DayListCard instead. View Recipe (and Mark Done
   // tonight) stay visible; the other actions sit in the ⋯ menu.
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';

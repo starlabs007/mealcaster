@@ -1,7 +1,7 @@
 <script>
   import PlannerHeader from '../lib/components/PlannerHeader.svelte';
-  import DayCard from '../lib/components/DayCard.svelte';
-  import DayTile from '../lib/components/DayTile.svelte';
+  import DayListCard from '../lib/components/DayListCard.svelte';
+  import DayGridCard from '../lib/components/DayGridCard.svelte';
   import SwitchDaysDialog from '../lib/components/SwitchDaysDialog.svelte';
   import { onMount, tick } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
@@ -72,7 +72,7 @@
       <div class="grid gap-3 md:grid-cols-4 xl:[grid-template-columns:var(--week-columns)]" style="--week-columns: {columns}">
         {#each days as day (day.iso)}
           <div class="flex min-w-0">
-            <DayTile
+            <DayGridCard
               {day}
               lead={day.isToday}
               onswitch={(iso) => (switching = iso)}
@@ -84,7 +84,7 @@
       </div>
     {:else}
       {#each days as day (day.iso)}
-        <DayCard
+        <DayListCard
           {day}
           minimal={devicePrefs.plannerMinimal}
           onswitch={(iso) => (switching = iso)}
