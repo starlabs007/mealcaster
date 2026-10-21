@@ -20,7 +20,6 @@
 
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
-  const dimmed = $derived(day.status === 'completed' || day.status === 'missed');
   const movable = $derived(day.status === 'planned' && switchTargets(day.iso).length > 0);
   const handle = $derived(movable && !!onswitch && !!draghandle);
 
@@ -51,10 +50,12 @@
     day.isToday
       ? 'overflow-hidden border-2 border-primary/30 bg-surface-container-lowest shadow-sm'
       : day.status === 'completed'
-        ? 'border border-surface-container-high bg-surface-container-lowest/60 opacity-60'
+        ? 'border border-surface-container-high bg-surface-container-low shadow-sm'
         : day.status === 'planned'
           ? 'border border-surface-container-high bg-surface-container-lowest shadow-sm'
-          : `border border-dashed border-outline-variant bg-surface-container-low/70 ${dimmed ? 'opacity-60' : ''}`,
+          : day.status === 'missed'
+            ? 'border border-dashed border-outline-variant bg-surface-container'
+            : 'border border-dashed border-outline-variant bg-surface-container-low/70',
   );
 </script>
 
@@ -75,7 +76,7 @@
   <div class="flex items-start gap-1 {day.isToday ? 'pl-1' : ''}">
     <div class="min-w-0 flex-1">
       <!-- Seven columns from xl are narrow: "Wed" there, beside the ⋯ and ⠿ buttons. -->
-      <div class="truncate text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-outline'}">
+      <div class="truncate text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}">
         {#if lead}{weekdayName}{:else}<span class="xl:hidden">{weekdayName}</span><span class="hidden xl:inline">{formatWeekdayShort(day.iso)}</span>{/if}
       </div>
       <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -87,9 +88,9 @@
         {:else if day.isToday}
           <span class="rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">{text.planner.card.tonight}</span>
         {:else if day.status === 'diningOut'}
-          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-outline">{text.planner.card.nightOff}</span>
+          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
         {:else if day.status === 'missed'}
-          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-outline">{text.planner.card.notLogged}</span>
+          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.notLogged}</span>
         {/if}
       </div>
     </div>
@@ -118,7 +119,7 @@
     <RecipeImage
       src={recipe.image}
       alt={recipe.title}
-      class="aspect-[4/3] w-full flex-shrink-0 rounded-lg {lead ? 'shadow-sm' : 'xl:aspect-[4/5]'}"
+      class="aspect-[4/3] w-full flex-shrink-0 rounded-lg {day.status === 'completed' ? 'saturate-50' : ''} {lead ? 'shadow-sm' : 'xl:aspect-[4/5]'}"
     />
     <div class="flex min-w-0 flex-1 flex-col gap-2">
       <h3 class="line-clamp-2 font-display text-on-surface {lead ? 'text-headline-md' : 'text-base leading-snug'}" title={recipe.title}>{recipe.title}</h3>

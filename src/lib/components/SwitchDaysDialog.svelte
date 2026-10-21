@@ -109,7 +109,7 @@
               onclick={() => pick(d)}
             >
               <span class="w-24 flex-shrink-0">
-                <span class="block text-sm font-semibold uppercase tracking-wide text-outline">{formatWeekday(d)}</span>
+                <span class="block text-sm font-semibold uppercase tracking-wide text-on-surface-variant">{formatWeekday(d)}</span>
                 <span class="block text-xs text-on-surface-variant">{formatShort(d)}</span>
               </span>
               {#if recipe}
