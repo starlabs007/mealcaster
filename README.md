@@ -81,11 +81,12 @@ npm run preview    # http://localhost:4173
     - **Surprise Me** replaces the meal with a random one, preferring meals not already on the week's plan or
       made recently. It skips the meal being replaced unless that is the only recipe available.
     - **Dining Out** turns the evening into a night off.
-    - Replacing a planned meal with either shows an **Undo** toast.
+    - **Clear evening** puts the evening back to open.
+    - Each of these shows an **Undo** toast, on an open evening too.
     - **Switch Days…** trades the meal with another evening of the same week (today onward, not yet completed);
       that evening's meal or night off moves the other way, and an open evening just receives the meal. Notes go
       with the meal, the completed flag stays with the date. Shows an **Undo** toast.
-  - **Night off** (today or later): **Plan a Meal Instead** clears the night so it's open again.
+  - **Night off** (today or later): **Cancel night off** clears the night so it's open again.
   - **Mark Done** (today only) flags the meal as made without waiting for the day to pass; it turns into a **Done** toggle that undoes it. A done meal counts as made for the catalog and syncs as `Completed_Flag`.
   - **Completed** and **not logged** past days only offer **View Recipe** where there is a meal.
 - Grocery badge counts the items still to buy for the viewed week (every dinner of the week, past days included).

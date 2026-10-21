@@ -192,7 +192,8 @@ export const text = {
       chooseMeal: 'Choose a Meal',
       choose: 'Choose',
       chooseAria: (/** @type {string} */ weekday) => `Choose a meal for ${weekday}`,
-      planInstead: 'Plan a Meal Instead',
+      planInstead: 'Cancel night off',
+      clearEvening: 'Clear Evening',
     },
 
     drop: {
@@ -214,6 +215,7 @@ export const text = {
       noRecipes: 'Add a recipe to the catalog first.',
       surprise: (/** @type {string} */ title) => `Surprise! ${title}`,
       nightOff: (/** @type {string} */ date) => `${date} is now a night off.`,
+      cleared: (/** @type {string} */ weekday) => `Cleared ${weekday}.`,
       switched: (/** @type {string} */ a, /** @type {string} */ b) => `Switched ${a} and ${b}.`,
       moved: (/** @type {string} */ weekday) => `Moved to ${weekday}.`,
       allPlanned: 'Every dinner this week is already planned.',

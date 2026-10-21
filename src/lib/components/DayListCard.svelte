@@ -5,7 +5,7 @@
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
   import ActionMenu from './ActionMenu.svelte';
-  import { surpriseMe, markDiningOut, clearDay, setDone, spotlight, switchTargets } from '../planner.svelte.js';
+  import { surpriseMe, markDiningOut, clearDay, clearEvening, setDone, spotlight, switchTargets } from '../planner.svelte.js';
   import { focusDay } from '../focusDay.js';
   import { text } from '../text.js';
   import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
@@ -37,6 +37,7 @@
       surprise,
       nightOff,
       ...(onswitch && movable ? [{ id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch(day.iso) }] : []),
+      { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } },
     ];
   });
 
