@@ -1,8 +1,9 @@
 <script>
   // One evening in the planner's week grid (from `md` up): a column of the week, `lead` for tonight's (wider, with
   // the larger title and Mark Done). Phones and Minimal view use DayListCard instead. View Recipe (and Mark Done
-  // tonight) stay visible; the other actions sit in the ⋯ menu. `compact` (past days beside a live week, seven
-  // columns) keeps the same header and photo ratio as the other cards so the photos line up, and drops the rest.
+  // tonight) stay visible; the other actions sit in the ⋯ menu. `compact` (past days beside a live week, a narrow
+  // track) keeps the same header and photo ratio as the other cards so the photos line up, and drops the rest. `wide`
+  // (tonight across three tracks, below `xl`) gets a flatter photo so Mark Done stays in the first screen.
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
   import ActionMenu from './ActionMenu.svelte';
@@ -15,10 +16,10 @@
 
   /**
    * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], lead?: boolean,
-   *   compact?: boolean, onswitch?: (iso: string) => void, draghandle?: (iso: string) => (el: HTMLElement) => () => void,
+   *   compact?: boolean, wide?: boolean, onswitch?: (iso: string) => void, draghandle?: (iso: string) => (el: HTMLElement) => () => void,
    *   drop?: '' | 'source' | 'over' | 'target' | 'off' }}
    */
-  let { day, lead = false, compact = false, onswitch, draghandle, drop = '' } = $props();
+  let { day, lead = false, compact = false, wide = false, onswitch, draghandle, drop = '' } = $props();
 
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
@@ -81,7 +82,7 @@
     <div class="min-w-0 flex-1">
       <!-- Seven columns from xl are narrow: "Wed" there, beside the ⋯ and ⠿ buttons. -->
       <div class="truncate text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}">
-        {#if lead}{weekdayName}{:else}<span class="xl:hidden">{weekdayName}</span><span class="hidden xl:inline">{formatWeekdayShort(day.iso)}</span>{/if}
+        {#if lead}{weekdayName}{:else if compact}{formatWeekdayShort(day.iso)}{:else}<span class="xl:hidden">{weekdayName}</span><span class="hidden xl:inline">{formatWeekdayShort(day.iso)}</span>{/if}
       </div>
       <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
         <span class="font-display text-on-surface {lead ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
@@ -130,13 +131,13 @@
         class="focus-ring flex min-w-0 flex-col gap-3 rounded-lg"
       >
         <RecipeImage src={recipe.image} alt="" class="aspect-[4/5] w-full flex-shrink-0 rounded-lg saturate-50" />
-        <span class="line-clamp-3 font-display text-sm leading-snug text-on-surface" title={recipe.title}>{recipe.title}</span>
+        <span class="line-clamp-3 hyphens-auto break-words font-display text-sm leading-snug text-on-surface" title={recipe.title}>{recipe.title}</span>
       </a>
     {:else}
     <RecipeImage
       src={recipe.image}
       alt={recipe.title}
-      class="aspect-[4/3] w-full flex-shrink-0 rounded-lg {day.status === 'completed' ? 'saturate-50' : ''} {lead ? 'shadow-sm' : 'xl:aspect-[4/5]'}"
+      class="aspect-[4/3] w-full flex-shrink-0 rounded-lg {day.status === 'completed' ? 'saturate-50' : ''} {lead ? 'shadow-sm' : 'xl:aspect-[4/5]'} {wide ? 'md:aspect-[16/10] xl:aspect-[4/3]' : ''}"
     />
     <div class="flex min-w-0 flex-1 flex-col gap-2">
       <h3 class="font-display text-on-surface {lead ? 'line-clamp-3 text-headline-md' : 'line-clamp-2 text-base leading-snug'}" title={recipe.title}>{recipe.title}</h3>
