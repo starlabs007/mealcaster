@@ -27,7 +27,8 @@
 
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const actions = $derived.by(() => {
-    if (minimal) return [];
+    // Minimal view keeps the ⋯ menu on tonight only (the other rows stay one-tap quiet).
+    if (minimal && !day.isToday) return [];
     const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
     const nightOff = { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
     if (day.status === 'open') return [surprise, nightOff];
@@ -106,13 +107,18 @@
       <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
     {/if}
 
-    <!-- Day label, with the ⋯ menu and the drag handle on the right (Minimal view: no menu, the handle ends the meal row;
-         from `sm` the label is a column on the left). -->
+    <!-- Day label, with the ⋯ menu and the drag handle on the right (Minimal view: they end the meal row instead, and
+         tonight's row adds Mark Done and a Tonight marker here; from `sm` the label is a column on the left). -->
     <div class="flex items-center gap-1 {day.isToday ? 'pl-1' : ''} {minimal ? 'sm:w-36 sm:flex-shrink-0' : ''}">
       <div class="min-w-0 flex-1">
         <div class="text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}">
           {weekdayName}
         </div>
+        {#if minimal && day.isToday}
+          <span class="mt-0.5 inline-flex items-center gap-1.5 text-label-sm uppercase text-primary">
+            <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.tonight}
+          </span>
+        {/if}
         {#if !minimal}
           <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span class="font-display text-on-surface {day.isToday ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
@@ -130,7 +136,7 @@
           </div>
         {/if}
       </div>
-      {#if actions.length}
+      {#if actions.length && !minimal}
         <ActionMenu items={actions} label={text.planner.card.moreAria(weekdayName)} opener="menu" class="-my-1" />
       {/if}
       {#if handle && !minimal}
@@ -142,11 +148,33 @@
       {@const recipe = day.recipe}
       {@const recipeHref = href(`/recipe/${recipe.id}`, { day: day.iso })}
       {#if minimal}
+        <!-- Tonight's Mark Done and ⋯ sit at the card's top right on phones (beside the weekday); View Recipe and the drag
+             handle end the title row like on every other row. DOM order = visual order, so Tab follows the eye. -->
         <div class="flex flex-1 items-center gap-3">
-          <RecipeImage src={recipe.image} alt={recipe.title} class="h-12 w-12 flex-shrink-0 rounded-lg" />
-          <div class="min-w-0 flex-1">
-            <h3 class="truncate font-display text-sm text-on-surface">{recipe.title}</h3>
+          <div class="flex min-w-0 flex-1 items-center gap-3">
+            <RecipeImage src={recipe.image} alt={recipe.title} class="h-8 w-8 flex-shrink-0 rounded-md" />
+            <h3 class="min-w-0 flex-1 truncate font-display text-sm text-on-surface">{recipe.title}</h3>
           </div>
+          {#if day.isToday}
+            <div class="flex items-center gap-3 max-sm:absolute max-sm:right-3 max-sm:top-3">
+              <!-- Icon-only like View Recipe; the name stays "Mark Done" with aria-pressed, as on the full card. -->
+              <button
+                type="button"
+                aria-pressed={day.status === 'completed'}
+                aria-label={text.planner.card.markDone}
+                title={text.planner.card.markDone}
+                class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:h-9 md:w-9 {day.status === 'completed'
+                  ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
+                  : 'border border-outline-variant text-on-surface hover:bg-surface-container-high'}"
+                onclick={() => setDone(day.iso, day.status !== 'completed')}
+              >
+                <Icon name="check_circle" class="text-[20px]" />
+              </button>
+              {#if actions.length}
+                <ActionMenu items={actions} label={text.planner.card.moreAria(weekdayName)} opener="menu" />
+              {/if}
+            </div>
+          {/if}
           <a
             href={recipeHref}
             data-day-focus
@@ -209,8 +237,8 @@
       {/if}
     {:else}
       <div class="flex flex-1 items-center gap-3">
-        <div class="flex flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-highest text-outline {minimal ? 'h-10 w-10' : 'h-12 w-12'}">
-          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class={minimal ? 'text-xl' : 'text-2xl'} />
+        <div class="flex flex-shrink-0 items-center justify-center bg-surface-container-highest text-outline {minimal ? 'h-8 w-8 rounded-md' : 'h-12 w-12 rounded-lg'}">
+          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class={minimal ? 'text-[18px]' : 'text-2xl'} />
         </div>
         <div class="min-w-0 flex-1">
           {#if day.status === 'diningOut'}
