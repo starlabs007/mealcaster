@@ -154,6 +154,7 @@ export const text = {
       openLeft: (/** @type {number} */ n) => `${n} Open ${plural(n, 'slot')} left`,
       allSet: 'All set',
       autoFill: 'Auto-fill Remaining',
+      autoFillShort: 'Auto-fill',
       copyLastWeek: 'Copy Last Week',
       resetWeek: 'Reset Week',
       moreAria: 'More week actions',
@@ -189,6 +190,8 @@ export const text = {
       nothingPlanned: 'Nothing planned',
       moreAria: (/** @type {string} */ weekday) => `More for ${weekday}`,
       chooseMeal: 'Choose a Meal',
+      choose: 'Choose',
+      chooseAria: (/** @type {string} */ weekday) => `Choose a meal for ${weekday}`,
       planInstead: 'Plan a Meal Instead',
     },
 

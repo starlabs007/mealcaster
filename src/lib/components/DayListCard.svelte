@@ -1,33 +1,43 @@
 <script>
   // One evening as a full-width row of the planner's list: on phones, and in Minimal view on every screen (`minimal`).
-  // Wider screens otherwise show the week grid (DayGridCard).
+  // Wider screens otherwise show the week grid (DayGridCard). Past evenings are one-line rows; only today keeps the
+  // large photo. View Recipe (and Mark Done today) stay visible; the other actions sit in the ⋯ menu, as in the grid.
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
+  import ActionMenu from './ActionMenu.svelte';
   import { surpriseMe, markDiningOut, clearDay, setDone, spotlight, switchTargets } from '../planner.svelte.js';
   import { text } from '../text.js';
-  import { formatShort, formatWeekday } from '../dates.js';
+  import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
   import { href } from '../router.svelte.js';
   import { tagClass } from '../tagColors.svelte.js';
 
   /**
-   * @type {{ day: {
-   *   iso: string,
-   *   weekday: number,
-   *   isToday: boolean,
-   *   isPast: boolean,
-   *   status: import('../planner.svelte.js').DayStatus,
-   *   recipe?: import('../data/recipes.js').Recipe,
-   * }, minimal?: boolean, onswitch?: (iso: string) => void,
-   *   draghandle?: (iso: string) => (el: HTMLElement) => () => void, drop?: '' | 'source' | 'over' | 'target' | 'off' }}
+   * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], minimal?: boolean,
+   *   onswitch?: (iso: string) => void, draghandle?: (iso: string) => (el: HTMLElement) => () => void,
+   *   drop?: '' | 'source' | 'over' | 'target' | 'off' }}
    */
   let { day, minimal = false, onswitch, draghandle, drop = '' } = $props();
 
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
-  const dimmed = $derived(day.status === 'completed' || day.status === 'missed');
   // A planned meal that some other evening of the week can take (Switch Days… or dragging).
   const movable = $derived(day.status === 'planned' && switchTargets(day.iso).length > 0);
   const handle = $derived(movable && !!onswitch && !!draghandle);
+
+  /** @type {import('./ActionMenu.svelte').MenuAction[]} */
+  const actions = $derived.by(() => {
+    if (minimal) return [];
+    const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
+    const nightOff = { id: 'nightOff', label: text.planner.card.diningOut, icon: 'storefront', onselect: () => markDiningOut(day.iso) };
+    if (day.status === 'open') return [surprise, nightOff];
+    if (day.status !== 'planned') return [];
+    return [
+      { id: 'swap', label: text.planner.card.swapMeal, icon: 'sync_alt', href: href('/catalog', { day: day.iso }) },
+      surprise,
+      nightOff,
+      ...(onswitch && movable ? [{ id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch(day.iso) }] : []),
+    ];
+  });
 
   // While a meal is dragged: the card it came from, the one under the pointer, the ones it can go to, the rest.
   const dropClass = {
@@ -37,96 +47,143 @@
     target: 'outline-dashed outline-2 outline-offset-2 outline-primary/40',
     off: '!opacity-40',
   };
+  const spotlightClass = $derived(spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : '');
 
-  // Small text actions: padding grows the hit area to 24 px (WCAG 2.5.8) and the negative margin keeps the look.
-  const quietAction =
-    'focus-ring -mx-1 -my-1 inline-flex min-h-6 items-center gap-1 rounded px-1 py-1 text-xs font-semibold text-on-surface-variant hover:text-secondary';
+  // Buttons are 44 px tall on phones (touch targets), the usual size from `md` (Minimal view on a desktop).
+  const tall = 'min-h-11 md:min-h-0';
 
   const cardClass = $derived(
     day.isToday
       ? 'relative overflow-hidden border-2 border-primary/30 bg-surface-container-lowest shadow-sm'
-      : day.status === 'completed'
-        ? 'border border-surface-container-high bg-surface-container-lowest/60 opacity-60'
-        : day.status === 'planned'
-          ? 'border border-surface-container-high bg-surface-container-lowest shadow-sm'
-          : `border border-dashed border-outline-variant bg-surface-container-low/70 ${dimmed ? 'opacity-60' : ''}`,
+      : day.status === 'planned'
+        ? 'border border-surface-container-high bg-surface-container-lowest shadow-sm'
+        : 'border border-dashed border-outline-variant bg-surface-container-low/70',
   );
-
 </script>
 
-<article
-  id="day-{day.iso}"
-  data-drag-source
-  data-drop-id={day.iso}
-  aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
-  class="relative flex flex-col rounded-xl transition-all sm:flex-row {minimal ? 'gap-3 p-3 sm:items-center' : 'gap-4 p-4'} {minimal ? '' : 'md:p-5'} {hasMeal && !minimal ? '' : 'sm:items-center'} {cardClass} {spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : ''} {dropClass[drop]}"
->
-  {#if day.isToday}
-    <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
-  {/if}
-
-  <!-- Day label column -->
-  <div class="flex flex-shrink-0 items-start justify-between gap-1 sm:w-36 sm:flex-col {minimal ? '' : 'sm:self-stretch'} {day.isToday ? 'pl-1' : ''} {handle ? 'pr-9 sm:pr-0' : ''}">
-    <div>
-      <div
-        class="text-sm uppercase tracking-wide {day.isToday
-          ? 'font-bold text-secondary'
-          : 'font-semibold text-outline'}"
+{#if day.isPast}
+  <!-- History: one line with the weekday and what was eaten; a meal opens its recipe. -->
+  <article
+    id="day-{day.iso}"
+    data-drop-id={day.iso}
+    aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), false)}
+    class="rounded-lg border border-surface-container-high bg-surface-container-low/60 transition-all {spotlightClass} {dropClass[drop]}"
+  >
+    {#if hasMeal && day.recipe}
+      <a
+        href={href(`/recipe/${day.recipe.id}`, { day: day.iso })}
+        class="focus-ring flex min-h-12 items-center gap-3 rounded-lg px-3 py-1.5 hover:bg-surface-container-high"
       >
-        {weekdayName}
+        {@render pastWeekday()}
+        <RecipeImage src={day.recipe.image} alt="" class="h-8 w-8 flex-shrink-0 rounded-md" />
+        <span class="min-w-0 flex-1 truncate font-display text-sm text-on-surface">{day.recipe.title}</span>
+        <Icon name="arrow_forward" class="flex-shrink-0 text-[18px] text-on-surface-variant" />
+      </a>
+    {:else}
+      <div class="flex min-h-12 items-center gap-3 px-3 py-1.5">
+        {@render pastWeekday()}
+        <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-surface-container-highest text-outline">
+          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class="text-[18px]" />
+        </div>
+        <span class="text-sm text-on-surface-variant">
+          {day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.notLogged}
+        </span>
       </div>
-      {#if !minimal}
-        <div class="font-display text-on-surface {day.isToday ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</div>
+    {/if}
+  </article>
+{:else}
+  <article
+    id="day-{day.iso}"
+    data-drag-source
+    data-drop-id={day.iso}
+    aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
+    class="relative flex flex-col rounded-xl transition-all {minimal ? 'gap-2 p-3 sm:flex-row sm:items-center sm:gap-3' : 'gap-3 p-4'} {cardClass} {spotlightClass} {dropClass[drop]}"
+  >
+    {#if day.isToday}
+      <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
+    {/if}
+
+    <!-- Day label, with the ⋯ menu and the drag handle on the right (Minimal view: no menu, the handle ends the meal row;
+         from `sm` the label is a column on the left). -->
+    <div class="flex items-center gap-1 {day.isToday ? 'pl-1' : ''} {minimal ? 'sm:w-36 sm:flex-shrink-0' : ''}">
+      <div class="min-w-0 flex-1">
+        <div class="text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-outline'}">
+          {weekdayName}
+        </div>
+        {#if !minimal}
+          <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span class="font-display text-on-surface {day.isToday ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
+            {#if day.status === 'completed'}
+              <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
+                <Icon name="check_circle" class="text-[13px]" /> {text.planner.card.completed}
+              </span>
+            {:else if day.isToday}
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">
+                <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.today}
+              </span>
+            {:else if day.status === 'diningOut'}
+              <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-outline">{text.planner.card.nightOff}</span>
+            {/if}
+          </div>
+        {/if}
+      </div>
+      {#if actions.length}
+        <ActionMenu items={actions} label={text.planner.card.moreAria(weekdayName)} opener="menu" class="-my-1" />
+      {/if}
+      {#if handle && !minimal}
+        {@render dragHandle('-my-1')}
       {/if}
     </div>
 
-    {#if minimal}
-      <!-- Minimal view: just the weekday, image, title and tags. -->
-    {:else if day.status === 'completed'}
-      <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
-        <Icon name="check_circle" class="text-[13px]" /> {text.planner.card.completed}
-      </span>
-    {:else if day.isToday}
-      <span class="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">
-        <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.today}
-      </span>
-    {:else if day.status === 'planned'}
-      <span class="rounded bg-primary-fixed/50 px-2 py-0.5 text-label-caps uppercase text-primary">{text.planner.card.planned}</span>
-    {:else}
-      <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-outline">
-        {day.status === 'diningOut' ? text.planner.card.nightOff : day.status === 'missed' ? text.planner.card.notLogged : text.planner.card.open}
-      </span>
-    {/if}
-  </div>
-
-  {#if hasMeal && day.recipe}
-    {@const recipe = day.recipe}
-    {@const emphasized = day.isToday || day.status === 'planned'}
-    <div class="flex flex-1 {minimal ? 'flex-row items-center gap-3' : 'flex-col items-start gap-4 sm:flex-row sm:items-center'}">
-      <RecipeImage
-        src={recipe.image}
-        alt={recipe.title}
-        class="flex-shrink-0 rounded-lg {minimal ? 'h-12 w-12' : 'w-full'} {minimal ? '' : emphasized ? 'h-40 shadow-sm sm:h-28 sm:w-32' : 'h-32 sm:h-24 sm:w-28'}"
-      />
-      <div class="min-w-0 flex-1">
-        <h3 class="font-display text-on-surface {minimal ? 'truncate text-sm' : emphasized ? 'text-lg' : 'line-clamp-2 text-base'}">{recipe.title}</h3>
-        {#if !minimal}<p class="mt-1 text-xs text-on-surface-variant">{text.planner.card.meta(recipe.badge.label, recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>{/if}
-        {#if recipe.tags.length}
-          <div class="flex flex-wrap gap-1.5 {minimal ? 'mt-1' : 'mt-2'}">
-            {#each recipe.tags as tag (tag)}
-              <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
-            {/each}
+    {#if hasMeal && day.recipe}
+      {@const recipe = day.recipe}
+      {@const recipeHref = href(`/recipe/${recipe.id}`, { day: day.iso })}
+      {#if minimal}
+        <div class="flex flex-1 items-center gap-3">
+          <RecipeImage src={recipe.image} alt={recipe.title} class="h-12 w-12 flex-shrink-0 rounded-lg" />
+          <div class="min-w-0 flex-1">
+            <h3 class="truncate font-display text-sm text-on-surface">{recipe.title}</h3>
+          </div>
+          <a
+            href={recipeHref}
+            aria-label={text.planner.card.viewRecipeAria(recipe.title)}
+            title={text.planner.card.viewRecipe}
+            class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:h-9 md:w-9 {day.isToday
+              ? 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'
+              : day.status === 'planned'
+                ? 'bg-surface-container-high text-on-surface hover:bg-surface-dim'
+                : 'text-primary hover:bg-primary-fixed/50'}"
+          >
+            <Icon name="arrow_forward" class="text-[20px]" />
+          </a>
+          {#if handle}
+            {@render dragHandle('')}
+          {/if}
+        </div>
+      {:else}
+        {#if day.isToday}
+          <RecipeImage src={recipe.image} alt={recipe.title} class="h-40 w-full rounded-lg shadow-sm sm:h-48" />
+          <div class="min-w-0">
+            <h3 class="font-display text-lg text-on-surface">{recipe.title}</h3>
+            <p class="mt-1 text-xs text-on-surface-variant">{text.planner.card.meta(recipe.badge.label, recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
+            {@render tagList(recipe.tags, 'mt-2')}
+          </div>
+        {:else}
+          <div class="flex items-start gap-3">
+            <RecipeImage src={recipe.image} alt={recipe.title} class="h-16 w-16 flex-shrink-0 rounded-lg" />
+            <div class="min-w-0 flex-1">
+              <h3 class="line-clamp-2 font-display text-base leading-snug text-on-surface" title={recipe.title}>{recipe.title}</h3>
+              {@render tagList(recipe.tags, 'mt-1.5')}
+            </div>
           </div>
         {/if}
-        {#if !minimal}
-        <div class="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div class="flex items-center gap-2">
           <a
-            href={href(`/recipe/${recipe.id}`, { day: day.iso })}
-            class="focus-ring inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday
-              ? 'rounded-md bg-primary-container px-3 py-1.5 text-on-primary shadow-sm hover:bg-primary'
-              : day.status === 'planned'
-                ? 'rounded-md bg-surface-container-high px-3 py-1.5 text-on-surface hover:bg-surface-dim'
-                : '-mx-1 -my-1 min-h-6 rounded px-1 py-1 text-primary hover:underline'}"
+            href={recipeHref}
+            aria-label={day.isToday ? undefined : text.planner.card.viewRecipeAria(recipe.title)}
+            class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {tall} {day.isToday
+              ? 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'
+              : 'bg-surface-container-high text-on-surface hover:bg-surface-dim'}"
           >
             {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
           </a>
@@ -135,7 +192,7 @@
             <button
               type="button"
               aria-pressed={day.status === 'completed'}
-              class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {day.status === 'completed'
+              class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {tall} {day.status === 'completed'
                 ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
                 : 'border border-outline-variant text-on-surface hover:bg-surface-container-high'}"
               onclick={() => setDone(day.iso, day.status !== 'completed')}
@@ -143,111 +200,79 @@
               <Icon name="check_circle" class="text-[14px]" /> {text.planner.card.markDone}
             </button>
           {/if}
-          {#if day.status === 'planned'}
-            <a
-              href={href('/catalog', { day: day.iso })}
-              class={quietAction}
-            >
-              <Icon name="sync_alt" class="text-[14px]" /> {text.planner.card.swapMeal}
-            </a>
-            <button
-              type="button"
-              class={quietAction}
-              onclick={() => surpriseMe(day.iso)}
-            >
-              <Icon name="casino" class="text-[14px]" /> {text.planner.card.surpriseMe}
-            </button>
-            <button
-              type="button"
-              class={quietAction}
-              onclick={() => markDiningOut(day.iso)}
-            >
-              <Icon name="storefront" class="text-[14px]" /> {text.planner.card.diningOut}
-            </button>
-            {#if onswitch && movable}
-              <button
-                type="button"
-                data-switch-opener="button"
-                class={quietAction}
-                onclick={() => onswitch(day.iso)}
-              >
-                <Icon name="swap_vert" class="text-[14px]" /> {text.planner.card.switchDays}
-              </button>
-            {/if}
-          {/if}
         </div>
-        {/if}
-      </div>
-      {#if minimal}
-        <a
-          href={href(`/recipe/${recipe.id}`, { day: day.iso })}
-          aria-label={text.planner.card.viewRecipeAria(recipe.title)}
-          title={text.planner.card.viewRecipe}
-          class="focus-ring flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md transition-all {day.isToday
-            ? 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'
-            : day.status === 'planned'
-              ? 'bg-surface-container-high text-on-surface hover:bg-surface-dim'
-              : 'text-primary hover:bg-primary-fixed/50'}"
-        >
-          <Icon name="arrow_forward" class="text-[20px]" />
-        </a>
       {/if}
-    </div>
-  {:else}
-    <div class="flex w-full flex-1 flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-      <div class="flex items-center gap-3">
-        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-highest text-outline">
-          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class="text-2xl" />
+    {:else}
+      <div class="flex flex-1 items-center gap-3">
+        <div class="flex flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-highest text-outline {minimal ? 'h-10 w-10' : 'h-12 w-12'}">
+          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class={minimal ? 'text-xl' : 'text-2xl'} />
         </div>
-        <div>
+        <div class="min-w-0 flex-1">
           {#if day.status === 'diningOut'}
             <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.diningOutTitle}</h3>
             {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.diningOutNote}</p>{/if}
-          {:else if day.status === 'missed'}
-            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.missedTitle}</h3>
-            {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.missedNote}</p>{/if}
+          {:else if minimal}
+            <h3 class="font-display text-sm text-on-surface">{text.planner.card.nothingPlanned}</h3>
           {:else}
-            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.openTitle(weekdayName)}</h3>
-            {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.openNote}</p>{/if}
+            <h3 class="font-display text-base text-on-surface">{text.planner.card.openTitle(weekdayName)}</h3>
+            <p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.openNote}</p>
           {/if}
         </div>
+        {#if minimal && day.status === 'open'}
+          <a
+            href={href('/catalog', { day: day.iso })}
+            aria-label={text.planner.card.chooseAria(weekdayName)}
+            class="btn-outline flex-shrink-0 text-on-surface {tall}"
+          >
+            <Icon name="add" class="text-[15px]" /> {text.planner.card.choose}
+          </a>
+        {/if}
       </div>
 
       {#if minimal}
-        <!-- No actions in the minimal view. -->
+        <!-- Minimal view: just Choose on open evenings. -->
       {:else if day.status === 'open'}
-        <div class="flex w-full flex-shrink-0 flex-wrap items-center gap-2 pt-2 sm:w-auto sm:flex-nowrap sm:pt-0">
-          <a href={href('/catalog', { day: day.iso })} class="btn-primary basis-full py-2 sm:basis-auto">
+        <div class="flex items-center gap-2">
+          <a href={href('/catalog', { day: day.iso })} class="btn-outline text-on-surface {tall}">
             <Icon name="add" class="text-[15px]" /> {text.planner.card.chooseMeal}
           </a>
-          <button type="button" class="btn-outline flex-1 py-2 text-on-surface sm:flex-none" onclick={() => surpriseMe(day.iso)}>
-            <Icon name="casino" class="text-[15px]" /> {text.planner.card.surpriseMe}
-          </button>
-          <button type="button" class="btn-outline flex-1 py-2 text-on-surface sm:flex-none" onclick={() => markDiningOut(day.iso)}>
-            <Icon name="storefront" class="text-[15px]" /> {text.planner.card.diningOut}
+        </div>
+      {:else if day.status === 'diningOut'}
+        <div class="flex items-center gap-2">
+          <button type="button" class="btn-outline text-on-surface {tall}" onclick={() => clearDay(day.iso)}>
+            <Icon name="undo" class="text-[15px]" /> {text.planner.card.planInstead}
           </button>
         </div>
-      {:else if day.status === 'diningOut' && !day.isPast}
-        <button type="button" class="btn-outline flex-shrink-0 py-2 text-on-surface" onclick={() => clearDay(day.iso)}>
-          <Icon name="undo" class="text-[15px]" /> {text.planner.card.planInstead}
-        </button>
       {/if}
+    {/if}
+  </article>
+{/if}
+
+{#snippet pastWeekday()}
+  <span class="w-10 flex-shrink-0 text-xs font-semibold uppercase tracking-wide text-outline">{formatWeekdayShort(day.iso)}</span>
+{/snippet}
+
+{#snippet tagList(/** @type {string[]} */ tags, /** @type {string} */ extra)}
+  {#if tags.length}
+    <div class="flex flex-wrap gap-1.5 {extra}">
+      {#each tags as tag (tag)}
+        <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
+      {/each}
     </div>
   {/if}
+{/snippet}
 
-  {#if handle}
-    <!-- Drag to another evening; a press opens the Switch Days picker (the keyboard and screen-reader way). -->
-    <button
-      type="button"
-      {@attach draghandle(day.iso)}
-      data-switch-opener="handle"
-      aria-label={text.planner.card.moveHandle(weekdayName)}
-      title={text.planner.card.moveHandleHint}
-      class="focus-ring absolute right-2 top-2 flex h-8 w-8 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing sm:static sm:h-10 sm:flex-shrink-0 sm:self-center"
-      onclick={() => onswitch(day.iso)}
-    >
-      <Icon name="drag_indicator" class="text-[20px]" />
-    </button>
-  {/if}
-
-</article>
+{#snippet dragHandle(/** @type {string} */ extra)}
+  <!-- Drag to another evening; a press opens the Switch Days picker (the keyboard and screen-reader way). -->
+  <button
+    type="button"
+    {@attach draghandle?.(day.iso)}
+    data-switch-opener="handle"
+    aria-label={text.planner.card.moveHandle(weekdayName)}
+    title={text.planner.card.moveHandleHint}
+    class="focus-ring flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing md:h-10 md:w-8 {extra}"
+    onclick={() => onswitch?.(day.iso)}
+  >
+    <Icon name="drag_indicator" class="text-[20px]" />
+  </button>
+{/snippet}
