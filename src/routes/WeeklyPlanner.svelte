@@ -14,13 +14,18 @@
   const days = $derived(currentWeek());
   let switching = $state('');
 
-  // From `md` up the week is a grid in calendar order: 4 + 3 columns, then from `xl` one row of seven with
-  // tonight's column wider. Phones, and Minimal view on any screen, use the list of day cards.
+  // From `md` up the week is a grid in calendar order, then from `xl` one row of seven with tonight's column wider.
+  // Phones, and Minimal view on any screen, use the list of day cards.
   const wide = new MediaQuery('min-width: 768px');
-  // From `xl`, past days beside a live week are narrow tiles (a fully past or future week keeps full cards).
-  const xl = new MediaQuery('min-width: 1280px');
-  const compact = (/** @type {{ isPast: boolean }} */ d) => xl.current && d.isPast && days.some((x) => !x.isPast);
+  // Past days beside a live week are narrow tiles (a fully past or future week keeps full cards).
+  const compact = (/** @type {{ isPast: boolean }} */ d) => d.isPast && days.some((x) => !x.isPast);
   const columns = $derived(days.map((d) => (d.isToday ? '1.6fr' : compact(d) ? '0.55fr' : '1fr')).join(' '));
+  // Below `xl`, 8 tracks: a narrow tile takes 1, an evening 2, so tonight always lands in the first row. After an
+  // odd number of past days tonight takes 3, which fills that row and makes it wider, as from `xl`.
+  const pastTiles = $derived(days.filter(compact).length);
+  const wideTonight = (/** @type {{ isToday: boolean }} */ d) => d.isToday && pastTiles % 2 === 1;
+  const span = (/** @type {{ isToday: boolean, isPast: boolean }} */ d) =>
+    compact(d) ? 'md:col-span-1' : wideTonight(d) ? 'md:col-span-3' : 'md:col-span-2';
 
   // Dragging a planned meal onto another evening does what Switch Days… does.
   let drag = $state({ from: '', over: '', targets: /** @type {string[]} */ ([]) });
@@ -79,13 +84,14 @@
       {text.planner.minimalView}
     </label>
     {#if wide.current && !devicePrefs.plannerMinimal}
-      <div class="grid gap-3 md:grid-cols-4 xl:[grid-template-columns:var(--week-columns)]" style="--week-columns: {columns}">
+      <div class="grid gap-3 md:grid-cols-8 xl:[grid-template-columns:var(--week-columns)]" style="--week-columns: {columns}">
         {#each days as day (day.iso)}
-          <div class="flex min-w-0">
+          <div class="flex min-w-0 {span(day)} xl:col-span-1">
             <DayGridCard
               {day}
               lead={day.isToday}
               compact={compact(day)}
+              wide={wideTonight(day)}
               onswitch={(iso) => (switching = iso)}
               draghandle={gridMover.handle}
               drop={dropState(day.iso)}
