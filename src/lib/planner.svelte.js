@@ -246,7 +246,7 @@ export function surpriseMe(iso, pool) {
     return undefined;
   }
   planner.entries[iso] = { recipeId: recipe.id };
-  showWeekToast(text.planner.toasts.surprise(recipe.title), previous?.recipeId ? undoDay(iso, previous) : undefined);
+  showWeekToast(text.planner.toasts.surprise(recipe.title), undoDay(iso, previous));
   return recipe;
 }
 
@@ -270,9 +270,9 @@ export function setDone(iso, done) {
 
 /** @param {string} iso */
 export function markDiningOut(iso) {
-  const previous = planner.entries[iso]?.recipeId ? { ...planner.entries[iso] } : undefined;
+  const previous = planner.entries[iso] && { ...planner.entries[iso] };
   planner.entries[iso] = { diningOut: true };
-  if (previous) showWeekToast(text.planner.toasts.nightOff(formatLong(iso)), undoDay(iso, previous));
+  showWeekToast(text.planner.toasts.nightOff(formatLong(iso)), undoDay(iso, previous));
 }
 
 /** Days of `iso`'s week its meal can switch with: today onward, not finished, not `iso` itself. @param {string} iso */
@@ -302,6 +302,13 @@ export function switchDays(a, b) {
 /** @param {string} iso */
 export function clearDay(iso) {
   delete planner.entries[iso];
+}
+
+/** Puts a planned evening back to open, with an Undo toast. @param {string} iso */
+export function clearEvening(iso) {
+  const previous = planner.entries[iso] && { ...planner.entries[iso] };
+  clearDay(iso);
+  showWeekToast(text.planner.toasts.cleared(formatWeekday(iso)), undoDay(iso, previous));
 }
 
 export function autoFillRemaining() {
