@@ -124,7 +124,7 @@
     <div class="flex min-w-0 flex-1 flex-col gap-2">
       <h3 class="line-clamp-2 font-display text-on-surface {lead ? 'text-headline-md' : 'text-base leading-snug'}" title={recipe.title}>{recipe.title}</h3>
       {#if lead}
-        <p class="text-xs text-on-surface-variant">{text.planner.card.meta(recipe.badge.label, recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
+        <p class="text-xs text-on-surface-variant">{text.planner.card.meta(recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
       {/if}
       {#if recipe.tags.length}
         <!-- Up to five lines of tags (16 px each + 6 px gaps) in a narrow column; the rest wrap out of sight (no half tags). -->

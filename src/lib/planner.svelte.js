@@ -146,7 +146,8 @@ export function currentWeek(weekStart = planner.weekStart) {
 export function weekSummary() {
   const days = weekDates(planner.weekStart).map(statusOf);
   return {
-    planned: days.filter((s) => s === 'completed' || s === 'planned' || s === 'diningOut').length,
+    planned: days.filter((s) => s === 'completed' || s === 'planned').length,
+    off: days.filter((s) => s === 'diningOut').length,
     open: days.filter((s) => s === 'open').length,
   };
 }
@@ -285,6 +286,7 @@ export function switchTargets(iso) {
 /** Two evenings trade places, with an Undo toast. @param {string} a @param {string} b */
 export function switchDays(a, b) {
   const before = { [a]: planner.entries[a], [b]: planner.entries[b] };
+  const intoEmptyDay = !planner.entries[b];
   const put = (/** @type {Record<string, PlanEntry | undefined>} */ values) => {
     for (const [iso, entry] of Object.entries(values)) {
       if (entry) planner.entries[iso] = entry;
@@ -293,7 +295,8 @@ export function switchDays(a, b) {
   };
   put(switchedEntries(planner.entries, a, b));
   spotlightDay(b);
-  showWeekToast(text.planner.toasts.switched(formatWeekday(a), formatWeekday(b)), { label: text.common.undo, run: () => put(before) });
+  const message = intoEmptyDay ? text.planner.toasts.moved(formatWeekday(b)) : text.planner.toasts.switched(formatWeekday(a), formatWeekday(b));
+  showWeekToast(message, { label: text.common.undo, run: () => put(before) });
 }
 
 /** @param {string} iso */

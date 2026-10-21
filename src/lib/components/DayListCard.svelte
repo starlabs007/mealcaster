@@ -165,7 +165,7 @@
           <RecipeImage src={recipe.image} alt={recipe.title} class="h-40 w-full rounded-lg shadow-sm sm:h-48" />
           <div class="min-w-0">
             <h3 class="font-display text-lg text-on-surface">{recipe.title}</h3>
-            <p class="mt-1 text-xs text-on-surface-variant">{text.planner.card.meta(recipe.badge.label, recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
+            <p class="mt-1 text-xs text-on-surface-variant">{text.planner.card.meta(recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
             {@render tagList(recipe.tags, 'mt-2')}
           </div>
         {:else}
