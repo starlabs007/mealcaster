@@ -32,13 +32,9 @@
 <div class="flex flex-col justify-between gap-3 border-b border-surface-container-highest pb-4 md:flex-row md:items-end md:gap-4">
   <div>
     <!-- The fixed header's week stepper shows the dates on phones. -->
-    <div class="mb-1.5 hidden flex-wrap items-center gap-2 md:flex">
-      <span class="text-sm font-bold uppercase tracking-widest text-secondary">{text.planner.header.eyebrow}</span>
-      <span class="text-xs text-on-surface-variant">•</span>
-      <span class="text-xs font-semibold text-on-surface-variant">
-        {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}
-      </span>
-    </div>
+    <p class="mb-1.5 hidden text-xs font-semibold text-on-surface-variant md:block">
+      {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}
+    </p>
     <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">{title}</h1>
   </div>
 
@@ -46,10 +42,10 @@
     <div class="flex flex-nowrap items-center gap-2 md:max-w-[420px] md:flex-wrap md:justify-end lg:max-w-none">
       <div class="inline-flex min-w-0 items-center gap-2 rounded-full bg-surface-container-high px-3 py-1.5 text-xs">
         <span class="h-2 w-2 rounded-full bg-primary {summary.open ? 'motion-safe:animate-pulse' : ''}"></span>
-        <span class="font-semibold text-on-surface">{text.planner.header.dinners(summary.planned)}</span>
+        <span class="font-semibold text-on-surface">{text.planner.header.counts(summary.planned, summary.off)}</span>
         {#if editable}
           <span class="hidden text-[11px] text-on-surface-variant sm:inline">
-            ({summary.open ? text.planner.header.openLeft(summary.open) : text.planner.header.allSet})
+            ({summary.open ? text.planner.header.toPlan(summary.open) : text.planner.header.allSet})
           </span>
         {/if}
       </div>

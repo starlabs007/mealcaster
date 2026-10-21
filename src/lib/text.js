@@ -145,14 +145,15 @@ export const text = {
     minimalView: 'Minimal view',
 
     header: {
-      eyebrow: 'Weekly Schedule',
       thisWeek: 'This Week’s Dinner Plan',
       lastWeek: 'Last Week’s Dinner Plan',
       nextWeek: 'Next Week’s Dinner Plan',
       weekOf: (/** @type {string} */ date) => `Week of ${date}`,
-      dinners: (/** @type {number} */ planned) => `${planned} of 7 Dinners`,
-      openLeft: (/** @type {number} */ n) => `${n} Open ${plural(n, 'slot')} left`,
-      allSet: 'All set',
+      // "5 dinners · 2 nights off"; nights off are left out when there are none.
+      counts: (/** @type {number} */ dinners, /** @type {number} */ off) =>
+        [`${dinners} ${plural(dinners, 'dinner')}`, off ? `${off} ${plural(off, 'night')} off` : ''].filter(Boolean).join(' · '),
+      toPlan: (/** @type {number} */ n) => `${n} ${plural(n, 'evening')} to plan`,
+      allSet: 'All planned',
       autoFill: 'Auto-fill Remaining',
       autoFillShort: 'Auto-fill',
       copyLastWeek: 'Copy Last Week',
@@ -170,8 +171,7 @@ export const text = {
       nightOff: 'Night off',
       notLogged: 'Not logged',
       open: 'Open',
-      meta: (/** @type {string} */ badge, /** @type {number} */ minutes, /** @type {number} */ serves) =>
-        [badge, `${minutes} min`, `Serves ${serves}`].filter(Boolean).join(' · '),
+      meta: (/** @type {number} */ minutes, /** @type {number} */ serves) => `${minutes} min · Serves ${serves}`,
       viewRecipe: 'View Recipe',
       viewRecipeAria: (/** @type {string} */ title) => `View recipe: ${title}`,
       markDone: 'Mark Done',
@@ -215,8 +215,9 @@ export const text = {
       surprise: (/** @type {string} */ title) => `Surprise! ${title}`,
       nightOff: (/** @type {string} */ date) => `${date} is now a night off.`,
       switched: (/** @type {string} */ a, /** @type {string} */ b) => `Switched ${a} and ${b}.`,
+      moved: (/** @type {string} */ weekday) => `Moved to ${weekday}.`,
       allPlanned: 'Every dinner this week is already planned.',
-      filled: (/** @type {number} */ n) => `Filled ${n} open ${plural(n, 'slot')}.`,
+      filled: (/** @type {number} */ n) => `Planned ${n} ${plural(n, 'evening')}.`,
       noLastWeek: 'Last week had nothing planned for this week’s open evenings.',
       copied: (/** @type {number} */ n) => `Copied ${n} ${plural(n, 'evening')} from last week.`,
       nothingToReset: 'Nothing to reset — no upcoming evenings are planned.',
