@@ -43,6 +43,11 @@ export function plural(n, singular, pluralForm = singular + 's') {
   return n === 1 ? singular : pluralForm;
 }
 
+/** "Thu", "Thu and Sat", "Thu, Sat and Sun". @param {string[]} items */
+function joinList(items) {
+  return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
+}
+
 export const text = {
   common: {
     undo: 'Undo',
@@ -210,14 +215,20 @@ export const text = {
     toasts: {
       noRecipes: 'Add a recipe to the catalog first.',
       surprise: (/** @type {string} */ title) => `Surprise! ${title}`,
+      surpriseOn: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title}`,
       nightOff: (/** @type {string} */ date) => `${date} is now a night off.`,
       cleared: (/** @type {string} */ weekday) => `Cleared ${weekday}.`,
       switched: (/** @type {string} */ a, /** @type {string} */ b) => `Switched ${a} and ${b}.`,
       moved: (/** @type {string} */ weekday) => `Moved to ${weekday}.`,
       allPlanned: 'Every dinner this week is already planned.',
-      filled: (/** @type {number} */ n) => `Planned ${n} ${plural(n, 'evening')}.`,
+      // One evening names the dish; a few name the days ("Thu, Sat and Sun"); more just count.
+      filledOne: (/** @type {string} */ weekday, /** @type {string} */ title) => `Planned ${weekday}: ${title}`,
+      filled: (/** @type {string[]} */ days) =>
+        days.length <= 4 ? `Planned ${joinList(days)}.` : `Planned ${days.length} evenings, starting ${days[0]}.`,
       noLastWeek: 'Last week had nothing planned for this week’s open evenings.',
-      copied: (/** @type {number} */ n) => `Copied ${n} ${plural(n, 'evening')} from last week.`,
+      copiedOne: (/** @type {string} */ weekday, /** @type {string} */ title) => `Copied ${weekday}: ${title}`,
+      copied: (/** @type {string[]} */ days) =>
+        days.length <= 4 ? `Copied ${joinList(days)} from last week.` : `Copied ${days.length} evenings from last week.`,
       reset: (/** @type {number} */ n) => `Cleared ${n} upcoming ${plural(n, 'evening')}.`,
       // After Cmd/Ctrl+Z; `change` is the toast the change showed, e.g. "Moved to Thursday."
       undone: (/** @type {string} */ change) => `Undone: ${change}`,

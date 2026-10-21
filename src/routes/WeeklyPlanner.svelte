@@ -3,7 +3,7 @@
   import DayListCard from '../lib/components/DayListCard.svelte';
   import DayGridCard from '../lib/components/DayGridCard.svelte';
   import SwitchDaysDialog from '../lib/components/SwitchDaysDialog.svelte';
-  import { onDestroy, onMount, tick } from 'svelte';
+  import { onDestroy, onMount, tick, untrack } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
   import { currentWeek, forgetLastChange, planner, spotlight, statusOf, switchDays, switchTargets, undoLastChange } from '../lib/planner.svelte.js';
   import { createPointerDrag } from '../lib/pointerDrag.js';
@@ -75,14 +75,23 @@
   // Coming back from the catalog with a meal just picked: bring that day into view (the highlight
   // itself is drawn by the day card and fades on its own). Otherwise the list (phones, Minimal view) brings
   // today into view when it's this week: scrolled just far enough to show the whole card, below the fixed header.
+  // A change made on this screen (Auto-fill, Surprise Me…) rings the days it touched: in the list, which can be
+  // taller than the screen, scroll to the first of them (a no-op when it is already in view).
+  $effect(() => {
+    const iso = spotlight.days[0];
+    if (!iso || (wide.current && !devicePrefs.plannerMinimal)) return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    untrack(() => tick().then(() => document.getElementById(`day-${iso}`)?.scrollIntoView({ block: 'nearest', behavior: reduced ? 'auto' : 'smooth' })));
+  });
+
   onMount(async () => {
-    const iso = spotlight.iso || (wide.current && !devicePrefs.plannerMinimal ? '' : days.find((d) => d.iso === planner.today)?.iso);
+    const iso = spotlight.days[0] || (wide.current && !devicePrefs.plannerMinimal ? '' : days.find((d) => d.iso === planner.today)?.iso);
     if (!iso) return;
     await tick();
     const card = document.getElementById(`day-${iso}`);
     if (!card) return;
     const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
-    if (spotlight.iso) return card.scrollIntoView({ block: 'center', behavior });
+    if (spotlight.days.length) return card.scrollIntoView({ block: 'center', behavior });
     const top = (document.querySelector('header')?.getBoundingClientRect().bottom ?? 0) + 12;
     const rect = card.getBoundingClientRect();
     const by = Math.min(rect.top - top, rect.bottom - (window.innerHeight - 12));

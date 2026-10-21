@@ -69,8 +69,7 @@
   tabindex="-1"
   data-drop-id={day.iso}
   aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
-  class="focus-ring relative flex w-full min-w-0 flex-col rounded-xl transition-all gap-3 p-3 {cardClass} {spotlight.iso ===
-  day.iso
+  class="focus-ring relative flex w-full min-w-0 flex-col rounded-xl transition-all gap-3 p-3 {cardClass} {spotlight.days.includes(day.iso)
     ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift'
     : ''} {dropClass[drop]}"
 >
