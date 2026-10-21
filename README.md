@@ -64,31 +64,31 @@ npm run preview    # http://localhost:4173
 - Seven day cards (Saturday → Friday unless you change the start day in Profile & Settings) with **completed** (past), **today**, **planned** and **open** states,
   computed from the real current date.
 - Week stepper in the header (click the date range to jump back to this week).
-- **Auto-fill Remaining**, **Copy Last Week**, **Reset Week** — each with an Undo toast.
+- **Auto-fill Remaining**, **Copy Previous Week** (**Copy This Week** on next week), **Clear n Upcoming Evenings** — each with an Undo toast.
   Past days are kept as history and never overwritten. Auto-fill also prefers meals not already on the week's
   plan and not made in the last 7 days.
 - Each day card offers actions for its state:
-  - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Dining Out**.
-  - **Planned meal** (including today): **View Recipe**, **Swap Meal** (opens the catalog), **Surprise Me**,
-    **Dining Out** and **Switch Days…**.
+  - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Night Off**.
+  - **Planned meal** (including today): **View Recipe**, **Choose a Different Meal** (opens the catalog), **Surprise Me**,
+    **Night Off** and **Move to Another Day…**.
     - **Drag to another day**: a planned meal that can move has a drag handle (⠿, top right on phones, right
       edge on wider screens), in the normal and the minimal view. Drag it onto another evening of the week (today
       onward, not yet completed): the evenings it can go to are outlined, the rest dimmed, and the floating card
       says what letting go does (**Move to …** for an open evening, **Switch with …** otherwise). It's the same
-      move as Switch Days…, with an Undo toast. The page scrolls near the top or bottom of the screen; Escape or
-      letting go anywhere else cancels. Pressing the handle without dragging opens the Switch Days… picker — the
+      move as Move to Another Day…, with an Undo toast. The page scrolls near the top or bottom of the screen; Escape or
+      letting go anywhere else cancels. Pressing the handle without dragging opens the Move to Another Day… picker — the
       keyboard and screen-reader way, and the only one in the minimal view.
     - **Surprise Me** replaces the meal with a random one, preferring meals not already on the week's plan or
       made recently. It skips the meal being replaced unless that is the only recipe available.
-    - **Dining Out** turns the evening into a night off.
+    - **Night Off** turns the evening into a night off.
     - **Clear evening** puts the evening back to open.
     - Each of these shows an **Undo** toast, on an open evening too.
-    - **Switch Days…** trades the meal with another evening of the same week (today onward, not yet completed);
+    - **Move to Another Day…** trades the meal with another evening of the same week (today onward, not yet completed);
       that evening's meal or night off moves the other way, and an open evening just receives the meal. Notes go
       with the meal, the completed flag stays with the date. Shows an **Undo** toast.
-  - **Night off** (today or later): **Cancel night off** clears the night so it's open again.
+  - **Night off** (today or later): **Plan This Evening** clears the night so it's open again.
   - **Mark Done** (today only) flags the meal as made without waiting for the day to pass; it turns into a **Done** toggle that undoes it. A done meal counts as made for the catalog and syncs as `Completed_Flag`.
-  - **Completed** and **not logged** past days only offer **View Recipe** where there is a meal.
+  - **Completed** and **no plan** past days only offer **View Recipe** where there is a meal.
 - Grocery badge counts the items still to buy for the viewed week (every dinner of the week, past days included).
 
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
@@ -110,7 +110,7 @@ npm run preview    # http://localhost:4173
 
 ## Recipe Detail (`#/recipe/:id?day=YYYY-MM-DD`)
 
-- Breadcrumb back to the plan, favorite toggle, Swap Meal, serving scaler (quantities rescale).
+- Breadcrumb back to the plan, favorite toggle, Choose a Different Meal, serving scaler (quantities rescale).
 - Tags (each links to the catalog filtered by it) and when the meal was last made.
 - Mise-en-place checklist grouped by component. Checking an ingredient marks it **in stock** at home (the same flag
   as everywhere else, see Ingredients): it stays off every week's grocery list until you uncheck it. **Checkmark

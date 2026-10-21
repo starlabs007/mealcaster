@@ -29,7 +29,7 @@
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const actions = $derived.by(() => {
     const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
-    const nightOff = { id: 'nightOff', label: text.planner.card.diningOut, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
+    const nightOff = { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
     if (day.status === 'open') return [surprise, nightOff];
     if (day.status !== 'planned') return [];
     return [
@@ -96,7 +96,7 @@
         {:else if day.status === 'diningOut'}
           <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
         {:else if day.status === 'missed'}
-          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.notLogged}</span>
+          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.noPlan}</span>
         {/if}
       </div>
     </div>
@@ -181,7 +181,7 @@
     </div>
     {/if}
   {:else if compact}
-    <p class="text-sm text-on-surface-variant">{day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.notLogged}</p>
+    <p class="text-sm text-on-surface-variant">{day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.noPlan}</p>
   {:else}
     <!-- Empty evenings (open, night off, not logged) sit centred in their card, like the photo placeholder. -->
     <div class="flex flex-1 flex-col items-center justify-center gap-3 pb-8 text-center">
@@ -192,16 +192,16 @@
         </div>
         <h3 class="font-display text-base leading-snug text-on-surface">
           {day.status === 'diningOut'
-            ? text.planner.card.diningOutTitle
+            ? text.planner.card.nightOff
             : day.status === 'missed'
-              ? text.planner.card.missedTitle
+              ? text.planner.card.noPlan
               : text.planner.card.nothingPlanned}
         </h3>
       </div>
       {#if lead && day.status === 'diningOut'}
-        <p class="text-xs text-on-surface-variant">{text.planner.card.diningOutNote}</p>
+        <p class="text-xs text-on-surface-variant">{text.planner.card.nightOffNote}</p>
       {:else if lead && day.status === 'missed'}
-        <p class="text-xs text-on-surface-variant">{text.planner.card.missedNote}</p>
+        <p class="text-xs text-on-surface-variant">{text.planner.card.noPlanNote}</p>
       {/if}
       {#if day.status === 'open'}
         <a href={href('/catalog', { day: day.iso })} data-day-focus class="btn-outline py-2 text-on-surface">
@@ -209,7 +209,7 @@
         </a>
       {:else if day.status === 'diningOut' && !day.isPast}
         <button type="button" class="btn-outline py-2 text-on-surface" onclick={() => { clearDay(day.iso); focusDay(day.iso); }}>
-          <Icon name="undo" class="text-[15px]" /> {text.planner.card.planInstead}
+          <Icon name="restaurant" class="text-[15px]" /> {text.planner.card.planEvening}
         </button>
       {/if}
     </div>

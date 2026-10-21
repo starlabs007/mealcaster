@@ -29,7 +29,7 @@
   const actions = $derived.by(() => {
     if (minimal) return [];
     const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
-    const nightOff = { id: 'nightOff', label: text.planner.card.diningOut, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
+    const nightOff = { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
     if (day.status === 'open') return [surprise, nightOff];
     if (day.status !== 'planned') return [];
     return [
@@ -88,7 +88,7 @@
           <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class="text-[18px]" />
         </div>
         <span class="text-sm text-on-surface-variant">
-          {day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.notLogged}
+          {day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.noPlan}
         </span>
       </div>
     {/if}
@@ -214,8 +214,8 @@
         </div>
         <div class="min-w-0 flex-1">
           {#if day.status === 'diningOut'}
-            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.diningOutTitle}</h3>
-            {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.diningOutNote}</p>{/if}
+            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.nightOff}</h3>
+            {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.nightOffNote}</p>{/if}
           {:else}
             <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.nothingPlanned}</h3>
           {/if}
@@ -243,7 +243,7 @@
       {:else if day.status === 'diningOut'}
         <div class="flex items-center gap-2">
           <button type="button" class="btn-outline text-on-surface {tall}" onclick={() => { clearDay(day.iso); focusDay(day.iso); }}>
-            <Icon name="undo" class="text-[15px]" /> {text.planner.card.planInstead}
+            <Icon name="restaurant" class="text-[15px]" /> {text.planner.card.planEvening}
           </button>
         </div>
       {/if}
