@@ -27,6 +27,9 @@
     position = { top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) };
     open = true;
     tick().then(() => {
+      // Opens upwards when there's no room below (a card near the bottom of a phone screen).
+      const height = menu?.offsetHeight ?? 0;
+      if (rect.bottom + 6 + height > window.innerHeight - 8 && rect.top - 6 - height >= 8) position.top = rect.top - 6 - height;
       const list = entries();
       (focus === 'last' ? list.at(-1) : list[0])?.focus();
     });
@@ -96,7 +99,7 @@
   }
 
   const itemClass =
-    'flex w-full items-center gap-2.5 px-3 py-2 text-left text-label-md text-on-surface transition-colors hover:bg-surface-container-high focus:bg-surface-container-high focus:outline-none';
+    'flex w-full items-center gap-2.5 px-3 py-3 text-left md:py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container-high focus:bg-surface-container-high focus:outline-none';
 </script>
 
 <button
@@ -108,7 +111,7 @@
   aria-label={label}
   title={title ?? label}
   data-switch-opener={opener}
-  class="focus-ring flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface {open
+  class="focus-ring flex h-11 w-11 flex-shrink-0 md:h-8 md:w-8 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface {open
     ? 'bg-surface-container-high text-on-surface'
     : ''} {className}"
   onclick={() => (open ? close() : show())}

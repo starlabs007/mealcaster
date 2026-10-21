@@ -83,8 +83,8 @@
         />
       </form>
 
-      <div class="flex items-center gap-1 rounded-lg bg-surface-container-low px-1 py-1 sm:px-2">
-        <button type="button" aria-label={text.header.week.previous} class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(-1)}>
+      <div class="flex items-center gap-0.5 rounded-lg bg-surface-container-low px-0.5 sm:gap-1 sm:px-2 sm:py-1">
+        <button type="button" aria-label={text.header.week.previous} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:h-auto sm:w-auto sm:p-1" onclick={() => shiftWeek(-1)}>
           <Icon name="chevron_left" class="text-[18px]" />
         </button>
         <button
@@ -96,7 +96,7 @@
           <span class="hidden sm:inline">{formatRange(planner.weekStart)}</span>
           <span class="sm:hidden">{formatRangeCompact(planner.weekStart)}</span>
         </button>
-        <button type="button" aria-label={text.header.week.next} class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(1)}>
+        <button type="button" aria-label={text.header.week.next} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:h-auto sm:w-auto sm:p-1" onclick={() => shiftWeek(1)}>
           <Icon name="chevron_right" class="text-[18px]" />
         </button>
       </div>

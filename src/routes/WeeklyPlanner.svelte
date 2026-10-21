@@ -5,7 +5,7 @@
   import SwitchDaysDialog from '../lib/components/SwitchDaysDialog.svelte';
   import { onMount, tick } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
-  import { currentWeek, spotlight, statusOf, switchDays, switchTargets } from '../lib/planner.svelte.js';
+  import { currentWeek, planner, spotlight, statusOf, switchDays, switchTargets } from '../lib/planner.svelte.js';
   import { createPointerDrag } from '../lib/pointerDrag.js';
   import { text } from '../lib/text.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
@@ -50,13 +50,20 @@
   }
 
   // Coming back from the catalog with a meal just picked: bring that day into view (the highlight
-  // itself is drawn by the day card and fades on its own).
+  // itself is drawn by the day card and fades on its own). Otherwise the list (phones, Minimal view) brings
+  // today into view when it's this week: scrolled just far enough to show the whole card, below the fixed header.
   onMount(async () => {
-    const iso = spotlight.iso;
+    const iso = spotlight.iso || (wide.current && !devicePrefs.plannerMinimal ? '' : days.find((d) => d.iso === planner.today)?.iso);
     if (!iso) return;
     await tick();
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    document.getElementById(`day-${iso}`)?.scrollIntoView({ block: 'center', behavior: reduce ? 'auto' : 'smooth' });
+    const card = document.getElementById(`day-${iso}`);
+    if (!card) return;
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    if (spotlight.iso) return card.scrollIntoView({ block: 'center', behavior });
+    const top = (document.querySelector('header')?.getBoundingClientRect().bottom ?? 0) + 12;
+    const rect = card.getBoundingClientRect();
+    const by = Math.min(rect.top - top, rect.bottom - (window.innerHeight - 12));
+    if (by > 0) window.scrollTo({ top: window.scrollY + by, behavior });
   });
 </script>
 
@@ -64,7 +71,7 @@
   <PlannerHeader />
 
   <section aria-label={text.planner.daysAria} class="flex flex-col {devicePrefs.plannerMinimal ? 'gap-2.5' : 'gap-4'}">
-    <label class="flex cursor-pointer items-center gap-2 self-end text-label-md text-on-surface-variant">
+    <label class="flex min-h-11 cursor-pointer items-center gap-2 self-end md:min-h-0 text-label-md text-on-surface-variant">
       <input type="checkbox" bind:checked={devicePrefs.plannerMinimal} class="h-4 w-4 rounded accent-primary" />
       {text.planner.minimalView}
     </label>
