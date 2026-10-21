@@ -107,7 +107,7 @@
          from `sm` the label is a column on the left). -->
     <div class="flex items-center gap-1 {day.isToday ? 'pl-1' : ''} {minimal ? 'sm:w-36 sm:flex-shrink-0' : ''}">
       <div class="min-w-0 flex-1">
-        <div class="text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-outline'}">
+        <div class="text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}">
           {weekdayName}
         </div>
         {#if !minimal}
@@ -122,7 +122,7 @@
                 <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.today}
               </span>
             {:else if day.status === 'diningOut'}
-              <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-outline">{text.planner.card.nightOff}</span>
+              <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
             {/if}
           </div>
         {/if}
@@ -249,7 +249,7 @@
 {/if}
 
 {#snippet pastWeekday()}
-  <span class="w-10 flex-shrink-0 text-xs font-semibold uppercase tracking-wide text-outline">{formatWeekdayShort(day.iso)}</span>
+  <span class="w-10 flex-shrink-0 text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{formatWeekdayShort(day.iso)}</span>
 {/snippet}
 
 {#snippet tagList(/** @type {string[]} */ tags, /** @type {string} */ extra)}

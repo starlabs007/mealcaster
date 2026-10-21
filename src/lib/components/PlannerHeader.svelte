@@ -34,7 +34,7 @@
     <!-- The fixed header's week stepper shows the dates on phones. -->
     <div class="mb-1.5 hidden flex-wrap items-center gap-2 md:flex">
       <span class="text-sm font-bold uppercase tracking-widest text-secondary">{text.planner.header.eyebrow}</span>
-      <span class="text-xs text-outline">•</span>
+      <span class="text-xs text-on-surface-variant">•</span>
       <span class="text-xs font-semibold text-on-surface-variant">
         {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}
       </span>
@@ -48,7 +48,7 @@
         <span class="h-2 w-2 rounded-full bg-primary {summary.open ? 'motion-safe:animate-pulse' : ''}"></span>
         <span class="font-semibold text-on-surface">{text.planner.header.dinners(summary.planned)}</span>
         {#if editable}
-          <span class="hidden text-[11px] text-outline sm:inline">
+          <span class="hidden text-[11px] text-on-surface-variant sm:inline">
             ({summary.open ? text.planner.header.openLeft(summary.open) : text.planner.header.allSet})
           </span>
         {/if}
