@@ -49,7 +49,7 @@
     target: 'outline-dashed outline-2 outline-offset-2 outline-primary/40',
     off: '!opacity-40',
   };
-  const spotlightClass = $derived(spotlight.iso === day.iso ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : '');
+  const spotlightClass = $derived(spotlight.days.includes(day.iso) ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : '');
 
   // Buttons are 44 px tall on phones (touch targets), the usual size from `md` (Minimal view on a desktop).
   const tall = 'min-h-11 md:min-h-0';
