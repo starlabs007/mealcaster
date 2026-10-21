@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { copiedEntries, dayStatus, resetDays, restoreDays, snapshotDays } from '../src/lib/planDays.js';
+import { copiedEntries, dayStatus, dinnerPool, resetDays, restoreDays, snapshotDays } from '../src/lib/planDays.js';
 
 // Week of Mon 19 – Sun 25 Oct 2026; today is Wednesday and its dinner is done.
 const days = ['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'];
@@ -79,4 +79,13 @@ test('Undo puts the exact previous week back after Copy and after Reset', () => 
   for (const iso of resetDays(entries, days, today, status)) delete entries[iso];
   restoreDays(entries, saved);
   assert.deepEqual(entries, before);
+});
+
+test('dinner pool: Dinner (any case) and uncategorised recipes, or everything when there are none', () => {
+  const r = (id, label) => ({ id, badge: { label } });
+  const mixed = [r('a', 'Dinner'), r('b', 'DINNER'), r('c', ''), r('d', 'Breakfast'), r('e', 'Dessert'), r('f', 'Lunch')];
+  assert.deepEqual(dinnerPool(mixed).map((x) => x.id), ['a', 'b', 'c']);
+  const noDinners = [r('d', 'Breakfast'), r('e', 'Dessert')];
+  assert.deepEqual(dinnerPool(noDinners), noDinners);
+  assert.deepEqual(dinnerPool([]), []);
 });

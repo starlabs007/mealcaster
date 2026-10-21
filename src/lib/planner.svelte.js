@@ -6,7 +6,7 @@ import './settings.svelte.js'; // sets the week start day before the first week 
 import { recipes, recipeById } from './recipes.svelte.js';
 import { addDays, daysBetween, formatLong, formatWeekday, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
 import { switchedEntries } from './switchDays.js';
-import { copiedEntries, dayStatus, resetDays, restoreDays, snapshotDays } from './planDays.js';
+import { copiedEntries, dayStatus, dinnerPool, resetDays, restoreDays, snapshotDays } from './planDays.js';
 import { dismissToast, showToast, toast } from './toast.svelte.js';
 import { text } from './text.js';
 import { samples } from 'virtual:sample-data';
@@ -184,7 +184,7 @@ function snapshotWeek() {
  * made in the last RECENT_DAYS days, then ones just not on the menu, then any.
  * @param {import('./data/recipes.js').Recipe[]} pool
  */
-function pickRecipe(pool = recipes) {
+function pickRecipe(pool = dinnerPool(recipes)) {
   const used = new Set(weekDates(planner.weekStart).map((iso) => planner.entries[iso]?.recipeId));
   const tiers = [
     pool.filter((r) => !used.has(r.id) && !madeRecently(r.id)),
@@ -239,8 +239,8 @@ const NO_RECIPES = text.planner.toasts.noRecipes;
 export function surpriseMe(iso, pool) {
   const previous = planner.entries[iso] && { ...planner.entries[iso] };
   // Replacing a meal never "surprises" with the same one, unless it's the only choice.
-  const candidates = (pool?.length ? pool : recipes).filter((r) => r.id !== previous?.recipeId);
-  const recipe = pickRecipe(candidates.length ? candidates : pool?.length ? pool : recipes);
+  const candidates = (pool?.length ? pool : dinnerPool(recipes)).filter((r) => r.id !== previous?.recipeId);
+  const recipe = pickRecipe(candidates.length ? candidates : pool?.length ? pool : dinnerPool(recipes));
   if (!recipe) {
     showWeekToast(NO_RECIPES);
     return undefined;

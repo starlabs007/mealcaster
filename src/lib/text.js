@@ -159,7 +159,7 @@ export const text = {
       copyLastWeek: 'Copy Last Week',
       resetWeek: 'Reset Week',
       moreAria: 'More week actions',
-      autoFillNote: (/** @type {number} */ days) => `Auto-fill avoids recipes made in the last ${days} days.`,
+      autoFillNote: (/** @type {number} */ days) => `Auto-fill picks dinners not made in the last ${days} days.`,
     },
 
     card: {
