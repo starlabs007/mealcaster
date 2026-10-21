@@ -21,23 +21,25 @@
   // A week entirely in the past is read-only history.
   const editable = $derived(addDays(planner.weekStart, 6) >= planner.today);
 
-  // On phones the actions fit one row: Copy Last Week joins Reset Week in the ⋯ menu. Reset Week says how many
-  // evenings it clears and is left out when there are none (on desktop the ⋯ menu then goes too).
+  // On phones the actions fit one row: Copy joins Reset Week in the ⋯ menu. From `md` Reset Week is a quiet text button
+  // beside Copy. It says how many evenings it clears and is left out when there are none.
   const wide = new MediaQuery('min-width: 768px');
   const resettable = $derived(resetCount());
+  // Copy takes the week before the viewed one; on next week that is this week.
+  const copyLabel = $derived(offset === 1 ? text.planner.header.copyThisWeek : text.planner.header.copyPrevious);
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const more = $derived([
-    ...(wide.current ? [] : [{ id: 'copy', label: text.planner.header.copyLastWeek, icon: 'content_copy', onselect: copyLastWeek }]),
-    ...(resettable ? [{ id: 'reset', label: text.planner.header.resetWeek(resettable), icon: 'refresh', onselect: reset }] : []),
+    ...(wide.current ? [] : [{ id: 'copy', label: copyLabel, icon: 'content_copy', onselect: copyLastWeek }]),
+    ...(resettable && !wide.current ? [{ id: 'reset', label: text.planner.header.resetWeek(resettable), icon: 'refresh', onselect: reset }] : []),
   ]);
 
-  // When the ⋯ button goes with the reset, focus moves to Auto-fill rather than dropping to the page.
+  // When the button that ran the reset goes with it, focus moves to Auto-fill rather than dropping to the page.
   /** @type {HTMLButtonElement | undefined} */
   let autoFillButton = $state();
   async function reset() {
     resetWeek();
     await tick();
-    if (!more.length) autoFillButton?.focus();
+    if (!more.length && !resetCount()) autoFillButton?.focus();
   }
 </script>
 
@@ -75,8 +77,13 @@
         </button>
         {#if wide.current}
           <button type="button" class="btn-outline" onclick={copyLastWeek}>
-            <Icon name="content_copy" class="text-[16px]" /> {text.planner.header.copyLastWeek}
+            <Icon name="content_copy" class="text-[16px]" /> {copyLabel}
           </button>
+          {#if resettable}
+            <button type="button" class="focus-ring rounded px-1 text-xs font-semibold text-on-surface-variant underline-offset-2 hover:text-on-surface hover:underline" onclick={reset}>
+              {text.planner.header.resetWeek(resettable)}
+            </button>
+          {/if}
         {/if}
         {#if more.length}
           <ActionMenu items={more} label={text.planner.header.moreAria} class="border border-outline-variant bg-surface-container-lowest" />
