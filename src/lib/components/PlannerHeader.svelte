@@ -50,7 +50,13 @@
         {/if}
       </div>
       {#if editable}
-        <button type="button" class="btn-primary ml-auto min-h-11 flex-shrink-0 md:ml-0 md:min-h-0" disabled={!summary.open} onclick={autoFillRemaining}>
+        <!-- aria-disabled, not disabled: pressing the last Auto-fill must not drop focus to <body>. A press on a full week just says so. -->
+        <button
+          type="button"
+          class="btn-primary ml-auto min-h-11 flex-shrink-0 md:ml-0 md:min-h-0 {summary.open ? '' : 'cursor-not-allowed opacity-50 hover:bg-primary'}"
+          aria-disabled={!summary.open}
+          onclick={autoFillRemaining}
+        >
           <Icon name="auto_fix_high" class="text-[16px]" />
           <span class="sm:hidden">{text.planner.header.autoFillShort}</span><span class="hidden sm:inline">{text.planner.header.autoFill}</span>
         </button>

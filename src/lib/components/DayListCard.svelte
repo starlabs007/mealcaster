@@ -6,6 +6,7 @@
   import RecipeImage from './RecipeImage.svelte';
   import ActionMenu from './ActionMenu.svelte';
   import { surpriseMe, markDiningOut, clearDay, setDone, spotlight, switchTargets } from '../planner.svelte.js';
+  import { focusDay } from '../focusDay.js';
   import { text } from '../text.js';
   import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
   import { href } from '../router.svelte.js';
@@ -28,7 +29,7 @@
   const actions = $derived.by(() => {
     if (minimal) return [];
     const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
-    const nightOff = { id: 'nightOff', label: text.planner.card.diningOut, icon: 'storefront', onselect: () => markDiningOut(day.iso) };
+    const nightOff = { id: 'nightOff', label: text.planner.card.diningOut, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
     if (day.status === 'open') return [surprise, nightOff];
     if (day.status !== 'planned') return [];
     return [
@@ -95,9 +96,10 @@
   <article
     id="day-{day.iso}"
     data-drag-source
+    tabindex="-1"
     data-drop-id={day.iso}
     aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
-    class="relative flex flex-col rounded-xl transition-all {minimal ? 'gap-2 p-3 sm:flex-row sm:items-center sm:gap-3' : 'gap-3 p-4'} {cardClass} {spotlightClass} {dropClass[drop]}"
+    class="focus-ring relative flex flex-col rounded-xl transition-all {minimal ? 'gap-2 p-3 sm:flex-row sm:items-center sm:gap-3' : 'gap-3 p-4'} {cardClass} {spotlightClass} {dropClass[drop]}"
   >
     {#if day.isToday}
       <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
@@ -146,6 +148,7 @@
           </div>
           <a
             href={recipeHref}
+            data-day-focus
             aria-label={text.planner.card.viewRecipeAria(recipe.title)}
             title={text.planner.card.viewRecipe}
             class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:h-9 md:w-9 {day.isToday
@@ -180,6 +183,7 @@
         <div class="flex items-center gap-2">
           <a
             href={recipeHref}
+            data-day-focus
             aria-label={day.isToday ? undefined : text.planner.card.viewRecipeAria(recipe.title)}
             class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {tall} {day.isToday
               ? 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'
@@ -221,6 +225,7 @@
         {#if minimal && day.status === 'open'}
           <a
             href={href('/catalog', { day: day.iso })}
+            data-day-focus
             aria-label={text.planner.card.chooseAria(weekdayName)}
             class="btn-outline flex-shrink-0 text-on-surface {tall}"
           >
@@ -233,13 +238,13 @@
         <!-- Minimal view: just Choose on open evenings. -->
       {:else if day.status === 'open'}
         <div class="flex items-center gap-2">
-          <a href={href('/catalog', { day: day.iso })} class="btn-outline text-on-surface {tall}">
+          <a href={href('/catalog', { day: day.iso })} data-day-focus class="btn-outline text-on-surface {tall}">
             <Icon name="add" class="text-[15px]" /> {text.planner.card.chooseMeal}
           </a>
         </div>
       {:else if day.status === 'diningOut'}
         <div class="flex items-center gap-2">
-          <button type="button" class="btn-outline text-on-surface {tall}" onclick={() => clearDay(day.iso)}>
+          <button type="button" class="btn-outline text-on-surface {tall}" onclick={() => { clearDay(day.iso); focusDay(day.iso); }}>
             <Icon name="undo" class="text-[15px]" /> {text.planner.card.planInstead}
           </button>
         </div>

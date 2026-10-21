@@ -6,6 +6,7 @@
   import RecipeImage from './RecipeImage.svelte';
   import ActionMenu from './ActionMenu.svelte';
   import { surpriseMe, markDiningOut, clearDay, setDone, spotlight, switchTargets } from '../planner.svelte.js';
+  import { focusDay } from '../focusDay.js';
   import { text } from '../text.js';
   import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
   import { href } from '../router.svelte.js';
@@ -26,7 +27,7 @@
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const actions = $derived.by(() => {
     const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
-    const nightOff = { id: 'nightOff', label: text.planner.card.diningOut, icon: 'storefront', onselect: () => markDiningOut(day.iso) };
+    const nightOff = { id: 'nightOff', label: text.planner.card.diningOut, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
     if (day.status === 'open') return [surprise, nightOff];
     if (day.status !== 'planned') return [];
     return [
@@ -62,9 +63,10 @@
 <article
   id="day-{day.iso}"
   data-drag-source
+  tabindex="-1"
   data-drop-id={day.iso}
   aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
-  class="relative flex w-full min-w-0 flex-col rounded-xl transition-all gap-3 p-3 {cardClass} {spotlight.iso ===
+  class="focus-ring relative flex w-full min-w-0 flex-col rounded-xl transition-all gap-3 p-3 {cardClass} {spotlight.iso ===
   day.iso
     ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift'
     : ''} {dropClass[drop]}"
@@ -137,6 +139,7 @@
       <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
         <a
           href={recipeHref}
+          data-day-focus
           aria-label={lead ? undefined : text.planner.card.viewRecipeAria(recipe.title)}
           class="focus-ring inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday
             ? 'rounded-md bg-primary-container px-3 py-1.5 text-on-primary shadow-sm hover:bg-primary'
@@ -183,11 +186,11 @@
         <p class="text-xs text-on-surface-variant">{text.planner.card.missedNote}</p>
       {/if}
       {#if day.status === 'open'}
-        <a href={href('/catalog', { day: day.iso })} class="btn-outline py-2 text-on-surface">
+        <a href={href('/catalog', { day: day.iso })} data-day-focus class="btn-outline py-2 text-on-surface">
           <Icon name="add" class="text-[15px]" /> {text.planner.card.chooseMeal}
         </a>
       {:else if day.status === 'diningOut' && !day.isPast}
-        <button type="button" class="btn-outline py-2 text-on-surface" onclick={() => clearDay(day.iso)}>
+        <button type="button" class="btn-outline py-2 text-on-surface" onclick={() => { clearDay(day.iso); focusDay(day.iso); }}>
           <Icon name="undo" class="text-[15px]" /> {text.planner.card.planInstead}
         </button>
       {/if}
