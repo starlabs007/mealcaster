@@ -1,8 +1,10 @@
 <script>
   import PlannerHeader from '../lib/components/PlannerHeader.svelte';
-  import DayCard from '../lib/components/DayCard.svelte';
+  import DayListCard from '../lib/components/DayListCard.svelte';
+  import DayGridCard from '../lib/components/DayGridCard.svelte';
   import SwitchDaysDialog from '../lib/components/SwitchDaysDialog.svelte';
   import { onMount, tick } from 'svelte';
+  import { MediaQuery } from 'svelte/reactivity';
   import { currentWeek, spotlight, statusOf, switchDays, switchTargets } from '../lib/planner.svelte.js';
   import { createPointerDrag } from '../lib/pointerDrag.js';
   import { text } from '../lib/text.js';
@@ -12,10 +14,16 @@
   const days = $derived(currentWeek());
   let switching = $state('');
 
+  // From `md` up the week is a grid in calendar order: 4 + 3 columns, then from `xl` one row of seven with
+  // tonight's column wider. Phones, and Minimal view on any screen, use the list of day cards.
+  const wide = new MediaQuery('min-width: 768px');
+  const columns = $derived(days.map((d) => (d.isToday ? '1.6fr' : '1fr')).join(' '));
+
   // Dragging a planned meal onto another evening does what Switch Days… does.
   let drag = $state({ from: '', over: '', targets: /** @type {string[]} */ ([]) });
-  const mover = createPointerDrag({
-    axis: 'y',
+  /** @param {'y'} [axis] */
+  const dragger = (axis) => createPointerDrag({
+    axis,
     zIndex: 60, // above the sticky header, below dialogs and toasts
     ghostClass: 'shadow-lift',
     autoScroll: { insets: () => ({ top: document.querySelector('header')?.getBoundingClientRect().bottom ?? 0 }) },
@@ -30,6 +38,8 @@
     onDrop: (from, to) => switchDays(from, to),
     onEnd: () => (drag = { from: '', over: '', targets: [] }),
   });
+  const listMover = dragger('y');
+  const gridMover = dragger();
 
   /** @param {string} iso @returns {'' | 'source' | 'over' | 'target' | 'off'} */
   function dropState(iso) {
@@ -50,7 +60,7 @@
   });
 </script>
 
-<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-gutter-desktop">
+<div class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-6 md:px-gutter-desktop">
   <PlannerHeader />
 
   <section aria-label={text.planner.daysAria} class="flex flex-col {devicePrefs.plannerMinimal ? 'gap-2.5' : 'gap-4'}">
@@ -58,15 +68,31 @@
       <input type="checkbox" bind:checked={devicePrefs.plannerMinimal} class="h-4 w-4 rounded accent-primary" />
       {text.planner.minimalView}
     </label>
-    {#each days as day (day.iso)}
-      <DayCard
-        {day}
-        minimal={devicePrefs.plannerMinimal}
-        onswitch={(iso) => (switching = iso)}
-        draghandle={mover.handle}
-        drop={dropState(day.iso)}
-      />
-    {/each}
+    {#if wide.current && !devicePrefs.plannerMinimal}
+      <div class="grid gap-3 md:grid-cols-4 xl:[grid-template-columns:var(--week-columns)]" style="--week-columns: {columns}">
+        {#each days as day (day.iso)}
+          <div class="flex min-w-0">
+            <DayGridCard
+              {day}
+              lead={day.isToday}
+              onswitch={(iso) => (switching = iso)}
+              draghandle={gridMover.handle}
+              drop={dropState(day.iso)}
+            />
+          </div>
+        {/each}
+      </div>
+    {:else}
+      {#each days as day (day.iso)}
+        <DayListCard
+          {day}
+          minimal={devicePrefs.plannerMinimal}
+          onswitch={(iso) => (switching = iso)}
+          draghandle={listMover.handle}
+          drop={dropState(day.iso)}
+        />
+      {/each}
+    {/if}
   </section>
 </div>
 

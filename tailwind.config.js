@@ -53,8 +53,13 @@ export default {
         xl: '0.75rem',
       },
       spacing: {
-        gutter: '1.25rem',
+        // Page side margins (phones / from md), shared by the header, footer and every screen.
+        gutter: '0.5rem',
         'gutter-desktop': '1.5rem',
+      },
+      maxWidth: {
+        // Widest a page's content grows (`max-w-page`); wider windows centre it.
+        page: '1440px',
       },
       boxShadow: {
         card: '0 2px 8px -2px rgba(50, 40, 30, 0.04), 0 1px 3px 0 rgba(50, 40, 30, 0.02)',

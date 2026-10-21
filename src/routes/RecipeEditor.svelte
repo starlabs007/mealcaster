@@ -530,7 +530,7 @@
     </div>
   </div>
 {:else}
-  <div class="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-gutter-desktop">
+  <div class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-6 md:px-gutter-desktop">
     <!-- Sheet status banner -->
     <div class="flex flex-col gap-3 rounded-xl bg-surface-container-low px-4 py-3 md:flex-row md:items-center md:justify-between">
       <div class="flex flex-wrap items-center gap-x-4 gap-y-2">

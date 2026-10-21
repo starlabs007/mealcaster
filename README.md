@@ -368,7 +368,7 @@ src/
     sheetText.js             wording stored in the Google Sheet and parsed back by sync/codec.js (changing it may need a migration)
     format.js                quantity formatting (1/3, 3 1/2)
     data/recipes.js          recipe types, formatMinutes
-    components/              AppHeader, DayCard, RecipeCard, LastMade, ...
+    components/              AppHeader, DayListCard, RecipeCard, LastMade, ...
 dev/samples/                 dev sample data generator (plain Node modules, never bundled): generate.js, dish
                              templates, cuisines, ingredient catalog, phrases, images.js (TheMealDB photo cache)
 .cache/                      gitignored: sample-images.json

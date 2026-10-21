@@ -1,4 +1,6 @@
 <script>
+  // One evening as a full-width row of the planner's list: on phones, and in Minimal view on every screen (`minimal`).
+  // Wider screens otherwise show the week grid (DayGridCard).
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
   import { surpriseMe, markDiningOut, clearDay, setDone, spotlight, switchTargets } from '../planner.svelte.js';

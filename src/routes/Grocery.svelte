@@ -233,7 +233,7 @@
 {/snippet}
 
 <!-- Screen only; printing uses the plain checklist below. -->
-<div class="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 md:px-gutter-desktop print:hidden">
+<div class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-6 md:px-gutter-desktop print:hidden">
   <!-- Breadcrumb & sync status -->
   <div class="flex flex-wrap items-center justify-between gap-3">
     <nav aria-label={text.grocery.breadcrumbAria} class="flex items-center gap-1.5 text-label-md text-on-surface-variant">
