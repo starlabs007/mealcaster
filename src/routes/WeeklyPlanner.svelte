@@ -17,7 +17,10 @@
   // From `md` up the week is a grid in calendar order: 4 + 3 columns, then from `xl` one row of seven with
   // tonight's column wider. Phones, and Minimal view on any screen, use the list of day cards.
   const wide = new MediaQuery('min-width: 768px');
-  const columns = $derived(days.map((d) => (d.isToday ? '1.6fr' : '1fr')).join(' '));
+  // From `xl`, past days beside a live week are narrow tiles (a fully past or future week keeps full cards).
+  const xl = new MediaQuery('min-width: 1280px');
+  const compact = (/** @type {{ isPast: boolean }} */ d) => xl.current && d.isPast && days.some((x) => !x.isPast);
+  const columns = $derived(days.map((d) => (d.isToday ? '1.6fr' : compact(d) ? '0.55fr' : '1fr')).join(' '));
 
   // Dragging a planned meal onto another evening does what Switch Days… does.
   let drag = $state({ from: '', over: '', targets: /** @type {string[]} */ ([]) });
@@ -82,6 +85,7 @@
             <DayGridCard
               {day}
               lead={day.isToday}
+              compact={compact(day)}
               onswitch={(iso) => (switching = iso)}
               draghandle={gridMover.handle}
               drop={dropState(day.iso)}

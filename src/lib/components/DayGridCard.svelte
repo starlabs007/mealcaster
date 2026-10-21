@@ -1,7 +1,8 @@
 <script>
   // One evening in the planner's week grid (from `md` up): a column of the week, `lead` for tonight's (wider, with
   // the larger title and Mark Done). Phones and Minimal view use DayListCard instead. View Recipe (and Mark Done
-  // tonight) stay visible; the other actions sit in the ⋯ menu.
+  // tonight) stay visible; the other actions sit in the ⋯ menu. `compact` (past days beside a live week, seven
+  // columns) keeps the same header and photo ratio as the other cards so the photos line up, and drops the rest.
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
   import ActionMenu from './ActionMenu.svelte';
@@ -14,10 +15,10 @@
 
   /**
    * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], lead?: boolean,
-   *   onswitch?: (iso: string) => void, draghandle?: (iso: string) => (el: HTMLElement) => () => void,
+   *   compact?: boolean, onswitch?: (iso: string) => void, draghandle?: (iso: string) => (el: HTMLElement) => () => void,
    *   drop?: '' | 'source' | 'over' | 'target' | 'off' }}
    */
-  let { day, lead = false, onswitch, draghandle, drop = '' } = $props();
+  let { day, lead = false, compact = false, onswitch, draghandle, drop = '' } = $props();
 
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
@@ -84,7 +85,9 @@
       </div>
       <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
         <span class="font-display text-on-surface {lead ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
-        {#if day.status === 'completed'}
+        {#if compact}
+          <!-- Narrow tile: the tint and the line below say how the evening went. -->
+        {:else if day.status === 'completed'}
           <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
             <Icon name="check_circle" class="text-[13px]" /> {text.planner.card.completed}
           </span>
@@ -97,7 +100,7 @@
         {/if}
       </div>
     </div>
-    {#if actions.length}
+    {#if actions.length && !compact}
       <ActionMenu items={actions} label={text.planner.card.moreAria(weekdayName)} opener="menu" class="-mr-1 -mt-1" />
     {/if}
     {#if handle}
@@ -119,6 +122,17 @@
   {#if hasMeal && day.recipe}
     {@const recipe = day.recipe}
     {@const recipeHref = href(`/recipe/${recipe.id}`, { day: day.iso })}
+    {#if compact}
+      <a
+        href={recipeHref}
+        data-day-focus
+        aria-label={text.planner.card.viewRecipeAria(recipe.title)}
+        class="focus-ring flex min-w-0 flex-col gap-3 rounded-lg"
+      >
+        <RecipeImage src={recipe.image} alt="" class="aspect-[4/5] w-full flex-shrink-0 rounded-lg saturate-50" />
+        <span class="line-clamp-3 font-display text-sm leading-snug text-on-surface" title={recipe.title}>{recipe.title}</span>
+      </a>
+    {:else}
     <RecipeImage
       src={recipe.image}
       alt={recipe.title}
@@ -165,6 +179,9 @@
         {/if}
       </div>
     </div>
+    {/if}
+  {:else if compact}
+    <p class="text-sm text-on-surface-variant">{day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.notLogged}</p>
   {:else}
     <!-- Empty evenings (open, night off, not logged) sit centred in their card, like the photo placeholder. -->
     <div class="flex flex-1 flex-col items-center justify-center gap-3 pb-8 text-center">
