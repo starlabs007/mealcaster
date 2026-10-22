@@ -3,6 +3,7 @@
   import { renderMarkdown } from '../lib/markdown.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
   import PrintOptionsDialog from '../lib/components/PrintOptionsDialog.svelte';
+  import DeleteRecipeDialog from '../lib/components/DeleteRecipeDialog.svelte';
   import RecipePrintSimple from '../lib/components/RecipePrintSimple.svelte';
   import { printOptions, setPrintOptions, TEXT_DELTA } from '../lib/printOptions.svelte.js';
   import { recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon, aisleLabel } from '../lib/recipes.svelte.js';
@@ -72,13 +73,9 @@
   }
 
   let confirmingDelete = $state(false);
-  /** @type {HTMLElement | undefined} */
-  let confirmDialog = $state();
-
-  $effect(() => {
-    if (confirmingDelete) confirmDialog?.focus();
-  });
-
+  // Safari doesn't focus a button on click, so the dialog can't read its opener from the active element.
+  /** @type {HTMLElement | null} */
+  let deleteOpener = null;
   function remove() {
     confirmingDelete = false;
     const removed = deleteRecipe(recipe.id);
@@ -146,7 +143,10 @@
         <a href={href(`/recipe/${recipe.id}/edit`)} class="btn-outline">
           <Icon name="edit" class="text-[16px]" /> {text.recipe.buttons.edit}
         </a>
-        <button type="button" class="btn-outline hover:text-secondary" onclick={() => (confirmingDelete = true)}>
+        <button type="button" class="btn-outline hover:text-secondary" onclick={(e) => {
+            deleteOpener = e.currentTarget;
+            confirmingDelete = true;
+          }}>
           <Icon name="delete" class="text-[16px]" /> {text.recipe.buttons.delete}
         </button>
         <button
@@ -435,7 +435,6 @@
   </div>
 {/if}
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && (confirmingDelete = false)} />
 
 {#if recipe && printOptions.simple}
   <RecipePrintSimple
@@ -454,30 +453,5 @@
 {/if}
 
 {#if confirmingDelete}
-  <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions (Escape handled on window) -->
-  <div
-    class="fixed inset-0 z-[70] flex items-center justify-center bg-inverse-surface/40 p-4 backdrop-blur-md print:hidden"
-    onclick={(e) => e.target === e.currentTarget && (confirmingDelete = false)}
-  >
-    <div
-      bind:this={confirmDialog}
-      role="alertdialog"
-      aria-modal="true"
-      aria-labelledby="delete-title"
-      aria-describedby="delete-body"
-      tabindex="-1"
-      class="w-full max-w-sm rounded-2xl bg-surface p-6 shadow-lift focus:outline-none"
-    >
-      <h2 id="delete-title" class="font-display text-headline-sm text-on-surface">{text.recipe.deleteDialog.title}</h2>
-      <p id="delete-body" class="mt-2 text-body-sm text-on-surface-variant">
-        <strong>{recipe.title}</strong>{text.recipe.deleteDialog.afterTitle}
-      </p>
-      <div class="mt-5 flex justify-end gap-2">
-        <button type="button" class="btn-outline" onclick={() => (confirmingDelete = false)}>{text.common.cancel}</button>
-        <button type="button" class="btn bg-secondary text-on-secondary shadow-sm hover:opacity-90" onclick={remove}>
-          <Icon name="delete" class="text-[16px]" /> {text.common.delete}
-        </button>
-      </div>
-    </div>
-  </div>
+  <DeleteRecipeDialog title={recipe.title} opener={deleteOpener} onconfirm={remove} onclose={() => (confirmingDelete = false)} />
 {/if}
