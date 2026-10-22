@@ -128,7 +128,7 @@ built-ins) can be recoloured, renamed or deleted under Profile & Settings → Re
 The `Tags` column holds them as comma-separated text.
 
 A recipe has at most one **category** (optional; shown on the cards, the detail hero and the planner day card).
-The editor offers Dinner, Lunch, Dessert and every category in use, and takes a custom one (tidied like a tag).
+The editor's one Category field offers Dinner, Lunch, Dessert and every category in use, and takes a custom one (tidied like a tag).
 The `Category` column holds it; blank means none.
 
 ## Ingredients
@@ -151,9 +151,13 @@ for every recipe and the grocery list.
   on the grocery list.
 - **Recipe editor**: the ingredient field suggests existing ingredients (accent-insensitive, plurals too) and creates
   a new one on save, marked **New** with its aisle (guessed from keywords; a name with no keyword match waits for you to choose, and saving asks for it). Prep and Cook times may stay empty (saved as 0, which no screen shows) and "Did you mean…" buttons for
-  look-alikes. An existing ingredient's aisle is locked there (change it in Profile). The unit field suggests units
+  look-alikes. An existing ingredient's aisle shows read-only beside the row (change it in Profile). The unit field suggests units
   and other spellings ("tablespoon" → tbsp). **Paste bulk text** splits lines into amount, unit, ingredient, note,
-  prep and optional (rules under its help toggle).
+  prep and optional (rules under its help toggle); a "Sauce:" line starts a group.
+- Ingredient **groups** are edited as sections (**Add Group**; a heading's ⋯ menu moves or deletes it, its rows joining
+  the group above). A row is qty · unit · ingredient · ⋯ (note, prep and optional; move to another group; remove);
+  Enter in the ingredient field adds the next row. One group shows no heading; it saves as "Main" when untitled. A
+  group keeps its sheet category when renamed. Sheet column names appear only under **Sheet Column Mapping**.
 - A recipe line whose ingredient isn't in the tab shows as "Unknown ingredient" and keeps its id; sync doesn't stop.
 
 ## Grocery List (`#/grocery`)

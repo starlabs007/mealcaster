@@ -1,8 +1,9 @@
-// The Recipe Editor's draft storage: a new recipe's draft, edited recipes' drafts, and telling a changed form apart.
+// The Recipe Editor's draft storage: a new recipe's draft, edited recipes' drafts, telling a changed form apart, and
+// its ingredient sections (old flat drafts, and the groups a save writes).
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createDraftStore, signature } from '../src/lib/recipeDraft.js';
+import { createDraftStore, flatForm, savedGroups, sectionsOf, signature } from '../src/lib/recipeDraft.js';
 
 const memory = (/** @type {{ full?: boolean }} */ { full = false } = {}) => {
   const data = new Map();
@@ -83,5 +84,83 @@ describe('draft store', () => {
     assert.equal(drafts.read('a', 'x').title, 'A');
     store.data.set('new', JSON.stringify({ title: 'no rows' }));
     assert.equal(drafts.read(undefined), null);
+  });
+});
+
+const row = (key, text, extra = {}) => ({ key, qty: '1', unit: '', text, id: text, note: '', prep: '', optional: false, aisle: 'pantry', aisleSet: true, ...extra });
+
+describe('grouped drafts', () => {
+  it('a grouped form is a draft too', () => {
+    const drafts = createDraftStore(memory(), 'new', 'edits');
+    drafts.write(undefined, { title: 'Pho', groups: [{ key: 1, title: '', category: '', rows: [] }], steps: [] });
+    assert.equal(drafts.read(undefined).title, 'Pho');
+  });
+
+  it('flatForm rebuilds the old flat shape, key for key, so an old draft still matches its recipe', () => {
+    const grouped = {
+      title: 'Burgers',
+      tags: [],
+      groups: [
+        { key: 1, title: 'Patties', category: 'Protein', rows: [row(2, 'lamb')] },
+        { key: 3, title: 'Build', category: 'Assembly', rows: [row(4, 'bun')] },
+      ],
+      steps: [],
+      notes: '',
+    };
+    const old = {
+      title: 'Burgers',
+      tags: [],
+      ingredients: [
+        { key: 9, qty: '1', unit: '', text: 'lamb', id: 'lamb', note: '', prep: '', optional: false, group: 'Patties', aisle: 'pantry', aisleSet: true },
+        { key: 8, qty: '1', unit: '', text: 'bun', id: 'bun', note: '', prep: '', optional: false, group: 'Build', aisle: 'pantry', aisleSet: true },
+      ],
+      steps: [],
+      notes: '',
+    };
+    assert.equal(signature(flatForm(grouped)), signature(old));
+  });
+
+  it('sectionsOf puts flat rows back in their groups, in first-seen order, ignoring case', () => {
+    const rows = [{ text: 'lamb', group: 'Patties' }, { text: 'bun', group: 'Build' }, { text: 'salt', group: 'patties ' }, { text: 'ice' }];
+    const sections = sectionsOf(rows, (title) => (title === 'Patties' ? 'Protein' : ''));
+    assert.deepEqual(
+      sections.map((s) => [s.title, s.category, s.rows.map((r) => r.text)]),
+      [['Patties', 'Protein', ['lamb', 'salt']], ['Build', '', ['bun']], ['', '', ['ice']]],
+    );
+    assert.equal('group' in sections[0].rows[0], false);
+  });
+});
+
+describe('savedGroups', () => {
+  const how = { fallbackTitle: 'Main', item: (r) => ({ id: r.text }), category: (g) => `auto ${g.items.length}` };
+
+  it('saves sections in order, skipping empty rows and sections; untitled ones become Main', () => {
+    const groups = savedGroups(
+      [
+        { title: '', category: '', rows: [row(1, 'rice'), row(2, '  ')] },
+        { title: 'Sauce', category: '', rows: [row(3, '')] },
+        { title: 'Top', category: '', rows: [row(4, 'scallion')] },
+      ],
+      how,
+    );
+    assert.deepEqual(groups, [
+      { title: 'Main', category: 'auto 1', items: [{ id: 'rice' }] },
+      { title: 'Top', category: 'auto 1', items: [{ id: 'scallion' }] },
+    ]);
+  });
+
+  it("keeps a renamed section's category, and merges sections that share a name", () => {
+    const groups = savedGroups(
+      [
+        { title: 'Lamb Patties', category: 'Protein', rows: [row(1, 'lamb')] },
+        { title: '', category: '', rows: [row(2, 'bun')] },
+        { title: 'main', category: '', rows: [row(3, 'lettuce')] },
+      ],
+      how,
+    );
+    assert.deepEqual(
+      groups.map((g) => [g.title, g.category, g.items.map((i) => i.id)]),
+      [['Lamb Patties', 'Protein', ['lamb']], ['Main', 'auto 2', ['bun', 'lettuce']]],
+    );
   });
 });

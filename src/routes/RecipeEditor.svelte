@@ -7,7 +7,7 @@
 
 <script>
   import { onDestroy, tick } from 'svelte';
-  import { createDraftStore, signature } from '../lib/recipeDraft.js';
+  import { createDraftStore, flatForm, savedGroups, sectionsOf, signature } from '../lib/recipeDraft.js';
   import { defaultAisle, defaultIngredientGroup, defaultStepTitle, groupCategory } from '../lib/sheetText.js';
   import { text } from '../lib/text.js';
   import { SvelteSet } from 'svelte/reactivity';
@@ -43,6 +43,7 @@
   import { tagClasses } from '../lib/tagColors.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
   import Combobox from '../lib/components/Combobox.svelte';
+  import ActionMenu from '../lib/components/ActionMenu.svelte';
 
   /** @type {{ id?: string }} */
   let { id } = $props();
@@ -57,19 +58,23 @@
    * Rows carry `critical` through untouched so editing a sample doesn't lose them.
    * An ingredient row's `text` is the ingredient's name: saving picks the ingredient with that name (or plural), or
    * creates one in `aisle`. `id` keeps the ingredient of a line whose name wasn't touched (so an unknown id survives).
-   * @typedef {{ key: number, qty: string, unit: string, text: string, id?: string, note: string, prep: string, optional: boolean, group: string, aisle: string, aisleSet: boolean }} IngredientRow
+   * A group is a section of rows; its `category` ("Protein"…) is the sheet's and survives a rename.
+   * @typedef {{ key: number, qty: string, unit: string, text: string, id?: string, note: string, prep: string, optional: boolean, aisle: string, aisleSet: boolean }} IngredientRow
+   * @typedef {{ key: number, title: string, category: string, rows: IngredientRow[] }} IngredientGroup
    * @typedef {{ key: number, title: string, text: string, minutes: string, critical?: boolean }} StepRow
    * @typedef {{
    *   title: string, description: string, image: string, category: string,
    *   serves: number, prepMinutes: number | '', cookMinutes: number | '', tags: string[],
-   *   ingredients: IngredientRow[], steps: StepRow[], notes: string,
+   *   groups: IngredientGroup[], steps: StepRow[], notes: string,
    * }} Form
    */
 
   let lastKey = 0;
   const nextKey = () => ++lastKey;
   /** @returns {IngredientRow} */
-  const blankIngredient = (group = '') => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, group, aisle: '', aisleSet: false });
+  const blankIngredient = () => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, aisle: '', aisleSet: false });
+  /** @returns {IngredientGroup} */
+  const blankGroup = (rows = 1, title = '', category = '') => ({ key: nextKey(), title, category, rows: Array.from({ length: rows }, blankIngredient) });
   /** @returns {StepRow} */
   const blankStep = () => ({ key: nextKey(), title: '', text: '', minutes: '' });
 
@@ -84,7 +89,7 @@
       prepMinutes: '',
       cookMinutes: '',
       tags: [],
-      ingredients: [blankIngredient(), blankIngredient(), blankIngredient()],
+      groups: [blankGroup(1)],
       steps: [blankStep()],
       notes: '',
     };
@@ -101,24 +106,28 @@
       prepMinutes: r.prepMinutes,
       cookMinutes: r.cookMinutes,
       tags: [...r.tags],
-      ingredients: r.ingredients.flatMap((g) =>
-        g.items.map((item) => {
-          const ingredient = ingredientOf(item.id);
-          return {
+      groups: r.ingredients.length
+        ? r.ingredients.map((g) => ({
             key: nextKey(),
-            qty: item.qty == null ? '' : formatQty(item.qty),
-            unit: item.unit ?? '',
-            text: ingredient?.name ?? item.id,
-            id: item.id,
-            note: item.note ?? '',
-            prep: item.prep ?? '',
-            optional: Boolean(item.optional),
-            group: g.title,
-            aisle: ingredient?.aisle ?? defaultAisle,
-            aisleSet: true,
-          };
-        }),
-      ),
+            title: g.title,
+            category: g.category,
+            rows: g.items.map((item) => {
+              const ingredient = ingredientOf(item.id);
+              return {
+                key: nextKey(),
+                qty: item.qty == null ? '' : formatQty(item.qty),
+                unit: item.unit ?? '',
+                text: ingredient?.name ?? item.id,
+                id: item.id,
+                note: item.note ?? '',
+                prep: item.prep ?? '',
+                optional: Boolean(item.optional),
+                aisle: ingredient?.aisle ?? defaultAisle,
+                aisleSet: true,
+              };
+            }),
+          }))
+        : [blankGroup(1)],
       steps: r.steps.map((s) => ({
         key: nextKey(),
         title: s.title,
@@ -132,13 +141,25 @@
 
   const drafts = createDraftStore(localStorage, DRAFT_KEY, EDIT_DRAFTS_KEY);
   /** What the form looks like when nothing was changed: the recipe as saved, or a blank one. */
-  const baseline = signature(editing ? formFrom(editing) : blankForm());
+  const opened = editing ? formFrom(editing) : blankForm();
+  const baseline = signature(opened);
 
   /** The saved draft with fresh row keys, so they can't collide with rows added from here on. @returns {Form | null} */
   function loadDraft() {
-    const draft = drafts.read(editing?.id, baseline);
+    let draft = drafts.read(editing?.id, baseline) ?? (editing ? drafts.read(editing.id, signature(flatForm(opened))) : null);
     if (!draft) return null;
-    draft.ingredients = draft.ingredients.map((row) => ({ ...blankIngredient(), ...row, key: nextKey() }));
+    if (!Array.isArray(draft.groups)) {
+      const { ingredients: rows = [], steps, notes, ...head } = draft;
+      const categoryOf = (title) => editing?.ingredients.find((g) => g.title.toLowerCase() === title.toLowerCase())?.category ?? '';
+      const groups = sectionsOf(rows, categoryOf);
+      draft = { ...head, groups: groups.length ? groups : [blankGroup(1)], steps, notes };
+    }
+    draft.groups = draft.groups.map((g) => ({
+      ...blankGroup(0),
+      ...g,
+      key: nextKey(),
+      rows: (g.rows ?? []).map((row) => ({ ...blankIngredient(), ...row, key: nextKey() })),
+    }));
     draft.steps = draft.steps.map((step) => ({ ...step, key: nextKey() }));
     draft.tags = normalizeTags(draft.tags);
     draft.category = normalizeCategory(draft.category);
@@ -201,16 +222,10 @@
   });
 
   // ---- Category ------------------------------------------------------------------
-  let newCategory = $state('');
-  const categoryOptions = $derived(categoryChoices([...recipes.map((r) => r.badge.label), form.category]));
+  // One field: pick a category the recipe box uses, or type a new one.
+  const categoryOptions = $derived(categoryChoices(recipes.map((r) => r.badge.label)).map((c) => ({ value: c, label: c })));
 
-  /** The typed category, if any, else the picked one. */
-  const chosenCategory = () => normalizeCategory(newCategory) || form.category;
-
-  function addCategory() {
-    form.category = chosenCategory();
-    newCategory = '';
-  }
+  const chosenCategory = () => normalizeCategory(form.category);
 
   // ---- Tags ----------------------------------------------------------------------
   let newTag = $state('');
@@ -227,6 +242,20 @@
     form.tags = withNewTag();
     newTag = '';
   }
+
+  /** Tags the recipe doesn't have yet, offered as you type. */
+  const tagSuggestions = $derived(tagOptions.filter((t) => !form.tags.includes(t)).map((t) => ({ value: t, label: t })));
+
+  /** @param {string} tag */
+  function removeTag(tag) {
+    const index = form.tags.indexOf(tag);
+    form.tags = form.tags.filter((t) => t !== tag);
+    // Focus moves to the next chip, else the field to add one.
+    tick().then(() => {
+      const chips = document.querySelectorAll('#recipe-tags [data-tag]');
+      /** @type {HTMLElement | null} */ (chips[Math.min(index, chips.length - 1)] ?? document.getElementById('recipe-new-tag'))?.focus();
+    });
+  }
   let submitted = $state(false);
   let bulkOpen = $state(false);
   // The paste rules, shown under the paste box on request so they can stay open while typing.
@@ -240,8 +269,11 @@
   // ---- Validation ----------------------------------------------------------
 
   const minutesOk = (m) => m == null || m === '' || (Number.isInteger(m) && m >= 0);
-  const filledIngredients = $derived(form.ingredients.filter((r) => r.text.trim()));
-  const qtyInvalid = $derived(new Set(form.ingredients.filter((r) => Number.isNaN(parseQty(r.qty))).map((r) => r.key)));
+  const allRows = $derived(form.groups.flatMap((g) => g.rows));
+  /** Each row's number, counted across groups, for labels that name a row. */
+  const rowNumber = $derived(new Map(allRows.map((r, i) => [r.key, i + 1])));
+  const filledIngredients = $derived(allRows.filter((r) => r.text.trim()));
+  const qtyInvalid = $derived(new Set(allRows.filter((r) => Number.isNaN(parseQty(r.qty))).map((r) => r.key)));
   // A new ingredient nothing in its name places gets no aisle until it's chosen: never a silent Pantry.
   const aisleMissing = $derived(
     new Set(filledIngredients.filter((r) => !r.aisle && !rowIngredient(r) && !(r.id && r.text.trim() === r.id)).map((r) => r.key)),
@@ -265,11 +297,11 @@
     for (const key of ['title', 'serves', 'prepMinutes', 'cookMinutes']) {
       if (errors[key]) list.push({ id: key, label: text.editor.problems[key], find: byId(`recipe-${key === 'title' ? 'title' : key}`) });
     }
-    const rowField = (key, selector) => () => document.querySelector(`#ingredient-rows > li[data-row="${key}"] ${selector}`);
+    const rowField = (key, selector) => () => document.querySelector(`#ingredients [data-row="${key}"] ${selector}`);
     if (errors.ingredients) {
-      list.push({ id: 'ingredients', label: text.editor.problems.ingredients, find: () => document.querySelectorAll('#ingredient-rows > li')[0]?.querySelectorAll('[role=combobox]')[1] });
+      list.push({ id: 'ingredients', label: text.editor.problems.ingredients, find: () => document.querySelector('#ingredients [data-row]')?.querySelectorAll('[role=combobox]')[1] });
     }
-    form.ingredients.forEach((row, i) => {
+    allRows.forEach((row, i) => {
       if (qtyInvalid.has(row.key)) list.push({ id: `qty-${row.key}`, label: text.editor.problems.qty(i + 1), find: rowField(row.key, 'input[aria-invalid="true"]') });
       if (aisleMissing.has(row.key)) list.push({ id: `aisle-${row.key}`, label: text.editor.problems.aisle(i + 1), find: rowField(row.key, 'select') });
     });
@@ -295,33 +327,23 @@
   const rowIngredient = (row) =>
     (row.id && ingredientOf(row.id)?.name === row.text.trim() ? ingredientOf(row.id) : undefined) ?? findIngredient(row.text);
 
-  const groupNames = $derived([...new Set(form.ingredients.map((r) => r.group.trim()).filter(Boolean))]);
-
   // ---- Ingredients ---------------------------------------------------------
 
-  function addIngredient() {
-    const last = form.ingredients.at(-1);
-    form.ingredients.push(blankIngredient(last?.group ?? ''));
+  const groupKeyOf = (rowKey) => form.groups.find((g) => g.rows.some((r) => r.key === rowKey))?.key;
+  /** A group's name as menus show it: its title, else "Group 2". @param {IngredientGroup} group */
+  const groupName = (group) => group.title.trim() || text.editor.ingredients.untitledGroup(form.groups.indexOf(group) + 1);
+  const isBlank = (row) => !row.text.trim() && !row.qty.trim() && !row.unit.trim() && !row.note.trim() && !row.prep.trim();
+
+  /** Focuses a row's quantity (or `selector` in it) once the list has re-rendered. @param {number} key */
+  async function focusIngredient(key, selector = 'input') {
+    await tick();
+    /** @type {HTMLElement | null} */ (document.querySelector(`#ingredients [data-row="${key}"] ${selector}`))?.focus();
   }
 
-  /** @param {number} key */
-  function removeIngredient(key) {
-    const index = form.ingredients.findIndex((r) => r.key === key);
-    const row = $state.snapshot(form.ingredients[index]);
-    form.ingredients = form.ingredients.filter((r) => r.key !== key);
-    if (!form.ingredients.length) form.ingredients.push(blankIngredient());
-    focusRow('#ingredient-rows', Math.min(index, form.ingredients.length - 1));
-    if (!row.text.trim() && !row.qty.trim() && !row.unit.trim() && !row.note.trim() && !row.prep.trim()) return;
-    showToast(text.editor.toasts.ingredientRemoved(row.text.trim()), {
-      label: text.common.undo,
-      run: () => {
-        const rows = form.ingredients.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim() || r.note.trim() || r.prep.trim());
-        rows.splice(Math.min(index, rows.length), 0, { ...row, key: nextKey() });
-        form.ingredients = rows;
-        if (detailsSummary(row)) detailsOpen.add(rows[Math.min(index, rows.length - 1)].key);
-        focusRow('#ingredient-rows', Math.min(index, rows.length - 1));
-      },
-    });
+  /** @param {string} selector */
+  async function focusIn(selector) {
+    await tick();
+    /** @type {HTMLElement | null} */ (document.querySelector(selector))?.focus();
   }
 
   /** Puts focus in the first field of the list's `index`th row, once the list has re-rendered. @param {string} list @param {number} index */
@@ -330,16 +352,128 @@
     document.querySelector(`${list} > :nth-child(${index + 1}) input`)?.focus();
   }
 
+  /** Adds an empty row to a group, after row `at` (else at the end), and puts the cursor in it. @param {IngredientGroup} group @param {number} [at] */
+  function addIngredient(group, at = group.rows.length - 1) {
+    const row = blankIngredient();
+    group.rows.splice(at + 1, 0, row);
+    focusIngredient(row.key);
+  }
+
+  /** @param {number} key */
+  function removeIngredient(key) {
+    const group = form.groups.find((g) => g.key === groupKeyOf(key));
+    if (!group) return;
+    const index = group.rows.findIndex((r) => r.key === key);
+    const row = $state.snapshot(group.rows[index]);
+    group.rows.splice(index, 1);
+    if (!allRows.length) group.rows.push(blankIngredient());
+    // Focus: the next row, else the one before, else the group's Add button.
+    const next = group.rows[index] ?? group.rows[index - 1];
+    if (next) focusIngredient(next.key);
+    else focusIn(`#ingredients [data-group="${group.key}"] [data-add-row]`);
+    if (isBlank(row)) return;
+    showToast(text.editor.toasts.ingredientRemoved(row.text.trim()), {
+      label: text.common.undo,
+      run: () => {
+        const home = form.groups.find((g) => g.key === group.key) ?? form.groups[0];
+        const restored = { ...row, key: nextKey() };
+        home.rows.splice(Math.min(index, home.rows.length), 0, restored);
+        focusIngredient(restored.key);
+      },
+    });
+  }
+
+  /** Moves a row to the end of another group. @param {number} key @param {IngredientGroup} target */
+  function moveIngredient(key, target) {
+    const from = form.groups.find((g) => g.key === groupKeyOf(key));
+    if (!from || from === target) return;
+    const [row] = from.rows.splice(from.rows.findIndex((r) => r.key === key), 1);
+    target.rows.push(row);
+    focusIngredient(key, '[aria-haspopup="menu"]');
+    showToast(text.editor.toasts.ingredientMoved(row.text.trim(), groupName(target)));
+  }
+
+  /** Opens a row's note / prep / optional fields and puts the cursor in the note. @param {IngredientRow} row */
+  function openDetails(row) {
+    detailsOpen.add(row.key);
+    focusIngredient(row.key, `#details-${row.key} input`);
+  }
+
+  /** A row's ⋯ menu. @param {IngredientRow} row @param {IngredientGroup} group */
+  const rowActions = (row, group) => [
+    detailsOpen.has(row.key)
+      ? { id: 'details', label: text.editor.ingredients.hideDetails, icon: 'expand_less', onselect: () => detailsOpen.delete(row.key) }
+      : { id: 'details', label: text.editor.ingredients.showDetails, icon: 'tune', onselect: () => openDetails(row) },
+    ...form.groups
+      .filter((g) => g !== group)
+      .map((g) => ({ id: `move-${g.key}`, label: text.editor.ingredients.moveTo(groupName(g)), icon: 'drive_file_move', onselect: () => moveIngredient(row.key, g) })),
+    { id: 'remove', label: text.editor.ingredients.remove, icon: 'delete', divider: true, onselect: () => removeIngredient(row.key) },
+  ];
+
+  /** A group heading's ⋯ menu. @param {number} index */
+  const groupActions = (index) => [
+    ...(index > 0 ? [{ id: 'up', label: text.editor.ingredients.moveGroupUp, icon: 'arrow_upward', onselect: () => moveGroup(index, -1) }] : []),
+    ...(index < form.groups.length - 1 ? [{ id: 'down', label: text.editor.ingredients.moveGroupDown, icon: 'arrow_downward', onselect: () => moveGroup(index, 1) }] : []),
+    {
+      id: 'delete',
+      label: text.editor.ingredients.deleteGroup,
+      note: index === 0 ? text.editor.ingredients.deleteFirstGroupNote : text.editor.ingredients.deleteGroupNote,
+      icon: 'delete',
+      divider: index > 0 || form.groups.length > 1,
+      onselect: () => deleteGroup(index),
+    },
+  ];
+
+  /** "Add group": a second (or further) section, with the cursor in its name. */
+  function addGroup() {
+    const group = blankGroup(1);
+    form.groups.push(group);
+    focusIn(`#ingredients [data-group="${group.key}"] [data-group-title]`);
+  }
+
+  /** @param {number} index @param {-1 | 1} delta */
+  function moveGroup(index, delta) {
+    const groups = [...form.groups];
+    [groups[index], groups[index + delta]] = [groups[index + delta], groups[index]];
+    form.groups = groups;
+    focusIn(`#ingredients [data-group="${groups[index + delta].key}"] [data-group-title]`);
+  }
+
+  /** Deletes a group; its ingredients join the group above (the next one for the first). @param {number} index */
+  function deleteGroup(index) {
+    const group = $state.snapshot(form.groups[index]);
+    const target = form.groups[index === 0 ? 1 : index - 1];
+    if (!target) return;
+    const moved = group.rows.filter((r) => !isBlank(r));
+    if (index === 0) target.rows.unshift(...moved);
+    else target.rows.push(...moved);
+    form.groups.splice(index, 1);
+    if (form.groups.length > 1) focusIn(`#ingredients [data-group="${target.key}"] [data-group-title]`);
+    else if (moved.length) focusIngredient(moved[0].key);
+    else focusIngredient(target.rows[0]?.key ?? 0);
+    if (!moved.length && !group.title.trim()) return;
+    showToast(text.editor.toasts.groupDeleted(group.title.trim(), moved.length, groupName(target)), {
+      label: text.common.undo,
+      run: () => {
+        const movedKeys = new Set(moved.map((r) => r.key));
+        for (const g of form.groups) g.rows = g.rows.filter((r) => !movedKeys.has(r.key));
+        if (form.groups.every((g) => !g.rows.length)) form.groups[0]?.rows.push(blankIngredient());
+        const restored = { ...group, rows: group.rows.map((r) => ({ ...r })) };
+        form.groups.splice(Math.min(index, form.groups.length), 0, restored);
+        focusIn(`#ingredients [data-group="${restored.key}"] [data-group-title]`);
+      },
+    });
+  }
+
   /** "(flank or ribeye), sliced · optional" — the hidden details at a glance. @param {IngredientRow} row */
   const detailsSummary = (row) =>
     [[row.note.trim() && `(${row.note.trim()})`, row.prep.trim()].filter(Boolean).join(', '), row.optional && text.editor.ingredients.optionalWord]
       .filter(Boolean)
       .join(' · ');
 
-  // Rows showing their note / prep / optional fields: open from the start on rows that use them, closed (taking no
-  // space) on the rest, which is most of them.
-  // svelte-ignore state_referenced_locally
-  const detailsOpen = new SvelteSet(form.ingredients.filter((row) => detailsSummary(row)).map((row) => row.key));
+  // Rows showing their note / prep / optional fields. All start closed: a row that uses them shows a one-line summary
+  // under it, which opens them (as does the row's ⋯ menu).
+  const detailsOpen = new SvelteSet();
 
   /**
    * Uses an existing ingredient for a row whose name looked like a new one ("yellow onion" → onion); the extra
@@ -349,10 +483,7 @@
   function useExisting(row, { ingredient, note }) {
     row.text = ingredient.name;
     row.aisle = ingredient.aisle;
-    if (note && !row.note.trim()) {
-      row.note = note;
-      detailsOpen.add(row.key);
-    }
+    if (note && !row.note.trim()) row.note = note;
   }
 
   /** An existing ingredient brings its aisle; a new one gets a guess until you pick one. @param {IngredientRow} row */
@@ -362,19 +493,27 @@
     else if (!row.aisleSet) row.aisle = matchAisle(row.text);
   }
 
+  /** Pasted lines fill the groups: a line under "Sauce:" joins the Sauce group (made if there is none), the rest the last group. */
   function addBulk() {
-    const lastGroup = form.ingredients.findLast((r) => r.text.trim())?.group ?? '';
-    const parsed = parseIngredientLines(bulkText, lastGroup);
+    const last = form.groups.at(-1);
+    const parsed = parseIngredientLines(bulkText, last.title);
     if (!parsed.length) {
       showToast(text.editor.toasts.noIngredientsFound);
       return;
     }
-    const added = parsed.map((row) => {
-      const existing = findIngredient(row.text);
-      return { ...blankIngredient(row.group), ...row, aisle: existing?.aisle ?? row.aisle, key: nextKey() };
-    });
-    form.ingredients = [...form.ingredients.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim()), ...added];
-    for (const row of added) if (detailsSummary(row)) detailsOpen.add(row.key);
+    for (const g of form.groups) g.rows = g.rows.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim());
+    const added = [];
+    for (const { group: title, ...parsedRow } of parsed) {
+      const existing = findIngredient(parsedRow.text);
+      const row = { ...blankIngredient(), ...parsedRow, aisle: existing?.aisle ?? parsedRow.aisle, key: nextKey() };
+      let group = title === last.title ? last : form.groups.find((g) => g.title.trim().toLowerCase() === title.trim().toLowerCase());
+      if (!group) form.groups.push((group = blankGroup(0, title.trim())));
+      group.rows.push(row);
+      added.push(row);
+    }
+    // An untitled group the paste emptied (the blank rows of a new recipe) goes.
+    const kept = form.groups.filter((g) => g.rows.length || g.title.trim());
+    form.groups = kept.length ? kept : [blankGroup(1)];
     showToast(text.editor.toasts.addedIngredients(parsed.length));
     bulkText = '';
     bulkOpen = false;
@@ -459,28 +598,24 @@
 
   /** The recipe as saved; ingredients that don't exist yet are added. */
   function toRecipe() {
-    // Group categories ("Protein", "Aromatics"…) survive when the group name does.
+    // Group categories ("Protein", "Aromatics"…) travel with their section, so a renamed group keeps its own.
     const originalCategory = new Map(editing?.ingredients.map((g) => [g.title.toLowerCase(), g.category]) ?? []);
-    /** @type {import('../lib/data/recipes.js').IngredientGroup[]} */
-    const groups = [];
-    for (const row of filledIngredients) {
-      const title = row.group.trim() || defaultIngredientGroup;
-      let group = groups.find((g) => g.title.toLowerCase() === title.toLowerCase());
-      if (!group) groups.push((group = { title, category: '', items: [] }));
-      const qty = parseQty(row.qty);
-      const unit = canonicalUnit(row.unit);
-      group.items.push({
-        id: rowIngredientId(row),
-        ...(qty !== undefined && { qty }),
-        ...(unit && { unit }),
-        ...(row.note.trim() && { note: row.note.trim() }),
-        ...(row.prep.trim() && { prep: row.prep.trim() }),
-        ...(row.optional && { optional: true }),
-      });
-    }
-    for (const g of groups) {
-      g.category = originalCategory.get(g.title.toLowerCase()) || groupCategory(g.items.length);
-    }
+    const groups = savedGroups(form.groups, {
+      fallbackTitle: defaultIngredientGroup,
+      category: (g) => originalCategory.get(g.title.toLowerCase()) || groupCategory(g.items.length),
+      item: (row) => {
+        const qty = parseQty(row.qty);
+        const unit = canonicalUnit(row.unit);
+        return {
+          id: rowIngredientId(row),
+          ...(qty !== undefined && { qty }),
+          ...(unit && { unit }),
+          ...(row.note.trim() && { note: row.note.trim() }),
+          ...(row.prep.trim() && { prep: row.prep.trim() }),
+          ...(row.optional && { optional: true }),
+        };
+      },
+    });
 
     const title = form.title.trim();
     const image = form.image.trim();
@@ -588,16 +723,20 @@
   const columnLetter = (i) => String.fromCharCode(65 + i);
 
   const field =
-    'w-full rounded-lg border bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container';
+    'w-full rounded-lg border bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant/80 focus:outline-none focus:ring-2 focus:ring-primary-container';
   const border = (bad) => (bad ? 'border-error' : 'border-outline-variant');
+  // Placeholders, here and in `field`: lighter than typed text but readable (5.3:1 on white).
   const cellField =
-    'min-w-0 rounded-md border bg-surface-container-lowest px-2 py-1.5 text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container';
+    'min-h-11 min-w-0 rounded-md border bg-surface-container-lowest px-2 py-1.5 text-body-md text-on-surface placeholder:text-on-surface-variant/80 focus:outline-none focus:ring-2 focus:ring-primary-container fine:min-h-0 fine:text-body-sm';
+  // Ingredient rows and the labels over them: qty · unit · name · aisle (from md) · ⋯.
+  const rowGrid = 'grid grid-cols-[3rem_4.5rem_minmax(0,1fr)_auto] items-center gap-1.5 md:grid-cols-[3.5rem_5rem_minmax(0,1fr)_8rem_auto] md:gap-2';
+  // What sits under a row lines up with its name from md (3.5rem + 5rem + two gaps).
+  const indent = 'md:pl-[9.5rem]';
 </script>
 
-{#snippet fieldLabel(label, column, forId = undefined, required = false)}
-  <label for={forId} class="mb-1.5 flex items-baseline justify-between gap-2">
-    <span class="text-label-md text-on-surface">{label}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-outline">&nbsp;{text.editor.optional}</span>{/if}</span>
-    {#if column}<span class="text-body-sm text-outline">{text.editor.column(column)}</span>{/if}
+{#snippet fieldLabel(label, forId = undefined, required = false)}
+  <label for={forId} class="mb-1.5 block text-label-md text-on-surface">
+    {label}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-outline">&nbsp;{text.editor.optional}</span>{/if}
   </label>
 {/snippet}
 
@@ -647,31 +786,6 @@
   </div>
 {:else}
   <div class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-6 md:px-gutter-desktop">
-    <!-- Sheet status banner -->
-    <div class="flex flex-col gap-3 rounded-xl bg-surface-container-low px-4 py-3 md:flex-row md:items-center md:justify-between">
-      <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <span class="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-lowest px-3 py-1.5 text-label-md text-on-surface shadow-card">
-          <Icon name="table_chart" class="text-[16px] text-primary" /> {text.editor.banner.tab(sheets.tabs.recipes)}
-        </span>
-        <SyncStatus />
-        {#if sheets.spreadsheet}
-          <span class="hidden items-center gap-1.5 text-body-sm text-on-surface-variant lg:inline-flex">
-            <Icon name="sync_alt" class="text-[16px]" /> {text.editor.banner.savingWrites}
-          </span>
-        {/if}
-      </div>
-      <div class="flex flex-wrap gap-2">
-        <a href={href('/sheets-sync')} class="btn text-on-surface-variant hover:bg-surface-container-high">
-          <Icon name="settings" class="text-[16px]" /> {text.editor.banner.sheetsSettings}
-        </a>
-        {#if sheets.spreadsheet}
-          <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="btn text-on-surface-variant hover:bg-surface-container-high">
-            {text.editor.banner.viewSheet} <Icon name="open_in_new" class="text-[16px]" />
-          </a>
-        {/if}
-      </div>
-    </div>
-
     <!-- Title -->
     <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
       <div>
@@ -689,10 +803,7 @@
         <h1 class="mt-2 font-display text-headline-lg-mobile tracking-tight text-primary md:text-headline-xl">
           {editing ? text.editor.header.titleEdit : text.editor.header.titleNew}
         </h1>
-        <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
-          {text.editor.header.introBefore}
-          <code class="rounded bg-surface-container-high px-1 text-[12px]">[{sheets.tabs.recipes}]</code>{text.editor.header.introAfter}
-        </p>
+        <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">{text.editor.header.intro}</p>
       </div>
       {#if savedDraft}
         <span class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-primary-fixed/60 px-3 py-1 text-label-sm text-primary md:self-auto">
@@ -713,7 +824,7 @@
           </div>
 
           <div>
-            {@render fieldLabel(text.editor.essentials.recipeTitle, 'Title', 'recipe-title', true)}
+            {@render fieldLabel(text.editor.essentials.recipeTitle, 'recipe-title', true)}
             <input
               id="recipe-title"
               type="text"
@@ -728,7 +839,7 @@
           </div>
 
           <div>
-            {@render fieldLabel(text.editor.essentials.description, 'Description', 'recipe-description')}
+            {@render fieldLabel(text.editor.essentials.description, 'recipe-description')}
             <textarea
               id="recipe-description"
               rows="2"
@@ -740,7 +851,7 @@
           </div>
 
           <div>
-            {@render fieldLabel(text.editor.photo.label, 'Image_URL')}
+            {@render fieldLabel(text.editor.photo.label)}
             <!-- svelte-ignore a11y_no_static_element_interactions (drop target; the button inside is the keyboard path) -->
             <div
               class="relative h-48 overflow-hidden rounded-xl border-2 border-dashed transition-colors {dragging
@@ -801,101 +912,79 @@
             {@render numberField('cookMinutes', text.editor.essentials.cook, 'skillet', text.editor.essentials.minutesUnit, false)}
           </div>
 
-          <fieldset>
-            <legend class="mb-2 flex w-full items-baseline justify-between gap-2">
-              <span class="text-label-md text-on-surface">{text.editor.category.label} <span class="text-outline">{text.editor.optional}</span></span>
-              <span class="text-body-sm text-outline">{text.editor.column('Category')}</span>
-            </legend>
-            <div class="flex flex-wrap gap-1.5">
-              {#each categoryOptions as category (category)}
-                {@const on = form.category === category}
-                <button
-                  type="button"
-                  aria-pressed={on}
-                  title={category}
-                  onclick={() => (form.category = on ? '' : category)}
-                  class="inline-flex max-w-full items-center gap-1 rounded-full px-3 py-1 text-label-caps transition-all {on
-                    ? 'bg-primary text-on-primary shadow-sm'
-                    : 'bg-surface-container-high text-on-surface-variant hover:bg-surface-dim'}"
-                >
-                  {#if on}<Icon name="check" class="text-[13px]" />{/if}
-                  <span class="truncate">{category}</span>
-                </button>
-              {/each}
-            </div>
-            <div class="mt-2 flex gap-2">
-              <input
-                type="text"
-                aria-label={text.editor.category.newAria}
-                bind:value={newCategory}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    addCategory();
-                  }
-                }}
+          <div>
+            {@render fieldLabel(text.editor.category.label, 'recipe-category')}
+            <div class="flex items-center gap-2">
+              <Combobox
+                id="recipe-category"
+                label={text.editor.category.label}
                 placeholder={text.editor.category.placeholder}
-                class="{field} {border(false)} flex-1 py-2"
+                suggestions={categoryOptions}
+                limit={categoryOptions.length}
+                openOnFocus
+                bind:value={form.category}
+                onkey={(e) => {
+                  if (e.key === 'Enter') e.preventDefault();
+                }}
+                class="min-w-0 flex-1"
+                inputClass="{field} {border(false)}"
               />
-              <button
-                type="button"
-                disabled={!normalizeCategory(newCategory)}
-                onclick={addCategory}
-                class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-surface-container px-3 text-label-md text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
-              >
-                <Icon name="add" class="text-[16px]" /> {text.editor.category.add}
-              </button>
-            </div>
-            <p class="mt-1 text-body-sm text-outline">{text.editor.category.hint}</p>
-          </fieldset>
-
-          <fieldset>
-            <legend class="mb-2 flex w-full items-baseline justify-between gap-2">
-              <span class="text-label-md text-on-surface">{text.editor.tags.label} <span class="text-outline">{text.editor.optional}</span></span>
-              <span class="text-body-sm text-outline">{text.editor.column('Tags')}</span>
-            </legend>
-            <div class="flex flex-wrap gap-1.5">
-              {#each tagOptions as tag (tag)}
-                {@const on = form.tags.includes(tag)}
+              {#if form.category.trim()}
                 <button
                   type="button"
-                  aria-pressed={on}
-                  title={tag}
-                  onclick={() => (form.tags = on ? form.tags.filter((t) => t !== tag) : [...form.tags, tag])}
-                  class="inline-flex max-w-full items-center gap-1 rounded-full px-3 py-1 text-label-caps transition-all {tagColor.get(tag)} {on
-                    ? 'shadow-sm ring-[1.5px] ring-inset ring-current'
-                    : 'opacity-75 hover:opacity-100'}"
+                  aria-label={text.editor.category.clearAria(form.category.trim())}
+                  class="focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface fine:h-9 fine:w-9"
+                  onclick={() => {
+                    form.category = '';
+                    document.getElementById('recipe-category')?.focus();
+                  }}
                 >
-                  {#if on}<Icon name="check" class="text-[13px]" />{:else}+{/if}
-                  <span class="truncate">{tag}</span>
+                  <Icon name="close" class="text-[18px]" />
                 </button>
-              {/each}
+              {/if}
             </div>
-            <div class="mt-2 flex gap-2">
-              <input
-                type="text"
-                aria-label={text.editor.tags.newAria}
-                                bind:value={newTag}
-                onkeydown={(e) => {
-                  if (e.key === 'Enter' || e.key === ',') {
-                    e.preventDefault();
-                    addTag();
-                  }
-                }}
-                placeholder={text.editor.tags.placeholder}
-                class="{field} {border(false)} flex-1 py-2"
-              />
-              <button
-                type="button"
-                disabled={!newTag.split(',').some((t) => normalizeTag(t))}
-                onclick={addTag}
-                class="inline-flex shrink-0 items-center gap-1 rounded-lg bg-surface-container px-3 text-label-md text-primary transition-colors hover:bg-surface-container-high disabled:opacity-50"
-              >
-                <Icon name="add" class="text-[16px]" /> {text.editor.tags.add}
-              </button>
-            </div>
-            <p class="mt-1 text-body-sm text-outline">{text.editor.tags.hint(TAG_MAX)}</p>
-          </fieldset>
+            <p class="mt-1 text-body-sm text-on-surface-variant">{text.editor.category.hint}</p>
+          </div>
+
+          <div>
+            {@render fieldLabel(text.editor.tags.label, 'recipe-new-tag')}
+            {#if form.tags.length}
+              <ul id="recipe-tags" class="mb-2 flex flex-wrap gap-1.5">
+                {#each form.tags as tag (tag)}
+                  <li class="inline-flex max-w-full items-center rounded-full pl-3 text-label-caps {tagColor.get(tag)}">
+                    <span class="truncate">{tag}</span>
+                    <button
+                      data-tag
+                      type="button"
+                      aria-label={text.editor.tags.removeAria(tag)}
+                      class="focus-ring flex h-11 w-10 shrink-0 items-center justify-center rounded-full hover:bg-on-surface/10 fine:h-7 fine:w-7"
+                      onclick={() => removeTag(tag)}
+                    >
+                      <Icon name="close" class="text-[14px]" />
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+            <Combobox
+              id="recipe-new-tag"
+              label={text.editor.tags.newAria}
+              placeholder={text.editor.tags.placeholder}
+              suggestions={tagSuggestions}
+              limit={tagSuggestions.length}
+              openOnFocus
+              bind:value={newTag}
+              onpick={addTag}
+              onkey={(e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                  e.preventDefault();
+                  addTag();
+                }
+              }}
+              inputClass="{field} {border(false)}"
+            />
+            <p class="mt-1 text-body-sm text-on-surface-variant">{text.editor.tags.hint(TAG_MAX)}</p>
+          </div>
         </section>
 
         <section class="rounded-2xl bg-surface-container-low p-5">
@@ -905,7 +994,7 @@
             </h2>
             <div class="flex items-center gap-3">
               <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">
-                [{sheets.tabs.recipes}]
+                {text.editor.mapping.tab(sheets.tabs.recipes)}
               </span>
               <button
                 type="button"
@@ -920,6 +1009,7 @@
           </div>
           {#if showMapping}
             <div id="column-mapping" class="mt-2">
+              {#if sheets.spreadsheet}<p class="mb-1 text-body-sm text-on-surface-variant">{text.editor.mapping.savingWrites}</p>{/if}
               <p class="mb-3 text-body-sm text-on-surface-variant">{text.editor.mapping.intro}</p>
               <dl class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                 {#each SCHEMA.recipes as column, i (column)}
@@ -932,6 +1022,16 @@
                   </div>
                 {/each}
               </dl>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <a href={href('/sheets-sync')} class="btn focus-ring min-h-11 text-on-surface-variant hover:bg-surface-container-high fine:min-h-0">
+                  <Icon name="settings" class="text-[16px]" /> {text.editor.mapping.sheetsSettings}
+                </a>
+                {#if sheets.spreadsheet}
+                  <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="btn focus-ring min-h-11 text-on-surface-variant hover:bg-surface-container-high fine:min-h-0">
+                    {text.editor.mapping.viewSheet} <Icon name="open_in_new" class="text-[16px]" />
+                  </a>
+                {/if}
+              </div>
             </div>
           {/if}
         </section>
@@ -939,16 +1039,13 @@
 
       <!-- Right column -->
       <div class="flex flex-col gap-6 lg:col-span-7">
-        <!-- Ingredients -->
-        <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
-          <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-                <Icon name="grocery" class="text-[20px] text-primary" /> <span>{text.editor.ingredients.title}<span class="text-secondary">&nbsp;*</span></span>
-              </h2>
-              <p class="text-body-sm text-on-surface-variant">{text.editor.ingredients.columns}</p>
-            </div>
-            <button type="button" class="btn text-primary hover:bg-surface-container-low" aria-expanded={bulkOpen} onclick={() => (bulkOpen = !bulkOpen)}>
+        <!-- Ingredients: one section per group, as the recipe page reads them -->
+        <section id="ingredients" aria-labelledby="ingredients-title" class="rounded-2xl bg-surface-container-lowest p-4 shadow-card sm:p-5 md:p-6">
+          <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+            <h2 id="ingredients-title" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+              <Icon name="grocery" class="text-[20px] text-primary" /> <span>{text.editor.ingredients.title}<span class="text-secondary">&nbsp;*</span></span>
+            </h2>
+            <button type="button" class="btn focus-ring min-h-11 text-primary hover:bg-surface-container-low fine:min-h-0" aria-expanded={bulkOpen} onclick={() => (bulkOpen = !bulkOpen)}>
               <Icon name={bulkOpen ? 'close' : 'content_paste'} class="text-[16px]" /> {bulkOpen ? text.editor.ingredients.closePaste : text.editor.ingredients.paste}
             </button>
           </div>
@@ -987,120 +1084,135 @@
             </div>
           {/if}
 
-          <datalist id="ingredient-groups">
-            {#each groupNames as g (g)}<option value={g}></option>{/each}
-          </datalist>
-
-          <ul id="ingredient-rows" class="flex flex-col gap-2">
-            {#each form.ingredients as row, i (row.key)}
-              {@const badQty = submitted && qtyInvalid.has(row.key)}
-              {@const known = rowIngredient(row)}
-              {@const summary = detailsSummary(row)}
-              {@const isNew = Boolean(row.text.trim()) && !known && !(row.id && row.text.trim() === row.id)}
-              {@const similar = isNew ? similarIngredients(ingredients, row.text) : []}
-              <li data-row={row.key} class="flex flex-col gap-2 rounded-lg bg-surface-container-low p-2">
-                <div class="flex min-w-0 flex-1 items-center gap-2">
-                  <input type="text" aria-label={text.editor.ingredients.qtyAria(i + 1)} placeholder={text.editor.ingredients.qtyPlaceholder} bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} aria-describedby={badQty ? `err-qty-${row.key}` : undefined} class="{cellField} {border(badQty)} w-14 shrink-0 text-center" />
-                  <Combobox
-                    label={text.editor.ingredients.unitAria(i + 1)}
-                    placeholder={text.editor.ingredients.unitPlaceholder}
-                    suggestions={UNIT_SUGGESTIONS}
-                    limit={UNIT_SUGGESTIONS.length}
-                    openOnFocus
-                    bind:value={row.unit}
-                    class="w-20 shrink-0"
-                    inputClass="{cellField} {border(false)}"
-                    listClass="w-44"
+          {#each form.groups as group, gi (group.key)}
+            {@const grouped = form.groups.length > 1}
+            <div data-group={group.key} role={grouped ? 'group' : undefined} aria-label={grouped ? groupName(group) : undefined} class={gi ? 'mt-6' : ''}>
+              {#if grouped}
+                <div class="mb-2 flex items-center gap-2 border-b border-outline-variant pb-1">
+                  <input
+                    data-group-title
+                    type="text"
+                    maxlength="60"
+                    aria-label={text.editor.ingredients.groupNameAria(gi + 1)}
+                    placeholder={text.editor.ingredients.groupNamePlaceholder}
+                    bind:value={group.title}
+                    class="min-h-11 min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 font-display text-headline-sm text-on-surface placeholder:font-sans placeholder:text-body-md placeholder:text-on-surface-variant/80 hover:border-outline-variant focus:border-outline-variant focus:bg-surface-container-lowest focus:outline-none fine:min-h-0"
                   />
-                  <Combobox
-                    label={text.editor.ingredients.nameAria(i + 1)}
-                    placeholder={text.editor.ingredients.namePlaceholder}
-                    suggestions={ingredientSuggestions}
-                    bind:value={row.text}
-                    oninput={() => onIngredientText(row)}
-                    onpick={() => onIngredientText(row)}
-                    invalid={show('ingredients') && i === 0}
-                    describedby={show('ingredients') && i === 0 ? 'err-ingredients' : undefined}
-                    class="min-w-0 flex-1"
-                    align="right"
-                    inputClass="{cellField} {border(show('ingredients') && i === 0)}"
-                  />
+                  <ActionMenu label={text.editor.ingredients.groupMenuAria(groupName(group))} items={groupActions(gi)} />
                 </div>
-                {#if badQty}{@render errorText(`qty-${row.key}`, text.editor.errors.qty)}{/if}
-                {#if submitted && aisleMissing.has(row.key)}{@render errorText(`aisle-${row.key}`, text.editor.errors.aisle)}{/if}
-                {#if similar.length}
-                  <p class="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-body-sm text-on-surface-variant">
-                    <Icon name="info" class="text-[16px] text-tertiary" /> {text.editor.ingredients.newIngredientDidYouMean}
-                    {#each similar as match (match.ingredient.id)}
-                      <button type="button" class="rounded-full border border-outline-variant bg-surface-container-lowest px-2 py-0.5 text-label-sm text-primary hover:bg-surface-container-high" onclick={() => useExisting(row, match)}>
-                        {match.ingredient.name}{#if match.note}<span class="text-on-surface-variant">&nbsp;{text.editor.ingredients.plusNote(match.note)}</span>{/if}
+              {/if}
+              {#if gi === 0}
+                <div aria-hidden="true" class="{rowGrid} mb-1 text-label-sm text-on-surface-variant">
+                  <span class="px-1">{text.editor.ingredients.header.qty}</span>
+                  <span class="px-1">{text.editor.ingredients.header.unit}</span>
+                  <span class="px-1">{text.editor.ingredients.header.name}</span>
+                  <span class="hidden px-1 md:block">{text.editor.ingredients.header.aisle}</span>
+                </div>
+              {/if}
+              <ul class="flex flex-col gap-1.5">
+                {#each group.rows as row, ri (row.key)}
+                  {@const n = rowNumber.get(row.key) ?? 0}
+                  {@const badQty = submitted && qtyInvalid.has(row.key)}
+                  {@const badAisle = submitted && aisleMissing.has(row.key)}
+                  {@const known = rowIngredient(row)}
+                  {@const summary = detailsSummary(row)}
+                  {@const isNew = Boolean(row.text.trim()) && !known && !(row.id && row.text.trim() === row.id)}
+                  {@const similar = isNew ? similarIngredients(ingredients, row.text) : []}
+                  <li data-row={row.key} class="flex flex-col gap-1.5">
+                    <div class={rowGrid}>
+                      <input type="text" inputmode="decimal" aria-label={text.editor.ingredients.qtyAria(n)} placeholder={text.editor.ingredients.qtyPlaceholder} bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} aria-describedby={badQty ? `err-qty-${row.key}` : undefined} class="{cellField} {border(badQty)} w-full text-center" />
+                      <Combobox
+                        label={text.editor.ingredients.unitAria(n)}
+                        placeholder={text.editor.ingredients.unitPlaceholder}
+                        suggestions={UNIT_SUGGESTIONS}
+                        limit={UNIT_SUGGESTIONS.length}
+                        openOnFocus
+                        bind:value={row.unit}
+                        inputClass="{cellField} {border(false)}"
+                        listClass="w-44"
+                      />
+                      <Combobox
+                        label={text.editor.ingredients.nameAria(n)}
+                        placeholder={n === 1 ? text.editor.ingredients.namePlaceholderFirst : text.editor.ingredients.namePlaceholder}
+                        suggestions={ingredientSuggestions}
+                        bind:value={row.text}
+                        oninput={() => onIngredientText(row)}
+                        onpick={() => onIngredientText(row)}
+                        onkey={(e) => {
+                          // Enter starts the next row of this group, instead of saving the recipe.
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addIngredient(group, ri);
+                          }
+                        }}
+                        invalid={show('ingredients') && n === 1}
+                        describedby={show('ingredients') && n === 1 ? 'err-ingredients' : undefined}
+                        class="min-w-0"
+                        align="right"
+                        inputClass="{cellField} {border(show('ingredients') && n === 1)}"
+                      />
+                      <span class="hidden truncate px-1 text-body-sm text-on-surface-variant md:block" title={known ? aisleLabel(known.aisle) : undefined}>{known ? aisleLabel(known.aisle) : ''}</span>
+                      <ActionMenu label={text.editor.ingredients.rowMenuAria(n, row.text.trim())} items={rowActions(row, group)} />
+                    </div>
+                    {#if badQty}<div class={indent}>{@render errorText(`qty-${row.key}`, text.editor.errors.qty)}</div>{/if}
+                    {#if isNew}
+                      <div class="{indent} flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                        <span class="rounded bg-tertiary-fixed px-1.5 py-0.5 text-label-caps uppercase text-tertiary" title={text.editor.ingredients.newBadgeTitle(row.text.trim())}>{text.editor.ingredients.newBadge}</span>
+                        <span aria-hidden="true" class="text-body-sm text-on-surface-variant">{text.editor.ingredients.aisleLabel}</span>
+                        <select
+                          aria-label={text.editor.ingredients.aisleAria(n)}
+                          bind:value={row.aisle}
+                          onchange={() => (row.aisleSet = true)}
+                          aria-invalid={badAisle ? 'true' : undefined}
+                          aria-describedby={badAisle ? `err-aisle-${row.key}` : undefined}
+                          class="{cellField} {border(badAisle)} w-auto"
+                        >
+                          {#if !row.aisle}<option value="" disabled>{text.editor.ingredients.chooseAisle}</option>{/if}
+                          {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
+                        </select>
+                        {#if similar.length}
+                          <span class="text-body-sm text-on-surface-variant">{text.editor.ingredients.didYouMean}</span>
+                          {#each similar as match (match.ingredient.id)}
+                            <button type="button" class="focus-ring min-h-11 rounded-full border border-outline-variant bg-surface-container-lowest px-3 py-0.5 text-label-sm text-primary hover:bg-surface-container-high fine:min-h-0" onclick={() => useExisting(row, match)}>
+                              {match.ingredient.name}{#if match.note}<span class="text-on-surface-variant">&nbsp;{text.editor.ingredients.plusNote(match.note)}</span>{/if}
+                            </button>
+                          {/each}
+                        {/if}
+                      </div>
+                      {#if badAisle}<div class={indent}>{@render errorText(`aisle-${row.key}`, text.editor.errors.aisle)}</div>{/if}
+                    {/if}
+                    {#if detailsOpen.has(row.key)}
+                      <div id="details-{row.key}" class="{indent} flex flex-wrap items-center gap-2">
+                        <input type="text" aria-label={text.editor.ingredients.noteAria(n)} placeholder={text.editor.ingredients.notePlaceholder} bind:value={row.note} class="{cellField} {border(false)} min-w-0 flex-1 basis-40" />
+                        <input type="text" aria-label={text.editor.ingredients.prepAria(n)} placeholder={text.editor.ingredients.prepPlaceholder} bind:value={row.prep} class="{cellField} {border(false)} min-w-0 flex-1 basis-32" />
+                        <label class="inline-flex min-h-11 shrink-0 items-center gap-1.5 px-1 text-body-sm text-on-surface-variant fine:min-h-0">
+                          <input type="checkbox" bind:checked={row.optional} class="h-4 w-4 accent-primary" /> {text.editor.ingredients.optionalCheckbox}
+                        </label>
+                      </div>
+                    {:else if summary}
+                      <button type="button" class="{indent} focus-ring min-h-11 truncate rounded-md text-left text-body-sm text-on-surface-variant hover:text-primary fine:min-h-0" onclick={() => openDetails(row)}>
+                        {summary}
                       </button>
-                    {/each}
-                  </p>
-                {/if}
-                {#if detailsOpen.has(row.key)}
-                <div id="details-{row.key}" class="flex flex-wrap items-center gap-2">
-                  <input type="text" aria-label={text.editor.ingredients.noteAria(i + 1)} placeholder={text.editor.ingredients.notePlaceholder} bind:value={row.note} class="{cellField} {border(false)} min-w-0 flex-1 basis-40" />
-                  <input type="text" aria-label={text.editor.ingredients.prepAria(i + 1)} placeholder={text.editor.ingredients.prepPlaceholder} bind:value={row.prep} class="{cellField} {border(false)} min-w-0 flex-1 basis-32" />
-                  <label class="inline-flex shrink-0 items-center gap-1.5 px-1 text-body-sm text-on-surface-variant">
-                    <input type="checkbox" bind:checked={row.optional} class="accent-primary" /> {text.editor.ingredients.optionalCheckbox}
-                  </label>
-                </div>
-                {:else if summary}
-                  <button type="button" class="truncate px-1 text-left text-body-sm text-on-surface-variant hover:text-primary" onclick={() => detailsOpen.add(row.key)}>
-                    {summary}
-                  </button>
-                {/if}
-                <div class="flex items-center gap-2">
-                  <input type="text" aria-label={text.editor.ingredients.groupAria(i + 1)} placeholder={text.editor.ingredients.groupPlaceholder} list="ingredient-groups" bind:value={row.group} class="{cellField} {border(false)} flex-1 md:w-36 md:flex-none" />
-                  {#if isNew}
-                    <span class="shrink-0 rounded bg-[#ffdead] px-1.5 py-0.5 text-label-caps uppercase text-tertiary" title={text.editor.ingredients.newBadgeTitle(row.text.trim())}>{text.editor.ingredients.newBadge}</span>
-                  {/if}
-                  <select
-                    aria-label={text.editor.ingredients.aisleAria(i + 1)}
-                    title={known ? text.editor.ingredients.aisleKnownTitle(known.name) : text.editor.ingredients.aisleNewTitle}
-                    disabled={Boolean(known)}
-                    bind:value={row.aisle}
-                    onchange={() => (row.aisleSet = true)}
-                    aria-invalid={submitted && aisleMissing.has(row.key) ? 'true' : undefined}
-                    aria-describedby={submitted && aisleMissing.has(row.key) ? `err-aisle-${row.key}` : undefined}
-                    class="{cellField} {border(submitted && aisleMissing.has(row.key))} flex-1 disabled:opacity-60 md:w-32 md:flex-none"
-                  >
-                    {#if !row.aisle}<option value="" disabled>{text.editor.ingredients.chooseAisle}</option>{/if}
-                    {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
-                  </select>
-                  <button
-                    type="button"
-                    aria-expanded={detailsOpen.has(row.key)}
-                    aria-controls="details-{row.key}"
-                    aria-label={text.editor.ingredients.detailsAria(i + 1)}
-                    title={text.editor.ingredients.detailsTitle}
-                    class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1.5 text-label-sm hover:bg-surface-container-high {detailsOpen.has(row.key) || summary ? 'text-primary' : 'text-outline'}"
-                    onclick={() => (detailsOpen.has(row.key) ? detailsOpen.delete(row.key) : detailsOpen.add(row.key))}
-                  >
-                    <Icon name={detailsOpen.has(row.key) ? 'expand_less' : 'tune'} class="text-[18px]" /><span class="hidden sm:inline">{text.editor.ingredients.details}</span>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={text.editor.ingredients.removeAria(i + 1)}
-                    title={text.editor.ingredients.removeTitle}
-                    class="ml-auto shrink-0 rounded-md p-1.5 text-outline hover:bg-surface-container-high hover:text-secondary"
-                    onclick={() => removeIngredient(row.key)}
-                  >
-                    <Icon name="delete" class="text-[18px]" />
-                  </button>
-                </div>
-              </li>
-            {/each}
-          </ul>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+              <button data-add-row type="button" class="btn focus-ring mt-2 min-h-11 text-body-md text-primary hover:bg-surface-container-low fine:min-h-0" onclick={() => addIngredient(group)}>
+                <Icon name="add" class="text-[18px]" /> {grouped ? text.editor.ingredients.addTo(groupName(group)) : text.editor.ingredients.addRow}
+              </button>
+            </div>
+          {/each}
           {@render error('ingredients')}
 
-          <button type="button" class="btn mt-3 w-full bg-surface-container-low py-2.5 text-body-md text-on-surface hover:bg-surface-container-high" onclick={addIngredient}>
-            <Icon name="add" class="text-[18px]" /> {text.editor.ingredients.addRow}
-          </button>
-          <p class="mt-3 flex items-center gap-1.5 text-label-sm text-on-surface-variant">
-            <Icon name="account_tree" class="text-[16px]" /> {text.editor.ingredients.groupsHint}
-          </p>
+          <div class="mt-4 flex flex-col gap-2 border-t border-outline-variant pt-4">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <button type="button" class="btn focus-ring min-h-11 bg-surface-container-low text-body-md text-on-surface hover:bg-surface-container-high fine:min-h-0" onclick={addGroup}>
+                <Icon name="account_tree" class="text-[18px]" /> {text.editor.ingredients.addGroup}
+              </button>
+              <p class="text-body-sm text-on-surface-variant">{text.editor.ingredients.groupsHint}</p>
+            </div>
+            <p class="text-body-sm text-on-surface-variant">{text.editor.ingredients.aisleNote}</p>
+          </div>
         </section>
 
         <!-- Method -->
@@ -1109,7 +1221,6 @@
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
               <Icon name="skillet" class="text-[20px] text-primary" /> <span>{text.editor.method.title} <span class="font-sans text-label-md text-outline">{text.editor.optional}</span></span>
             </h2>
-            <span class="text-label-caps uppercase text-outline">{text.editor.column(text.editor.method.column)}</span>
           </div>
           <p class="text-body-sm text-on-surface-variant">{text.editor.method.ordered}</p>
           <p class="mb-3 text-body-sm text-on-surface-variant">
@@ -1139,7 +1250,7 @@
                     aria-label={text.editor.method.titleAria(i + 1)}
                     placeholder={text.editor.method.titlePlaceholder}
                     bind:value={step.title}
-                    class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 font-display text-headline-sm text-on-surface placeholder:font-sans placeholder:text-body-md placeholder:text-outline hover:border-outline-variant focus:border-outline-variant focus:bg-surface-container-lowest focus:outline-none"
+                    class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 font-display text-headline-sm text-on-surface placeholder:font-sans placeholder:text-body-md placeholder:text-on-surface-variant/80 hover:border-outline-variant focus:border-outline-variant focus:bg-surface-container-lowest focus:outline-none"
                   />
                   <div class="flex shrink-0 items-center">
                     <button type="button" aria-label={text.editor.method.moveUp(i + 1)} disabled={i === 0} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30" onclick={() => moveStep(i, -1)}>
@@ -1194,7 +1305,6 @@
             <label for="recipe-notes" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
               <Icon name="stylus_note" class="text-[20px] text-primary" /> <span>{text.editor.notes.title} <span class="font-sans text-label-md text-outline">{text.editor.optional}</span></span>
             </label>
-            <span class="text-label-caps uppercase text-outline">{text.editor.column(text.editor.notes.column)}</span>
           </div>
           <p class="mb-1 text-body-sm text-on-surface-variant">{text.editor.notes.hint}</p>
           <p class="mb-3 text-body-sm text-on-surface-variant">
@@ -1252,19 +1362,22 @@
               <Icon name="restore" class="text-[18px]" /> {text.editor.actions.revert}
             </button>
           {/if}
-          <span class="flex items-center gap-1.5 text-body-sm text-outline max-sm:order-3 max-sm:col-span-2 max-sm:justify-center">
-            <Icon name="cloud_off" class="text-[16px]" />
-            {#if keeping === 'pending'}
-              {text.editor.actions.unsaved}
-            {:else if keeping === 'kept'}
-              {text.editor.actions.unsavedKept}
-            {:else if keeping === 'full'}
-              {text.editor.actions.unsavedFull}
-            {:else if editing}
-              {text.editor.actions.noChanges}
-            {:else}
-              {text.editor.actions.customSaved(customRecipeCount())}
-            {/if}
+          <span class="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:order-3 max-sm:col-span-2 max-sm:justify-center">
+            <SyncStatus />
+            <span class="flex items-center gap-1.5 text-body-sm text-on-surface-variant">
+              <Icon name="cloud_off" class="text-[16px]" />
+              {#if keeping === 'pending'}
+                {text.editor.actions.unsaved}
+              {:else if keeping === 'kept'}
+                {text.editor.actions.unsavedKept}
+              {:else if keeping === 'full'}
+                {text.editor.actions.unsavedFull}
+              {:else if editing}
+                {text.editor.actions.noChanges}
+              {:else}
+                {text.editor.actions.customSaved(customRecipeCount())}
+              {/if}
+            </span>
           </span>
         </div>
         <div class="flex items-center justify-end gap-2 max-sm:order-1 max-sm:col-span-2">
