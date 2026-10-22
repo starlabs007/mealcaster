@@ -18,6 +18,7 @@
    *   listClass?: string,
    *   align?: 'left' | 'right',
    *   invalid?: boolean,
+   *   describedby?: string,
    *   onpick?: (option: import('../ingredients.js').Suggestion) => void,
    *   oninput?: () => void,
    * }}
@@ -35,6 +36,7 @@
     // Which edge the list lines up with: 'right' for a field near the right of the screen, so it opens leftwards.
     align = 'left',
     invalid = false,
+    describedby = undefined,
     onpick,
     oninput,
   } = $props();
@@ -90,6 +92,7 @@
     aria-controls="{uid}-list"
     aria-activedescendant={options[active] ? `${uid}-${active}` : undefined}
     aria-invalid={invalid ? 'true' : undefined}
+    aria-describedby={describedby}
     autocomplete="off"
     autocapitalize="none"
     spellcheck="false"

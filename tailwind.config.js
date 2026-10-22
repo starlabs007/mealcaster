@@ -25,6 +25,8 @@ export default {
         'on-secondary': '#ffffff',
         'secondary-container': '#fe8357',
         'secondary-fixed': '#ffdbcf',
+        // Errors only (a message and its field's border): paprika stays the brand and danger-action colour.
+        error: '#ba1a1a',
         tertiary: '#674600',
         'tertiary-fixed': '#ffdead',
         // Soft pill colours (the dinner chips on a grocery line), the same as the recipe tags'.

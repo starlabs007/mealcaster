@@ -257,6 +257,31 @@
     aisle: aisleMissing.size ? text.editor.errors.aisle : '',
   });
   const valid = $derived(Object.values(errors).every((e) => !e));
+
+  /** What a failed Save lists, top to bottom: each one finds its field. @type {{ id: string, label: string, find: () => HTMLElement | null | undefined }[]} */
+  const problems = $derived.by(() => {
+    const list = [];
+    const byId = (id) => () => document.getElementById(id);
+    for (const key of ['title', 'serves', 'prepMinutes', 'cookMinutes']) {
+      if (errors[key]) list.push({ id: key, label: text.editor.problems[key], find: byId(`recipe-${key === 'title' ? 'title' : key}`) });
+    }
+    const rowField = (key, selector) => () => document.querySelector(`#ingredient-rows > li[data-row="${key}"] ${selector}`);
+    if (errors.ingredients) {
+      list.push({ id: 'ingredients', label: text.editor.problems.ingredients, find: () => document.querySelectorAll('#ingredient-rows > li')[0]?.querySelectorAll('[role=combobox]')[1] });
+    }
+    form.ingredients.forEach((row, i) => {
+      if (qtyInvalid.has(row.key)) list.push({ id: `qty-${row.key}`, label: text.editor.problems.qty(i + 1), find: rowField(row.key, 'input[aria-invalid="true"]') });
+      if (aisleMissing.has(row.key)) list.push({ id: `aisle-${row.key}`, label: text.editor.problems.aisle(i + 1), find: rowField(row.key, 'select') });
+    });
+    return list;
+  });
+
+  /** @param {{ find: () => HTMLElement | null | undefined }} problem */
+  function goTo(problem) {
+    const el = problem.find();
+    el?.focus();
+    el?.scrollIntoView({ block: 'center' });
+  }
   const show = (key) => submitted && errors[key];
 
   // Every ingredient, offered as you type its name (found by its plural too), with its aisle.
@@ -564,7 +589,7 @@
 
   const field =
     'w-full rounded-lg border bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container';
-  const border = (bad) => (bad ? 'border-secondary' : 'border-outline-variant');
+  const border = (bad) => (bad ? 'border-error' : 'border-outline-variant');
   const cellField =
     'min-w-0 rounded-md border bg-surface-container-lowest px-2 py-1.5 text-body-sm text-on-surface placeholder:text-outline focus:outline-none focus:ring-2 focus:ring-primary-container';
 </script>
@@ -576,8 +601,14 @@
   </label>
 {/snippet}
 
+{#snippet errorText(id, message)}
+  <p id="err-{id}" class="mt-1 flex items-start gap-1 text-body-sm text-error">
+    <Icon name="error" class="mt-px shrink-0 text-[16px]" /><span>{message}</span>
+  </p>
+{/snippet}
+
 {#snippet error(key)}
-  {#if show(key)}<p class="mt-1 text-body-sm text-secondary">{errors[key]}</p>{/if}
+  {#if show(key)}{@render errorText(key, errors[key])}{/if}
 {/snippet}
 
 {#snippet numberField(key, label, icon, unit, required = true)}
@@ -595,6 +626,7 @@
         placeholder={required ? undefined : text.editor.essentials.minutesPlaceholder}
         bind:value={form[key]}
         aria-invalid={show(key) ? 'true' : undefined}
+        aria-describedby={show(key) ? `err-${key}` : undefined}
         class="{field} {border(show(key))}"
       />
       <span class="shrink-0 text-body-sm text-outline">{unit}</span>
@@ -689,6 +721,7 @@
               maxlength="120"
               placeholder={text.editor.essentials.titlePlaceholder}
               aria-invalid={show('title') ? 'true' : undefined}
+              aria-describedby={show('title') ? 'err-title' : undefined}
               class="{field} {border(show('title'))}"
             />
             {@render error('title')}
@@ -965,9 +998,9 @@
               {@const summary = detailsSummary(row)}
               {@const isNew = Boolean(row.text.trim()) && !known && !(row.id && row.text.trim() === row.id)}
               {@const similar = isNew ? similarIngredients(ingredients, row.text) : []}
-              <li class="flex flex-col gap-2 rounded-lg bg-surface-container-low p-2">
+              <li data-row={row.key} class="flex flex-col gap-2 rounded-lg bg-surface-container-low p-2">
                 <div class="flex min-w-0 flex-1 items-center gap-2">
-                  <input type="text" aria-label={text.editor.ingredients.qtyAria(i + 1)} placeholder={text.editor.ingredients.qtyPlaceholder} bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} class="{cellField} {border(badQty)} w-14 shrink-0 text-center" />
+                  <input type="text" aria-label={text.editor.ingredients.qtyAria(i + 1)} placeholder={text.editor.ingredients.qtyPlaceholder} bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} aria-describedby={badQty ? `err-qty-${row.key}` : undefined} class="{cellField} {border(badQty)} w-14 shrink-0 text-center" />
                   <Combobox
                     label={text.editor.ingredients.unitAria(i + 1)}
                     placeholder={text.editor.ingredients.unitPlaceholder}
@@ -987,11 +1020,14 @@
                     oninput={() => onIngredientText(row)}
                     onpick={() => onIngredientText(row)}
                     invalid={show('ingredients') && i === 0}
+                    describedby={show('ingredients') && i === 0 ? 'err-ingredients' : undefined}
                     class="min-w-0 flex-1"
                     align="right"
                     inputClass="{cellField} {border(show('ingredients') && i === 0)}"
                   />
                 </div>
+                {#if badQty}{@render errorText(`qty-${row.key}`, text.editor.errors.qty)}{/if}
+                {#if submitted && aisleMissing.has(row.key)}{@render errorText(`aisle-${row.key}`, text.editor.errors.aisle)}{/if}
                 {#if similar.length}
                   <p class="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-body-sm text-on-surface-variant">
                     <Icon name="info" class="text-[16px] text-tertiary" /> {text.editor.ingredients.newIngredientDidYouMean}
@@ -1027,6 +1063,7 @@
                     bind:value={row.aisle}
                     onchange={() => (row.aisleSet = true)}
                     aria-invalid={submitted && aisleMissing.has(row.key) ? 'true' : undefined}
+                    aria-describedby={submitted && aisleMissing.has(row.key) ? `err-aisle-${row.key}` : undefined}
                     class="{cellField} {border(submitted && aisleMissing.has(row.key))} flex-1 disabled:opacity-60 md:w-32 md:flex-none"
                   >
                     {#if !row.aisle}<option value="" disabled>{text.editor.ingredients.chooseAisle}</option>{/if}
@@ -1057,8 +1094,6 @@
             {/each}
           </ul>
           {@render error('ingredients')}
-          {@render error('qty')}
-          {@render error('aisle')}
 
           <button type="button" class="btn mt-3 w-full bg-surface-container-low py-2.5 text-body-md text-on-surface hover:bg-surface-container-high" onclick={addIngredient}>
             <Icon name="add" class="text-[18px]" /> {text.editor.ingredients.addRow}
@@ -1196,7 +1231,17 @@
       </div>
 
       <!-- Action bar -->
-      <div class="z-10 grid grid-cols-2 gap-3 sm:sticky sm:bottom-4 sm:flex sm:flex-row sm:items-center sm:justify-between rounded-2xl bg-surface-container-lowest/95 px-4 py-3 shadow-lift backdrop-blur lg:col-span-12 sm:px-6">
+      <div class="z-10 grid grid-cols-2 gap-3 sm:sticky sm:bottom-4 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:justify-between rounded-2xl bg-surface-container-lowest/95 px-4 py-3 shadow-lift backdrop-blur lg:col-span-12 sm:px-6">
+        {#if submitted && problems.length}
+          <div role="group" aria-labelledby="problems-title" class="order-first col-span-2 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-outline-variant pb-3 sm:basis-full">
+            <p id="problems-title" role="status" class="flex items-center gap-1.5 text-body-sm font-semibold text-error">
+              <Icon name="error" class="text-[18px]" /> {text.editor.problems.count(problems.length)}
+            </p>
+            {#each problems as problem (problem.id)}
+              <button type="button" class="focus-ring min-h-11 rounded-full border border-error/40 px-3 py-1 text-label-sm text-error hover:bg-error/10 fine:min-h-0" onclick={() => goTo(problem)}>{problem.label}</button>
+            {/each}
+          </div>
+        {/if}
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1 max-sm:contents">
           <button type="button" class="btn justify-center whitespace-nowrap max-sm:order-2 {editing?.edited ? '' : 'max-sm:col-span-2'} border border-secondary/50 bg-transparent px-4 py-2 text-body-md text-secondary hover:bg-secondary/10" onclick={discard}>
             <Icon name="delete_sweep" class="text-[18px]" />
