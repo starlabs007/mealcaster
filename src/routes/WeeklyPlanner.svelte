@@ -92,10 +92,22 @@
     if (!card) return;
     const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
     if (spotlight.days.length) return card.scrollIntoView({ block: 'center', behavior });
-    const top = (document.querySelector('header')?.getBoundingClientRect().bottom ?? 0) + 12;
-    const rect = card.getBoundingClientRect();
-    const by = Math.min(rect.top - top, rect.bottom - (window.innerHeight - 12));
-    if (by > 0) window.scrollTo({ top: window.scrollY + by, behavior });
+    // Below `md` the toast sits at the bottom (about 94 px tall with its inset): keep tonight above it, so pressing
+    // Mark Done doesn't hide the button under its own toast.
+    const bottom = window.innerHeight - (wide.current ? 12 : 106);
+    const reveal = (scrolled = window.scrollY) => {
+      const top = (document.querySelector('header')?.getBoundingClientRect().bottom ?? 0) + 12;
+      const rect = card.getBoundingClientRect();
+      // Measured against the target scroll position, so a second call during the smooth scroll lands in the same place.
+      const shift = window.scrollY - scrolled;
+      const by = Math.min(rect.top + shift - top, rect.bottom + shift - bottom);
+      if (by > 0) window.scrollTo({ top: scrolled + by, behavior });
+      return by > 0 ? scrolled + by : scrolled;
+    };
+    const target = reveal();
+    // Web fonts (the icon ligatures and Playfair titles) can still be loading and grow the list above tonight by a
+    // few dozen px, which would leave Mark Done under the fold on phones; measure again once they are in.
+    if (document.fonts.status !== 'loaded') document.fonts.ready.then(() => reveal(target));
   });
 </script>
 

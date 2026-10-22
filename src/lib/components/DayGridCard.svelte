@@ -157,23 +157,22 @@
           href={recipeHref}
           data-day-focus
           aria-label={lead ? undefined : text.planner.card.viewRecipeAria(recipe.title)}
-          class="focus-ring inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday
-            ? 'rounded-md bg-primary-container px-3 py-1.5 text-on-primary shadow-sm hover:bg-primary'
-            : day.status === 'planned'
-              ? 'rounded-md bg-surface-container-high px-3 py-1.5 text-on-surface hover:bg-surface-dim'
-              : '-mx-1 -my-1 min-h-6 rounded px-1 py-1 text-primary hover:underline'}"
+          class="focus-ring inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday || day.status === 'planned'
+            ? 'rounded-md bg-surface-container-high px-3 py-1.5 text-on-surface hover:bg-surface-dim'
+            : '-mx-1 -my-1 min-h-6 rounded px-1 py-1 text-primary hover:underline'}"
         >
           {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
         </a>
         {#if day.isToday}
-          <!-- Shows "Done" once pressed; the name stays "Mark Done" (it contains the visible word) with aria-pressed. -->
+          <!-- Tonight's primary action (View Recipe is tonal). Shows "Done" once pressed; the name stays "Mark Done" (it
+               contains the visible word) with aria-pressed. -->
           <button
             type="button"
             aria-pressed={day.status === 'completed'}
             aria-label={text.planner.card.markDone}
             class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {day.status === 'completed'
               ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
-              : 'border border-outline-variant text-on-surface hover:bg-surface-container-high'}"
+              : 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'}"
             onclick={() => setDone(day.iso, day.status !== 'completed')}
           >
             <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.planner.card.done : text.planner.card.markDone}
