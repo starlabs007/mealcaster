@@ -186,7 +186,7 @@
   function lineActions(item, done) {
     const actions = [];
     if (!done && !pastWeek)
-      actions.push({ id: 'on-hand', icon: 'inventory_2', label: text.grocery.line.onHandMenu, title: text.grocery.line.onHandTitle, aria: text.grocery.line.onHandAria(item.name), onselect: () => markOnHand(item) });
+      actions.push({ id: 'on-hand', icon: 'home', label: text.grocery.line.onHandMenu, title: text.grocery.line.onHandTitle, aria: text.grocery.line.onHandAria(item.name), onselect: () => markOnHand(item) });
     if (item.added != null || item.every != null)
       actions.push({ id: 'remove', icon: 'delete', label: text.grocery.line.removeMenu, title: item.every != null ? text.grocery.line.removeEveryTitle : text.grocery.line.removeTitle, aria: text.grocery.line.removeAria(item.name), onselect: () => removeItem(item) });
     return actions;
@@ -332,7 +332,7 @@
 {/snippet}
 
 <!-- Screen only; printing uses the plain checklist below. -->
-<div class="mx-auto flex w-full flex-col px-gutter md:px-gutter-desktop print:hidden {store ? 'max-w-3xl gap-4 pb-6' : 'max-w-page gap-6 py-6'}">
+<div class="mx-auto flex w-full flex-col px-gutter md:px-gutter-desktop print:hidden {minimal ? 'max-w-3xl' : 'max-w-page'} {store ? 'gap-4 pb-6' : 'gap-6 py-6'}">
   {#if store}
   <!-- Store mode: one bar with the week, what's left and everything else in ⋯. It pins at the top once the header
        has scrolled away. -->
@@ -411,7 +411,7 @@
         {/if}
       </div>
     </div>
-    <div class="flex flex-wrap items-center gap-2 md:justify-end">
+    <div class="flex flex-wrap items-center gap-2 md:justify-end {minimal ? 'md:shrink-0' : ''}">
       {#if coarse.current}
         <button type="button" class="btn-outline min-h-11" onclick={() => setStore(true)}>
           <Icon name="storefront" class="text-[16px]" /> {text.grocery.store.storeMode}
@@ -510,7 +510,7 @@
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
     <!-- Left: the list -->
-    <div class="flex flex-col {store ? 'gap-3' : 'gap-6'} {minimal ? 'max-w-3xl lg:col-span-12' : 'lg:col-span-8'}">
+    <div class="flex flex-col {store ? 'gap-3' : 'gap-6'} {minimal ? 'lg:col-span-12' : 'lg:col-span-8'}">
       {#if !minimal && toBuy}
       <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-card">
         <div class="flex flex-wrap gap-1" role="group" aria-label={text.grocery.filterAria}>
@@ -582,7 +582,7 @@
       {#if haveHidden.length && !minimal}
         <details class="group rounded-xl bg-surface-container-low text-body-sm text-on-surface-variant">
           <summary class="focus-ring flex cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
-            <Icon name="visibility_off" class="text-[16px] text-outline" />
+            <Icon name="home" class="text-[16px] text-on-surface-variant" />
             <span class="flex-1">
               {#if pastWeek}
                 {text.grocery.leftOff.past(haveHidden.length)}
@@ -625,8 +625,8 @@
       {#if acquired.length}
         <section class="rounded-2xl bg-surface-container-low" aria-labelledby="bought-heading">
           <div class="flex items-center justify-between gap-2 px-4 py-3">
-            <h2 id="bought-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="shopping_bag" class="text-[20px]" />
+            <h2 id="bought-heading" class="flex items-center gap-2 font-display text-on-surface {store ? 'text-body-lg font-semibold' : 'text-headline-sm'}">
+              <Icon name="shopping_bag" class={store ? 'text-[18px]' : 'text-[20px]'} />
               {text.grocery.bought.title}
               <span class="rounded-full bg-surface-container-high px-2 py-0.5 font-sans text-label-caps uppercase text-on-surface-variant">
                 {text.grocery.itemCount(acquired.length)}
