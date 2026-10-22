@@ -105,7 +105,7 @@
   }
 
   const itemClass =
-    'flex w-full items-center gap-2.5 px-3 py-3 text-left md:fine:py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container focus:bg-surface-container-high';
+    'flex min-h-11 w-full items-center gap-2.5 px-3 py-3 text-left md:fine:min-h-0 md:fine:py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container focus:bg-surface-container-high';
 </script>
 
 <button

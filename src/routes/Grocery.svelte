@@ -2,10 +2,11 @@
   import { slide } from 'svelte/transition';
   import { tick, untrack } from 'svelte';
   import { text } from '../lib/text.js';
-  import { MediaQuery, SvelteSet } from 'svelte/reactivity';
+  import { MediaQuery, SvelteMap, SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
   import Combobox from '../lib/components/Combobox.svelte';
   import ActionMenu from '../lib/components/ActionMenu.svelte';
+  import ToastCard from '../lib/components/ToastCard.svelte';
   import {
     departments,
     deptOfTag,
@@ -25,7 +26,7 @@
   import { formatRange, formatRangeCompact, formatShort, formatWeekday } from '../lib/dates.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
   import { headerChrome } from '../lib/headerChrome.svelte.js';
-  import { showToast } from '../lib/toast.svelte.js';
+  import { showToast, toast } from '../lib/toast.svelte.js';
   import { sheets } from '../lib/sheets.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
   import GroceryPrint from '../lib/components/GroceryPrint.svelte';
@@ -44,9 +45,11 @@
   const minimal = $derived(coarse.current ? store : devicePrefs.groceryMinimal);
 
   // In store mode the app header scrolls away with the page; the store bar pins at the top, aisle headings under it.
+  // Toasts show over the store bar there, so they never cover a line under the thumb.
   $effect(() => {
     headerChrome.scrollsAway = store;
-    return () => (headerChrome.scrollsAway = false);
+    toast.docked = store;
+    return () => (headerChrome.scrollsAway = toast.docked = false);
   });
   let barHeight = $state(0);
 
@@ -157,6 +160,24 @@
     showToast(text.grocery.toasts.removed(item.name, everyWeek), { label: text.common.undo, run: undo });
   }
 
+  // A tapped line shows its new state for a moment before it moves, so a quick second tap lands on the same line
+  // (and is ignored) rather than on the one sliding up into its place. Key → whether it's becoming bought.
+  const HOLD_MS = 500;
+  const holding = new SvelteMap();
+  /** @param {import('../lib/grocery.svelte.js').GroceryLine} item */
+  const looksBought = (item) => holding.get(item.key) ?? item.status === 'bought';
+
+  /** @param {import('../lib/grocery.svelte.js').GroceryLine} item */
+  function tapLine(item) {
+    if (holding.has(item.key)) return;
+    holding.set(item.key, item.status !== 'bought');
+    const week = planner.weekStart;
+    setTimeout(() => {
+      holding.delete(item.key);
+      if (planner.weekStart === week) toggleLine(item);
+    }, HOLD_MS);
+  }
+
   /**
    * Ticks a line (it moves to Bought) or unticks it (back to its aisle), with an Undo toast, which the toast's live
    * region also announces. Focus moves on to the next line of the list it left, so it doesn't drop to <body>.
@@ -166,7 +187,7 @@
     const wasBought = item.status === 'bought';
     // Ticking the last line folds the Bought list under the finish message.
     if (!wasBought && toBuy === 1) showBoughtFull = showBoughtMinimal = false;
-    const rows = /** @type {HTMLElement[]} */ ([...document.querySelectorAll(`[data-line-toggle][aria-checked="${wasBought}"]`)]);
+    const rows = /** @type {HTMLElement[]} */ ([...document.querySelectorAll(`[data-line-toggle][data-was="${wasBought}"]`)]);
     const at = rows.findIndex((el) => el.dataset.lineToggle === item.key);
     const nextKey = (rows[at + 1] ?? rows[at - 1])?.dataset.lineToggle;
     setLineStatus(item.ingredientId, wasBought ? 'need' : 'bought');
@@ -285,22 +306,23 @@
       <button
         type="button"
         role="checkbox"
-        aria-checked={item.status === 'bought'}
+        aria-checked={looksBought(item)}
         data-line-toggle={item.key}
-        onclick={() => toggleLine(item)}
+        data-was={item.status === 'bought'}
+        onclick={() => tapLine(item)}
         class="focus-ring group/tick flex min-h-11 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left"
       >
         <span
           aria-hidden="true"
-          class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status === 'bought'
+          class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {looksBought(item)
             ? 'border-primary-container bg-primary-container text-on-primary'
             : 'border-outline bg-surface-container-low text-transparent group-hover/tick:border-primary-container'}"
         >
           <Icon name="check" class="text-[16px]" />
         </span>
         <span class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-          <span class="text-body-md font-medium {done ? 'text-on-surface-variant line-through decoration-on-surface-variant' : 'text-on-surface'}">{item.name}</span>
-          {#if item.amount}<span class="text-body-sm text-on-surface-variant">{item.amount}</span>{/if}
+          <span class="font-medium {store ? 'text-body-lg' : 'text-body-md'} {done ? 'text-on-surface-variant line-through decoration-on-surface-variant' : 'text-on-surface'}">{item.name}</span>
+          {#if item.amount}<span class="text-on-surface-variant {store ? 'text-body-md' : 'text-body-sm'}">{item.amount}</span>{/if}
           {#if item.optional}
             <span class="rounded bg-surface-container-high px-1.5 py-px text-label-caps uppercase text-on-surface-variant">{text.grocery.line.optional}</span>
           {/if}
@@ -349,6 +371,7 @@
       <p class="whitespace-nowrap text-label-md text-on-surface">{text.grocery.store.left(toBuy)}</p>
     {/if}
     <ActionMenu items={storeMenu} label={text.grocery.store.menuAria} footnote={syncLine} />
+    <ToastCard class="absolute inset-x-2 inset-y-1 md:inset-x-4" fly={-8} />
   </div>
   {:else}
   <!-- Breadcrumb & sync status -->
