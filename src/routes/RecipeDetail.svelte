@@ -45,8 +45,8 @@
   // Lines of the same ingredient check together.
   const checked = $derived(allKeys.filter(isOnHandKey));
   const onList = $derived(groceryKeys());
-  const notOnList = $derived(allKeys.filter((k) => !onList.has(k)));
-  const uncheckedToPush = $derived(notOnList.filter((k) => !checked.includes(k)));
+  // Only what's missing: not on the list yet and not at home.
+  const missing = $derived(allKeys.filter((k) => !onList.has(k) && !checked.includes(k)));
 
   const setChecked = (key, on) => {
     const [, g, i] = key.split(':');
@@ -168,20 +168,6 @@
         {/if}
         <button type="button" class="btn-outline" onclick={() => (choosingPrint = true)}>
           <Icon name="print" class="text-[16px]" /> {text.recipe.buttons.print}
-        </button>
-        <button
-          type="button"
-          disabled={!notOnList.length}
-          onclick={() => push(notOnList, (n) => text.recipe.toasts.addedFromRecipe(n, recipe.shortTitle))}
-          class="btn bg-secondary text-on-secondary shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] hover:bg-[#b34728]"
-        >
-          <Icon name={notOnList.length ? 'add_shopping_cart' : 'check'} class="text-[16px]" />
-          {#if notOnList.length}
-            {text.recipe.buttons.addToList}
-            <span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">+{notOnList.length}</span>
-          {:else}
-            {text.recipe.buttons.allOnList}
-          {/if}
         </button>
       </div>
     </div>
@@ -372,14 +358,12 @@
             </p>
             <button
               type="button"
-              disabled={!uncheckedToPush.length}
-              onclick={() => push(uncheckedToPush, text.recipe.toasts.addedUnchecked)}
+              disabled={!missing.length}
+              onclick={() => push(missing, (n) => text.recipe.toasts.addedFromRecipe(n, recipe.shortTitle))}
               class="btn shrink-0 border border-outline-variant bg-surface-container-high py-2 text-on-surface hover:bg-surface-dim"
             >
-              <Icon name="check_circle" class="text-[16px]" />
-              {uncheckedToPush.length
-                ? text.recipe.ingredients.push(uncheckedToPush.length)
-                : text.recipe.ingredients.pushed}
+              <Icon name={missing.length ? 'add_shopping_cart' : 'check_circle'} class="text-[16px]" />
+              {missing.length ? text.recipe.ingredients.push(missing.length) : text.recipe.ingredients.pushed}
             </button>
           </div>
         </section>

@@ -114,8 +114,8 @@ npm run preview    # http://localhost:4173
 - Tags (each links to the catalog filtered by it) and when the meal was last made.
 - Mise-en-place checklist grouped by component. Checking an ingredient marks it **at home** (the same flag
   as everywhere else, see Ingredients): it stays off every week's grocery list until you uncheck it. **Checkmark
-  all** / **Clear all** act on the whole recipe. **Push Unchecked to Grocery** and **Add to List** skip checked
-  ingredients. Lines read like "1 lb beef (flank or ribeye), sliced"; amounts and plurals follow the serving scaler.
+  all** / **Clear all** act on the whole recipe. **Add Missing to Grocery List** (under the checklist, the only grocery button on the page) skips checked
+  ingredients and ones already on the list. Lines read like "1 lb beef (flank or ribeye), sliced"; amounts and plurals follow the serving scaler.
 - Numbered method steps with durations; "Next: {Day} {Recipe}" walks through the week's dinners.
 
 ## Recipe tags
