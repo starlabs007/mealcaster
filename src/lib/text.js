@@ -50,6 +50,18 @@ function joinList(items) {
 
 export const text = {
   common: {
+    /** The browser tab / history title: "MealCaster · <page>". */
+    pageTitle: (/** @type {string} */ page) => `MealCaster · ${page}`,
+    pages: {
+      planner: 'Weekly Menu',
+      catalog: 'Recipe Catalog',
+      grocery: 'Grocery List',
+      profile: 'Profile & Settings',
+      newRecipe: 'New Recipe',
+      editRecipe: (/** @type {string} */ title) => `Edit ${title}`,
+      sheets: 'Connect Google Sheet',
+      columns: 'Column Conflicts',
+    },
     undo: 'Undo',
     cancel: 'Cancel',
     save: 'Save',

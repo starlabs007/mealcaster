@@ -64,6 +64,7 @@
   <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-label-caps uppercase {TONE[info.tone].badge}" title={info.text}>
     <span class="h-1.5 w-1.5 rounded-full {TONE[info.tone].dot}"></span>
     {info.short}
+    {#if info.text !== info.short}<span class="sr-only">{`: ${info.text}`}</span>{/if}
   </span>
 {:else}
   <span class="flex items-start gap-2 text-body-sm {info.tone === 'bad' ? 'text-secondary' : 'text-on-surface-variant'}" role="status">
