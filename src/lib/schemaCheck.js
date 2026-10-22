@@ -16,7 +16,7 @@ export const COLUMN_INFO = {
     Name: { note: text.sheets.columns.notes.ingredients.Name, required: true, aliases: ['ingredient', 'ingredient name', 'item', 'singular'] },
     Plural: { note: text.sheets.columns.notes.ingredients.Plural, aliases: ['plural name', 'plural form', 'plurals'] },
     Aisle: { note: text.sheets.columns.notes.ingredients.Aisle, aliases: ['department', 'section', 'dept', 'store aisle'] },
-    On_Hand: { note: text.sheets.columns.notes.ingredients.On_Hand, aliases: ['in stock', 'stock', 'have', 'on hand', 'have it'] },
+    On_Hand: { note: text.sheets.columns.notes.ingredients.On_Hand, aliases: ['at home', 'in stock', 'stock', 'have', 'on hand', 'have it'] },
   },
   weeklyPlan: {
     Date_ISO: { note: text.sheets.columns.notes.weeklyPlan.Date_ISO, required: true, aliases: ['date', 'dinner date', 'planned date', 'day date'] },

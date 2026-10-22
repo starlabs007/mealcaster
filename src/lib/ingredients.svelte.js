@@ -1,5 +1,5 @@
 // Live ingredient list (synced as the [Ingredients] tab): what recipe lines point at, with each
-// ingredient's aisle and whether it's in stock. In dev it starts with the generated sample ingredients
+// ingredient's aisle and whether you have it at home. In dev it starts with the generated sample ingredients
 // (`virtual:sample-data`) so the sample recipes resolve. Helpers that don't need runes are in ingredients.js.
 
 import { SvelteMap } from 'svelte/reactivity';
@@ -103,7 +103,7 @@ export function removeIngredient(id) {
   byId.delete(id);
 }
 
-/** Marks an ingredient in stock (kept off the grocery list) or not. @param {string} id @param {boolean} on */
+/** Marks an ingredient as at home (kept off the grocery list) or not. @param {string} id @param {boolean} on */
 export function setOnHand(id, on) {
   if (byId.get(id)?.onHand !== on) updateIngredient(id, { onHand: on });
 }

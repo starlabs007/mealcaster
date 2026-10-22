@@ -21,7 +21,7 @@
   import { shoppingName } from '../lib/ingredients.js';
   import { planner, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
-  import { formatRange, formatRangeCompact, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
+  import { formatRange, formatRangeCompact, formatShort, formatWeekday } from '../lib/dates.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
   import { headerChrome } from '../lib/headerChrome.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -66,9 +66,12 @@
     else if (!aislePicked && draft.name.trim()) draft.aisle = guessAisle(draft.name);
   };
 
+  /** The list shows names with a capital first letter. @param {string} s */
+  const capFirst = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+
   const ingredientSuggestions = $derived(
     ingredients
-      .map((i) => ({ value: i.name, label: i.name, hint: aisleLabel(i.aisle), keys: i.plural ? [i.plural] : [] }))
+      .map((i) => ({ value: capFirst(i.name), label: capFirst(i.name), hint: aisleLabel(i.aisle), keys: i.plural ? [i.plural] : [] }))
       .sort((a, b) => a.label.localeCompare(b.label)),
   );
 
@@ -97,7 +100,7 @@
   const completion = $derived(toBuy + bought ? Math.round((bought / (toBuy + bought)) * 100) : 0);
 
   const sections = $derived(
-    departments.map((d) => ({ ...d, where: text.grocery.where[d.id], items: shopping.filter((l) => l.dept === d.id) })),
+    departments.map((d) => ({ ...d, items: shopping.filter((l) => l.dept === d.id) })),
   );
   // Aisle tabs only for aisles with something left; the chosen one falls back to All when it empties.
   const aisleTabs = $derived([
@@ -130,7 +133,7 @@
     const ingredient = existing ?? addIngredient({ name, aisle: draft.aisle });
     const wasOnHand = ingredient.onHand;
     addItem(ingredient.id, draft.note.trim(), draft.everyWeek);
-    const label = shoppingName(ingredient);
+    const label = capFirst(shoppingName(ingredient));
     showToast(text.grocery.toasts.added(label, draft.everyWeek, weekName, wasOnHand));
     draft = { name: '', note: '', aisle: draft.aisle, everyWeek: draft.everyWeek };
     aislePicked = false;
@@ -415,7 +418,7 @@
         </button>
       {/if}
       {#if !pastWeek}
-        <button type="button" class="btn-primary min-h-11 md:fine:min-h-0" aria-expanded={adding} onclick={() => (adding = !adding)}>
+        <button type="button" class="btn-primary min-h-11 md:fine:min-h-0" aria-expanded={adding} onclick={() => (adding ? (adding = false) : openForm())}>
           <Icon name={adding ? 'close' : 'add'} class="text-[16px]" /> {adding ? text.grocery.closeForm : text.grocery.addItem}
         </button>
       {/if}
@@ -429,7 +432,7 @@
       bind:this={form}
       transition:slide={{ duration: 180 }}
       onsubmit={submitItem}
-      class="grid grid-cols-1 gap-3 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 shadow-card sm:grid-cols-[2fr_2fr_1.3fr_auto] sm:items-end"
+      class="grid grid-cols-1 gap-3 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 shadow-card sm:grid-cols-[2fr_2fr_1.3fr] sm:items-end"
     >
       {#if store}
         <div class="-my-2 -mr-2 flex items-center justify-between sm:col-span-full">
@@ -476,8 +479,7 @@
           {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
         </select>
       </label>
-      <button type="submit" class="btn-primary min-h-11 py-2.5 md:fine:min-h-0" disabled={!draft.name.trim()}>{text.grocery.form.submit}</button>
-      <fieldset class="flex flex-wrap gap-x-5 gap-y-1 text-body-sm text-on-surface sm:col-span-full">
+      <fieldset class="flex flex-wrap gap-x-5 gap-y-1 text-body-sm text-on-surface sm:col-span-2">
         <legend class="sr-only">{text.grocery.form.weeksLegend}</legend>
         <label class="flex min-h-11 cursor-pointer items-center gap-2 md:fine:min-h-0">
           <input type="radio" name="item-weeks" checked={!draft.everyWeek} onchange={() => (draft.everyWeek = false)} class="accent-primary-container" />
@@ -488,6 +490,7 @@
           <span>{text.grocery.form.everyWeek} <span class="text-on-surface-variant">{text.grocery.form.everyWeekHint}</span></span>
         </label>
       </fieldset>
+      <button type="submit" class="btn-primary sm:col-start-3 min-h-11 py-2.5 md:fine:min-h-0" disabled={!draft.name.trim()}>{text.grocery.form.submit}</button>
     </form>
   {/if}
 
@@ -553,7 +556,6 @@
                   {text.grocery.itemCount(section.items.length)}
                 </span>
               </h2>
-              <span class="hidden text-body-sm text-outline sm:inline">{section.where}</span>
             </div>
             <ul class="divide-y divide-surface-container-high overflow-hidden rounded-2xl border border-surface-container-high bg-surface-container-lowest shadow-card">
               {#each section.items as item (item.key)}
@@ -644,7 +646,7 @@
       <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card">
         <div class="flex items-center justify-between text-label-caps uppercase text-on-surface-variant">
           <span>{text.grocery.overview.title}</span>
-          <span class="normal-case tracking-normal text-body-sm">{text.grocery.overview.week(isoWeek(mondayInWeek(planner.weekStart)))}</span>
+          <span class="normal-case tracking-normal text-body-sm">{formatRange(planner.weekStart)}</span>
         </div>
         <div class="mt-3 flex items-end justify-between">
           <p class="flex items-baseline gap-2 text-body-md text-on-surface">

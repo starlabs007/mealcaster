@@ -1,4 +1,4 @@
-// Quick Grocery & Provisions list, one per week (mirrors a [Provisions] sheet tab), one line per ingredient.
+// Grocery list, one per week (mirrors a [Provisions] sheet tab), one line per ingredient.
 //
 // A line merges every source of its ingredient that week:
 //  1. Dinners — every ingredient of the week's dinners, past days and ones marked done included (so items
@@ -8,7 +8,7 @@
 //  3. Added by you — ingredients added on the grocery screen, for that week only or every week. An every-week
 //     item shows on this week and later ones until bought; from then on only on the week it was bought in.
 //
-// Ingredients in stock (the ingredient's On hand flag) are left off every week's list and listed apart. A past
+// Ingredients at home (the ingredient's On hand flag) are left off every week's list and listed apart. A past
 // week never changes: just before stock changes, each past week saves what it left off (`stock`).
 // Each line is 'need' (to buy) or 'bought'. The merging itself is in groceryList.js.
 

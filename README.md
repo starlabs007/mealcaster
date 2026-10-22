@@ -112,7 +112,7 @@ npm run preview    # http://localhost:4173
 
 - Breadcrumb back to the plan, favorite toggle, Choose a Different Meal, serving scaler (quantities rescale).
 - Tags (each links to the catalog filtered by it) and when the meal was last made.
-- Mise-en-place checklist grouped by component. Checking an ingredient marks it **in stock** at home (the same flag
+- Mise-en-place checklist grouped by component. Checking an ingredient marks it **at home** (the same flag
   as everywhere else, see Ingredients): it stays off every week's grocery list until you uncheck it. **Checkmark
   all** / **Clear all** act on the whole recipe. **Push Unchecked to Grocery** and **Add to List** skip checked
   ingredients. Lines read like "1 lb beef (flank or ribeye), sliced"; amounts and plurals follow the serving scaler.
@@ -146,7 +146,7 @@ for every recipe and the grocery list.
   răm", "Đúc" = "duc") — but are kept as typed. Plain helpers in `src/lib/ingredients.js` (`foldKey`, `slugify`,
   plural and unit display).
 - **Ids** are readable slugs fixed at creation (`nuoc-mam`, collisions get `-2`); renaming never changes them.
-- **In stock** (`On_Hand`) means you have it at home: it stays off every week's grocery list until unticked. Set it
+- **At home** (`On_Hand`) means you have it: it stays off every week's grocery list until unticked. Set it
   from a recipe's checklist, a grocery line's box icon, or Profile → Ingredients; untick it there or with **Need it**
   on the grocery list.
 - **Recipe editor**: the ingredient field suggests existing ingredients (accent-insensitive, plurals too) and creates
@@ -156,7 +156,7 @@ for every recipe and the grocery list.
   prep and optional (rules under its help toggle).
 - A recipe line whose ingredient isn't in the tab shows as "Unknown ingredient" and keeps its id; sync doesn't stop.
 
-## Quick Grocery List (`#/grocery`)
+## Grocery List (`#/grocery`)
 
 - Auto-compiled from all of the viewed week's dinners (past days and ones marked done included, so their items and
   their `[Provisions]` rows stay), plus recipes pushed from a recipe page and items you added, grouped by the
@@ -164,16 +164,16 @@ for every recipe and the grocery list.
 - **One line per ingredient**: every dinner using it is merged into it, each shown as a chip (two, then "+N more").
   Amounts in the same unit add up ("2 lb + 2 tbsp" otherwise); each meal's note stays with its meal. A line only
   optional recipes need is labelled **optional**.
-- Ingredients **in stock** are left off; an expandable note (closed by default) lists them, each with **Need it** to
+- Ingredients **at home** are left off; an expandable note (closed by default) lists them, each with **Need it** to
   untick its stock and put it back on every week's list.
-- Tap the circle when bought (it moves to the **Bought** section); the box icon marks the ingredient in stock.
+- Tap the circle when bought (it moves to the **Bought** section); the box icon marks the ingredient at home.
   Bought is per week and leaves stock alone.
 - **Past weeks are frozen**: changing stock never changes a past week's list (each past week keeps a snapshot of what
-  it left off; Need it and the box icon are hidden there).
+  it left off; Need it and the box icon are hidden there). Add Item is hidden on past weeks too.
 - **Add Item** picks an ingredient or creates one (with its aisle), for **just the viewed week** (default) or **every
   week** (from this week on until you buy it, then only in the week you bought it). Adding an in-stock ingredient
-  clears its stock. Removing an added item (trash icon) or marking it in stock shows a toast with **Undo**. The
-  ingredients left off because they're in stock are listed alphabetically. **Share** (native share sheet or clipboard),
+  clears its at-home mark. Removing an added item (trash icon) or marking it at home shows a toast with **Undo**. The
+  ingredients left off because they're at home are listed alphabetically. **Share** (native share sheet or clipboard),
   **Print Kitchen Checklist** (print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share.
 - **Store mode** (touch screens, phones and tablets): the list opens straight away under one bar with the week,
   "N left" and a ⋯ menu (Add Item, This / Next / Earlier / Later Week, Share, Print Checklist, Full List, and the sync
@@ -184,7 +184,7 @@ for every recipe and the grocery list.
   `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
   future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
   `On hand` rows of this week and later are read-only — stock lives in `[Ingredients]`.
-- Sidebar: items to buy and in stock, completion, department spread and **Print Kitchen Checklist**.
+- Sidebar: items to buy and at home, the week's dates, completion, department spread and **Print Kitchen Checklist**.
 
 ## Profile & Settings (`#/profile`)
 
@@ -201,9 +201,9 @@ Reached from the avatar in the header (and the footer, on phones).
 - **Week starts on** — the first day of the weekly plan and the grocery week (Saturday by default). Synced as a
   `Preference` row in `[Settings]`. Plan dates don't move; grocery lists are re-keyed onto the new weeks.
 - **Ingredients** — a count with **View / Edit**, opening a dialog (bottom sheet on phones): add an ingredient (name
-  + aisle; an existing name jumps to it), search (accent-insensitive), filter All / In stock / Not in a recipe, tick
+  + aisle; an existing name jumps to it), search (accent-insensitive), filter All / At home / Not in a recipe, tick
   stock, and edit name, plural and aisle in place. A name that is another ingredient's offers **Merge into it**: every
-  recipe line and grocery mark moves to the kept one (samples become edited), it's in stock if either was. Delete
+  recipe line and grocery mark moves to the kept one (samples become edited), it's at home if either was. Delete
   is only offered for ingredients no recipe uses. Merge and Delete show an Undo toast. Synced to `[Ingredients]`.
 - **Recipe Tags** — every tag in use with its recipe count. Your own tags get a colour picker (five tones), Rename
   and Delete; both change every recipe with the tag (samples become edited), renaming onto a tag in use merges
@@ -308,7 +308,7 @@ State is cached in `localStorage`; clear these keys to reset:
 
 | Key | Mirrors |
 | --- | --- |
-| `mealcaster.ingredients.v1` | `[Ingredients]` tab (name, plural, aisle, in stock) |
+| `mealcaster.ingredients.v1` | `[Ingredients]` tab (name, plural, aisle, at home) |
 | `mealcaster.recipeBox.v2` | `[Recipes]` tab (custom/edited recipes, deleted samples) |
 | `mealcaster.weeklyPlan.v2` | `[WeeklyPlan]` tab |
 | `mealcaster.favorites.v2` | `Favorite_Flag` column of `[Recipes]` |
