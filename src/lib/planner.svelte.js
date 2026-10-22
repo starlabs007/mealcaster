@@ -217,14 +217,23 @@ function showWeekToast(message, action, duration) {
   weekToastId = showToast(message, action, duration);
 }
 
-/** Takes back the last planner change and says so (Cmd/Ctrl+Z). @returns {boolean} false when there's none */
+/** Takes back the last planner change and says so (Cmd/Ctrl+Z); with none, says that. */
 export function undoLastChange() {
-  if (!lastChange) return false;
+  if (!lastChange) {
+    showWeekToast(text.planner.toasts.nothingToUndo);
+    return true;
+  }
   const { message, run } = lastChange;
   lastChange = null;
   run();
   showWeekToast(text.planner.toasts.undone(message));
   return true;
+}
+
+/** Makes a change that shows no Undo toast the one Cmd/Ctrl+Z takes back. @param {string} message @param {string} iso day it touched */
+function rememberDay(message, iso) {
+  const saved = snapshotDays(planner.entries, [iso]);
+  lastChange = { message, run: () => restoreDays(planner.entries, saved) };
 }
 
 /** A change without Undo, another week or leaving the planner ends what Cmd/Ctrl+Z can take back. */
@@ -256,7 +265,7 @@ export function goToThisWeek() {
 
 /** @param {string} iso @param {string} recipeId */
 export function assignRecipe(iso, recipeId) {
-  forgetLastChange();
+  rememberDay(text.planner.toasts.assigned(formatWeekday(iso), recipeById.get(recipeId)?.title ?? ''), iso);
   planner.entries[iso] = { recipeId };
 }
 
@@ -296,7 +305,7 @@ function undoDay(iso, previous) {
 export function setDone(iso, done) {
   const entry = planner.entries[iso];
   if (!entry?.recipeId || iso !== planner.today) return;
-  forgetLastChange();
+  rememberDay(done ? text.planner.toasts.markedDone(titleOn(iso)) : text.planner.toasts.markedNotDone(titleOn(iso)), iso);
   planner.entries[iso] = done ? { ...entry, completed: true } : (({ completed, ...rest }) => rest)(entry);
 }
 
@@ -333,7 +342,7 @@ export function switchDays(a, b) {
 
 /** @param {string} iso */
 export function clearDay(iso) {
-  forgetLastChange();
+  rememberDay(text.planner.toasts.openAgain(formatWeekday(iso)), iso);
   delete planner.entries[iso];
 }
 

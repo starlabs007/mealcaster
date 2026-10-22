@@ -89,3 +89,19 @@ test('dinner pool: Dinner (any case) and uncategorised recipes, or everything wh
   assert.deepEqual(dinnerPool(noDinners), noDinners);
   assert.deepEqual(dinnerPool([]), []);
 });
+
+test('a single-day snapshot takes back Mark Done, a new pick and a cleared evening', () => {
+  const entries = week();
+  for (const [iso, change] of [
+    ['2026-10-22', () => (entries['2026-10-22'] = { ...entries['2026-10-22'], recipeId: 'pho', completed: true })],
+    ['2026-10-23', () => (entries['2026-10-23'] = { recipeId: 'dal' })],
+    ['2026-10-24', () => delete entries['2026-10-24']],
+  ]) {
+    const before = entries[iso] && { ...entries[iso] };
+    const saved = snapshotDays(entries, [iso]);
+    change();
+    restoreDays(entries, saved);
+    assert.deepEqual(entries[iso], before);
+    assert.equal(iso in entries, before !== undefined);
+  }
+});
