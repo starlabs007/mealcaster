@@ -74,7 +74,7 @@
         <button
           bind:this={autoFillButton}
           type="button"
-          class="ml-auto min-h-11 flex-shrink-0 md:ml-0 md:min-h-0 {summary.open
+          class="ml-auto min-h-11 flex-shrink-0 md:ml-0 md:fine:min-h-0 {summary.open
             ? 'btn-primary'
             : 'btn-outline cursor-not-allowed border-outline-variant text-on-surface-variant hover:bg-transparent'}"
           aria-disabled={!summary.open}
@@ -84,14 +84,14 @@
           <span class="sm:hidden">{text.planner.header.autoFillShort}</span><span class="hidden sm:inline">{text.planner.header.autoFill}</span>
         </button>
         {#if wide.current}
-          <button type="button" class="btn-outline" onclick={copyLastWeek}>
+          <button type="button" class="btn-outline min-h-11 fine:min-h-0" onclick={copyLastWeek}>
             <Icon name="content_copy" class="text-[16px]" /> {copyLabel}
           </button>
           {#if resettable}
             <!-- Quiet, below Auto-fill and Copy in weight; what it keeps is the title and the description. -->
             <button
               type="button"
-              class="btn text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+              class="btn min-h-11 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface fine:min-h-0"
               title={text.planner.header.resetKeeps}
               aria-describedby="reset-keeps"
               onclick={reset}

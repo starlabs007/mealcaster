@@ -89,12 +89,12 @@
       </form>
 
       <div class="flex items-center gap-0.5 rounded-lg bg-surface-container-low px-0.5 sm:gap-1 sm:px-2 sm:py-1">
-        <button type="button" aria-label={text.header.week.previous} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:h-auto sm:w-auto sm:p-1" onclick={() => shiftWeek(-1)}>
+        <button type="button" aria-label={text.header.week.previous} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:fine:h-auto sm:fine:w-auto sm:fine:p-1" onclick={() => shiftWeek(-1)}>
           <Icon name="chevron_left" class="text-[18px]" />
         </button>
         <button
           type="button"
-          class="select-none whitespace-nowrap rounded-md px-1 text-label-md text-on-surface {isThisWeek
+          class="min-h-11 select-none whitespace-nowrap rounded-md px-1 text-label-md fine:min-h-0 text-on-surface {isThisWeek
             ? 'cursor-default'
             : 'underline decoration-dotted decoration-on-surface-variant underline-offset-4 hover:bg-surface-container-high hover:decoration-solid'}"
           title={isThisWeek ? text.header.week.thisWeek : text.header.week.backToThisWeek}
@@ -105,7 +105,7 @@
           <!-- The visible dates come first in the name (WCAG 2.5.3), then what pressing does. -->
           <span class="sr-only">, {text.header.week.stateSuffix(isThisWeek)}</span>
         </button>
-        <button type="button" aria-label={text.header.week.next} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:h-auto sm:w-auto sm:p-1" onclick={() => shiftWeek(1)}>
+        <button type="button" aria-label={text.header.week.next} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:fine:h-auto sm:fine:w-auto sm:fine:p-1" onclick={() => shiftWeek(1)}>
           <Icon name="chevron_right" class="text-[18px]" />
         </button>
       </div>

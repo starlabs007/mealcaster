@@ -78,7 +78,9 @@
     <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
   {/if}
 
-  <div data-menu-clear class="flex items-start gap-1 {day.isToday ? 'pl-1' : ''}">
+  <!-- On touch the ⋯ and ⠿ keep 44 px targets but reach into the card's padding and the gap, so the weekday keeps its
+       room in the two-track cards below `xl`; with a mouse they are 32 px. -->
+  <div data-menu-clear class="flex items-start fine:gap-1 {day.isToday ? 'pl-1' : ''}">
     <div class="min-w-0 flex-1">
       <!-- Seven columns from xl are narrow: "Wed" there, beside the ⋯ and ⠿ buttons. -->
       <h2 class="truncate text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}" aria-label={weekdayName}>
@@ -102,7 +104,7 @@
       </div>
     </div>
     {#if actions.length && !compact}
-      <ActionMenu items={actions} label={text.planner.card.moreAria(weekdayName)} opener="menu" class="-mr-1 -mt-1" />
+      <ActionMenu items={actions} label={text.planner.card.moreAria(weekdayName)} opener="menu" class="-ml-2 -mt-2.5 fine:-mr-1 fine:ml-0 fine:-mt-1" />
     {/if}
     {#if handle}
       <!-- Drag to another evening; a press opens the Switch Days picker (the keyboard and screen-reader way). -->
@@ -112,7 +114,7 @@
         data-switch-opener="handle"
         aria-label={text.planner.card.moveHandle(weekdayName)}
         title={text.planner.card.moveHandleHint}
-        class="focus-ring -mr-1 -mt-1 flex h-8 w-8 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing"
+        class="focus-ring -mr-3 -mt-2.5 flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing fine:-mr-1 fine:-mt-1 fine:h-8 fine:w-8"
         onclick={() => onswitch(day.iso)}
       >
         <Icon name="drag_indicator" class="text-[20px]" />
@@ -158,8 +160,8 @@
           data-day-focus
           aria-label={lead ? undefined : text.planner.card.viewRecipeAria(recipe.title)}
           class="focus-ring inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday || day.status === 'planned'
-            ? 'rounded-md bg-surface-container-high px-3 py-1.5 text-on-surface hover:bg-surface-dim'
-            : '-mx-1 -my-1 min-h-6 rounded px-1 py-1 text-primary hover:underline'}"
+            ? 'min-h-11 rounded-md bg-surface-container-high px-3 py-1.5 text-on-surface hover:bg-surface-dim fine:min-h-0'
+            : '-mx-1 -my-1 min-h-11 rounded px-1 py-1 text-primary hover:underline fine:min-h-6'}"
         >
           {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
         </a>
@@ -170,7 +172,7 @@
             type="button"
             aria-pressed={day.status === 'completed'}
             aria-label={text.planner.card.markDone}
-            class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {day.status === 'completed'
+            class="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all fine:min-h-0 {day.status === 'completed'
               ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
               : 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'}"
             onclick={() => setDone(day.iso, day.status !== 'completed')}
@@ -205,14 +207,14 @@
         <p class="text-xs text-on-surface-variant">{text.planner.card.noPlanNote}</p>
       {/if}
       {#if day.status === 'open'}
-        <a href={href('/catalog', { day: day.iso })} data-day-focus class="btn-outline py-2 text-on-surface">
+        <a href={href('/catalog', { day: day.iso })} data-day-focus class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0">
           <Icon name="add" class="text-[15px]" /> {text.planner.card.chooseMeal}
         </a>
-        <button type="button" class="btn py-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => { surpriseMe(day.iso); focusDay(day.iso); }}>
+        <button type="button" class="btn min-h-11 py-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface fine:min-h-0" onclick={() => { surpriseMe(day.iso); focusDay(day.iso); }}>
           <Icon name="casino" class="text-[15px]" /> {text.planner.card.surpriseMe}
         </button>
       {:else if day.status === 'diningOut' && !day.isPast}
-        <button type="button" class="btn-outline py-2 text-on-surface" onclick={() => { clearDay(day.iso); focusDay(day.iso); }}>
+        <button type="button" class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0" onclick={() => { clearDay(day.iso); focusDay(day.iso); }}>
           <Icon name="restaurant" class="text-[15px]" /> {text.planner.card.planEvening}
         </button>
       {/if}

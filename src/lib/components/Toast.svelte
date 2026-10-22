@@ -48,7 +48,7 @@
         {#if toast.action}
           <button
             type="button"
-            class="-my-2.5 min-h-11 min-w-11 shrink-0 rounded px-1 font-semibold text-secondary-fixed md:my-0 md:min-h-0 md:px-0 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-secondary"
+            class="-my-2.5 min-h-11 min-w-11 shrink-0 rounded px-1 font-semibold text-secondary-fixed md:fine:my-0 md:fine:min-h-0 md:fine:px-0 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-secondary"
             onclick={() => {
               toast.action?.run();
               dismissToast();
@@ -62,7 +62,7 @@
         <button
           type="button"
           aria-label={text.common.dismiss}
-          class="-my-2.5 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-on-secondary/70 md:my-0 md:-mr-1 md:h-auto md:w-auto md:p-0.5 hover:bg-on-secondary/10 hover:text-on-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-secondary"
+          class="-my-2.5 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-on-secondary/70 md:fine:my-0 md:fine:-mr-1 md:fine:h-auto md:fine:w-auto md:fine:p-0.5 hover:bg-on-secondary/10 hover:text-on-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-secondary"
           onclick={dismissToast}
         >
           <Icon name="close" class="text-[18px]" />

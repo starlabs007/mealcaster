@@ -53,8 +53,8 @@
   };
   const spotlightClass = $derived(spotlight.days.includes(day.iso) ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift' : '');
 
-  // Buttons are 44 px tall on phones (touch targets), the usual size from `md` (Minimal view on a desktop).
-  const tall = 'min-h-11 md:min-h-0';
+  // Buttons are 44 px tall on touch screens, the usual size from `md` with a mouse (Minimal view on a desktop).
+  const tall = 'min-h-11 md:fine:min-h-0';
 
   const cardClass = $derived(
     day.isToday
@@ -165,7 +165,7 @@
                 aria-pressed={day.status === 'completed'}
                 aria-label={text.planner.card.markDone}
                 title={text.planner.card.markDone}
-                class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:h-9 md:w-9 {day.status === 'completed'
+                class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:fine:h-9 md:fine:w-9 {day.status === 'completed'
                   ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
                   : 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'}"
                 onclick={() => setDone(day.iso, day.status !== 'completed')}
@@ -182,7 +182,7 @@
             data-day-focus
             aria-label={text.planner.card.viewRecipeAria(recipe.title)}
             title={text.planner.card.viewRecipe}
-            class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:h-9 md:w-9 {day.isToday || day.status === 'planned'
+            class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:fine:h-9 md:fine:w-9 {day.isToday || day.status === 'planned'
               ? 'bg-surface-container-high text-on-surface hover:bg-surface-dim'
               : 'text-primary hover:bg-primary-fixed/50'}"
           >
@@ -305,7 +305,7 @@
     data-switch-opener="handle"
     aria-label={text.planner.card.moveHandle(weekdayName)}
     title={text.planner.card.moveHandleHint}
-    class="focus-ring flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing md:h-10 md:w-8 {extra}"
+    class="focus-ring flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing md:fine:h-10 md:fine:w-8 {extra}"
     onclick={() => onswitch?.(day.iso)}
   >
     <Icon name="drag_indicator" class="text-[20px]" />
