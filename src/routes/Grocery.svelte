@@ -1,9 +1,11 @@
 <script>
   import { slide } from 'svelte/transition';
+  import { tick } from 'svelte';
   import { text } from '../lib/text.js';
   import { SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
   import Combobox from '../lib/components/Combobox.svelte';
+  import ActionMenu from '../lib/components/ActionMenu.svelte';
   import {
     departments,
     groceryLines,
@@ -34,7 +36,12 @@
   };
 
   let aisle = $state('all');
-  let showBought = $state(true);
+  // Bought starts open in the full view and folded to one row in minimal view.
+  let showBoughtFull = $state(true);
+  let showBoughtMinimal = $state(false);
+  const showBought = $derived(devicePrefs.groceryMinimal ? showBoughtMinimal : showBoughtFull);
+  /** @type {HTMLButtonElement | undefined} */
+  let boughtToggle = $state();
   let adding = $state(false);
   let draft = $state({ name: '', note: '', aisle: 'Produce', everyWeek: false });
   // The aisle follows the item's name until you pick one yourself; an existing ingredient keeps its own.
@@ -119,6 +126,39 @@
     showToast(text.grocery.toasts.removed(item.name, everyWeek), { label: text.common.undo, run: undo });
   }
 
+  /**
+   * Ticks a line (it moves to Bought) or unticks it (back to its aisle), with an Undo toast, which the toast's live
+   * region also announces. Focus moves on to the next line of the list it left, so it doesn't drop to <body>.
+   * @param {import('../lib/grocery.svelte.js').GroceryLine} item
+   */
+  function toggleLine(item) {
+    const wasBought = item.status === 'bought';
+    const rows = /** @type {HTMLElement[]} */ ([...document.querySelectorAll(`[data-line-toggle][aria-checked="${wasBought}"]`)]);
+    const at = rows.findIndex((el) => el.dataset.lineToggle === item.key);
+    const nextKey = (rows[at + 1] ?? rows[at - 1])?.dataset.lineToggle;
+    setLineStatus(item.ingredientId, wasBought ? 'need' : 'bought');
+    showToast(wasBought ? text.grocery.toasts.needIt(item.name) : text.grocery.toasts.got(item.name), {
+      label: text.common.undo,
+      run: () => setLineStatus(item.ingredientId, wasBought ? 'bought' : 'need'),
+    });
+    const byKey = (/** @type {string} */ key) => /** @type {HTMLElement | null} */ (document.querySelector(`[data-line-toggle="${CSS.escape(key)}"]`));
+    // After the last line to buy, Bought's Show / Hide button; after the last bought one, the line back in its aisle.
+    tick().then(() => (nextKey ? byKey(nextKey) : wasBought ? byKey(item.key) : boughtToggle)?.focus());
+  }
+
+  /**
+   * A line's other actions: icon buttons with a mouse, a ⋯ menu on touch so they aren't beside the tick.
+   * @param {import('../lib/grocery.svelte.js').GroceryLine} item @param {boolean} done
+   */
+  function lineActions(item, done) {
+    const actions = [];
+    if (!done && !pastWeek)
+      actions.push({ id: 'on-hand', icon: 'inventory_2', label: text.grocery.line.onHandMenu, title: text.grocery.line.onHandTitle, aria: text.grocery.line.onHandAria(item.name), onselect: () => markOnHand(item) });
+    if (item.added != null || item.every != null)
+      actions.push({ id: 'remove', icon: 'delete', label: text.grocery.line.removeMenu, title: item.every != null ? text.grocery.line.removeEveryTitle : text.grocery.line.removeTitle, aria: text.grocery.line.removeAria(item.name), onselect: () => removeItem(item) });
+    return actions;
+  }
+
   /** @param {import('../lib/grocery.svelte.js').GroceryLine} item */
   function needIt(item) {
     setOnHand(item.ingredientId, false);
@@ -172,63 +212,56 @@
 {/snippet}
 
 {#snippet line(item, done)}
-  <li class="group flex gap-3 px-4 transition-colors hover:bg-surface-container-low/60 {devicePrefs.groceryMinimal ? 'items-center py-2' : 'items-start py-3.5'} {done ? 'opacity-70' : ''}">
-    <button
-      type="button"
-      role="checkbox"
-      aria-checked={item.status === 'bought'}
-      aria-label={text.grocery.line.markBoughtAria(item.status === 'bought', item.name)}
-      onclick={() => setLineStatus(item.ingredientId, item.status === 'bought' ? 'need' : 'bought')}
-      class="{devicePrefs.groceryMinimal ? '' : 'mt-0.5'} flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status === 'bought'
-        ? 'border-primary-container bg-primary-container text-on-primary'
-        : 'border-outline-variant bg-surface-container-low text-transparent hover:border-primary-container'}"
-    >
-      <Icon name="check" class="text-[14px]" />
-    </button>
+  {@const actions = lineActions(item, done)}
+  <li class="flex gap-1 px-2 transition-colors hover:bg-surface-container-low/60 {devicePrefs.groceryMinimal ? 'items-center py-0.5' : 'items-start py-1'} {done ? 'opacity-70' : ''}">
     <div class="min-w-0 flex-1">
-      <p class="flex flex-wrap items-baseline gap-x-2">
-        <span class="text-body-md font-medium {done ? 'text-outline line-through decoration-outline' : 'text-on-surface'}">{item.name}</span>
-        {#if item.amount}<span class="text-body-sm text-on-surface-variant">{item.amount}</span>{/if}
-        {#if item.optional}
-          <span class="rounded bg-surface-container-high px-1.5 py-px text-label-caps uppercase text-on-surface-variant">{text.grocery.line.optional}</span>
-        {/if}
-      </p>
-      {#if !devicePrefs.groceryMinimal}{@render chips(item, done)}{/if}
+      <!-- The whole name / amount area ticks the line; the circle is only its picture. -->
+      <button
+        type="button"
+        role="checkbox"
+        aria-checked={item.status === 'bought'}
+        data-line-toggle={item.key}
+        onclick={() => toggleLine(item)}
+        class="focus-ring group/tick flex min-h-11 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left"
+      >
+        <span
+          aria-hidden="true"
+          class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {item.status === 'bought'
+            ? 'border-primary-container bg-primary-container text-on-primary'
+            : 'border-outline-variant bg-surface-container-low text-transparent group-hover/tick:border-primary-container'}"
+        >
+          <Icon name="check" class="text-[16px]" />
+        </span>
+        <span class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
+          <span class="text-body-md font-medium {done ? 'text-outline line-through decoration-outline' : 'text-on-surface'}">{item.name}</span>
+          {#if item.amount}<span class="text-body-sm text-on-surface-variant">{item.amount}</span>{/if}
+          {#if item.optional}
+            <span class="rounded bg-surface-container-high px-1.5 py-px text-label-caps uppercase text-on-surface-variant">{text.grocery.line.optional}</span>
+          {/if}
+        </span>
+      </button>
+      {#if !devicePrefs.groceryMinimal}<div class="-mt-1 pb-1.5 pl-11">{@render chips(item, done)}</div>{/if}
     </div>
-    <div class="flex shrink-0 items-center">
-      {#if done}
-        <button
-          type="button"
-          title={text.grocery.line.needAfterAllTitle}
-          aria-label={text.grocery.line.moveBackAria(item.name)}
-          class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
-          onclick={() => setLineStatus(item.ingredientId, 'need')}
-        >
-          <Icon name="add_shopping_cart" class="text-[18px]" />
-        </button>
-      {:else if !pastWeek}
-        <button
-          type="button"
-          title={text.grocery.line.onHandTitle}
-          aria-label={text.grocery.line.onHandAria(item.name)}
-          class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-primary"
-          onclick={() => markOnHand(item)}
-        >
-          <Icon name="inventory_2" class="text-[18px]" />
-        </button>
-      {/if}
-      {#if item.added != null || item.every != null}
-        <button
-          type="button"
-          title={item.every != null ? text.grocery.line.removeEveryTitle : text.grocery.line.removeTitle}
-          aria-label={text.grocery.line.removeAria(item.name)}
-          class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-secondary"
-          onclick={() => removeItem(item)}
-        >
-          <Icon name="delete" class="text-[18px]" />
-        </button>
-      {/if}
-    </div>
+    {#if actions.length}
+      <div class="flex shrink-0 items-center {devicePrefs.groceryMinimal ? '' : 'pt-1.5'}">
+        <span class="hidden fine:contents">
+          {#each actions as action (action.id)}
+            <button
+              type="button"
+              title={action.title}
+              aria-label={action.aria}
+              class="focus-ring rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high {action.id === 'remove' ? 'hover:text-secondary' : 'hover:text-primary'}"
+              onclick={action.onselect}
+            >
+              <Icon name={action.icon} class="text-[18px]" />
+            </button>
+          {/each}
+        </span>
+        <span class="contents fine:hidden">
+          <ActionMenu items={actions} label={text.grocery.line.menuAria(item.name)} />
+        </span>
+      </div>
+    {/if}
   </li>
 {/snippet}
 
@@ -464,7 +497,7 @@
         </details>
       {/if}
 
-      {#if acquired.length && !devicePrefs.groceryMinimal}
+      {#if acquired.length}
         <section class="rounded-2xl bg-surface-container-low" aria-labelledby="bought-heading">
           <div class="flex items-center justify-between gap-2 px-4 py-3">
             <h2 id="bought-heading" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
@@ -475,10 +508,11 @@
               </span>
             </h2>
             <button
+              bind:this={boughtToggle}
               type="button"
               aria-expanded={showBought}
-              onclick={() => (showBought = !showBought)}
-              class="inline-flex items-center gap-0.5 text-label-md text-on-surface-variant hover:text-on-surface"
+              onclick={() => (devicePrefs.groceryMinimal ? (showBoughtMinimal = !showBoughtMinimal) : (showBoughtFull = !showBoughtFull))}
+              class="focus-ring inline-flex items-center gap-0.5 rounded-md text-label-md text-on-surface-variant hover:text-on-surface"
             >
               {showBought ? text.grocery.bought.hide : text.grocery.bought.show} <Icon name={showBought ? 'expand_less' : 'expand_more'} class="text-[18px]" />
             </button>
