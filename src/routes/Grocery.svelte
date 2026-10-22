@@ -109,7 +109,7 @@
   const completion = $derived(toBuy + bought ? Math.round((bought / (toBuy + bought)) * 100) : 0);
 
   const sections = $derived(
-    departments.map((d) => ({ ...d, items: shopping.filter((l) => l.dept === d.id) })),
+    departments.map((d) => ({ ...d, ...text.grocery.departments[d.id], items: shopping.filter((l) => l.dept === d.id) })),
   );
   // Aisle tabs only for aisles with something left; the chosen one falls back to All when it empties.
   const aisleTabs = $derived([
@@ -119,7 +119,7 @@
   const activeAisle = $derived(aisleTabs.some((t) => t.id === aisle) ? aisle : 'all');
   // The Add Item form lists aisles under the department the list puts them in.
   const aisleGroups = departments
-    .map((d) => ({ label: d.label, options: aisles.filter((a) => deptOfTag(a.tag) === d.id) }))
+    .map((d) => ({ label: text.grocery.departments[d.id].label, options: aisles.filter((a) => deptOfTag(a.tag) === d.id) }))
     .filter((g) => g.options.length);
 
   const sources = $derived(

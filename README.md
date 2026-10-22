@@ -175,7 +175,7 @@ for every recipe and the grocery list.
   week** (from this week on until you buy it, then only in the week you bought it). Adding an in-stock ingredient
   clears its at-home mark. Removing an added item (trash icon) or marking it at home shows a toast with **Undo**. The
   ingredients left off because they're at home are listed alphabetically. **Share** (native share sheet or clipboard),
-  **Print Checklist** (a quiet button in the header, in every view; print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share, and narrows the whole page to one centred, readable column. The Add Item form lists aisles grouped under the department they land in; the aisle filter resets to All when the week changes.
+  **Print Checklist** (a quiet button in the header, in every view; print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share, and narrows the whole page to one centred, readable column. The list is grouped into five departments with one on-screen name each (Produce & Herbs, Meat & Seafood, Dairy & Frozen, Pantry, Spices & Bakery, Other; the filter uses the first part), shared by the headings, the Add Item aisle groups and the printout (titled Grocery List); the sheet's `Department` column keeps its own short names. The aisle filter resets to All when the week changes.
 - **Store mode** (touch screens, phones and tablets): the list opens straight away under one bar with the week,
   "N left" and a ⋯ menu (Add Item, This / Next / Earlier / Later Week, Share, Print Checklist, Full List, and the sync
   line as small print). Lines show name and amount in a larger size; the dinners a line is for sit in its own ⋯. Aisle headings stay

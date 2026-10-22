@@ -705,6 +705,15 @@ export const text = {
     },
     filterAria: 'Filter by aisle',
     allAisles: 'All Aisles',
+    // On-screen department names, used by the filter (`short`), the aisle headings, the Add Item aisle groups and the
+    // printout (`label`); `short` is the start of `label`. The sheet keeps its own names (sheetText.departmentText).
+    departments: {
+      produce: { label: 'Produce & Herbs', short: 'Produce' },
+      meat: { label: 'Meat & Seafood', short: 'Meat & Seafood' },
+      dairy: { label: 'Dairy & Frozen', short: 'Dairy' },
+      pantry: { label: 'Pantry, Spices & Bakery', short: 'Pantry' },
+      other: { label: 'Other', short: 'Other' },
+    },
     tabLabel: (/** @type {string} */ name, /** @type {number} */ count) => `${name} (${count})`,
     tapHint: 'Tap an item once it’s in your basket. Already at home? Mark it At Home to keep it off every week’s list.',
     empty: {
@@ -767,7 +776,7 @@ export const text = {
       heading: (/** @type {string} */ range) => `MealCaster grocery list · ${range}`,
     },
     print: {
-      title: 'Kitchen Checklist',
+      title: 'Grocery List',
       summary: (/** @type {string} */ week, /** @type {number} */ count, /** @type {string[]} */ sources) =>
         `${week} · ${count} ${plural(count, 'item')} to buy${sources.length ? `\u00a0· for ${sources.join(', ')}` : ''}`,
       optional: 'optional',
