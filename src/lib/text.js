@@ -244,7 +244,7 @@ export const text = {
       assigned: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title}`,
       markedDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title} marked done.`,
       markedNotDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title} marked not done.`,
-      openAgain: (/** @type {string} */ weekday) => `${weekday} is open again.`,
+      nightOffEnded: (/** @type {string} */ weekday) => `${weekday} is no longer a night off.`,
       nothingToUndo: 'Nothing to undo.',
       reset: (/** @type {number} */ n) => `Cleared ${n} upcoming ${plural(n, 'evening')}.`,
       // After Cmd/Ctrl+Z; `change` is the toast the change showed, e.g. "Moved to Thursday."

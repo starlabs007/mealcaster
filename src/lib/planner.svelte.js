@@ -349,7 +349,7 @@ export function switchDays(a, b) {
 
 /** @param {string} iso */
 export function clearDay(iso) {
-  rememberDay(text.planner.toasts.openAgain(formatWeekday(iso)), iso);
+  rememberDay(text.planner.toasts.nightOffEnded(formatWeekday(iso)), iso);
   delete planner.entries[iso];
 }
 
