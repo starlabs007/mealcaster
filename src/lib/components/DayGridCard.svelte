@@ -1,0 +1,223 @@
+<script>
+  // One evening in the planner's week grid (from `md` up): a column of the week, `lead` for tonight's (wider, with
+  // the larger title and Mark Done). Phones and Minimal view use DayListCard instead. View Recipe (and Mark Done
+  // tonight) stay visible; the other actions sit in the ⋯ menu. `compact` (past days beside a live week, a narrow
+  // track) keeps the same header and photo ratio as the other cards so the photos line up, and drops the rest. `wide`
+  // (tonight across three tracks, below `xl`) gets a flatter photo so Mark Done stays in the first screen.
+  import Icon from './Icon.svelte';
+  import RecipeImage from './RecipeImage.svelte';
+  import ActionMenu from './ActionMenu.svelte';
+  import { surpriseMe, markDiningOut, clearDay, clearEvening, setDone, spotlight, switchTargets } from '../planner.svelte.js';
+  import { focusDay } from '../focusDay.js';
+  import { groupedActions } from '../menuGroups.js';
+  import { text } from '../text.js';
+  import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
+  import { href } from '../router.svelte.js';
+  import { tagClass } from '../tagColors.svelte.js';
+
+  /**
+   * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], lead?: boolean,
+   *   compact?: boolean, wide?: boolean, onswitch?: (iso: string) => void, draghandle?: (iso: string) => (el: HTMLElement) => () => void,
+   *   drop?: '' | 'source' | 'over' | 'target' | 'off' }}
+   */
+  let { day, lead = false, compact = false, wide = false, onswitch, draghandle, drop = '' } = $props();
+
+  const weekdayName = $derived(formatWeekday(day.iso));
+  const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
+  const movable = $derived(day.status === 'planned' && switchTargets(day.iso).length > 0);
+  const handle = $derived(movable && !!onswitch && !!draghandle);
+
+  /** @type {import('./ActionMenu.svelte').MenuAction[]} */
+  const actions = $derived.by(() => {
+    const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
+    const nightOff = { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
+    // Open evenings show Surprise Me beside Choose a Meal, so the menu keeps only Night Off.
+    if (day.status === 'open') return [nightOff];
+    if (day.status !== 'planned') return [];
+    // Change the meal · move it · take the evening out of the plan.
+    return groupedActions([
+      [{ id: 'swap', label: text.planner.card.swapMeal, icon: 'sync_alt', href: href('/catalog', { day: day.iso }) }, surprise],
+      onswitch && movable ? [{ id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch(day.iso) }] : [],
+      [nightOff, { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } }],
+    ]);
+  });
+
+  // While a meal is dragged: the card it came from, the one under the pointer, the ones it can go to, the rest.
+  const dropClass = {
+    '': '',
+    source: '!opacity-30',
+    over: 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100',
+    target: 'outline-dashed outline-2 outline-offset-2 outline-primary/40',
+    off: '!opacity-40',
+  };
+
+  const cardClass = $derived(
+    day.isToday
+      ? 'overflow-hidden border-2 border-primary/30 bg-surface-container-lowest shadow-sm'
+      : day.status === 'completed'
+        ? 'border border-surface-container-high bg-surface-container-low shadow-sm'
+        : day.status === 'planned'
+          ? 'border border-surface-container-high bg-surface-container-lowest shadow-sm'
+          : day.status === 'missed'
+            ? 'border border-dashed border-outline-variant bg-surface-container'
+            : 'border border-dashed border-outline-variant bg-surface-container-low/70',
+  );
+</script>
+
+<article
+  id="day-{day.iso}"
+  data-drag-source
+  tabindex="-1"
+  data-drop-id={day.iso}
+  aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
+  class="focus-ring relative flex w-full min-w-0 flex-col rounded-xl transition-all gap-3 p-3 {cardClass} {spotlight.days.includes(day.iso)
+    ? 'ring-4 ring-secondary/60 ring-offset-2 !opacity-100 shadow-lift'
+    : ''} {dropClass[drop]}"
+>
+  {#if day.isToday}
+    <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
+  {/if}
+
+  <!-- On touch the ⋯ and ⠿ keep 44 px targets but reach into the card's padding and the gap, so the weekday keeps its
+       room in the two-track cards below `xl`; with a mouse they are 32 px. -->
+  <div data-menu-clear class="flex items-start fine:gap-1 {day.isToday ? 'pl-1' : ''}">
+    <div class="min-w-0 flex-1">
+      <!-- Seven columns from xl are narrow: "Wed" there, beside the ⋯ and ⠿ buttons. -->
+      <h2 class="truncate text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}" aria-label={weekdayName}>
+        {#if lead}<span class="lg:hidden">{formatWeekdayShort(day.iso)}</span><span class="hidden lg:inline">{weekdayName}</span>{:else if compact}{formatWeekdayShort(day.iso)}{:else}<span class="xl:hidden">{weekdayName}</span><span class="hidden xl:inline">{formatWeekdayShort(day.iso)}</span>{/if}
+      </h2>
+      <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span class="font-display text-on-surface {lead ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
+        {#if compact}
+          <!-- Narrow tile: the tint and the line below say how the evening went. -->
+        {:else if day.status === 'completed' && !day.isPast}
+          <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
+            <Icon name="check_circle" class="text-[13px]" /> {text.planner.card.completed}
+          </span>
+        {:else if day.isToday}
+          <span class="rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">{text.planner.card.tonight}</span>
+        {:else if day.status === 'diningOut'}
+          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
+        {:else if day.status === 'missed'}
+          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.noPlan}</span>
+        {/if}
+      </div>
+    </div>
+    {#if actions.length && !compact}
+      <ActionMenu items={actions} label={text.planner.card.moreAria(weekdayName)} opener="menu" class="-ml-2 -mt-2.5 fine:-mr-1 fine:ml-0 fine:-mt-1" />
+    {/if}
+    {#if handle}
+      <!-- Drag to another evening; a press opens the Switch Days picker (the keyboard and screen-reader way). -->
+      <button
+        type="button"
+        {@attach draghandle(day.iso)}
+        data-switch-opener="handle"
+        aria-label={text.planner.card.moveHandle(weekdayName)}
+        title={text.planner.card.moveHandleHint}
+        class="focus-ring -mr-3 -mt-2.5 flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing fine:-mr-1 fine:-mt-1 fine:h-8 fine:w-8"
+        onclick={() => onswitch(day.iso)}
+      >
+        <Icon name="drag_indicator" class="text-[20px]" />
+      </button>
+    {/if}
+  </div>
+
+  {#if hasMeal && day.recipe}
+    {@const recipe = day.recipe}
+    {@const recipeHref = href(`/recipe/${recipe.id}`, { day: day.iso })}
+    {#if compact}
+      <a
+        href={recipeHref}
+        data-day-focus
+        aria-label={text.planner.card.viewRecipeAria(recipe.title)}
+        class="focus-ring flex min-w-0 flex-col gap-3 rounded-lg"
+      >
+        <RecipeImage src={recipe.image} alt="" class="aspect-[4/5] w-full flex-shrink-0 rounded-lg saturate-50" />
+        <span class="line-clamp-3 hyphens-auto break-words font-display text-sm leading-snug text-on-surface" title={recipe.title}>{recipe.title}</span>
+      </a>
+    {:else}
+    <RecipeImage
+      src={recipe.image}
+      alt={recipe.title}
+      class="aspect-[4/3] w-full flex-shrink-0 rounded-lg {day.status === 'completed' ? 'saturate-50' : ''} {lead ? 'shadow-sm' : 'xl:aspect-[4/5]'} {wide ? 'md:aspect-[16/10] xl:aspect-[4/3]' : ''}"
+    />
+    <div class="flex min-w-0 flex-1 flex-col gap-2">
+      <h3 class="font-display text-on-surface {lead ? 'line-clamp-3 text-headline-md' : 'line-clamp-2 text-base leading-snug'}" title={recipe.title}>{recipe.title}</h3>
+      {#if lead}
+        <p class="text-xs text-on-surface-variant">{text.planner.card.meta(recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
+      {/if}
+      {#if recipe.tags.length}
+        <!-- Up to five lines of tags (18 px each + 6 px gaps) in a narrow column; the rest wrap out of sight (no half tags). -->
+        <div class="flex flex-wrap gap-1.5 {lead ? '' : 'max-h-[114px] overflow-hidden'}">
+          {#each recipe.tags as tag (tag)}
+            <span class="max-w-full flex-shrink-0 truncate rounded-full px-2 py-0.5 text-label-sm {tagClass(tag)}" title={tag}>{tag}</span>
+          {/each}
+        </div>
+      {/if}
+      <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
+        <a
+          href={recipeHref}
+          data-day-focus
+          aria-label={lead ? undefined : text.planner.card.viewRecipeAria(recipe.title)}
+          class="focus-ring inline-flex items-center gap-1 text-xs font-semibold transition-all {day.isToday || day.status === 'planned'
+            ? 'min-h-11 rounded-md bg-surface-container-high px-3 py-1.5 text-on-surface hover:bg-surface-dim fine:min-h-0'
+            : '-mx-1 -my-1 min-h-11 rounded px-1 py-1 text-primary hover:underline fine:min-h-6'}"
+        >
+          {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
+        </a>
+        {#if day.isToday}
+          <!-- Tonight's primary action (View Recipe is tonal). Shows "Done" once pressed; the name stays "Mark Done" (it
+               contains the visible word) with aria-pressed. -->
+          <button
+            type="button"
+            aria-pressed={day.status === 'completed'}
+            aria-label={text.planner.card.markDone}
+            class="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all fine:min-h-0 {day.status === 'completed'
+              ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
+              : 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'}"
+            onclick={() => setDone(day.iso, day.status !== 'completed')}
+          >
+            <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.planner.card.done : text.planner.card.markDone}
+          </button>
+        {/if}
+      </div>
+    </div>
+    {/if}
+  {:else if compact}
+    <p class="text-sm text-on-surface-variant">{day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.noPlan}</p>
+  {:else}
+    <!-- Empty evenings (open, night off, not logged) sit centred in their card, like the photo placeholder. -->
+    <div class="flex flex-1 flex-col items-center justify-center gap-3 pb-8 text-center">
+      <!-- Stacked: side by side, the text wraps word by word in the narrow seven-column cells. -->
+      <div class="flex flex-col items-center gap-2">
+        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-highest text-outline">
+          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class="text-xl" />
+        </div>
+        <h3 class="font-display text-base leading-snug text-on-surface">
+          {day.status === 'diningOut'
+            ? text.planner.card.nightOff
+            : day.status === 'missed'
+              ? text.planner.card.noPlan
+              : text.planner.card.nothingPlanned}
+        </h3>
+      </div>
+      {#if lead && day.status === 'diningOut'}
+        <p class="text-xs text-on-surface-variant">{text.planner.card.nightOffNote}</p>
+      {:else if lead && day.status === 'missed'}
+        <p class="text-xs text-on-surface-variant">{text.planner.card.noPlanNote}</p>
+      {/if}
+      {#if day.status === 'open'}
+        <a href={href('/catalog', { day: day.iso })} data-day-focus class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0">
+          <Icon name="add" class="text-[15px]" /> {text.planner.card.chooseMeal}
+        </a>
+        <button type="button" class="btn min-h-11 py-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface fine:min-h-0" onclick={() => { surpriseMe(day.iso); focusDay(day.iso); }}>
+          <Icon name="casino" class="text-[15px]" /> {text.planner.card.surpriseMe}
+        </button>
+      {:else if day.status === 'diningOut' && !day.isPast}
+        <button type="button" class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0" onclick={() => { clearDay(day.iso); focusDay(day.iso); }}>
+          <Icon name="restaurant" class="text-[15px]" /> {text.planner.card.planEvening}
+        </button>
+      {/if}
+    </div>
+  {/if}
+</article>

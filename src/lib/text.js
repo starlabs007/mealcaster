@@ -43,6 +43,11 @@ export function plural(n, singular, pluralForm = singular + 's') {
   return n === 1 ? singular : pluralForm;
 }
 
+/** "Thu", "Thu and Sat", "Thu, Sat and Sun". @param {string[]} items */
+function joinList(items) {
+  return items.length < 2 ? items.join('') : `${items.slice(0, -1).join(', ')} and ${items.at(-1)}`;
+}
+
 export const text = {
   common: {
     undo: 'Undo',
@@ -67,6 +72,8 @@ export const text = {
       next: 'Next week',
       thisWeek: 'This week',
       backToThisWeek: 'Back to this week',
+      // Spoken after the visible dates, so the button's name starts with its label ("Oct 17 – Oct 23, this week").
+      stateSuffix: (/** @type {boolean} */ isThisWeek) => (isThisWeek ? 'this week' : 'back to this week'),
     },
     grocery: {
       label: 'Quick Grocery List',
@@ -141,51 +148,64 @@ export const text = {
   // Weekly planner: page, toolbar, day cards, dragging a meal, Switch Days dialog and the toasts planner.svelte.js raises.
   // Dates and weekday names arrive already formatted (dates.js); only the words around them live here.
   planner: {
-    daysAria: 'Dinners this week',
     minimalView: 'Minimal view',
 
     header: {
-      eyebrow: 'Weekly Schedule',
       thisWeek: 'This Week’s Dinner Plan',
       lastWeek: 'Last Week’s Dinner Plan',
       nextWeek: 'Next Week’s Dinner Plan',
       weekOf: (/** @type {string} */ date) => `Week of ${date}`,
-      dinners: (/** @type {number} */ planned) => `${planned} of 7 Dinners`,
-      openLeft: (/** @type {number} */ n) => `${n} Open ${plural(n, 'slot')} left`,
-      allSet: 'All set',
+      // "5 dinners · 2 nights off"; nights off are left out when there are none.
+      counts: (/** @type {number} */ dinners, /** @type {number} */ off) =>
+        [`${dinners} ${plural(dinners, 'dinner')}`, off ? `${off} ${plural(off, 'night')} off` : ''].filter(Boolean).join(' · '),
+      // Phones: "5 dinners · 2 off", so the whole pill stays on one line.
+      countsShort: (/** @type {number} */ dinners, /** @type {number} */ off) =>
+        [`${dinners} ${plural(dinners, 'dinner')}`, off ? `${off} off` : ''].filter(Boolean).join(' · '),
+      toPlan: (/** @type {number} */ n) => `${n} ${plural(n, 'evening')} to plan`,
+      // Phones: the same count in fewer words.
+      toPlanShort: (/** @type {number} */ n) => `${n} to plan`,
+      allSet: 'All planned',
       autoFill: 'Auto-fill Remaining',
-      copyLastWeek: 'Copy Last Week',
-      resetWeek: 'Reset Week',
+      autoFillShort: 'Auto-fill',
+      // The source is the week before the viewed one, so next week's button says "This Week".
+      copyPrevious: 'Copy Previous Week',
+      copyThisWeek: 'Copy This Week',
+      resetWeek: (/** @type {number} */ n) => `Clear ${n} Upcoming ${plural(n, 'Evening')}`,
+      // What Clear leaves alone (see `resetDays`): evenings before today and a tonight already marked done.
+      resetKeeps: 'Keeps past evenings and a finished tonight.',
+      moreAria: 'More week actions',
+      autoFillNote: (/** @type {number} */ days) => `Auto-fill picks dinners not made in the last ${days} days.`,
     },
 
     card: {
       aria: (/** @type {string} */ weekday, /** @type {string} */ date, /** @type {boolean} */ isToday) => `${weekday} ${date}${isToday ? ' (today)' : ''}`,
       completed: 'Completed',
-      today: '• TODAY',
+      tonight: 'Tonight',
       planned: 'Planned',
       nightOff: 'Night off',
-      notLogged: 'Not logged',
+      noPlan: 'No plan',
       open: 'Open',
-      meta: (/** @type {string} */ badge, /** @type {number} */ minutes, /** @type {number} */ serves) =>
-        [badge, `${minutes} min`, `Serves ${serves}`].filter(Boolean).join(' · '),
+      meta: (/** @type {number} */ minutes, /** @type {number} */ serves) => `${minutes} min · Serves ${serves}`,
       viewRecipe: 'View Recipe',
       viewRecipeAria: (/** @type {string} */ title) => `View recipe: ${title}`,
-      done: 'Done',
       markDone: 'Mark Done',
-      swapMeal: 'Swap Meal',
+      // What the Mark Done button shows once pressed; its name stays "Mark Done" with aria-pressed.
+      done: 'Done',
+      swapMeal: 'Choose a Different Meal',
       surpriseMe: 'Surprise Me',
-      diningOut: 'Dining Out',
-      switchDays: 'Switch Days…',
+      nightOffAction: 'Night Off',
+      switchDays: 'Move to Another Day…',
       moveHandle: (/** @type {string} */ weekday) => `Move ${weekday}’s dinner`,
       moveHandleHint: 'Drag to another evening, or press to pick one',
-      diningOutTitle: 'Dining out or leftovers',
-      diningOutNote: 'A night off from the stove — nothing to prep or shop for.',
-      missedTitle: 'No dinner was logged',
-      missedNote: 'This evening has passed without a planned meal.',
-      openTitle: (/** @type {string} */ weekday) => `No dinner planned yet for ${weekday}`,
-      openNote: 'Choose a meal, let the app pick one, or take the night off.',
+      nightOffNote: 'A night off from the stove — nothing to prep or shop for.',
+      noPlanNote: 'Nothing was planned for this evening.',
+      nothingPlanned: 'Nothing planned',
+      moreAria: (/** @type {string} */ weekday) => `More for ${weekday}`,
       chooseMeal: 'Choose a Meal',
-      planInstead: 'Plan a Meal Instead',
+      choose: 'Choose',
+      chooseAria: (/** @type {string} */ weekday) => `Choose a meal for ${weekday}`,
+      planEvening: 'Plan This Evening',
+      clearEvening: 'Clear Evening',
     },
 
     drop: {
@@ -194,7 +214,7 @@ export const text = {
     },
 
     switchDialog: {
-      title: 'Switch Days',
+      title: 'Move to Another Day',
       thisMeal: 'this meal',
       moveBefore: 'Move',
       moveAfter: (/** @type {string} */ weekday) => `from ${weekday} to:`,
@@ -206,14 +226,29 @@ export const text = {
     toasts: {
       noRecipes: 'Add a recipe to the catalog first.',
       surprise: (/** @type {string} */ title) => `Surprise! ${title}`,
+      surpriseOn: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title}`,
       nightOff: (/** @type {string} */ date) => `${date} is now a night off.`,
+      cleared: (/** @type {string} */ weekday) => `Cleared ${weekday}.`,
       switched: (/** @type {string} */ a, /** @type {string} */ b) => `Switched ${a} and ${b}.`,
+      moved: (/** @type {string} */ weekday) => `Moved to ${weekday}.`,
       allPlanned: 'Every dinner this week is already planned.',
-      filled: (/** @type {number} */ n) => `Filled ${n} open ${plural(n, 'slot')}.`,
-      noLastWeek: 'No dinners were planned last week.',
-      copied: 'Copied last week’s dinners.',
-      nothingToReset: 'Nothing to reset — this week is already clear.',
-      reset: 'Weekly plan reset.',
+      // One evening names the dish; a few name the days ("Thu, Sat and Sun"); more just count.
+      filledOne: (/** @type {string} */ weekday, /** @type {string} */ title) => `Planned ${weekday}: ${title}`,
+      filled: (/** @type {string[]} */ days) =>
+        days.length <= 4 ? `Planned ${joinList(days)}.` : `Planned ${days.length} evenings, starting ${days[0]}.`,
+      noLastWeek: 'The previous week had nothing planned for this week’s open evenings.',
+      copiedOne: (/** @type {string} */ weekday, /** @type {string} */ title) => `Copied ${weekday}: ${title}`,
+      copied: (/** @type {string[]} */ days) =>
+        days.length <= 4 ? `Copied ${joinList(days)} from the previous week.` : `Copied ${days.length} evenings from the previous week.`,
+      // Changes with no toast of their own; Cmd/Ctrl+Z repeats them as "Undone: …".
+      assigned: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title}`,
+      markedDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title} marked done.`,
+      markedNotDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title} marked not done.`,
+      nightOffEnded: (/** @type {string} */ weekday) => `${weekday} is no longer a night off.`,
+      nothingToUndo: 'Nothing to undo.',
+      reset: (/** @type {number} */ n) => `Cleared ${n} upcoming ${plural(n, 'evening')}.`,
+      // After Cmd/Ctrl+Z; `change` is the toast the change showed, e.g. "Moved to Thursday."
+      undone: (/** @type {string} */ change) => `Undone: ${change}`,
     },
   },
 
@@ -223,13 +258,13 @@ export const text = {
     backToPlanner: 'Weekly Dinner Plan',
     titles: {
       catalog: 'Recipe Catalog',
-      swap: (/** @type {string} */ weekday) => `Swap ${weekday}’s Dinner`,
+      swap: (/** @type {string} */ weekday) => `Choose a Different Meal for ${weekday}`,
       choose: 'Choose a Dinner Meal',
     },
     planningFor: 'Planning for',
     pickDay: 'Pick a day…',
     dayOpen: 'open',
-    dayDiningOut: 'dining out',
+    dayDiningOut: 'night off',
     addCustom: 'Add Custom Recipe',
     searchAria: 'Search recipes and ingredients',
     searchPlaceholder: 'Search recipes, ingredients (e.g. salmon, pasta, lemon, tofu)...',
@@ -305,12 +340,12 @@ export const text = {
       delete: 'Delete',
       favorited: 'Favorited',
       favorite: 'Favorite',
-      swapMeal: 'Swap Meal',
+      swapMeal: 'Choose a Different Meal',
       planFor: (/** @type {string} */ weekday) => `Plan for ${weekday}`,
       print: 'Print',
       addToList: 'Add to List',
       allOnList: 'All on List',
-      swapFromCatalog: 'Swap Recipe from Catalog',
+      swapFromCatalog: 'Choose a Different Meal',
       next: (/** @type {string} */ weekday, /** @type {string} */ title) => `Next: ${weekday} ${title}`,
       backToWeekly: 'Back to Weekly Menu',
     },

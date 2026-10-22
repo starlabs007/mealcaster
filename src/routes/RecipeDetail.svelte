@@ -127,7 +127,7 @@
 {:else}
   <!-- Breadcrumb & actions bar -->
   <div class="border-b border-surface-container-high bg-surface-container-low/60 print:hidden">
-    <div class="mx-auto flex max-w-[1440px] flex-col gap-3 px-4 py-3 md:flex-row md:items-center md:justify-between md:px-gutter-desktop">
+    <div class="mx-auto flex max-w-page flex-col gap-3 px-gutter py-3 md:flex-row md:items-center md:justify-between md:px-gutter-desktop">
       <nav aria-label={text.recipe.breadcrumbAria} class="flex min-w-0 items-center gap-1.5 text-label-md text-on-surface-variant">
         <Icon name="arrow_back" class="text-[16px]" />
         {#if day}
@@ -189,7 +189,7 @@
 
   <!-- Styled printout (two columns, tints kept); hidden when printing the simple layout. -->
   <div
-    class="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 py-8 md:px-gutter-desktop print:gap-5 print:p-0 print:[-webkit-print-color-adjust:exact] print:[print-color-adjust:exact] print:[&_*]:shadow-none
+    class="mx-auto flex w-full max-w-page flex-col gap-8 px-gutter py-8 md:px-gutter-desktop print:gap-5 print:p-0 print:[-webkit-print-color-adjust:exact] print:[print-color-adjust:exact] print:[&_*]:shadow-none
       {printOptions.simple ? 'print:hidden' : ''} {textDelta ? 'print-sized' : ''}"
     style="--print-delta: {textDelta}pt; --print-image: {printOptions.imageScale}%"
   >

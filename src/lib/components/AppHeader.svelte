@@ -7,6 +7,11 @@
   import { route, href, navigate } from '../router.svelte.js';
   import { text } from '../text.js';
   import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
+  import { MediaQuery } from 'svelte/reactivity';
+
+  // The tabs are rendered once: in the header row from `xl`, in their own row below it. (Two copies, one hidden by CSS,
+  // would still be two "Primary" landmarks to some assistive tech.)
+  const xl = new MediaQuery('min-width: 1280px');
 
   const tabs = [
     { id: 'weekly-menu', label: text.header.tabs.weeklyMenu, path: '/' },
@@ -61,13 +66,13 @@
 {/snippet}
 
 <header class="fixed left-0 top-0 z-50 w-full print:hidden bg-surface/90 shadow-header backdrop-blur-xl">
-  <div class="flex h-20 w-full items-center justify-between gap-4 px-4 md:px-gutter-desktop">
+  <div class="flex h-20 w-full items-center justify-between gap-4 px-gutter md:px-gutter-desktop">
     <div class="flex items-center gap-6">
       <a href={href('/')} class="flex items-center gap-2" aria-label={text.header.homeAria}>
         <img src="./logo-mark.png" alt="" class="h-8 w-8 rounded-lg object-cover shadow-sm" />
         <span class="hidden font-display text-headline-sm tracking-tight text-primary sm:inline">{text.header.appName}</span>
       </a>
-      {@render navTabs('hidden xl:flex')}
+      {#if xl.current}{@render navTabs('flex')}{/if}
     </div>
 
     <div class="flex items-center gap-2 sm:gap-4">
@@ -83,20 +88,24 @@
         />
       </form>
 
-      <div class="flex items-center gap-1 rounded-lg bg-surface-container-low px-1 py-1 sm:px-2">
-        <button type="button" aria-label={text.header.week.previous} class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(-1)}>
+      <div class="flex items-center gap-0.5 rounded-lg bg-surface-container-low px-0.5 sm:gap-1 sm:px-2 sm:py-1">
+        <button type="button" aria-label={text.header.week.previous} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:fine:h-auto sm:fine:w-auto sm:fine:p-1" onclick={() => shiftWeek(-1)}>
           <Icon name="chevron_left" class="text-[18px]" />
         </button>
         <button
           type="button"
-          class="select-none whitespace-nowrap rounded-md px-1 text-label-md text-on-surface {isThisWeek ? 'cursor-default' : 'hover:underline'}"
+          class="min-h-11 select-none whitespace-nowrap rounded-md px-1 text-label-md fine:min-h-0 text-on-surface {isThisWeek
+            ? 'cursor-default'
+            : 'underline decoration-dotted decoration-on-surface-variant underline-offset-4 hover:bg-surface-container-high hover:decoration-solid'}"
           title={isThisWeek ? text.header.week.thisWeek : text.header.week.backToThisWeek}
           onclick={goToThisWeek}
         >
           <span class="hidden sm:inline">{formatRange(planner.weekStart)}</span>
           <span class="sm:hidden">{formatRangeCompact(planner.weekStart)}</span>
+          <!-- The visible dates come first in the name (WCAG 2.5.3), then what pressing does. -->
+          <span class="sr-only">, {text.header.week.stateSuffix(isThisWeek)}</span>
         </button>
-        <button type="button" aria-label={text.header.week.next} class="rounded-md p-1 text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(1)}>
+        <button type="button" aria-label={text.header.week.next} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:fine:h-auto sm:fine:w-auto sm:fine:p-1" onclick={() => shiftWeek(1)}>
           <Icon name="chevron_right" class="text-[18px]" />
         </button>
       </div>
@@ -124,7 +133,9 @@
   </div>
 
   <!-- Below xl the primary tabs move to their own scrollable row. -->
-  <div class="overflow-x-auto border-t border-surface-container-high px-4 py-2 xl:hidden [scrollbar-width:none]">
-    {@render navTabs('flex w-max')}
-  </div>
+  {#if !xl.current}
+    <div class="overflow-x-auto border-t border-surface-container-high px-gutter py-2 md:px-gutter-desktop [scrollbar-width:none]">
+      {@render navTabs('flex w-max')}
+    </div>
+  {/if}
 </header>

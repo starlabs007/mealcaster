@@ -1,8 +1,11 @@
 <script>
   import Icon from './Icon.svelte';
-  import { planner, weekSummary, weekOffset, autoFillRemaining, copyLastWeek, resetWeek } from '../planner.svelte.js';
+  import ActionMenu from './ActionMenu.svelte';
+  import { planner, weekSummary, weekOffset, autoFillRemaining, copyLastWeek, resetWeek, resetCount, RECENT_DAYS } from '../planner.svelte.js';
   import { text } from '../text.js';
   import { addDays, formatLong, formatShort } from '../dates.js';
+  import { MediaQuery } from 'svelte/reactivity';
+  import { tick } from 'svelte';
 
   const summary = $derived(weekSummary());
   const offset = $derived(weekOffset());
@@ -17,40 +20,96 @@
   );
   // A week entirely in the past is read-only history.
   const editable = $derived(addDays(planner.weekStart, 6) >= planner.today);
+
+  // On phones the actions fit one row: Copy joins Reset Week in the ⋯ menu. From `md` Reset Week is a quiet text button
+  // beside Copy. It says how many evenings it clears and is left out when there are none; what it keeps is its title
+  // (and the phone menu's small print), since a visible line would cost the header height.
+  const wide = new MediaQuery('min-width: 768px');
+  const resettable = $derived(resetCount());
+  // Copy takes the week before the viewed one; on next week that is this week.
+  const copyLabel = $derived(offset === 1 ? text.planner.header.copyThisWeek : text.planner.header.copyPrevious);
+  /** @type {import('./ActionMenu.svelte').MenuAction[]} */
+  const more = $derived([
+    ...(wide.current ? [] : [{ id: 'copy', label: copyLabel, icon: 'content_copy', onselect: copyLastWeek }]),
+    ...(resettable && !wide.current ? [{ id: 'reset', label: text.planner.header.resetWeek(resettable), icon: 'delete_sweep', note: text.planner.header.resetKeeps, divider: true, onselect: reset }] : []),
+  ]);
+
+  // When the button that ran the reset goes with it, focus moves to Auto-fill rather than dropping to the page.
+  /** @type {HTMLButtonElement | undefined} */
+  let autoFillButton = $state();
+  async function reset() {
+    resetWeek();
+    await tick();
+    if (!more.length && !resetCount()) autoFillButton?.focus();
+  }
 </script>
 
-<div class="flex flex-col justify-between gap-4 border-b border-surface-container-highest pb-4 md:flex-row md:items-end">
-  <div>
-    <div class="mb-1.5 flex flex-wrap items-center gap-2">
-      <span class="text-sm font-bold uppercase tracking-widest text-secondary">{text.planner.header.eyebrow}</span>
-      <span class="text-xs text-outline">•</span>
-      <span class="text-xs font-semibold text-on-surface-variant">
-        {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}
-      </span>
-    </div>
-    <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">{title}</h1>
+<div class="flex flex-col justify-between gap-3 border-b border-surface-container-highest pb-4 lg:flex-row lg:items-end lg:gap-4">
+  <!-- Phones have 8 px page gutters: bare text gets 8 px more so it isn't set against the screen edge (cards have their own padding). -->
+  <!-- Below lg the controls sit in one row under the title; from lg the title keeps one line and the controls wrap on its
+       right instead (two lines of title pushed tonight's actions below 800 px at 1024). -->
+  <div class="px-2 lg:shrink-0 md:px-0">
+    <!-- The fixed header's week stepper shows the dates on phones. -->
+    <p class="mb-1.5 hidden text-xs font-semibold text-on-surface-variant md:block">
+      {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}
+    </p>
+    <h1 id="planner-title" class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">{title}</h1>
   </div>
 
-  <div class="flex flex-wrap items-center gap-2 pt-2 md:max-w-[420px] md:justify-end md:pt-0 lg:max-w-none">
-    <div class="inline-flex items-center gap-2 rounded-full bg-surface-container-high px-3 py-1.5 text-xs">
-      <span class="h-2 w-2 rounded-full bg-primary {summary.open ? 'animate-pulse' : ''}"></span>
-      <span class="font-semibold text-on-surface">{text.planner.header.dinners(summary.planned)}</span>
-      {#if editable}
-        <span class="text-[11px] text-outline">
-          ({summary.open ? text.planner.header.openLeft(summary.open) : text.planner.header.allSet})
+  <div class="flex flex-col gap-1.5 lg:items-end">
+    <div class="flex flex-nowrap items-center gap-2 md:flex-wrap lg:justify-end">
+      <div class="inline-flex min-w-0 items-center gap-2 rounded-full bg-surface-container-high px-3 py-1.5 text-xs">
+        <span class="h-2 w-2 rounded-full bg-primary"></span>
+        <span class="whitespace-nowrap font-semibold text-on-surface">
+          <span class="sm:hidden">{text.planner.header.countsShort(summary.planned, summary.off)}</span><span class="hidden sm:inline">{text.planner.header.counts(summary.planned, summary.off)}</span>
         </span>
+        {#if editable}
+          <span class="whitespace-nowrap text-[11px] text-on-surface-variant">
+            (<span class="sm:hidden">{summary.open ? text.planner.header.toPlanShort(summary.open) : text.planner.header.allSet}</span><span class="hidden sm:inline">{summary.open ? text.planner.header.toPlan(summary.open) : text.planner.header.allSet}</span>)
+          </span>
+        {/if}
+      </div>
+      {#if editable}
+        <!-- aria-disabled, not disabled: pressing the last Auto-fill must not drop focus to <body>. A press on a full week just says so.
+             Off, it reads as off beside Copy: dashed border, no fill, muted label, no hover change. -->
+        <button
+          bind:this={autoFillButton}
+          type="button"
+          class="ml-auto min-h-11 flex-shrink-0 md:ml-0 md:fine:min-h-0 {summary.open
+            ? 'btn-primary'
+            : 'btn-outline cursor-not-allowed border-dashed bg-transparent text-outline hover:bg-transparent hover:text-outline'}"
+          aria-disabled={!summary.open}
+          onclick={autoFillRemaining}
+        >
+          <Icon name="auto_fix_high" class="text-[16px]" />
+          <span class="sm:hidden">{text.planner.header.autoFillShort}</span><span class="hidden sm:inline">{text.planner.header.autoFill}</span>
+        </button>
+        {#if wide.current}
+          <button type="button" class="btn-outline min-h-11 fine:min-h-0" onclick={copyLastWeek}>
+            <Icon name="content_copy" class="text-[16px]" /> {copyLabel}
+          </button>
+          {#if resettable}
+            <!-- Quiet, below Auto-fill and Copy in weight; what it keeps is the title and the description. -->
+            <button
+              type="button"
+              class="btn min-h-11 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface fine:min-h-0"
+              title={text.planner.header.resetKeeps}
+              aria-describedby="reset-keeps"
+              onclick={reset}
+            >
+              <Icon name="delete_sweep" class="text-[16px]" />
+              {text.planner.header.resetWeek(resettable)}
+            </button>
+            <span id="reset-keeps" class="sr-only">{text.planner.header.resetKeeps}</span>
+          {/if}
+        {/if}
+        {#if more.length}
+          <ActionMenu items={more} label={text.planner.header.moreAria} class="border border-outline-variant bg-surface-container-lowest" />
+        {/if}
       {/if}
     </div>
-    {#if editable}
-      <button type="button" class="btn-primary" disabled={!summary.open} onclick={autoFillRemaining}>
-        <Icon name="auto_fix_high" class="text-[16px]" /> {text.planner.header.autoFill}
-      </button>
-      <button type="button" class="btn-outline" onclick={copyLastWeek}>
-        <Icon name="content_copy" class="text-[16px]" /> {text.planner.header.copyLastWeek}
-      </button>
-      <button type="button" class="btn-outline" onclick={resetWeek}>
-        <Icon name="refresh" class="text-[16px]" /> {text.planner.header.resetWeek}
-      </button>
+    {#if editable && summary.open}
+      <p class="px-2 text-xs text-on-surface-variant md:px-0">{text.planner.header.autoFillNote(RECENT_DAYS)}</p>
     {/if}
   </div>
 </div>

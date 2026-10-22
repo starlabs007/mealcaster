@@ -69,10 +69,13 @@ const fmt = (opts) => new Intl.DateTimeFormat('en-US', opts);
 const shortFmt = fmt({ month: 'short', day: 'numeric' });
 const longFmt = fmt({ weekday: 'long', month: 'short', day: 'numeric' });
 const weekdayFmt = fmt({ weekday: 'long' });
+const weekdayShortFmt = fmt({ weekday: 'short' });
 
 export const formatShort = (iso) => shortFmt.format(fromISO(iso));
 export const formatLong = (iso) => longFmt.format(fromISO(iso));
 export const formatWeekday = (iso) => weekdayFmt.format(fromISO(iso));
+/** "Wed" */
+export const formatWeekdayShort = (iso) => weekdayShortFmt.format(fromISO(iso));
 
 /** "Oct 21 – Oct 27" */
 export function formatRange(weekStart) {

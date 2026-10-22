@@ -143,7 +143,7 @@
   </label>
 {/snippet}
 
-<div class="mx-auto flex w-full max-w-[960px] flex-col gap-6 px-4 py-6 md:px-gutter-desktop">
+<div class="mx-auto flex w-full max-w-[960px] flex-col gap-6 px-gutter py-6 md:px-gutter-desktop">
   <nav aria-label={text.profile.breadcrumbAria} class="flex items-center gap-1.5 text-label-md text-on-surface-variant">
     <Icon name="calendar_view_week" class="text-[16px]" />
     <a href={href('/')} class="hover:text-primary">{text.profile.weeklyPlan}</a>
