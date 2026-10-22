@@ -699,6 +699,14 @@ export const text = {
       title: (/** @type {string} */ week) => `Nothing to buy for ${week}`,
       body: 'Plan a few dinners and their ingredients will be compiled here automatically.',
       openPlan: 'Open the weekly plan',
+      /** A past week with nothing on its list: history, so no plan prompt. */
+      pastTitle: (/** @type {string} */ week) => `Nothing was on the list for ${week}`,
+      pastBody: 'Past weeks stay as they were.',
+    },
+    /** Everything is bought: a quiet finish. */
+    done: {
+      title: (/** @type {number} */ n) => `All ${n} bought`,
+      body: (/** @type {string} */ week) => `Nothing left to buy for ${week}.`,
     },
     /** Where in the store a department is, shown beside its heading and on the printout. */
     where: {
