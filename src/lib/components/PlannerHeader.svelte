@@ -70,13 +70,14 @@
         {/if}
       </div>
       {#if editable}
-        <!-- aria-disabled, not disabled: pressing the last Auto-fill must not drop focus to <body>. A press on a full week just says so. -->
+        <!-- aria-disabled, not disabled: pressing the last Auto-fill must not drop focus to <body>. A press on a full week just says so.
+             Off, it reads as off beside Copy: dashed border, no fill, muted label, no hover change. -->
         <button
           bind:this={autoFillButton}
           type="button"
           class="ml-auto min-h-11 flex-shrink-0 md:ml-0 md:fine:min-h-0 {summary.open
             ? 'btn-primary'
-            : 'btn-outline cursor-not-allowed border-outline-variant text-on-surface-variant hover:bg-transparent'}"
+            : 'btn-outline cursor-not-allowed border-dashed bg-transparent text-outline hover:bg-transparent hover:text-outline'}"
           aria-disabled={!summary.open}
           onclick={autoFillRemaining}
         >
