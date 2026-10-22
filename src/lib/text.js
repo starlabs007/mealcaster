@@ -72,6 +72,8 @@ export const text = {
       next: 'Next week',
       thisWeek: 'This week',
       backToThisWeek: 'Back to this week',
+      // Spoken after the visible dates, so the button's name starts with its label ("Oct 17 – Oct 23, this week").
+      stateSuffix: (/** @type {boolean} */ isThisWeek) => (isThisWeek ? 'this week' : 'back to this week'),
     },
     grocery: {
       label: 'Quick Grocery List',
@@ -156,7 +158,12 @@ export const text = {
       // "5 dinners · 2 nights off"; nights off are left out when there are none.
       counts: (/** @type {number} */ dinners, /** @type {number} */ off) =>
         [`${dinners} ${plural(dinners, 'dinner')}`, off ? `${off} ${plural(off, 'night')} off` : ''].filter(Boolean).join(' · '),
+      // Phones: "5 dinners · 2 off", so the whole pill stays on one line.
+      countsShort: (/** @type {number} */ dinners, /** @type {number} */ off) =>
+        [`${dinners} ${plural(dinners, 'dinner')}`, off ? `${off} off` : ''].filter(Boolean).join(' · '),
       toPlan: (/** @type {number} */ n) => `${n} ${plural(n, 'evening')} to plan`,
+      // Phones: the same count in fewer words.
+      toPlanShort: (/** @type {number} */ n) => `${n} to plan`,
       allSet: 'All planned',
       autoFill: 'Auto-fill Remaining',
       autoFillShort: 'Auto-fill',
@@ -180,6 +187,8 @@ export const text = {
       viewRecipe: 'View Recipe',
       viewRecipeAria: (/** @type {string} */ title) => `View recipe: ${title}`,
       markDone: 'Mark Done',
+      // What the Mark Done button shows once pressed; its name stays "Mark Done" with aria-pressed.
+      done: 'Done',
       swapMeal: 'Choose a Different Meal',
       surpriseMe: 'Surprise Me',
       nightOffAction: 'Night Off',

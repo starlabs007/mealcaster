@@ -7,6 +7,11 @@
   import { route, href, navigate } from '../router.svelte.js';
   import { text } from '../text.js';
   import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
+  import { MediaQuery } from 'svelte/reactivity';
+
+  // The tabs are rendered once: in the header row from `xl`, in their own row below it. (Two copies, one hidden by CSS,
+  // would still be two "Primary" landmarks to some assistive tech.)
+  const xl = new MediaQuery('min-width: 1280px');
 
   const tabs = [
     { id: 'weekly-menu', label: text.header.tabs.weeklyMenu, path: '/' },
@@ -67,7 +72,7 @@
         <img src="./logo-mark.png" alt="" class="h-8 w-8 rounded-lg object-cover shadow-sm" />
         <span class="hidden font-display text-headline-sm tracking-tight text-primary sm:inline">{text.header.appName}</span>
       </a>
-      {@render navTabs('hidden xl:flex')}
+      {#if xl.current}{@render navTabs('flex')}{/if}
     </div>
 
     <div class="flex items-center gap-2 sm:gap-4">
@@ -89,12 +94,16 @@
         </button>
         <button
           type="button"
-          class="select-none whitespace-nowrap rounded-md px-1 text-label-md text-on-surface {isThisWeek ? 'cursor-default' : 'hover:underline'}"
+          class="select-none whitespace-nowrap rounded-md px-1 text-label-md text-on-surface {isThisWeek
+            ? 'cursor-default'
+            : 'underline decoration-dotted decoration-on-surface-variant underline-offset-4 hover:bg-surface-container-high hover:decoration-solid'}"
           title={isThisWeek ? text.header.week.thisWeek : text.header.week.backToThisWeek}
           onclick={goToThisWeek}
         >
           <span class="hidden sm:inline">{formatRange(planner.weekStart)}</span>
           <span class="sm:hidden">{formatRangeCompact(planner.weekStart)}</span>
+          <!-- The visible dates come first in the name (WCAG 2.5.3), then what pressing does. -->
+          <span class="sr-only">, {text.header.week.stateSuffix(isThisWeek)}</span>
         </button>
         <button type="button" aria-label={text.header.week.next} class="flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant transition-colors hover:bg-surface-container-high hover:text-on-surface sm:h-auto sm:w-auto sm:p-1" onclick={() => shiftWeek(1)}>
           <Icon name="chevron_right" class="text-[18px]" />
@@ -124,7 +133,9 @@
   </div>
 
   <!-- Below xl the primary tabs move to their own scrollable row. -->
-  <div class="overflow-x-auto border-t border-surface-container-high px-gutter py-2 md:px-gutter-desktop xl:hidden [scrollbar-width:none]">
-    {@render navTabs('flex w-max')}
-  </div>
+  {#if !xl.current}
+    <div class="overflow-x-auto border-t border-surface-container-high px-gutter py-2 md:px-gutter-desktop [scrollbar-width:none]">
+      {@render navTabs('flex w-max')}
+    </div>
+  {/if}
 </header>

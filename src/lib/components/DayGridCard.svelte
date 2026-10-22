@@ -77,26 +77,26 @@
     <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
   {/if}
 
-  <div class="flex items-start gap-1 {day.isToday ? 'pl-1' : ''}">
+  <div data-menu-clear class="flex items-start gap-1 {day.isToday ? 'pl-1' : ''}">
     <div class="min-w-0 flex-1">
       <!-- Seven columns from xl are narrow: "Wed" there, beside the ⋯ and ⠿ buttons. -->
-      <div class="truncate text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}">
+      <h2 class="truncate text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}" aria-label={weekdayName}>
         {#if lead}{weekdayName}{:else if compact}{formatWeekdayShort(day.iso)}{:else}<span class="xl:hidden">{weekdayName}</span><span class="hidden xl:inline">{formatWeekdayShort(day.iso)}</span>{/if}
-      </div>
+      </h2>
       <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
         <span class="font-display text-on-surface {lead ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
         {#if compact}
           <!-- Narrow tile: the tint and the line below say how the evening went. -->
-        {:else if day.status === 'completed'}
+        {:else if day.status === 'completed' && !day.isPast}
           <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
             <Icon name="check_circle" class="text-[13px]" /> {text.planner.card.completed}
           </span>
         {:else if day.isToday}
           <span class="rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">{text.planner.card.tonight}</span>
         {:else if day.status === 'diningOut'}
-          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
+          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
         {:else if day.status === 'missed'}
-          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.noPlan}</span>
+          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.noPlan}</span>
         {/if}
       </div>
     </div>
@@ -144,10 +144,10 @@
         <p class="text-xs text-on-surface-variant">{text.planner.card.meta(recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
       {/if}
       {#if recipe.tags.length}
-        <!-- Up to five lines of tags (16 px each + 6 px gaps) in a narrow column; the rest wrap out of sight (no half tags). -->
-        <div class="flex flex-wrap gap-1.5 {lead ? '' : 'max-h-[104px] overflow-hidden'}">
+        <!-- Up to five lines of tags (18 px each + 6 px gaps) in a narrow column; the rest wrap out of sight (no half tags). -->
+        <div class="flex flex-wrap gap-1.5 {lead ? '' : 'max-h-[114px] overflow-hidden'}">
           {#each recipe.tags as tag (tag)}
-            <span class="max-w-full flex-shrink-0 truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
+            <span class="max-w-full flex-shrink-0 truncate rounded-full px-2 py-0.5 text-label-sm {tagClass(tag)}" title={tag}>{tag}</span>
           {/each}
         </div>
       {/if}
@@ -165,16 +165,17 @@
           {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
         </a>
         {#if day.isToday}
-          <!-- A fixed label with aria-pressed, so it's announced as "Mark Done, pressed" (not "Done, pressed"). -->
+          <!-- Shows "Done" once pressed; the name stays "Mark Done" (it contains the visible word) with aria-pressed. -->
           <button
             type="button"
             aria-pressed={day.status === 'completed'}
+            aria-label={text.planner.card.markDone}
             class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {day.status === 'completed'
               ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
               : 'border border-outline-variant text-on-surface hover:bg-surface-container-high'}"
             onclick={() => setDone(day.iso, day.status !== 'completed')}
           >
-            <Icon name="check_circle" class="text-[14px]" /> {text.planner.card.markDone}
+            <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.planner.card.done : text.planner.card.markDone}
           </button>
         {/if}
       </div>
