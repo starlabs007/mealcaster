@@ -197,7 +197,7 @@ export const text = {
       nightOff: 'Night off',
       noPlan: 'No plan',
       open: 'Open',
-      meta: (/** @type {number} */ minutes, /** @type {number} */ serves) => `${minutes} min · Serves ${serves}`,
+      meta: (/** @type {number} */ minutes, /** @type {number} */ serves) => (minutes ? `${minutes} min · Serves ${serves}` : `Serves ${serves}`),
       viewRecipe: 'View Recipe',
       viewRecipeAria: (/** @type {string} */ title) => `View recipe: ${title}`,
       markDone: 'Mark Done',
@@ -378,7 +378,7 @@ export const text = {
     },
     /** "15 mins", "1 min" (60 minutes and over use formatMinutes). */
     minutes: (/** @type {number} */ m) => `${m} ${plural(m, 'min', 'mins')}`,
-    photoMeta: (/** @type {string} */ time, /** @type {number} */ serves) => `${time} · Serves ${serves}`,
+    photoMeta: (/** @type {string} */ time, /** @type {number} */ serves) => (time ? `${time} · Serves ${serves}` : `Serves ${serves}`),
     notes: { title: 'Cook’s Secrets', label: 'Notes' },
     ingredients: {
       title: 'Mise en Place Ingredients',
@@ -477,6 +477,7 @@ export const text = {
       prep: 'Prep Time',
       cook: 'Cook Time',
       minutesUnit: 'min',
+      minutesPlaceholder: 'Not set',
     },
     photo: {
       label: 'Culinary Photo',
@@ -559,6 +560,7 @@ export const text = {
       aisleAria: (/** @type {number} */ n) => `Store aisle, row ${n}`,
       aisleKnownTitle: (/** @type {string} */ name) => `The aisle of “${name}”, shared by every recipe that uses it`,
       aisleNewTitle: 'Store aisle for this new ingredient',
+      chooseAisle: 'Choose aisle',
       detailsAria: (/** @type {number} */ n) => `Note, prep and optional, row ${n}`,
       detailsTitle: 'Note, prep, optional',
       details: 'Details',
@@ -629,6 +631,7 @@ export const text = {
       serves: 'Servings must be 1–50.',
       minutes: 'Enter whole minutes.',
       ingredients: 'Add at least one ingredient.',
+      aisle: 'Choose a store aisle for each new ingredient marked New.',
       qty: 'Use amounts like 2, 1.5, 1/2 or 1 1/2 — or leave blank for “to taste”.',
     },
     toasts: {

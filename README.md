@@ -150,7 +150,7 @@ for every recipe and the grocery list.
   from a recipe's checklist, a grocery line's box icon, or Profile → Ingredients; untick it there or with **Need it**
   on the grocery list.
 - **Recipe editor**: the ingredient field suggests existing ingredients (accent-insensitive, plurals too) and creates
-  a new one on save, marked **New** with its aisle (guessed until you pick one) and "Did you mean…" buttons for
+  a new one on save, marked **New** with its aisle (guessed from keywords; a name with no keyword match waits for you to choose, and saving asks for it). Prep and Cook times may stay empty (saved as 0, which no screen shows) and "Did you mean…" buttons for
   look-alikes. An existing ingredient's aisle is locked there (change it in Profile). The unit field suggests units
   and other spellings ("tablespoon" → tbsp). **Paste bulk text** splits lines into amount, unit, ingredient, note,
   prep and optional (rules under its help toggle).

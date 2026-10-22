@@ -44,10 +44,15 @@ const AISLE_WORDS = [
   ['Produce', /\b(onions?|shallots?|garlic|lemons?|limes?|oranges?|tomato(es)?|potato(es)?|carrots?|celery|peppers?|zucchini|courgettes?|squash|spinach|kale|lettuce|arugula|rocket|cabbage|broccoli|cauliflower|mushrooms?|eggplant|aubergine|asparagus|peas|beans|corn|avocados?|ginger|leeks?|fennel|cucumbers?|apples?|pears?|berries|chil(e|i|li)s?|jalapeños?|scallions?|green onions?)\b/],
 ];
 
-/** Best-guess aisle for a new ingredient's name. @param {string} text */
-export function guessAisle(text) {
+/** The aisle a new ingredient's name points to, or '' when nothing matches (the name isn't worth a guess). @param {string} text */
+export function matchAisle(text) {
   const t = text.toLowerCase();
-  return AISLE_WORDS.find(([, re]) => re.test(t))?.[0] ?? 'Pantry';
+  return AISLE_WORDS.find(([, re]) => re.test(t))?.[0] ?? '';
+}
+
+/** Best-guess aisle for a field that needs one preselected: the match, else Pantry. @param {string} text */
+export function guessAisle(text) {
+  return matchAisle(text) || 'Pantry';
 }
 
 // ---- Pasted lines --------------------------------------------------------------
@@ -145,7 +150,7 @@ export function parseIngredientLines(text, group = '') {
     }
     const row = parseIngredientLine(line);
     if (!row.text) continue;
-    rows.push({ ...row, group: current, aisle: guessAisle(row.text) });
+    rows.push({ ...row, group: current, aisle: matchAisle(row.text) });
   }
   return rows;
 }

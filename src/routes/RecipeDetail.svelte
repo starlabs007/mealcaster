@@ -108,12 +108,13 @@
   /** "15 mins", "1 min", "3.5 hrs" */
   const mins = (m) => (m >= 60 ? formatMinutes(m) : text.recipe.minutes(m));
 
+  // A time nobody entered (0) is left out rather than shown as "0 mins".
   const stats = recipe
     ? [
-        { icon: 'emoji_symbols', label: text.recipe.stats.prep, value: mins(recipe.prepMinutes) },
-        { icon: 'skillet', label: text.recipe.stats.cook, value: mins(recipe.cookMinutes) },
-        { icon: 'schedule', label: text.recipe.stats.total, value: mins(recipe.minutes) },
-      ]
+        { icon: 'emoji_symbols', label: text.recipe.stats.prep, minutes: recipe.prepMinutes, value: mins(recipe.prepMinutes) },
+        { icon: 'skillet', label: text.recipe.stats.cook, minutes: recipe.cookMinutes, value: mins(recipe.cookMinutes) },
+        { icon: 'schedule', label: text.recipe.stats.total, minutes: recipe.minutes, value: mins(recipe.minutes) },
+      ].filter((stat) => stat.minutes > 0)
     : [];
 </script>
 
@@ -264,7 +265,7 @@
             <RecipeImage src={recipe.image} alt={recipe.title} class="h-full w-full" />
             <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
               <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md">
-                <Icon name="restaurant_menu" class="text-[13px]" /> {text.recipe.photoMeta(formatMinutes(recipe.minutes), recipe.serves)}
+                <Icon name="restaurant_menu" class="text-[13px]" /> {text.recipe.photoMeta(recipe.minutes ? formatMinutes(recipe.minutes) : '', recipe.serves)}
               </span>
               {#if recipe.badge.label}
                 <span class="rounded-full bg-primary-container/90 px-2.5 py-1 text-label-caps text-on-primary shadow-sm backdrop-blur-md">
