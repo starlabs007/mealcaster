@@ -23,6 +23,7 @@ const DEVICE_DATA = [
   'groceryEvery.v1',
   'settings.v2',
   'recipeDraft.v2',
+  'recipeEditDrafts.v1',
   'syncBase.v2',
 ];
 

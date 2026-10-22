@@ -331,7 +331,7 @@ Keys from before schema version 2 (`recipeBox.v1`, `grocery.v2`, `settings.v1`, 
 startup (`env.js`): the new build never reads old-format data, and a stale sync base would delete sheet rows.
 
 Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`, `mealcaster.catalogHidePlanned.v1`;
-an unsaved new recipe is kept in `mealcaster.recipeDraft.v2`.
+the Recipe Editor keeps unsaved work as a draft a moment after each change (a new recipe in `mealcaster.recipeDraft.v2`, edits to an existing one in `mealcaster.recipeEditDrafts.v1`, per recipe id and only for the recipe as it was opened). Saving or discarding clears it; leaving the editor keeps it and the editor restores it on reopening.
 
 The grocery badge counts items still to buy for the viewed week.
 
