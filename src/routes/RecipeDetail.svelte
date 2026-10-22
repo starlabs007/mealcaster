@@ -140,35 +140,35 @@
       </nav>
 
       <div class="flex flex-wrap items-center gap-2">
-        <a href={href(`/recipe/${recipe.id}/edit`)} class="btn-outline">
+        <a href={href(`/recipe/${recipe.id}/edit`)} class="btn-outline min-h-11 fine:min-h-0">
           <Icon name="edit" class="text-[16px]" /> {text.recipe.buttons.edit}
         </a>
-        <button type="button" class="btn-outline hover:text-secondary" onclick={(e) => {
-            deleteOpener = e.currentTarget;
-            confirmingDelete = true;
-          }}>
-          <Icon name="delete" class="text-[16px]" /> {text.recipe.buttons.delete}
-        </button>
         <button
           type="button"
           aria-pressed={favorite}
           onclick={() => toggleFavorite(recipe.id)}
-          class="btn-outline {favorite ? 'text-secondary' : ''}"
+          class="btn-outline min-h-11 fine:min-h-0 {favorite ? 'text-secondary' : ''}"
         >
           <Icon name="favorite" class="text-[16px] text-secondary {favorite ? 'icon-filled' : ''}" />
           {favorite ? text.recipe.buttons.favorited : text.recipe.buttons.favorite}
         </button>
         {#if editable}
-          <a href={href('/catalog', { day })} class="btn-outline">
+          <a href={href('/catalog', { day })} class="btn-outline min-h-11 fine:min-h-0">
             <Icon name="swap_horiz" class="text-[16px]" /> {text.recipe.buttons.swapMeal}
           </a>
         {:else if openDay}
-          <button type="button" class="btn-outline" onclick={() => planOn(openDay)}>
+          <button type="button" class="btn-outline min-h-11 fine:min-h-0" onclick={() => planOn(openDay)}>
             <Icon name="event_available" class="text-[16px]" /> {text.recipe.buttons.planFor(formatWeekday(openDay))}
           </button>
         {/if}
-        <button type="button" class="btn-outline" onclick={() => (choosingPrint = true)}>
+        <button type="button" class="btn-outline min-h-11 fine:min-h-0" onclick={() => (choosingPrint = true)}>
           <Icon name="print" class="text-[16px]" /> {text.recipe.buttons.print}
+        </button>
+        <button type="button" class="btn-outline min-h-11 fine:min-h-0 hover:text-secondary" onclick={(e) => {
+            deleteOpener = e.currentTarget;
+            confirmingDelete = true;
+          }}>
+          <Icon name="delete" class="text-[16px]" /> {text.recipe.buttons.delete}
         </button>
       </div>
     </div>
@@ -212,7 +212,7 @@
               <a
                 href={href('/catalog', { filter: tag, day: planningDay })}
                 title={text.recipe.tagTitle(tag)}
-                class="inline-flex max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-label-caps transition-opacity hover:opacity-80 {tagClass(tag)}"
+                class="inline-flex min-h-6 max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-label-caps transition-opacity hover:opacity-80 {tagClass(tag)}"
               >
                 {#if tagIcon(tag)}<Icon name={tagIcon(tag)} class="text-[13px]" />{/if}
                 <span class="truncate">{tag}</span>
@@ -222,7 +222,7 @@
         </ul>
       {/if}
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4 lg:max-w-4xl print:max-w-none print:grid-cols-4">
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:max-w-4xl lg:grid-cols-4 print:max-w-none print:grid-cols-4">
         {#each stats as stat (stat.label)}
           <div class="flex items-center gap-3 rounded-xl bg-surface-container-low px-4 py-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface-variant shadow-card">
@@ -234,17 +234,18 @@
             </div>
           </div>
         {/each}
-        <div class="flex items-center justify-between gap-2 rounded-xl bg-surface-container-low px-4 py-3">
+        <div class="col-span-2 flex items-center justify-between gap-2 rounded-xl bg-surface-container-low px-4 py-3 md:col-span-1 print:col-span-1">
           <div>
             <div class="text-label-caps uppercase text-outline">{text.recipe.stats.servings}</div>
-            <div class="text-body-sm font-semibold text-on-surface">{text.recipe.stats.servingsValue(servings)}</div>
+            <div class="whitespace-nowrap text-body-sm font-semibold text-on-surface">{text.recipe.stats.servingsValue(servings)}</div>
           </div>
           <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest print:hidden">
-            <button type="button" aria-label={text.recipe.stats.fewer} class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40" disabled={servings <= 1} onclick={() => servings--}>
+            <button type="button" aria-label={text.recipe.stats.fewer} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings <= 1} onclick={() => servings--}>
               <Icon name="remove" class="text-[16px]" />
             </button>
-            <span class="w-6 text-center text-label-md text-on-surface" aria-live="polite">{servings}</span>
-            <button type="button" aria-label={text.recipe.stats.more} class="p-1.5 text-on-surface-variant hover:text-on-surface disabled:opacity-40" disabled={servings >= 12} onclick={() => servings++}>
+            <span class="w-6 text-center text-label-md text-on-surface" aria-hidden="true">{servings}</span>
+            <span class="sr-only" aria-live="polite">{text.recipe.stats.scaled(servings)}</span>
+            <button type="button" aria-label={text.recipe.stats.more} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings >= 12} onclick={() => servings++}>
               <Icon name="add" class="text-[16px]" />
             </button>
           </div>
@@ -255,13 +256,13 @@
     <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 print:flex print:flex-col print:items-stretch print:gap-5">
       <!-- Printed as one column: photo, ingredients, method, then notes. -->
       <!-- Left: photo & notes -->
-      <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-5 print:contents">
+      <aside class="flex flex-col gap-6 max-lg:contents lg:sticky lg:top-28 lg:col-span-5 print:contents">
         <figure
-          class="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-card print:order-1 print:mx-auto print:w-[var(--print-image)]
+          class="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-card max-lg:order-1 print:order-1 print:mx-auto print:w-[var(--print-image)]
             {printOptions.image && photo ? '' : 'print:hidden'}"
         >
           <!-- Photo-less (custom) recipes get a shorter placeholder until the column layout kicks in. -->
-          <div class="relative {recipe.image ? 'aspect-[4/3]' : 'aspect-[3/1] lg:aspect-[4/3]'}">
+          <div class="relative aspect-[3/1] lg:aspect-[4/3] print:aspect-[4/3]">
             <RecipeImage src={recipe.image} alt={recipe.title} class="h-full w-full" />
             <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
               <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md">
@@ -277,7 +278,7 @@
         </figure>
 
         {#if recipe.notes?.trim()}
-        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card print:order-3 print:break-inside-avoid">
+        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card max-lg:order-3 print:order-3 print:break-inside-avoid">
           <div class="mb-4 flex items-center gap-3">
             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-low text-primary">
               <Icon name="auto_awesome" class="text-[18px]" />
@@ -287,7 +288,7 @@
               <p class="text-label-caps uppercase text-outline">{text.recipe.notes.label}</p>
             </div>
           </div>
-          <div class="notes-md rounded-r-lg border-l-4 border-secondary bg-surface-container-low p-4 text-body-sm text-on-surface-variant">
+          <div class="notes-md rounded-r-lg border-l-4 border-secondary bg-surface-container-low p-4 text-body-md text-on-surface-variant md:text-body-sm">
             {@html renderMarkdown(recipe.notes)}
           </div>
         </section>
@@ -295,7 +296,7 @@
       </aside>
 
       <!-- Right: ingredients & method -->
-      <div class="flex flex-col gap-8 lg:col-span-7 print:order-2 print:gap-5">
+      <div class="flex flex-col gap-8 max-lg:order-2 lg:col-span-7 print:order-2 print:gap-5">
         <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-4 flex items-start justify-between gap-4">
             <div class="flex items-start gap-3">
@@ -305,7 +306,7 @@
                 <p class="text-body-sm text-on-surface-variant print:hidden">{text.recipe.ingredients.hint}</p>
               </div>
             </div>
-            <button type="button" class="inline-flex shrink-0 items-center gap-1 text-label-sm text-on-surface-variant hover:text-primary print:hidden" onclick={toggleAll}>
+            <button type="button" class="-mr-2 inline-flex min-h-11 shrink-0 items-center gap-1 px-2 text-label-sm text-on-surface-variant hover:text-primary fine:mr-0 fine:min-h-0 fine:px-0 print:hidden" onclick={toggleAll}>
               <Icon name={checked.length === allKeys.length ? 'remove_done' : 'done_all'} class="text-[16px]" />
               {checked.length === allKeys.length ? text.recipe.ingredients.clearAll : text.recipe.ingredients.checkAll}
             </button>
@@ -325,7 +326,7 @@
                     {@const ingredient = ingredientOf(item.id)}
                     {@const line = lineParts(item, ingredient, scale)}
                     <li class="print:break-inside-avoid">
-                      <label class="flex cursor-pointer items-start gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container">
+                      <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container fine:min-h-0 fine:items-start">
                         <input type="checkbox" class="peer sr-only" checked={isChecked} onchange={() => toggleCheck(key)} />
                         <span
                           class="mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary-container {isChecked
@@ -335,7 +336,7 @@
                         >
                           <Icon name="check" class="text-[13px]" />
                         </span>
-                        <span class="flex-1 text-body-sm text-on-surface">
+                        <span class="flex-1 text-body-lg text-on-surface md:text-body-sm print:text-body-sm">
                           {#if line.amount}<strong class="font-semibold">{line.amount}</strong>{/if}
                           <span class={ingredient ? '' : 'italic'}>{line.name}</span>{#if line.note}{' '}<span class="text-on-surface-variant">({line.note})</span>{/if}{#if line.prep}, {line.prep}{/if}
                           {#if line.optional}<span class="ml-1 text-label-sm text-outline">{text.recipe.ingredients.optional}</span>{/if}
@@ -361,7 +362,7 @@
               type="button"
               disabled={!missing.length}
               onclick={() => push(missing, (n) => text.recipe.toasts.addedFromRecipe(n, recipe.shortTitle))}
-              class="btn shrink-0 border border-outline-variant bg-surface-container-high py-2 text-on-surface hover:bg-surface-dim"
+              class="btn min-h-11 shrink-0 justify-center border border-outline-variant bg-surface-container-high py-2 text-on-surface hover:bg-surface-dim fine:min-h-0"
             >
               <Icon name={missing.length ? 'add_shopping_cart' : 'check_circle'} class="text-[16px]" />
               {missing.length ? text.recipe.ingredients.push(missing.length) : text.recipe.ingredients.pushed}
@@ -396,7 +397,7 @@
                       </span>
                     {/if}
                   </div>
-                  <div class="notes-md text-body-sm text-on-surface-variant">{@html renderMarkdown(step.text)}</div>
+                  <div class="notes-md text-body-lg text-on-surface-variant">{@html renderMarkdown(step.text)}</div>
                 </div>
               </li>
             {/each}
@@ -422,11 +423,11 @@
           <a href={href('/catalog', { day })} class="btn-outline py-2 text-on-surface">{text.recipe.buttons.swapFromCatalog}</a>
         {/if}
         {#if next}
-          <a href={href(`/recipe/${next.recipe.id}`, { day: next.iso })} class="btn-primary py-2">
+          <a href={href(`/recipe/${next.recipe.id}`, { day: next.iso })} class="btn-primary min-h-11 py-2 fine:min-h-0">
             {text.recipe.buttons.next(formatWeekday(next.iso), next.recipe.shortTitle)} <Icon name="arrow_forward" class="text-[16px]" />
           </a>
         {:else}
-          <a href={href('/')} class="btn-primary py-2">
+          <a href={href('/')} class="btn-primary min-h-11 py-2 fine:min-h-0">
             {text.recipe.buttons.backToWeekly} <Icon name="arrow_forward" class="text-[16px]" />
           </a>
         {/if}
