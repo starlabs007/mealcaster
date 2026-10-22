@@ -1,5 +1,5 @@
 <script>
-  // The printed Kitchen Checklist: one column, plain text, a department per section
+  // The printed grocery checklist: one column, plain text, a department per section
   // headed by a large bold title, an empty box to tick beside each item. Only what
   // is still to buy; bought and at-home items stay off the paper. Never shown on screen.
 
