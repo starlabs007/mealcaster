@@ -9,6 +9,7 @@
   import ActionMenu from './ActionMenu.svelte';
   import { surpriseMe, markDiningOut, clearDay, clearEvening, setDone, spotlight, switchTargets } from '../planner.svelte.js';
   import { focusDay } from '../focusDay.js';
+  import { groupedActions } from '../menuGroups.js';
   import { text } from '../text.js';
   import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
   import { href } from '../router.svelte.js';
@@ -30,15 +31,15 @@
   const actions = $derived.by(() => {
     const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
     const nightOff = { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
-    if (day.status === 'open') return [surprise, nightOff];
+    // Open evenings show Surprise Me beside Choose a Meal, so the menu keeps only Night Off.
+    if (day.status === 'open') return [nightOff];
     if (day.status !== 'planned') return [];
-    return [
-      { id: 'swap', label: text.planner.card.swapMeal, icon: 'sync_alt', href: href('/catalog', { day: day.iso }) },
-      surprise,
-      nightOff,
-      ...(onswitch && movable ? [{ id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch(day.iso) }] : []),
-      { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } },
-    ];
+    // Change the meal · move it · take the evening out of the plan.
+    return groupedActions([
+      [{ id: 'swap', label: text.planner.card.swapMeal, icon: 'sync_alt', href: href('/catalog', { day: day.iso }) }, surprise],
+      onswitch && movable ? [{ id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch(day.iso) }] : [],
+      [nightOff, { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } }],
+    ]);
   });
 
   // While a meal is dragged: the card it came from, the one under the pointer, the ones it can go to, the rest.
@@ -208,6 +209,9 @@
         <a href={href('/catalog', { day: day.iso })} data-day-focus class="btn-outline py-2 text-on-surface">
           <Icon name="add" class="text-[15px]" /> {text.planner.card.chooseMeal}
         </a>
+        <button type="button" class="btn py-2 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => { surpriseMe(day.iso); focusDay(day.iso); }}>
+          <Icon name="casino" class="text-[15px]" /> {text.planner.card.surpriseMe}
+        </button>
       {:else if day.status === 'diningOut' && !day.isPast}
         <button type="button" class="btn-outline py-2 text-on-surface" onclick={() => { clearDay(day.iso); focusDay(day.iso); }}>
           <Icon name="restaurant" class="text-[15px]" /> {text.planner.card.planEvening}
