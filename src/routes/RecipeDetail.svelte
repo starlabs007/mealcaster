@@ -20,6 +20,7 @@
   import { showToast } from '../lib/toast.svelte.js';
   import { sheetTabOf, syncPhase, PHASE_LOOK } from '../lib/sync/sync.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
+  import ActionMenu from '../lib/components/ActionMenu.svelte';
   import { tick } from 'svelte';
   import { text } from '../lib/text.js';
 
@@ -115,12 +116,46 @@
   // A time nobody entered (0) is left out rather than shown as "0 mins".
   const stats = recipe
     ? [
-        { icon: 'emoji_symbols', label: text.recipe.stats.prep, minutes: recipe.prepMinutes, value: mins(recipe.prepMinutes) },
-        { icon: 'skillet', label: text.recipe.stats.cook, minutes: recipe.cookMinutes, value: mins(recipe.cookMinutes) },
-        { icon: 'schedule', label: text.recipe.stats.total, minutes: recipe.minutes, value: mins(recipe.minutes) },
+        { icon: 'emoji_symbols', label: text.recipe.stats.prep, short: text.recipe.stats.prepShort, minutes: recipe.prepMinutes, value: mins(recipe.prepMinutes) },
+        { icon: 'skillet', label: text.recipe.stats.cook, short: text.recipe.stats.cookShort, minutes: recipe.cookMinutes, value: mins(recipe.cookMinutes) },
+        { icon: 'schedule', label: text.recipe.stats.total, short: text.recipe.stats.totalShort, minutes: recipe.minutes, value: mins(recipe.minutes) },
       ].filter((stat) => stat.minutes > 0)
     : [];
+
+  function askDelete() {
+    confirmingDelete = true;
+  }
+
+  // Phones: Print and Delete live in a ⋯ menu, out of the row with Edit. The menu puts focus back on its button
+  // before running an action, so that button becomes the delete dialog's opener.
+  const more = recipe
+    ? [
+        { id: 'print', label: text.recipe.buttons.print, icon: 'print', onselect: () => (choosingPrint = true) },
+        {
+          id: 'delete',
+          label: text.recipe.buttons.delete,
+          icon: 'delete',
+          divider: true,
+          onselect: () => {
+            deleteOpener = /** @type {HTMLElement | null} */ (document.activeElement);
+            askDelete();
+          },
+        },
+      ]
+    : [];
 </script>
+
+{#snippet stepper()}
+  <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest print:hidden">
+    <button type="button" aria-label={text.recipe.stats.fewer} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings <= 1} onclick={() => servings--}>
+      <Icon name="remove" class="text-[16px]" />
+    </button>
+    <span class="w-6 text-center text-label-md text-on-surface" aria-hidden="true">{servings}</span>
+    <button type="button" aria-label={text.recipe.stats.more} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings >= 12} onclick={() => servings++}>
+      <Icon name="add" class="text-[16px]" />
+    </button>
+  </div>
+{/snippet}
 
 {#if !recipe}
   <div class="mx-auto flex max-w-xl flex-col items-center gap-3 px-4 py-24 text-center">
@@ -168,30 +203,32 @@
             <Icon name="event_available" class="text-[16px]" /> {text.recipe.buttons.planFor(formatWeekday(openDay))}
           </button>
         {/if}
-        <button type="button" class="btn-outline min-h-11 fine:min-h-0" onclick={() => (choosingPrint = true)}>
+        <button type="button" class="btn-outline min-h-11 max-md:hidden fine:min-h-0" onclick={() => (choosingPrint = true)}>
           <Icon name="print" class="text-[16px]" /> {text.recipe.buttons.print}
         </button>
-        <button type="button" class="btn-outline min-h-11 fine:min-h-0 hover:text-secondary" onclick={(e) => {
+        <button type="button" class="btn-outline min-h-11 max-md:hidden fine:min-h-0 hover:text-secondary" onclick={(e) => {
             deleteOpener = e.currentTarget;
-            confirmingDelete = true;
+            askDelete();
           }}>
           <Icon name="delete" class="text-[16px]" /> {text.recipe.buttons.delete}
         </button>
+        <ActionMenu items={more} label={text.recipe.buttons.moreAria} class="border border-outline-variant bg-surface-container-lowest md:hidden" />
       </div>
     </div>
   </div>
 
   <!-- Styled printout (two columns, tints kept); hidden when printing the simple layout. -->
   <div
-    class="mx-auto flex w-full max-w-page flex-col gap-8 px-gutter py-8 md:px-gutter-desktop print:gap-5 print:p-0 print:[-webkit-print-color-adjust:exact] print:[print-color-adjust:exact] print:[&_*]:shadow-none
+    class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-5 md:gap-8 md:px-gutter-desktop md:py-8 print:gap-5 print:p-0 print:[-webkit-print-color-adjust:exact] print:[print-color-adjust:exact] print:[&_*]:shadow-none
       {printOptions.simple ? 'print:hidden' : ''} {textDelta ? 'print-sized' : ''}"
     style="--print-delta: {textDelta}pt; --print-image: {printOptions.imageScale}%"
   >
     <!-- Title block -->
-    <header class="flex flex-col gap-4">
-      <div class="flex flex-wrap items-center gap-2 print:hidden">
+    <header class="flex flex-col gap-3 md:gap-4">
+      <div class="flex flex-wrap items-center gap-2 print:hidden {recipe.custom || recipe.edited ? '' : 'max-md:hidden'}">
         {#if day}
-          <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/60 px-2.5 py-1 text-label-caps uppercase text-primary">
+          <!-- Phones: the breadcrumb already names the day. -->
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/60 px-2.5 py-1 text-label-caps uppercase text-primary max-md:hidden">
             <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> {text.recipe.badges.scheduled(formatLong(day))}
           </span>
         {/if}
@@ -229,7 +266,18 @@
         </ul>
       {/if}
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:max-w-4xl lg:grid-cols-4 print:max-w-none print:grid-cols-4">
+      <!-- Phones: the times as one line; servings live in the Ingredients header. -->
+      {#if stats.length}
+        <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-md text-on-surface-variant md:hidden print:hidden">
+          <Icon name="schedule" class="text-[18px]" />
+          {#each stats as stat, i (stat.label)}
+            {#if i}<span aria-hidden="true">·</span>{/if}
+            <span class="whitespace-nowrap">{stat.short} <strong class="font-semibold text-on-surface">{stat.value}</strong></span>
+          {/each}
+        </p>
+      {/if}
+
+      <div class="hidden gap-3 md:grid md:grid-cols-3 lg:max-w-4xl lg:grid-cols-4 print:grid print:max-w-none print:grid-cols-4">
         {#each stats as stat (stat.label)}
           <div class="flex items-center gap-3 rounded-xl bg-surface-container-low px-4 py-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface-variant shadow-card">
@@ -241,26 +289,18 @@
             </div>
           </div>
         {/each}
-        <div class="col-span-2 flex items-center justify-between gap-2 rounded-xl bg-surface-container-low px-4 py-3 md:col-span-1 print:col-span-1">
+        <div class="flex items-center justify-between gap-2 rounded-xl bg-surface-container-low px-4 py-3">
           <div>
             <div class="text-label-caps uppercase text-outline">{text.recipe.stats.servings}</div>
             <div class="whitespace-nowrap text-body-sm font-semibold text-on-surface">{text.recipe.stats.servingsValue(servings)}</div>
           </div>
-          <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest print:hidden">
-            <button type="button" aria-label={text.recipe.stats.fewer} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings <= 1} onclick={() => servings--}>
-              <Icon name="remove" class="text-[16px]" />
-            </button>
-            <span class="w-6 text-center text-label-md text-on-surface" aria-hidden="true">{servings}</span>
-            <span class="sr-only" aria-live="polite">{text.recipe.stats.scaled(servings)}</span>
-            <button type="button" aria-label={text.recipe.stats.more} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings >= 12} onclick={() => servings++}>
-              <Icon name="add" class="text-[16px]" />
-            </button>
-          </div>
+          {@render stepper()}
         </div>
       </div>
+      <span class="sr-only" aria-live="polite">{text.recipe.stats.scaled(servings)}</span>
     </header>
 
-    <div class="grid grid-cols-1 items-start gap-8 lg:grid-cols-12 print:flex print:flex-col print:items-stretch print:gap-5">
+    <div class="grid grid-cols-1 items-start gap-6 md:gap-8 lg:grid-cols-12 print:flex print:flex-col print:items-stretch print:gap-5">
       <!-- Printed as one column: photo, ingredients, method, then notes. -->
       <!-- Left: photo & notes -->
       <aside class="flex flex-col gap-6 max-lg:contents lg:sticky lg:top-28 lg:col-span-5 print:contents">
@@ -269,10 +309,11 @@
             {printOptions.image && photo ? '' : 'print:hidden'}"
         >
           <!-- Photo-less (custom) recipes get a shorter placeholder until the column layout kicks in. -->
-          <div class="relative aspect-[3/1] lg:aspect-[4/3] print:aspect-[4/3]">
+          <div class="relative aspect-[4/1] md:aspect-[3/1] lg:aspect-[4/3] print:aspect-[4/3]">
             <RecipeImage src={recipe.image} alt={recipe.title} class="h-full w-full" />
             <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
-              <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md">
+              <!-- Phones show the times above, and servings with the ingredients. -->
+              <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md max-md:invisible">
                 <Icon name="restaurant_menu" class="text-[13px]" /> {text.recipe.photoMeta(recipe.minutes ? formatMinutes(recipe.minutes) : '', recipe.serves)}
               </span>
               {#if recipe.badge.label}
@@ -313,6 +354,12 @@
                 <p class="text-body-sm text-on-surface-variant print:hidden">{text.recipe.ingredients.hint}</p>
               </div>
             </div>
+          </div>
+
+          <!-- Phones: the servings stepper sits with the amounts it scales. -->
+          <div class="mb-3 flex items-center justify-between gap-3 rounded-xl bg-surface-container-low py-1 pl-4 pr-1 md:hidden print:hidden">
+            <span class="text-body-md font-semibold text-on-surface">{text.recipe.stats.servings}</span>
+            {@render stepper()}
           </div>
 
           <!-- In the tick column (icon over the circles, label over the names), so it reads as acting on the prep

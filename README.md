@@ -112,6 +112,9 @@ npm run preview    # http://localhost:4173
 
 - Breadcrumb back to the plan, favorite toggle, Choose a Different Meal, serving scaler (quantities rescale).
 - Tags (each links to the catalog filtered by it) and when the meal was last made.
+- On phones (below `md`) the page gets to the ingredients sooner: Print and Delete move into a ⋯ menu, the times
+  read as one line (Prep · Cook · Total), the servings stepper sits at the top of the ingredients, the photo is a
+  slimmer strip without its time / servings chip, and the Scheduled badge is left to the breadcrumb.
 - Mise-en-place checklist grouped by component. Ticking a line marks it **prepped** while you cook: kept on this
   device for today only (never synced; the next day the recipe starts clean). **Tick all** / **Clear ticks** act on the
   whole recipe. The house button at the end of each line marks the ingredient **at home** (the same flag as everywhere
