@@ -2,10 +2,12 @@
   import { storageKey } from '../lib/env.js';
 
   const DRAFT_KEY = storageKey('recipeDraft.v2');
+  const EDIT_DRAFTS_KEY = storageKey('recipeEditDrafts.v1');
 </script>
 
 <script>
-  import { tick } from 'svelte';
+  import { onDestroy, tick } from 'svelte';
+  import { createDraftStore, signature } from '../lib/recipeDraft.js';
   import { defaultAisle, defaultIngredientGroup, defaultStepTitle, groupCategory } from '../lib/sheetText.js';
   import { text } from '../lib/text.js';
   import { SvelteSet } from 'svelte/reactivity';
@@ -128,35 +130,75 @@
     };
   }
 
-  /** @returns {Form | null} */
+  const drafts = createDraftStore(localStorage, DRAFT_KEY, EDIT_DRAFTS_KEY);
+  /** What the form looks like when nothing was changed: the recipe as saved, or a blank one. */
+  const baseline = signature(editing ? formFrom(editing) : blankForm());
+
+  /** The saved draft with fresh row keys, so they can't collide with rows added from here on. @returns {Form | null} */
   function loadDraft() {
-    try {
-      const raw = localStorage.getItem(DRAFT_KEY);
-      if (!raw) return null;
-      const draft = JSON.parse(raw);
-      // Fresh keys so they can't collide with rows added from here on.
-      draft.ingredients = draft.ingredients.map((row) => ({ ...blankIngredient(), ...row, key: nextKey() }));
-      draft.steps = draft.steps.map((step) => ({ ...step, key: nextKey() }));
-      draft.tags = normalizeTags(draft.tags);
-      draft.category = normalizeCategory(draft.category);
-      return draft;
-    } catch {
-      return null;
-    }
+    const draft = drafts.read(editing?.id, baseline);
+    if (!draft) return null;
+    draft.ingredients = draft.ingredients.map((row) => ({ ...blankIngredient(), ...row, key: nextKey() }));
+    draft.steps = draft.steps.map((step) => ({ ...step, key: nextKey() }));
+    draft.tags = normalizeTags(draft.tags);
+    draft.category = normalizeCategory(draft.category);
+    return draft;
   }
 
-  function clearDraft() {
-    try {
-      localStorage.removeItem(DRAFT_KEY);
-    } catch {
-      // Nothing saved.
-    }
-  }
-
-  const savedDraft = editing ? null : loadDraft();
+  const savedDraft = loadDraft();
   let notesPreview = $state(false);
   let stepPreview = $state(false);
-  let form = $state(editing ? formFrom(editing) : (savedDraft ?? blankForm()));
+  let form = $state(savedDraft ?? (editing ? formFrom(editing) : blankForm()));
+
+  // ---- Unsaved changes -----------------------------------------------------------
+  // Any change is kept as a draft shortly after the last keystroke, so leaving the editor by any route (Discard
+  // aside) loses nothing. `kept` says whether the latest change made it into storage yet.
+
+  const dirty = $derived(signature($state.snapshot(form)) !== baseline);
+  /** @type {'clean' | 'pending' | 'kept' | 'full'} */
+  let keeping = $state('clean');
+  /** Set once the editor is closed on purpose (saved or discarded): nothing is kept after that. */
+  let finished = false;
+
+  /** Writes the draft now; false when the device has no room. */
+  function keepDraft() {
+    const ok = drafts.write(editing?.id, $state.snapshot(form), baseline);
+    keeping = ok ? 'kept' : 'full';
+    return ok;
+  }
+
+  $effect(() => {
+    if (finished) return;
+    if (!dirty) {
+      drafts.clear(editing?.id);
+      keeping = 'clean';
+      return;
+    }
+    // `dirty` stays true while typing, so the effect follows the form itself.
+    $state.snapshot(form);
+    keeping = 'pending';
+    const timer = setTimeout(() => {
+      if (!keepDraft()) showToast(text.editor.toasts.draftNoSpace);
+    }, 800);
+    return () => clearTimeout(timer);
+  });
+
+  // Closing the tab or reloading: the draft is written first; the browser's own warning appears only if it can't be.
+  $effect(() => {
+    /** @param {BeforeUnloadEvent} event */
+    const onUnload = (event) => {
+      if (finished || !dirty) return;
+      if (!keepDraft()) event.preventDefault();
+    };
+    window.addEventListener('beforeunload', onUnload);
+    return () => window.removeEventListener('beforeunload', onUnload);
+  });
+
+  // Leaving by a header tab, a link or Back: keep the draft and say so.
+  onDestroy(() => {
+    if (finished || !dirty) return;
+    showToast(keepDraft() ? text.editor.toasts.draftKept : text.editor.toasts.draftNoSpace);
+  });
 
   // ---- Category ------------------------------------------------------------------
   let newCategory = $state('');
@@ -232,8 +274,28 @@
 
   /** @param {number} key */
   function removeIngredient(key) {
+    const index = form.ingredients.findIndex((r) => r.key === key);
+    const row = $state.snapshot(form.ingredients[index]);
     form.ingredients = form.ingredients.filter((r) => r.key !== key);
     if (!form.ingredients.length) form.ingredients.push(blankIngredient());
+    focusRow('#ingredient-rows', Math.min(index, form.ingredients.length - 1));
+    if (!row.text.trim() && !row.qty.trim() && !row.unit.trim() && !row.note.trim() && !row.prep.trim()) return;
+    showToast(text.editor.toasts.ingredientRemoved(row.text.trim()), {
+      label: text.common.undo,
+      run: () => {
+        const rows = form.ingredients.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim() || r.note.trim() || r.prep.trim());
+        rows.splice(Math.min(index, rows.length), 0, { ...row, key: nextKey() });
+        form.ingredients = rows;
+        if (detailsSummary(row)) detailsOpen.add(rows[Math.min(index, rows.length - 1)].key);
+        focusRow('#ingredient-rows', Math.min(index, rows.length - 1));
+      },
+    });
+  }
+
+  /** Puts focus in the first field of the list's `index`th row, once the list has re-rendered. @param {string} list @param {number} index */
+  async function focusRow(list, index) {
+    await tick();
+    document.querySelector(`${list} > :nth-child(${index + 1}) input`)?.focus();
   }
 
   /** "(flank or ribeye), sliced · optional" — the hidden details at a glance. @param {IngredientRow} row */
@@ -297,8 +359,21 @@
 
   /** @param {number} key */
   function removeStep(key) {
+    const index = form.steps.findIndex((s) => s.key === key);
+    const step = $state.snapshot(form.steps[index]);
     form.steps = form.steps.filter((s) => s.key !== key);
     if (!form.steps.length) form.steps.push(blankStep());
+    focusRow('#step-rows', Math.min(index, form.steps.length - 1));
+    if (!step.title.trim() && !step.text.trim() && !step.minutes.trim()) return;
+    showToast(text.editor.toasts.stepRemoved(index + 1), {
+      label: text.common.undo,
+      run: () => {
+        const steps = form.steps.filter((s) => s.title.trim() || s.text.trim() || s.minutes.trim());
+        steps.splice(Math.min(index, steps.length), 0, { ...step, key: nextKey() });
+        form.steps = steps;
+        focusRow('#step-rows', Math.min(index, steps.length - 1));
+      },
+    });
   }
 
   // ---- Photo -----------------------------------------------------------------
@@ -425,7 +500,8 @@
       showToast(error.message);
       return;
     }
-    if (!editing) clearDraft();
+    finished = true;
+    drafts.clear(editing?.id);
     showToast(editing ? text.editor.toasts.updated : text.editor.toasts.added(recipe.title));
     navigate(`/recipe/${recipe.id}`);
   }
@@ -443,35 +519,35 @@
     });
   }
 
+  /** Save Draft: the same copy autosave keeps, with a word about it. */
   function saveDraft() {
-    try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify($state.snapshot(form)));
-      showToast(text.editor.toasts.draftSaved);
-    } catch {
-      showToast(text.editor.toasts.draftNoSpace);
-    }
+    showToast(keepDraft() ? text.editor.toasts.draftSaved : text.editor.toasts.draftNoSpace);
   }
 
   function discard() {
+    const previous = $state.snapshot(form);
+    const wasDirty = dirty;
+    drafts.clear(editing?.id);
     if (editing) {
+      finished = true;
       navigate(`/recipe/${editing.id}`);
+      if (!wasDirty) return;
+      showToast(text.editor.toasts.changesDiscarded, {
+        label: text.common.undo,
+        run: () => {
+          // The editor reopens on the draft.
+          if (drafts.write(editing.id, previous, baseline)) navigate(`/recipe/${editing.id}/edit`);
+          else showToast(text.editor.toasts.draftNoSpace);
+        },
+      });
       return;
     }
-    const previous = $state.snapshot(form);
-    let hadDraft = false;
-    try {
-      hadDraft = localStorage.getItem(DRAFT_KEY) != null;
-    } catch {
-      // Treat as no draft.
-    }
-    clearDraft();
     form = blankForm();
     submitted = false;
     showToast(text.editor.toasts.draftDiscarded, {
       label: text.common.undo,
       run: () => {
         form = previous;
-        if (hadDraft) saveDraft();
       },
     });
   }
@@ -874,7 +950,7 @@
             {#each groupNames as g (g)}<option value={g}></option>{/each}
           </datalist>
 
-          <ul class="flex flex-col gap-2">
+          <ul id="ingredient-rows" class="flex flex-col gap-2">
             {#each form.ingredients as row, i (row.key)}
               {@const badQty = submitted && qtyInvalid.has(row.key)}
               {@const known = rowIngredient(row)}
@@ -1007,7 +1083,7 @@
             <span class="text-label-caps uppercase text-outline">{text.editor.method.count(form.steps.length)}</span>
           </div>
 
-          <ol class="flex flex-col gap-3">
+          <ol id="step-rows" class="flex flex-col gap-3">
             {#each form.steps as step, i (step.key)}
               <li class="flex flex-col gap-2 rounded-xl bg-surface-container-low p-4">
                 <div class="flex items-center gap-2">
@@ -1122,8 +1198,14 @@
           {/if}
           <span class="flex items-center gap-1.5 text-body-sm text-outline max-sm:order-3 max-sm:col-span-2 max-sm:justify-center">
             <Icon name="cloud_off" class="text-[16px]" />
-            {#if editing}
-              {text.editor.actions.savedOnDevice}
+            {#if keeping === 'pending'}
+              {text.editor.actions.unsaved}
+            {:else if keeping === 'kept'}
+              {text.editor.actions.unsavedKept}
+            {:else if keeping === 'full'}
+              {text.editor.actions.unsavedFull}
+            {:else if editing}
+              {text.editor.actions.noChanges}
             {:else}
               {text.editor.actions.customSaved(customRecipeCount())}
             {/if}
