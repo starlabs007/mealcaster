@@ -82,7 +82,7 @@
     <div class="min-w-0 flex-1">
       <!-- Seven columns from xl are narrow: "Wed" there, beside the ⋯ and ⠿ buttons. -->
       <h2 class="truncate text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}" aria-label={weekdayName}>
-        {#if lead}{weekdayName}{:else if compact}{formatWeekdayShort(day.iso)}{:else}<span class="xl:hidden">{weekdayName}</span><span class="hidden xl:inline">{formatWeekdayShort(day.iso)}</span>{/if}
+        {#if lead}<span class="lg:hidden">{formatWeekdayShort(day.iso)}</span><span class="hidden lg:inline">{weekdayName}</span>{:else if compact}{formatWeekdayShort(day.iso)}{:else}<span class="xl:hidden">{weekdayName}</span><span class="hidden xl:inline">{formatWeekdayShort(day.iso)}</span>{/if}
       </h2>
       <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
         <span class="font-display text-on-surface {lead ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>

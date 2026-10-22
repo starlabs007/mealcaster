@@ -44,10 +44,11 @@
   }
 </script>
 
-<div class="flex flex-col justify-between gap-3 border-b border-surface-container-highest pb-4 md:flex-row md:items-end md:gap-4">
+<div class="flex flex-col justify-between gap-3 border-b border-surface-container-highest pb-4 lg:flex-row lg:items-end lg:gap-4">
   <!-- Phones have 8 px page gutters: bare text gets 8 px more so it isn't set against the screen edge (cards have their own padding). -->
-  <!-- The title keeps one line from md: the controls on the right wrap instead (two lines of title pushed tonight's actions below 800 px at 1024). -->
-  <div class="px-2 md:shrink-0 md:px-0">
+  <!-- Below lg the controls sit in one row under the title; from lg the title keeps one line and the controls wrap on its
+       right instead (two lines of title pushed tonight's actions below 800 px at 1024). -->
+  <div class="px-2 lg:shrink-0 md:px-0">
     <!-- The fixed header's week stepper shows the dates on phones. -->
     <p class="mb-1.5 hidden text-xs font-semibold text-on-surface-variant md:block">
       {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}
@@ -55,8 +56,8 @@
     <h1 id="planner-title" class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">{title}</h1>
   </div>
 
-  <div class="flex flex-col gap-1.5 md:items-end">
-    <div class="flex flex-nowrap items-center gap-2 md:max-w-[420px] md:flex-wrap md:justify-end lg:max-w-none">
+  <div class="flex flex-col gap-1.5 lg:items-end">
+    <div class="flex flex-nowrap items-center gap-2 md:flex-wrap lg:justify-end">
       <div class="inline-flex min-w-0 items-center gap-2 rounded-full bg-surface-container-high px-3 py-1.5 text-xs">
         <span class="h-2 w-2 rounded-full bg-primary"></span>
         <span class="whitespace-nowrap font-semibold text-on-surface">
