@@ -21,6 +21,8 @@
    *   describedby?: string,
    *   onpick?: (option: import('../ingredients.js').Suggestion) => void,
    *   oninput?: () => void,
+   *   onkey?: (event: KeyboardEvent) => void,
+   *   id?: string,
    * }}
    */
   let {
@@ -39,6 +41,9 @@
     describedby = undefined,
     onpick,
     oninput,
+    // Keys the field doesn't use itself (Enter with no option picked, a comma…), for the form around it.
+    onkey,
+    id = undefined,
   } = $props();
 
   const uid = $props.id();
@@ -79,11 +84,13 @@
     } else if (event.key === 'Tab') {
       open = false;
     }
+    if (!event.defaultPrevented) onkey?.(event);
   }
 </script>
 
 <div class="relative {wrapClass}">
   <input
+    {id}
     type="text"
     role="combobox"
     aria-label={label}
