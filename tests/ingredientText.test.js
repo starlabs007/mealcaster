@@ -2,7 +2,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { guessAisle, parseIngredientLine, parseIngredientLines, parseQty } from '../src/lib/ingredientText.js';
+import { guessAisle, matchAisle, parseIngredientLine, parseIngredientLines, parseQty } from '../src/lib/ingredientText.js';
 
 const line = (text, fields) => assert.deepEqual(parseIngredientLine(text), { qty: '', unit: '', text: '', note: '', prep: '', optional: false, ...fields });
 
@@ -49,8 +49,13 @@ describe('pasted lines', () => {
       ['Sauce', '2', 'tbsp', 'fish sauce', '', 'Pantry'],
       ['Sauce', '3', 'clove', 'garlic', 'minced', 'Produce'],
     ]);
+    assert.equal(parseIngredientLines('1 pineapple, cubed')[0].aisle, '', 'a pasted line with no match waits for a choice');
     assert.equal(guessAisle('Thai basil'), 'Herbs');
     assert.equal(guessAisle('tendon'), 'Pantry');
+    assert.equal(matchAisle('tendon'), '', 'no keyword, no guess');
+    assert.equal(matchAisle('cá lóc'), '');
+    assert.equal(matchAisle('pineapple'), '');
+    assert.equal(matchAisle('Thai basil'), 'Herbs');
     assert.equal(guessAisle('tomato paste'), 'Pantry');
     assert.equal(guessAisle('garlic powder'), 'Spices');
     assert.equal(guessAisle('salmon fillet'), 'Fresh');

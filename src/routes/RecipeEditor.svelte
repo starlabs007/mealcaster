@@ -24,7 +24,7 @@
     aisles,
     aisleLabel,
     parseQty,
-    guessAisle,
+    matchAisle,
     parseIngredientLines,
     saveRecipe,
     revertSample,
@@ -61,7 +61,7 @@
    * @typedef {{ key: number, title: string, text: string, minutes: string, critical?: boolean }} StepRow
    * @typedef {{
    *   title: string, description: string, image: string, category: string,
-   *   serves: number, prepMinutes: number, cookMinutes: number, tags: string[],
+   *   serves: number, prepMinutes: number | '', cookMinutes: number | '', tags: string[],
    *   ingredients: IngredientRow[], steps: StepRow[], notes: string,
    * }} Form
    */
@@ -69,7 +69,7 @@
   let lastKey = 0;
   const nextKey = () => ++lastKey;
   /** @returns {IngredientRow} */
-  const blankIngredient = (group = '') => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, group, aisle: defaultAisle, aisleSet: false });
+  const blankIngredient = (group = '') => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, group, aisle: '', aisleSet: false });
   /** @returns {StepRow} */
   const blankStep = () => ({ key: nextKey(), title: '', text: '', minutes: '' });
 
@@ -81,8 +81,8 @@
       image: '',
       category: '',
       serves: 4,
-      prepMinutes: 15,
-      cookMinutes: 30,
+      prepMinutes: '',
+      cookMinutes: '',
       tags: [],
       ingredients: [blankIngredient(), blankIngredient(), blankIngredient()],
       steps: [blankStep()],
@@ -239,15 +239,22 @@
 
   // ---- Validation ----------------------------------------------------------
 
+  const minutesOk = (m) => m == null || m === '' || (Number.isInteger(m) && m >= 0);
   const filledIngredients = $derived(form.ingredients.filter((r) => r.text.trim()));
   const qtyInvalid = $derived(new Set(form.ingredients.filter((r) => Number.isNaN(parseQty(r.qty))).map((r) => r.key)));
+  // A new ingredient nothing in its name places gets no aisle until it's chosen: never a silent Pantry.
+  const aisleMissing = $derived(
+    new Set(filledIngredients.filter((r) => !r.aisle && !rowIngredient(r) && !(r.id && r.text.trim() === r.id)).map((r) => r.key)),
+  );
   const errors = $derived({
     title: form.title.trim() ? '' : text.editor.errors.title,
     serves: Number.isInteger(form.serves) && form.serves >= 1 && form.serves <= 50 ? '' : text.editor.errors.serves,
-    prepMinutes: Number.isInteger(form.prepMinutes) && form.prepMinutes >= 0 ? '' : text.editor.errors.minutes,
-    cookMinutes: Number.isInteger(form.cookMinutes) && form.cookMinutes >= 0 ? '' : text.editor.errors.minutes,
+    // Prep and cook may stay empty: no time is saved as 0, which every screen leaves out.
+    prepMinutes: minutesOk(form.prepMinutes) ? '' : text.editor.errors.minutes,
+    cookMinutes: minutesOk(form.cookMinutes) ? '' : text.editor.errors.minutes,
     ingredients: filledIngredients.length ? '' : text.editor.errors.ingredients,
     qty: qtyInvalid.size ? text.editor.errors.qty : '',
+    aisle: aisleMissing.size ? text.editor.errors.aisle : '',
   });
   const valid = $derived(Object.values(errors).every((e) => !e));
   const show = (key) => submitted && errors[key];
@@ -327,7 +334,7 @@
   function onIngredientText(row) {
     const existing = rowIngredient(row);
     if (existing) row.aisle = existing.aisle;
-    else if (!row.aisleSet) row.aisle = guessAisle(row.text);
+    else if (!row.aisleSet) row.aisle = matchAisle(row.text);
   }
 
   function addBulk() {
@@ -466,8 +473,8 @@
       shortTitle: editing && title === editing.title ? editing.shortTitle : title,
       description: form.description.trim(),
       image: image || undefined,
-      prepMinutes: form.prepMinutes,
-      cookMinutes: form.cookMinutes,
+      prepMinutes: form.prepMinutes || 0,
+      cookMinutes: form.cookMinutes || 0,
       serves: form.serves,
       badge: { label: chosenCategory() },
       tags: withNewTag(),
@@ -573,10 +580,10 @@
   {#if show(key)}<p class="mt-1 text-body-sm text-secondary">{errors[key]}</p>{/if}
 {/snippet}
 
-{#snippet numberField(key, label, icon, unit)}
+{#snippet numberField(key, label, icon, unit, required = true)}
   <div>
     <label for="recipe-{key}" class="mb-1.5 flex items-center gap-1 text-label-md text-on-surface">
-      {#if icon}<Icon name={icon} class="text-[16px] text-secondary" />{/if}{label}<span class="text-secondary">&nbsp;*</span>
+      {#if icon}<Icon name={icon} class="text-[16px] text-secondary" />{/if}{label}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-outline">&nbsp;{text.editor.optional}</span>{/if}
     </label>
     <div class="flex items-center gap-2">
       <input
@@ -585,6 +592,7 @@
         min={key === 'serves' ? 1 : 0}
         step="1"
         inputmode="numeric"
+        placeholder={required ? undefined : text.editor.essentials.minutesPlaceholder}
         bind:value={form[key]}
         aria-invalid={show(key) ? 'true' : undefined}
         class="{field} {border(show(key))}"
@@ -756,8 +764,8 @@
 
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div class="sm:col-span-2 sm:max-w-[calc(50%-0.5rem)]">{@render numberField('serves', text.editor.essentials.servings, '', text.editor.essentials.servingsUnit)}</div>
-            {@render numberField('prepMinutes', text.editor.essentials.prep, 'timer', text.editor.essentials.minutesUnit)}
-            {@render numberField('cookMinutes', text.editor.essentials.cook, 'skillet', text.editor.essentials.minutesUnit)}
+            {@render numberField('prepMinutes', text.editor.essentials.prep, 'timer', text.editor.essentials.minutesUnit, false)}
+            {@render numberField('cookMinutes', text.editor.essentials.cook, 'skillet', text.editor.essentials.minutesUnit, false)}
           </div>
 
           <fieldset>
@@ -1018,8 +1026,10 @@
                     disabled={Boolean(known)}
                     bind:value={row.aisle}
                     onchange={() => (row.aisleSet = true)}
-                    class="{cellField} {border(false)} flex-1 disabled:opacity-60 md:w-32 md:flex-none"
+                    aria-invalid={submitted && aisleMissing.has(row.key) ? 'true' : undefined}
+                    class="{cellField} {border(submitted && aisleMissing.has(row.key))} flex-1 disabled:opacity-60 md:w-32 md:flex-none"
                   >
+                    {#if !row.aisle}<option value="" disabled>{text.editor.ingredients.chooseAisle}</option>{/if}
                     {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
                   </select>
                   <button
@@ -1048,6 +1058,7 @@
           </ul>
           {@render error('ingredients')}
           {@render error('qty')}
+          {@render error('aisle')}
 
           <button type="button" class="btn mt-3 w-full bg-surface-container-low py-2.5 text-body-md text-on-surface hover:bg-surface-container-high" onclick={addIngredient}>
             <Icon name="add" class="text-[18px]" /> {text.editor.ingredients.addRow}

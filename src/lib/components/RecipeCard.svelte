@@ -37,10 +37,12 @@
       <div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div>
 
       <div class="absolute left-3 top-3 flex items-center gap-1.5">
-        <span class="flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-primary shadow-sm backdrop-blur-md">
-          <Icon name={recipe.minutes >= 120 ? 'soup_kitchen' : 'timer'} class="text-[13px]" />
-          {formatMinutes(recipe.minutes)}
-        </span>
+        {#if recipe.minutes}
+          <span class="flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-primary shadow-sm backdrop-blur-md">
+            <Icon name={recipe.minutes >= 120 ? 'soup_kitchen' : 'timer'} class="text-[13px]" />
+            {formatMinutes(recipe.minutes)}
+          </span>
+        {/if}
         {#if recipe.badge.label}
           <span class="rounded-full bg-surface-container-lowest/90 px-2 py-1 text-label-caps text-on-surface-variant shadow-sm backdrop-blur-md">
             {recipe.badge.label}
