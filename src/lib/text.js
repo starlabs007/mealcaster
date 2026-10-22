@@ -171,6 +171,8 @@ export const text = {
       copyPrevious: 'Copy Previous Week',
       copyThisWeek: 'Copy This Week',
       resetWeek: (/** @type {number} */ n) => `Clear ${n} Upcoming ${plural(n, 'Evening')}`,
+      // What Clear leaves alone (see `resetDays`): evenings before today and a tonight already marked done.
+      resetKeeps: 'Keeps past evenings and a finished tonight.',
       moreAria: 'More week actions',
       autoFillNote: (/** @type {number} */ days) => `Auto-fill picks dinners not made in the last ${days} days.`,
     },
