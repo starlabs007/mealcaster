@@ -200,7 +200,7 @@
       <li>
         <button
           type="button"
-          class="rounded-full px-2 py-0.5 text-label-sm text-primary hover:bg-surface-container-high"
+          class="-my-2.5 min-h-11 rounded-full px-2 py-0.5 text-label-sm text-primary hover:bg-surface-container-high md:fine:my-0 md:fine:min-h-0"
           aria-label={text.grocery.line.showAllAria(item.sources.length, item.name)}
           onclick={() => expanded.add(item.key)}
         >
@@ -271,7 +271,7 @@
   <div class="flex flex-wrap items-center justify-between gap-3">
     <nav aria-label={text.grocery.breadcrumbAria} class="flex items-center gap-1.5 text-label-md text-on-surface-variant">
       <Icon name="calendar_view_week" class="text-[16px]" />
-      <a href={href('/')} class="hover:text-primary">{text.grocery.weeklyPlan}</a>
+      <a href={href('/')} class="inline-flex min-h-11 items-center hover:text-primary md:fine:min-h-0">{text.grocery.weeklyPlan}</a>
       <span class="text-outline">/</span>
       <Icon name="shopping_basket" class="text-[16px] text-secondary" />
       <span class="text-on-surface" aria-current="page">{text.grocery.crumb}</span>
@@ -301,7 +301,7 @@
             <button
               type="button"
               aria-pressed={offset === choice.offset}
-              class="rounded-md px-3 py-1.5 text-label-md transition-colors {offset === choice.offset
+              class="min-h-11 rounded-md px-3 py-1.5 text-label-md transition-colors md:fine:min-h-0 {offset === choice.offset
                 ? 'bg-primary-container text-on-primary shadow-sm'
                 : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}"
               onclick={() => goToWeek(choice.offset)}
@@ -311,15 +311,15 @@
           {/each}
         </div>
         <div class="inline-flex items-center gap-1 rounded-lg bg-surface-container-low p-1">
-          <button type="button" aria-label={text.grocery.weekPicker.earlier} class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(-1)}>
+          <button type="button" aria-label={text.grocery.weekPicker.earlier} class="flex h-11 w-11 items-center justify-center rounded-md md:fine:block md:fine:h-auto md:fine:w-auto md:fine:p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(-1)}>
             <Icon name="chevron_left" class="text-[18px]" />
           </button>
           <span class="whitespace-nowrap px-1 text-label-md text-on-surface">{formatRange(planner.weekStart)}</span>
-          <button type="button" aria-label={text.grocery.weekPicker.later} class="rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(1)}>
+          <button type="button" aria-label={text.grocery.weekPicker.later} class="flex h-11 w-11 items-center justify-center rounded-md md:fine:block md:fine:h-auto md:fine:w-auto md:fine:p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(1)}>
             <Icon name="chevron_right" class="text-[18px]" />
           </button>
         </div>
-        <label class="flex cursor-pointer items-center gap-2 px-1 text-label-md text-on-surface-variant">
+        <label class="flex min-h-11 cursor-pointer items-center gap-2 px-1 text-label-md text-on-surface-variant md:fine:min-h-0">
           <input type="checkbox" bind:checked={devicePrefs.groceryMinimal} class="h-4 w-4 rounded accent-primary" />
           {text.grocery.weekPicker.minimalView}
         </label>
@@ -327,11 +327,11 @@
     </div>
     <div class="flex flex-wrap items-center gap-2 md:justify-end">
       {#if !devicePrefs.groceryMinimal}
-        <button type="button" class="btn-outline" onclick={share}>
+        <button type="button" class="btn-outline min-h-11 md:fine:min-h-0" onclick={share}>
           <Icon name="share" class="text-[16px]" /> {text.grocery.share}
         </button>
       {/if}
-      <button type="button" class="btn-primary" aria-expanded={adding} onclick={() => (adding = !adding)}>
+      <button type="button" class="btn-primary min-h-11 md:fine:min-h-0" aria-expanded={adding} onclick={() => (adding = !adding)}>
         <Icon name={adding ? 'close' : 'add'} class="text-[16px]" /> {adding ? text.grocery.closeForm : text.grocery.addItem}
       </button>
     </div>
@@ -357,7 +357,7 @@
           bind:value={draft.name}
           oninput={onDraftName}
           onpick={onDraftName}
-          inputClass="w-full rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
+          inputClass="min-h-11 w-full rounded-lg border md:fine:min-h-0 border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         />
       </div>
       <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
@@ -365,7 +365,7 @@
         <input
           bind:value={draft.note}
           placeholder={text.grocery.form.notePlaceholder}
-          class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
+          class="min-h-11 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md md:fine:min-h-0 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
         />
       </label>
       <label class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
@@ -375,19 +375,19 @@
           disabled={!!draftIngredient}
           title={draftIngredient ? text.grocery.form.aisleKnownTitle : undefined}
           onchange={() => (aislePicked = true)}
-          class="rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container disabled:opacity-60"
+          class="min-h-11 rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md md:fine:min-h-0 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container disabled:opacity-60"
         >
           {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
         </select>
       </label>
-      <button type="submit" class="btn-primary py-2.5" disabled={!draft.name.trim()}>{text.grocery.form.submit}</button>
+      <button type="submit" class="btn-primary min-h-11 py-2.5 md:fine:min-h-0" disabled={!draft.name.trim()}>{text.grocery.form.submit}</button>
       <fieldset class="flex flex-wrap gap-x-5 gap-y-1 text-body-sm text-on-surface sm:col-span-full">
         <legend class="sr-only">{text.grocery.form.weeksLegend}</legend>
-        <label class="flex items-center gap-2">
+        <label class="flex min-h-11 cursor-pointer items-center gap-2 md:fine:min-h-0">
           <input type="radio" name="item-weeks" checked={!draft.everyWeek} onchange={() => (draft.everyWeek = false)} class="accent-primary-container" />
           {text.grocery.form.justWeek(weekName)}
         </label>
-        <label class="flex items-center gap-2">
+        <label class="flex min-h-11 cursor-pointer items-center gap-2 md:fine:min-h-0">
           <input type="radio" name="item-weeks" checked={draft.everyWeek} onchange={() => (draft.everyWeek = true)} class="accent-primary-container" />
           <span>{text.grocery.form.everyWeek} <span class="text-on-surface-variant">{text.grocery.form.everyWeekHint}</span></span>
         </label>
@@ -407,7 +407,7 @@
               role="tab"
               aria-selected={aisle === tab.id}
               onclick={() => (aisle = tab.id)}
-              class="rounded-lg px-3 py-1.5 text-label-md transition-colors {aisle === tab.id
+              class="min-h-11 rounded-lg px-3 py-1.5 text-label-md transition-colors md:fine:min-h-0 {aisle === tab.id
                 ? 'bg-surface-container-high text-on-surface'
                 : 'text-on-surface-variant hover:bg-surface-container-low'}"
             >
@@ -428,7 +428,7 @@
           <p class="max-w-md text-body-sm text-on-surface-variant">
             {text.grocery.empty.body}
           </p>
-          <a href={href('/')} class="btn-primary mt-2 py-2">{text.grocery.empty.openPlan}</a>
+          <a href={href('/')} class="btn-primary mt-2 min-h-11 py-2 md:fine:min-h-0">{text.grocery.empty.openPlan}</a>
         </div>
       {/if}
 
@@ -477,7 +477,7 @@
                 {#if !pastWeek}
                   <button
                     type="button"
-                    class="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-label-md text-primary hover:bg-surface-container-high"
+                    class="inline-flex min-h-11 shrink-0 items-center gap-1 rounded-md px-2 py-1 text-label-md md:fine:min-h-0 text-primary hover:bg-surface-container-high"
                     aria-label={text.grocery.leftOff.needAria(h.name)}
                     onclick={() => needIt(h)}
                   >
@@ -512,7 +512,7 @@
               type="button"
               aria-expanded={showBought}
               onclick={() => (devicePrefs.groceryMinimal ? (showBoughtMinimal = !showBoughtMinimal) : (showBoughtFull = !showBoughtFull))}
-              class="focus-ring inline-flex items-center gap-0.5 rounded-md text-label-md text-on-surface-variant hover:text-on-surface"
+              class="focus-ring -mr-2 inline-flex min-h-11 items-center gap-0.5 rounded-md px-2 text-label-md md:fine:mr-0 md:fine:min-h-0 md:fine:px-0 text-on-surface-variant hover:text-on-surface"
             >
               {showBought ? text.grocery.bought.hide : text.grocery.bought.show} <Icon name={showBought ? 'expand_less' : 'expand_more'} class="text-[18px]" />
             </button>
@@ -575,7 +575,7 @@
         <div class="mt-5 flex flex-col gap-2">
           <button
             type="button"
-            class="btn bg-secondary py-2.5 text-on-secondary shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] hover:bg-[#b34728]"
+            class="btn min-h-11 bg-secondary py-2.5 text-on-secondary md:fine:min-h-0 shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] hover:bg-[#b34728]"
             onclick={() => window.print()}
           >
             <Icon name="print" class="text-[18px]" /> {text.grocery.overview.print}
