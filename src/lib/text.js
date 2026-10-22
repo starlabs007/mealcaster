@@ -657,16 +657,12 @@ export const text = {
       weekOf: (/** @type {string} */ date) => `the week of ${date}`,
     },
     introBefore: (/** @type {string} */ week) => `Auto-compiled from the planned dinners of ${week}`,
-    syncedBefore: 'Synced with the',
-    syncedAfter: 'tab of your Google Sheet.',
     savedOnDevice: (/** @type {boolean} */ connected) =>
       `Saved on this device${connected ? '' : ' — connect a Google Sheet to keep it in a [Provisions] tab'}.`,
     weekPicker: {
       aria: 'Grocery week',
       thisWeek: 'This Week',
       nextWeek: 'Next Week',
-      earlier: 'Earlier week',
-      later: 'Later week',
       minimalView: 'Minimal view',
     },
     share: 'Share',
@@ -717,6 +713,7 @@ export const text = {
       other: { label: 'Other', short: 'Other' },
     },
     tabLabel: (/** @type {string} */ name, /** @type {number} */ count) => `${name} (${count})`,
+    tapHintDismiss: 'Got it',
     tapHint: 'Tap an item once it’s in your basket. Already at home? Mark it At Home to keep it off every week’s list.',
     empty: {
       title: (/** @type {string} */ week) => `Nothing to buy for ${week}`,
