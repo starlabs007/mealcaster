@@ -367,7 +367,9 @@
       <span class="truncate">{text.grocery.store.weekTitle(weekName)}</span>
       <span class="whitespace-nowrap font-sans text-body-sm text-on-surface-variant">{formatRangeCompact(planner.weekStart)}</span>
     </h1>
-    {#if toBuy}
+    {#if pastWeek}
+      {#if !nothingListed}<p class="whitespace-nowrap text-label-md text-on-surface-variant">{text.grocery.store.boughtOf(bought, toBuy + bought)}</p>{/if}
+    {:else if toBuy}
       <p class="whitespace-nowrap text-label-md text-on-surface">{text.grocery.store.left(toBuy)}</p>
     {/if}
     <ActionMenu items={storeMenu} label={text.grocery.store.menuAria} footnote={syncLine} />
@@ -534,6 +536,11 @@
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
     <!-- Left: the list -->
     <div class="flex flex-col {store ? 'gap-3' : 'gap-6'} {minimal ? 'lg:col-span-12' : 'lg:col-span-8'}">
+      {#if pastWeek && !nothingListed}
+        <p class="flex items-start gap-2 px-1 text-body-sm text-on-surface-variant {store ? 'pt-1' : ''}">
+          <Icon name="history" class="mt-px text-[16px]" /> {text.grocery.past.note}
+        </p>
+      {/if}
       {#if !minimal && toBuy}
       <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-card">
         <div class="flex flex-wrap gap-1" role="group" aria-label={text.grocery.filterAria}>
@@ -550,9 +557,11 @@
             </button>
           {/each}
         </div>
-        <p class="mt-2 flex items-center gap-1 px-1 text-body-sm text-on-surface-variant">
-          <Icon name="touch_app" class="text-[15px]" /> {text.grocery.tapHint}
-        </p>
+        {#if !pastWeek}
+          <p class="mt-2 flex items-center gap-1 px-1 text-body-sm text-on-surface-variant">
+            <Icon name="touch_app" class="text-[15px]" /> {text.grocery.tapHint}
+          </p>
+        {/if}
       </div>
       {/if}
 
@@ -686,13 +695,18 @@
         </div>
         <div class="mt-3 flex items-end justify-between">
           <p class="flex items-baseline gap-2 text-body-md text-on-surface">
-            <span class="font-display text-[40px] leading-none">{toBuy}</span> {text.grocery.overview.toBuy}
+            {#if pastWeek}
+              <span class="font-display text-[40px] leading-none">{bought}</span> {text.grocery.past.boughtOf(toBuy + bought)}
+            {:else}
+              <span class="font-display text-[40px] leading-none">{toBuy}</span> {text.grocery.overview.toBuy}
+            {/if}
           </p>
           <p class="text-right text-body-sm text-on-surface-variant">
             <span class="block text-body-lg text-on-surface">{haveHidden.length}</span> {text.grocery.overview.onHand}
           </p>
         </div>
 
+        {#if !pastWeek}
         <div class="mt-5">
           <div class="flex justify-between text-label-sm text-on-surface-variant">
             <span>{text.grocery.overview.completion}</span><span>{completion}%</span>
@@ -701,6 +715,7 @@
             <div class="h-full rounded-full bg-primary-container transition-all" style="width: {completion}%"></div>
           </div>
         </div>
+        {/if}
       </section>
     </aside>
     {/if}

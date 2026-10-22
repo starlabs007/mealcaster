@@ -170,7 +170,10 @@ for every recipe and the grocery list.
   is ignored), with a **Got X · Undo** toast; the house icon marks the ingredient at home.
   Bought is per week and leaves stock alone.
 - **Past weeks are frozen**: changing stock never changes a past week's list (each past week keeps a snapshot of what
-  it left off; Need it and the house icon are hidden there). Add Item is hidden on past weeks too.
+  it left off; Need it and the house icon are hidden there). Add Item is hidden on past weeks too. A past week reads
+  as a record: a note says its list stays as it was, the overview and store bar show "x of y bought" instead of what's
+  left and a completion bar, the tap hint is hidden, and the header's Grocery List button shows no count. Its lines can
+  still be ticked, to note what you bought.
 - **Add Item** picks an ingredient or creates one (with its aisle), for **just the viewed week** (default) or **every
   week** (from this week on until you buy it, then only in the week you bought it). Adding an in-stock ingredient
   clears its at-home mark. Removing an added item (trash icon) or marking it at home shows a toast with **Undo**. The

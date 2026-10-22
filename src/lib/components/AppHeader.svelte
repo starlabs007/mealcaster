@@ -3,7 +3,7 @@
   import SheetsButton from './SheetsButton.svelte';
   import { planner, shiftWeek, goToThisWeek } from '../planner.svelte.js';
   import { settings } from '../settings.svelte.js';
-  import { groceryCount } from '../grocery.svelte.js';
+  import { groceryCount, thisWeekStart } from '../grocery.svelte.js';
   import { route, href, navigate } from '../router.svelte.js';
   import { text } from '../text.js';
   import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
@@ -43,6 +43,8 @@
   }
 
   const groceries = $derived(groceryCount());
+  // A past week's list is a record, so the button doesn't count what was left unbought there.
+  const pastWeek = $derived(planner.weekStart < thisWeekStart());
   const isThisWeek = $derived(planner.weekStart === weekStartOf(new Date(), settings.weekStartDay));
 
   function submitSearch(event) {
@@ -118,11 +120,11 @@
         href={href('/grocery')}
         aria-current={active === 'grocery' ? 'page' : undefined}
         class="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-label-md text-on-secondary shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] transition-all hover:bg-[#b34728] sm:px-4 {active === 'grocery' ? 'ring-2 ring-secondary/30 ring-offset-2 ring-offset-surface' : ''}"
-        aria-label={text.header.grocery.aria(groceries)}
+        aria-label={pastWeek ? text.header.grocery.label : text.header.grocery.aria(groceries)}
       >
         <Icon name="shopping_basket" class="text-[16px]" />
         <span class="hidden whitespace-nowrap sm:inline">{text.header.grocery.label}</span>
-        <span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">{groceries}</span>
+        {#if !pastWeek}<span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">{groceries}</span>{/if}
       </a>
 
       <a
