@@ -166,7 +166,8 @@ for every recipe and the grocery list.
   optional recipes need is labelled **optional**.
 - Ingredients **at home** are left off; an expandable note (closed by default) lists them, each with **Need it** to
   untick its stock and put it back on every week's list.
-- Tap the circle when bought (it moves to the **Bought** section); the house icon marks the ingredient at home.
+- Tap a line when bought: it shows its tick for a moment, then moves to the **Bought** section (a second quick tap
+  is ignored), with a **Got X · Undo** toast; the house icon marks the ingredient at home.
   Bought is per week and leaves stock alone.
 - **Past weeks are frozen**: changing stock never changes a past week's list (each past week keeps a snapshot of what
   it left off; Need it and the house icon are hidden there). Add Item is hidden on past weeks too.
@@ -177,8 +178,8 @@ for every recipe and the grocery list.
   **Print Checklist** (a quiet button in the header, in every view; print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share, and narrows the whole page to one centred, readable column. The Add Item form lists aisles grouped under the department they land in; the aisle filter resets to All when the week changes.
 - **Store mode** (touch screens, phones and tablets): the list opens straight away under one bar with the week,
   "N left" and a ⋯ menu (Add Item, This / Next / Earlier / Later Week, Share, Print Checklist, Full List, and the sync
-  line as small print). Lines show name and amount; the dinners a line is for sit in its own ⋯. Aisle headings stay
-  pinned while you scroll, and the app header scrolls away with the page (back in place when you reach the top) instead of staying fixed. **Full List** switches
+  line as small print). Lines show name and amount in a larger size; the dinners a line is for sit in its own ⋯. Aisle headings stay
+  pinned while you scroll, and the app header scrolls away with the page (back in place when you reach the top) instead of staying fixed. Toasts show over the store bar, so they never cover a line. **Full List** switches
   to the full layout for this visit (not saved); **Store Mode** there switches back.
 - Synced to the optional `[Provisions]` tab, one row per ingredient per week (`Line_Key` = `ing:<Ingredient_ID>`,
   `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
