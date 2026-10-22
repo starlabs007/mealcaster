@@ -670,6 +670,7 @@ export const text = {
       minimalView: 'Minimal view',
     },
     share: 'Share',
+    printList: 'Print Checklist',
     addItem: 'Add Item',
     closeForm: 'Close',
     /** Store mode: the phone layout for the shop (touch screens). One bar with the week, what's left and a ⋯ menu. */
@@ -682,7 +683,6 @@ export const text = {
       nextWeek: 'Next Week',
       earlier: 'Earlier Week',
       later: 'Later Week',
-      print: 'Print Checklist',
       fullList: 'Full List',
       fullListNote: 'Aisle filters, what you have at home, overview',
       storeMode: 'Store Mode',
@@ -750,10 +750,6 @@ export const text = {
       toBuy: 'items to buy',
       onHand: 'at home',
       completion: 'Shopping completion',
-      spread: 'Department Spread',
-      spreadTitle: (/** @type {string} */ name, /** @type {number} */ pct) => `${name} ${pct}%`,
-      spreadItem: (/** @type {string} */ name, /** @type {number} */ pct) => `${name} (${pct}%)`,
-      print: 'Print Kitchen Checklist',
     },
     toasts: {
       added: (/** @type {string} */ name, /** @type {boolean} */ everyWeek, /** @type {string} */ week, /** @type {boolean} */ wasOnHand) =>

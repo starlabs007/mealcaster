@@ -166,15 +166,15 @@ for every recipe and the grocery list.
   optional recipes need is labelled **optional**.
 - Ingredients **at home** are left off; an expandable note (closed by default) lists them, each with **Need it** to
   untick its stock and put it back on every week's list.
-- Tap the circle when bought (it moves to the **Bought** section); the box icon marks the ingredient at home.
+- Tap the circle when bought (it moves to the **Bought** section); the house icon marks the ingredient at home.
   Bought is per week and leaves stock alone.
 - **Past weeks are frozen**: changing stock never changes a past week's list (each past week keeps a snapshot of what
-  it left off; Need it and the box icon are hidden there). Add Item is hidden on past weeks too.
+  it left off; Need it and the house icon are hidden there). Add Item is hidden on past weeks too.
 - **Add Item** picks an ingredient or creates one (with its aisle), for **just the viewed week** (default) or **every
   week** (from this week on until you buy it, then only in the week you bought it). Adding an in-stock ingredient
   clears its at-home mark. Removing an added item (trash icon) or marking it at home shows a toast with **Undo**. The
   ingredients left off because they're at home are listed alphabetically. **Share** (native share sheet or clipboard),
-  **Print Kitchen Checklist** (print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share.
+  **Print Checklist** (a quiet button in the header, in every view; print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share, and narrows the whole page to one centred, readable column. The Add Item form lists aisles grouped under the department they land in; the aisle filter resets to All when the week changes.
 - **Store mode** (touch screens, phones and tablets): the list opens straight away under one bar with the week,
   "N left" and a ⋯ menu (Add Item, This / Next / Earlier / Later Week, Share, Print Checklist, Full List, and the sync
   line as small print). Lines show name and amount; the dinners a line is for sit in its own ⋯. Aisle headings stay
@@ -184,7 +184,7 @@ for every recipe and the grocery list.
   `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
   future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
   `On hand` rows of this week and later are read-only — stock lives in `[Ingredients]`.
-- Sidebar: items to buy and at home, the week's dates, completion, department spread and **Print Kitchen Checklist**.
+- Sidebar: items to buy and at home, the week's dates and completion.
 
 ## Profile & Settings (`#/profile`)
 
