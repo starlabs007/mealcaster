@@ -1,12 +1,13 @@
 <script>
-  // A ⋯ button with a menu of actions: arrow keys, Home / End, Escape (focus back on the button), Tab and a click
+  // A ⋯ button with a menu of actions (`divider` draws a rule before an item, `note` adds small print under its
+  // label; arrow keys skip dividers): arrow keys, Home / End, Escape (focus back on the button), Tab and a click
   // outside close it. The menu is moved to <body> and fixed-positioned, so a card's overflow, opacity or a grid
   // can't clip or fade it; it closes on scroll and resize rather than following the button.
   import { tick } from 'svelte';
   import Icon from './Icon.svelte';
 
   /**
-   * @typedef {{ id: string, label: string, icon: string, href?: string, onselect?: () => void }} MenuAction
+   * @typedef {{ id: string, label: string, icon: string, note?: string, divider?: boolean, href?: string, onselect?: () => void }} MenuAction
    * @type {{ items: MenuAction[], label: string, title?: string, class?: string, opener?: string }}
    */
   let { items, label, title, class: className = '', opener } = $props();
@@ -136,13 +137,19 @@
     onkeydown={onMenuKey}
   >
     {#each items as action (action.id)}
+      {#if action.divider}
+        <div role="separator" class="my-1 border-t border-outline-variant/60"></div>
+      {/if}
       {#if action.href}
         <a role="menuitem" tabindex="-1" href={action.href} class={itemClass} onclick={() => close(false)}>
           <Icon name={action.icon} class="text-[18px] text-on-surface-variant" />{action.label}
         </a>
       {:else}
         <button role="menuitem" tabindex="-1" type="button" class={itemClass} onclick={() => select(action)}>
-          <Icon name={action.icon} class="text-[18px] text-on-surface-variant" />{action.label}
+          <Icon name={action.icon} class="text-[18px] text-on-surface-variant" />
+          {#if action.note}
+            <span class="flex flex-col">{action.label}<span class="text-xs font-normal text-on-surface-variant">{action.note}</span></span>
+          {:else}{action.label}{/if}
         </button>
       {/if}
     {/each}

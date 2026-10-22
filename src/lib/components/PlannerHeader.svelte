@@ -22,7 +22,8 @@
   const editable = $derived(addDays(planner.weekStart, 6) >= planner.today);
 
   // On phones the actions fit one row: Copy joins Reset Week in the ⋯ menu. From `md` Reset Week is a quiet text button
-  // beside Copy. It says how many evenings it clears and is left out when there are none.
+  // beside Copy. It says how many evenings it clears and is left out when there are none; what it keeps is its title
+  // (and the phone menu's small print), since a visible line would cost the header height.
   const wide = new MediaQuery('min-width: 768px');
   const resettable = $derived(resetCount());
   // Copy takes the week before the viewed one; on next week that is this week.
@@ -30,7 +31,7 @@
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const more = $derived([
     ...(wide.current ? [] : [{ id: 'copy', label: copyLabel, icon: 'content_copy', onselect: copyLastWeek }]),
-    ...(resettable && !wide.current ? [{ id: 'reset', label: text.planner.header.resetWeek(resettable), icon: 'refresh', onselect: reset }] : []),
+    ...(resettable && !wide.current ? [{ id: 'reset', label: text.planner.header.resetWeek(resettable), icon: 'delete_sweep', note: text.planner.header.resetKeeps, divider: true, onselect: reset }] : []),
   ]);
 
   // When the button that ran the reset goes with it, focus moves to Auto-fill rather than dropping to the page.
@@ -86,9 +87,18 @@
             <Icon name="content_copy" class="text-[16px]" /> {copyLabel}
           </button>
           {#if resettable}
-            <button type="button" class="focus-ring rounded px-1 text-xs font-semibold text-on-surface-variant underline-offset-2 hover:text-on-surface hover:underline" onclick={reset}>
+            <!-- Quiet, below Auto-fill and Copy in weight; what it keeps is the title and the description. -->
+            <button
+              type="button"
+              class="btn text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface"
+              title={text.planner.header.resetKeeps}
+              aria-describedby="reset-keeps"
+              onclick={reset}
+            >
+              <Icon name="delete_sweep" class="text-[16px]" />
               {text.planner.header.resetWeek(resettable)}
             </button>
+            <span id="reset-keeps" class="sr-only">{text.planner.header.resetKeeps}</span>
           {/if}
         {/if}
         {#if more.length}
