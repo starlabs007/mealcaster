@@ -24,6 +24,7 @@ const DEVICE_DATA = [
   'settings.v2',
   'recipeDraft.v2',
   'recipeEditDrafts.v1',
+  'recipePrep.v1',
   'syncBase.v2',
 ];
 
