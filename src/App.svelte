@@ -14,9 +14,28 @@
   import { syncState } from './lib/sync/sync.svelte.js';
   import { route, navigate } from './lib/router.svelte.js';
   import { recipeById } from './lib/recipes.svelte.js';
+  import { text } from './lib/text.js';
 
   const recipeId = $derived(route.path.match(/^\/recipe\/([\w-]+)$/)?.[1]);
   const editId = $derived(route.path.match(/^\/recipe\/([\w-]+)\/edit$/)?.[1]);
+
+  // One title per route, so the tab, history and screen readers say where you are.
+  const pageTitle = $derived.by(() => {
+    const pages = text.common.pages;
+    const path = route.path;
+    if (path === '/catalog') return pages.catalog;
+    if (path === '/grocery') return pages.grocery;
+    if (path === '/profile') return pages.profile;
+    if (path === '/recipe/new') return pages.newRecipe;
+    if (editId) return pages.editRecipe(recipeById.get(editId)?.title ?? '');
+    if (recipeId) return recipeById.get(recipeId)?.title ?? pages.catalog;
+    if (path === '/sheets-sync/columns') return pages.columns;
+    if (path === '/sheets-sync' || path.startsWith('/sheets-sync/')) return pages.sheets;
+    return pages.planner;
+  });
+  $effect(() => {
+    document.title = text.common.pageTitle(pageTitle);
+  });
 
   // A first sync that needs an answer (e.g. after reconnecting) is answered on the connection screen's sync step.
   $effect(() => {
