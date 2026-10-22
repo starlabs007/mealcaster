@@ -1,6 +1,6 @@
 <script>
   import { slide } from 'svelte/transition';
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import { text } from '../lib/text.js';
   import { MediaQuery, SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
@@ -8,6 +8,7 @@
   import ActionMenu from '../lib/components/ActionMenu.svelte';
   import {
     departments,
+    deptOfTag,
     groceryLines,
     stockHiddenLines,
     setLineStatus,
@@ -30,9 +31,9 @@
   import GroceryPrint from '../lib/components/GroceryPrint.svelte';
 
   const toneClass = {
-    sage: 'bg-[#eaf0ec] text-[#2c4635]',
-    saffron: 'bg-[#faf3e5] text-[#8c6517]',
-    paprika: 'bg-[#faece8] text-secondary',
+    sage: 'bg-tone-sage text-on-tone-sage',
+    saffron: 'bg-tone-saffron text-on-tone-saffron',
+    paprika: 'bg-tone-paprika text-secondary',
     neutral: 'bg-surface-container-high text-on-surface-variant',
   };
 
@@ -50,6 +51,11 @@
   let barHeight = $state(0);
 
   let aisle = $state('all');
+  // A new week starts unfiltered.
+  $effect(() => {
+    planner.weekStart;
+    untrack(() => (aisle = 'all'));
+  });
   // Bought starts open in the full view and folded to one row in minimal view.
   let showBoughtFull = $state(true);
   let showBoughtMinimal = $state(false);
@@ -108,11 +114,10 @@
     ...sections.filter((s) => s.items.length).map((s) => ({ id: s.id, short: s.short, count: s.items.length })),
   ]);
   const activeAisle = $derived(aisleTabs.some((t) => t.id === aisle) ? aisle : 'all');
-  const spread = $derived(
-    sections
-      .filter((s) => s.items.length)
-      .map((s) => ({ ...s, pct: Math.round((s.items.length / shopping.length) * 100) })),
-  );
+  // The Add Item form lists aisles under the department the list puts them in.
+  const aisleGroups = departments
+    .map((d) => ({ label: d.label, options: aisles.filter((a) => deptOfTag(a.tag) === d.id) }))
+    .filter((g) => g.options.length);
 
   const sources = $derived(
     weekDinners()
@@ -239,7 +244,7 @@
     { id: 'earlier', icon: 'chevron_left', label: text.grocery.store.earlier, onselect: () => shiftWeek(-1) },
     { id: 'later', icon: 'chevron_right', label: text.grocery.store.later, onselect: () => shiftWeek(1) },
     { id: 'share', icon: 'share', label: text.grocery.share, divider: true, onselect: share },
-    ...(nothingListed ? [] : [{ id: 'print', icon: 'print', label: text.grocery.store.print, onselect: () => window.print() }]),
+    ...(nothingListed ? [] : [{ id: 'print', icon: 'print', label: text.grocery.printList, onselect: () => window.print() }]),
     { id: 'full', icon: 'view_list', label: text.grocery.store.fullList, note: text.grocery.store.fullListNote, divider: true, onselect: () => setStore(false) },
     // A rule before the week group, whichever of its items comes first.
   ].map((a, i) => (i === 1 ? { ...a, divider: true } : a)));
@@ -368,7 +373,7 @@
       <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
         {text.grocery.introBefore(weekName)} <strong class="text-on-surface">({formatRange(planner.weekStart)})</strong>.
         {#if sheets.spreadsheet && sheets.syncProvisions}
-          {text.grocery.syncedBefore} <code class="rounded bg-surface-container-high px-1 text-[12px]">[{sheets.tabs.provisions}]</code> {text.grocery.syncedAfter}
+          {text.grocery.syncedBefore} <code class="rounded bg-surface-container-high px-1 text-body-sm">[{sheets.tabs.provisions}]</code> {text.grocery.syncedAfter}
         {:else}
           {text.grocery.savedOnDevice(!!sheets.spreadsheet)}
         {/if}
@@ -417,6 +422,11 @@
           <Icon name="share" class="text-[16px]" /> {text.grocery.share}
         </button>
       {/if}
+      {#if !nothingListed}
+        <button type="button" class="btn-outline min-h-11 md:fine:min-h-0" onclick={() => window.print()}>
+          <Icon name="print" class="text-[16px]" /> {text.grocery.printList}
+        </button>
+      {/if}
       {#if !pastWeek}
         <button type="button" class="btn-primary min-h-11 md:fine:min-h-0" aria-expanded={adding} onclick={() => (adding ? (adding = false) : openForm())}>
           <Icon name={adding ? 'close' : 'add'} class="text-[16px]" /> {adding ? text.grocery.closeForm : text.grocery.addItem}
@@ -446,7 +456,7 @@
         <span class="flex items-center gap-2">
           {text.grocery.form.ingredient}
           {#if draft.name.trim() && !draftIngredient}
-            <span class="rounded bg-[#ffdead] px-1.5 py-px text-label-caps uppercase text-tertiary" title={text.grocery.form.newBadgeTitle(draft.name.trim())}>{text.grocery.form.newBadge}</span>
+            <span class="rounded bg-tertiary-fixed px-1.5 py-px text-label-caps uppercase text-tertiary" title={text.grocery.form.newBadgeTitle(draft.name.trim())}>{text.grocery.form.newBadge}</span>
           {/if}
         </span>
         <Combobox
@@ -476,7 +486,11 @@
           onchange={() => (aislePicked = true)}
           class="min-h-11 rounded-lg border border-outline bg-surface-container-lowest px-3 py-2 text-[16px] fine:text-body-md md:fine:min-h-0 text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container disabled:opacity-60"
         >
-          {#each aisles as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
+          {#each aisleGroups as group (group.label)}
+            <optgroup label={group.label}>
+              {#each group.options as a (a.tag)}<option value={a.tag}>{a.label}</option>{/each}
+            </optgroup>
+          {/each}
         </select>
       </label>
       <fieldset class="flex flex-wrap gap-x-5 gap-y-1 text-body-sm text-on-surface sm:col-span-2">
@@ -496,7 +510,7 @@
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
     <!-- Left: the list -->
-    <div class="flex flex-col {store ? 'gap-3' : 'gap-6'} {minimal ? 'lg:col-span-12' : 'lg:col-span-8'}">
+    <div class="flex flex-col {store ? 'gap-3' : 'gap-6'} {minimal ? 'max-w-3xl lg:col-span-12' : 'lg:col-span-8'}">
       {#if !minimal && toBuy}
       <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-card">
         <div class="flex flex-wrap gap-1" role="group" aria-label={text.grocery.filterAria}>
@@ -639,7 +653,7 @@
       {/if}
     </div>
 
-    <!-- Right: overview + print -->
+    <!-- Right: overview -->
     {#if !minimal}
     <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-4">
       <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card">
@@ -663,35 +677,6 @@
           <div class="mt-1.5 h-2 overflow-hidden rounded-full bg-surface-container-high" role="progressbar" aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100" aria-label={text.grocery.overview.completion}>
             <div class="h-full rounded-full bg-primary-container transition-all" style="width: {completion}%"></div>
           </div>
-        </div>
-
-        {#if spread.length}
-          <div class="mt-5">
-            <p class="text-label-sm text-on-surface-variant">{text.grocery.overview.spread}</p>
-            <div class="mt-1.5 flex h-2 gap-0.5 overflow-hidden rounded-full">
-              {#each spread as s (s.id)}
-                <div style="width: {s.pct}%; background: {s.color}" title={text.grocery.overview.spreadTitle(s.short, s.pct)}></div>
-              {/each}
-            </div>
-            <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-body-sm text-on-surface-variant">
-              {#each spread as s (s.id)}
-                <li class="flex items-center gap-1.5">
-                  <span class="h-2 w-2 rounded-full" style="background: {s.color}"></span>{text.grocery.overview.spreadItem(s.short, s.pct)}
-                </li>
-              {/each}
-            </ul>
-          </div>
-        {/if}
-
-        <div class="mt-5 flex flex-col gap-2">
-          <button
-            type="button"
-            class="btn min-h-11 bg-secondary py-2.5 text-on-secondary md:fine:min-h-0 shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] hover:bg-[#b34728] disabled:cursor-not-allowed disabled:opacity-50"
-            disabled={nothingListed}
-            onclick={() => window.print()}
-          >
-            <Icon name="print" class="text-[18px]" /> {text.grocery.overview.print}
-          </button>
         </div>
       </section>
     </aside>

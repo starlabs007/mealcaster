@@ -174,7 +174,7 @@ for every recipe and the grocery list.
   week** (from this week on until you buy it, then only in the week you bought it). Adding an in-stock ingredient
   clears its at-home mark. Removing an added item (trash icon) or marking it at home shows a toast with **Undo**. The
   ingredients left off because they're at home are listed alphabetically. **Share** (native share sheet or clipboard),
-  **Print Kitchen Checklist** (print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share.
+  **Print Checklist** (a quiet button in the header, in every view; print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share, and caps the list at a readable width. The Add Item form lists aisles grouped under the department they land in; the aisle filter resets to All when the week changes.
 - **Store mode** (touch screens, phones and tablets): the list opens straight away under one bar with the week,
   "N left" and a ⋯ menu (Add Item, This / Next / Earlier / Later Week, Share, Print Checklist, Full List, and the sync
   line as small print). Lines show name and amount; the dinners a line is for sit in its own ⋯. Aisle headings stay
@@ -184,7 +184,7 @@ for every recipe and the grocery list.
   `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
   future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
   `On hand` rows of this week and later are read-only — stock lives in `[Ingredients]`.
-- Sidebar: items to buy and at home, the week's dates, completion, department spread and **Print Kitchen Checklist**.
+- Sidebar: items to buy and at home, the week's dates and completion.
 
 ## Profile & Settings (`#/profile`)
 
