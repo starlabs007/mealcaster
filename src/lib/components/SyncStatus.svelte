@@ -5,8 +5,8 @@
   import { text } from '../text.js';
   import { syncState, syncPhase, PHASE_LOOK } from '../sync/sync.svelte.js';
 
-  /** @type {{ variant?: 'badge' | 'line' }} */
-  let { variant = 'line' } = $props();
+  /** @type {{ variant?: 'badge' | 'line', note?: string }} note: more detail for the badge's tooltip and screen reader text */
+  let { variant = 'line', note = '' } = $props();
 
   // Re-render "2 min ago" as time passes.
   let now = $state(Date.now());
@@ -61,10 +61,10 @@
 </script>
 
 {#if variant === 'badge'}
-  <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-label-caps uppercase {TONE[info.tone].badge}" title={info.text}>
+  <span class="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-label-caps uppercase {TONE[info.tone].badge}" title={note ? `${info.text}. ${note}` : info.text}>
     <span class="h-1.5 w-1.5 rounded-full {TONE[info.tone].dot}"></span>
     {info.short}
-    {#if info.text !== info.short}<span class="sr-only">{`: ${info.text}`}</span>{/if}
+    {#if info.text !== info.short || note}<span class="sr-only">{`: ${[info.text !== info.short ? info.text : '', note].filter(Boolean).join('. ')}`}</span>{/if}
   </span>
 {:else}
   <span class="flex items-start gap-2 text-body-sm {info.tone === 'bad' ? 'text-secondary' : 'text-on-surface-variant'}" role="status">

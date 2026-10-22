@@ -24,7 +24,7 @@
   import { planner, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
   import { formatRange, formatRangeCompact, formatShort, formatWeekday } from '../lib/dates.js';
-  import { devicePrefs } from '../lib/devicePrefs.svelte.js';
+  import { devicePrefs, setGroceryHintSeen } from '../lib/devicePrefs.svelte.js';
   import { headerChrome } from '../lib/headerChrome.svelte.js';
   import { showToast, toast } from '../lib/toast.svelte.js';
   import { sheets } from '../lib/sheets.svelte.js';
@@ -422,7 +422,7 @@
       <Icon name="shopping_basket" class="text-[16px] text-secondary" />
       <span class="text-on-surface" aria-current="page">{text.grocery.crumb}</span>
     </nav>
-    <SyncStatus variant="badge" />
+    <SyncStatus variant="badge" note={syncLine} />
   </div>
 
   <!-- Title & actions -->
@@ -434,11 +434,6 @@
       {#if !minimal}
       <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
         {text.grocery.introBefore(weekName)} <strong class="text-on-surface">({formatRange(planner.weekStart)})</strong>.
-        {#if sheets.spreadsheet && sheets.syncProvisions}
-          {text.grocery.syncedBefore} <code class="rounded bg-surface-container-high px-1 text-body-sm">[{sheets.tabs.provisions}]</code> {text.grocery.syncedAfter}
-        {:else}
-          {text.grocery.savedOnDevice(!!sheets.spreadsheet)}
-        {/if}
       </p>
       {/if}
       <div class="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label={text.grocery.weekPicker.aria}>
@@ -455,15 +450,6 @@
               {choice.label}
             </button>
           {/each}
-        </div>
-        <div class="inline-flex items-center gap-1 rounded-lg bg-surface-container-low p-1">
-          <button type="button" aria-label={text.grocery.weekPicker.earlier} class="focus-ring flex h-11 w-11 items-center justify-center rounded-md md:fine:block md:fine:h-auto md:fine:w-auto md:fine:p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(-1)}>
-            <Icon name="chevron_left" class="text-[18px]" />
-          </button>
-          <span class="whitespace-nowrap px-1 text-label-md text-on-surface">{formatRange(planner.weekStart)}</span>
-          <button type="button" aria-label={text.grocery.weekPicker.later} class="focus-ring flex h-11 w-11 items-center justify-center rounded-md md:fine:block md:fine:h-auto md:fine:w-auto md:fine:p-1 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface" onclick={() => shiftWeek(1)}>
-            <Icon name="chevron_right" class="text-[18px]" />
-          </button>
         </div>
         {#if !coarse.current}
         <label class="flex min-h-11 cursor-pointer items-center gap-2 px-1 text-label-md text-on-surface-variant md:fine:min-h-0">
@@ -595,9 +581,12 @@
           {/each}
         </div>
         {#if !pastWeek}
+          {#if !devicePrefs.groceryHintSeen}
           <p class="mt-2 flex items-center gap-1 px-1 text-body-sm text-on-surface-variant">
             <Icon name="touch_app" class="text-[15px]" /> {text.grocery.tapHint}
+            <button type="button" class="focus-ring ml-1 inline-flex min-h-11 items-center rounded-md px-2 text-label-md text-primary hover:bg-surface-container-high md:fine:min-h-0" onclick={() => setGroceryHintSeen()}>{text.grocery.tapHintDismiss}</button>
           </p>
+          {/if}
         {/if}
       </div>
       {/if}

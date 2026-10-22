@@ -169,6 +169,8 @@ for every recipe and the grocery list.
 - Tap a line when bought: it shows its tick for a moment, then moves to the **Bought** section (a second quick tap
   is ignored), with a **Got X · Undo** toast; the house icon marks the ingredient at home.
   Bought is per week and leaves stock alone.
+- The page keeps only This Week / Next Week as shortcuts (the header's week stepper is the way to any other week). The
+  sync note lives in the sync badge's tooltip, and the tap hint has a **Got it** button that hides it on this device for good.
 - **Skip This Week** (line menu or icon) is for a sold-out item: the line moves to a folded **Skipped** section, counts
   as handled ("N left", done state, completion), stays off Print and Share, and comes back next week (an every-week
   item too). Tap a skipped line to put it back. Mark At Home is the lasting version.
