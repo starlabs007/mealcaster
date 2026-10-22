@@ -361,10 +361,11 @@ export function planFromRow(row, existing, columns) {
 // `{ "recipes": [pushed recipe ids], "week": note, "every": note }`. Lines left off because the ingredient is in
 // stock are rows too, Status "On hand"; on a past week they are its frozen stock.
 
-/** @returns {'need' | 'bought' | 'owned'} 'owned' = an "On hand" row */
+/** @returns {'need' | 'bought' | 'skipped' | 'owned'} 'owned' = an "On hand" row */
 export function parseStatus(v) {
   const t = str(v).toLowerCase();
   if (v === true || sheetText.statusPatterns.bought.test(t)) return 'bought';
+  if (sheetText.statusPatterns.skipped.test(t)) return 'skipped';
   if (sheetText.statusPatterns.owned.test(t)) return 'owned';
   return 'need';
 }
@@ -404,7 +405,7 @@ export function provisionToRow(week, line, inStock = false) {
     Item: line.name,
     Detail: [line.amount, line.optional && sheetText.detailOptional].filter(Boolean).join(' · '),
     Department: departments.find((d) => d.id === line.dept)?.short ?? sheetText.defaultDepartmentShort,
-    Status: inStock ? sheetText.status.onHand : line.status === 'bought' ? sheetText.status.bought : sheetText.status.toBuy,
+    Status: inStock ? sheetText.status.onHand : line.status === 'bought' ? sheetText.status.bought : line.status === 'skipped' ? sheetText.status.skipped : sheetText.status.toBuy,
     Source: line.sources.map((s) => (s.note ? `${s.label} (${s.note})` : s.label)).join(', '),
     Line_Key: line.key,
     Added: addedCell(line),
