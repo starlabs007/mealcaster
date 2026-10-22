@@ -41,7 +41,7 @@
   const scale = $derived(recipe ? servings / recipe.serves : 1);
 
   const allKeys = recipe ? ingredientKeys(recipe.id) : [];
-  // A checked ingredient is in stock at home: it stays off every week's grocery list until unchecked.
+  // A checked ingredient is at home: it stays off every week's grocery list until unchecked.
   // Lines of the same ingredient check together.
   const checked = $derived(allKeys.filter(isOnHandKey));
   const onList = $derived(groceryKeys());
