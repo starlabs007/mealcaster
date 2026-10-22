@@ -45,7 +45,8 @@
 
 <div class="flex flex-col justify-between gap-3 border-b border-surface-container-highest pb-4 md:flex-row md:items-end md:gap-4">
   <!-- Phones have 8 px page gutters: bare text gets 8 px more so it isn't set against the screen edge (cards have their own padding). -->
-  <div class="px-2 md:px-0">
+  <!-- The title keeps one line from md: the controls on the right wrap instead (two lines of title pushed tonight's actions below 800 px at 1024). -->
+  <div class="px-2 md:shrink-0 md:px-0">
     <!-- The fixed header's week stepper shows the dates on phones. -->
     <p class="mb-1.5 hidden text-xs font-semibold text-on-surface-variant md:block">
       {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}

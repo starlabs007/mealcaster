@@ -240,8 +240,8 @@ export const text = {
         days.length <= 4 ? `Copied ${joinList(days)} from the previous week.` : `Copied ${days.length} evenings from the previous week.`,
       // Changes with no toast of their own; Cmd/Ctrl+Z repeats them as "Undone: …".
       assigned: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title}`,
-      markedDone: (/** @type {string} */ title) => `Marked ${title} done.`,
-      markedNotDone: (/** @type {string} */ title) => `Marked ${title} not done.`,
+      markedDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title} marked done.`,
+      markedNotDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title} marked not done.`,
       openAgain: (/** @type {string} */ weekday) => `${weekday} is open again.`,
       nothingToUndo: 'Nothing to undo.',
       reset: (/** @type {number} */ n) => `Cleared ${n} upcoming ${plural(n, 'evening')}.`,

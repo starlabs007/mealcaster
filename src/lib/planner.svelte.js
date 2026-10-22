@@ -230,9 +230,13 @@ export function undoLastChange() {
   return true;
 }
 
-/** Makes a change that shows no Undo toast the one Cmd/Ctrl+Z takes back. @param {string} message @param {string} iso day it touched */
-function rememberDay(message, iso) {
-  const saved = snapshotDays(planner.entries, [iso]);
+/**
+ * Makes a change that shows no Undo toast the one Cmd/Ctrl+Z takes back.
+ * @param {string} message @param {string} iso day it touched
+ * @param {object} [before] the day as it was, when the change has already been made
+ */
+function rememberDay(message, iso, before = planner.entries[iso]) {
+  const saved = { [iso]: before };
   lastChange = { message, run: () => restoreDays(planner.entries, saved) };
 }
 
@@ -305,8 +309,11 @@ function undoDay(iso, previous) {
 export function setDone(iso, done) {
   const entry = planner.entries[iso];
   if (!entry?.recipeId || iso !== planner.today) return;
-  rememberDay(done ? text.planner.toasts.markedDone(titleOn(iso)) : text.planner.toasts.markedNotDone(titleOn(iso)), iso);
+  const previous = { ...entry };
   planner.entries[iso] = done ? { ...entry, completed: true } : (({ completed, ...rest }) => rest)(entry);
+  // Done says so, with an Undo; taking it back (the button, or Cmd/Ctrl+Z) is the undo itself, so it stays quiet.
+  if (done) showWeekToast(text.planner.toasts.markedDone(formatWeekday(iso), titleOn(iso)), undoDay(iso, previous));
+  else rememberDay(text.planner.toasts.markedNotDone(formatWeekday(iso), titleOn(iso)), iso, previous);
 }
 
 /** @param {string} iso */
