@@ -1,5 +1,5 @@
-// The recipe page's "prepped" ticks: which ingredient lines the cook has measured out today. Kept on this device for
-// the day only (never synced); a stored day other than today reads as nothing prepped.
+// The recipe page's "prepped" ticks: which ingredient lines the cook has measured out (and which method steps are
+// done) today. Kept on this device for the day only (never synced); a stored day other than today reads as nothing.
 
 /** @typedef {{ date: string, recipes: Record<string, string[]> }} PrepState */
 

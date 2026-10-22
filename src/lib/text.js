@@ -401,6 +401,11 @@ export const text = {
     method: {
       title: 'Step-by-Step Method',
       count: (/** @type {number} */ n) => `${n} Essential Movements`,
+      jump: 'Method',
+      hint: 'Tap a step’s number once it’s done. Done steps clear tomorrow.',
+      doneAria: (/** @type {number} */ n) => `Step ${n} done`,
+      doneTitle: 'Tap when this step is done',
+      undoneTitle: 'Done — tap to undo',
     },
     sync: 'Google Sheets sync',
     deleteDialog: {
