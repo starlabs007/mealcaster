@@ -383,11 +383,14 @@ export const text = {
     notes: { title: 'Cook’s Secrets', label: 'Notes' },
     ingredients: {
       title: 'Mise en Place Ingredients',
-      hint: 'Check what you have at home to keep it off your grocery list',
-      clearAll: 'Clear all',
-      checkAll: 'Checkmark all',
+      hint: 'Tick each one as you prep it. Ticks clear tomorrow.',
+      clearAll: 'Clear ticks',
+      checkAll: 'Tick all',
       optional: 'optional',
-      pushHint: 'Check what you have at home, then add the rest to your grocery list.',
+      atHomeAria: (/** @type {string} */ name) => `${name} at home`,
+      atHomeTitle: 'At home — tap when you run out',
+      notAtHomeTitle: 'Have it at home? Keeps it off your grocery lists',
+      pushHint: 'Tap the house for what you have at home, then add the rest to your grocery list.',
       push: (/** @type {number} */ n) => `Add Missing to Grocery List (${n})`,
       pushed: 'Everything is on your list or at home',
     },
@@ -404,6 +407,8 @@ export const text = {
       addedFromRecipe: (/** @type {number} */ n, /** @type {string} */ title) => `Added ${n} ${plural(n, 'ingredient')} from ${title} to your grocery list.`,
       planned: (/** @type {string} */ title, /** @type {string} */ date) => `${title} planned for ${date}.`,
       deleted: (/** @type {string} */ title) => `${title} deleted.`,
+      atHome: (/** @type {string} */ name) => `${name} marked at home: it stays off your grocery lists.`,
+      notAtHome: (/** @type {string} */ name) => `${name} is no longer at home.`,
     },
 
     // Print options: the Print Options dialog, the Profile page and the Simple layout printout.

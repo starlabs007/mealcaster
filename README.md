@@ -112,10 +112,12 @@ npm run preview    # http://localhost:4173
 
 - Breadcrumb back to the plan, favorite toggle, Choose a Different Meal, serving scaler (quantities rescale).
 - Tags (each links to the catalog filtered by it) and when the meal was last made.
-- Mise-en-place checklist grouped by component. Checking an ingredient marks it **at home** (the same flag
-  as everywhere else, see Ingredients): it stays off every week's grocery list until you uncheck it. **Checkmark
-  all** / **Clear all** act on the whole recipe. **Add Missing to Grocery List** (under the checklist, the only grocery button on the page) skips checked
-  ingredients and ones already on the list. Lines read like "1 lb beef (flank or ribeye), sliced"; amounts and plurals follow the serving scaler.
+- Mise-en-place checklist grouped by component. Ticking a line marks it **prepped** while you cook: kept on this
+  device for today only (never synced; the next day the recipe starts clean). **Tick all** / **Clear ticks** act on the
+  whole recipe. The house button at the end of each line marks the ingredient **at home** (the same flag as everywhere
+  else, see Ingredients), with a toast and **Undo**: it stays off every week's grocery list until unmarked. **Add
+  Missing to Grocery List** (under the checklist, the only grocery button on the page) skips ingredients at home and
+  ones already on the list; prepped ticks don't change it. Lines read like "1 lb beef (flank or ribeye), sliced"; amounts and plurals follow the serving scaler.
 - Numbered method steps with durations; "Next: {Day} {Recipe}" walks through the week's dinners.
 
 ## Recipe tags
@@ -335,7 +337,7 @@ Keys from before schema version 2 (`recipeBox.v1`, `grocery.v2`, `settings.v1`, 
 startup (`env.js`): the new build never reads old-format data, and a stale sync base would delete sheet rows.
 
 Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`, `mealcaster.catalogHidePlanned.v1`;
-the Recipe Editor keeps unsaved work as a draft a moment after each change (a new recipe in `mealcaster.recipeDraft.v2`, edits to an existing one in `mealcaster.recipeEditDrafts.v1`, per recipe id and only for the recipe as it was opened). Saving or discarding clears it; leaving the editor keeps it and the editor restores it on reopening.
+today's prepped ticks on recipe pages in `mealcaster.recipePrep.v1`; the Recipe Editor keeps unsaved work as a draft a moment after each change (a new recipe in `mealcaster.recipeDraft.v2`, edits to an existing one in `mealcaster.recipeEditDrafts.v1`, per recipe id and only for the recipe as it was opened). Saving or discarding clears it; leaving the editor keeps it and the editor restores it on reopening.
 
 The grocery badge counts items still to buy for the viewed week.
 

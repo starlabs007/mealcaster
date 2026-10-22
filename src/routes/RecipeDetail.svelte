@@ -12,6 +12,7 @@
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
   import { groceryKeys, isOnHandKey, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
   import { ingredientOf, setOnHand } from '../lib/ingredients.svelte.js';
+  import { preppedKeys, setPrepped } from '../lib/recipePrep.svelte.js';
   import { lineParts } from '../lib/ingredients.js';
   import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe } from '../lib/planner.svelte.js';
   import { href, navigate } from '../lib/router.svelte.js';
@@ -42,25 +43,31 @@
   const scale = $derived(recipe ? servings / recipe.serves : 1);
 
   const allKeys = recipe ? ingredientKeys(recipe.id) : [];
-  // A checked ingredient is at home: it stays off every week's grocery list until unchecked.
-  // Lines of the same ingredient check together.
-  const checked = $derived(allKeys.filter(isOnHandKey));
+  // A ticked line is prepped: cooking progress, kept on this device for today only.
+  const prepped = $derived(recipe ? preppedKeys(recipe.id) : []);
+  // At home is the ingredient's own flag (the home button): it stays off every week's grocery list until unset.
+  // Lines of the same ingredient follow together.
+  const atHome = $derived(allKeys.filter(isOnHandKey));
   const onList = $derived(groceryKeys());
   // Only what's missing: not on the list yet and not at home.
-  const missing = $derived(allKeys.filter((k) => !onList.has(k) && !checked.includes(k)));
+  const missing = $derived(allKeys.filter((k) => !onList.has(k) && !atHome.includes(k)));
 
-  const setChecked = (key, on) => {
-    const [, g, i] = key.split(':');
-    setOnHand(recipe.ingredients[+g].items[+i].id, on);
-  };
-
-  function toggleCheck(key) {
-    setChecked(key, !isOnHandKey(key));
+  function togglePrepped(key) {
+    setPrepped(recipe.id, prepped.includes(key) ? prepped.filter((k) => k !== key) : [...prepped, key]);
   }
 
   function toggleAll() {
-    const on = checked.length !== allKeys.length;
-    for (const key of allKeys) setChecked(key, on);
+    setPrepped(recipe.id, prepped.length === allKeys.length ? [] : allKeys);
+  }
+
+  const capFirst = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1);
+
+  /** @param {string} ingredientId @param {string} name */
+  function toggleAtHome(ingredientId, name) {
+    const on = !ingredientOf(ingredientId)?.onHand;
+    setOnHand(ingredientId, on);
+    const t = text.recipe.toasts;
+    showToast((on ? t.atHome : t.notAtHome)(capFirst(name)), { label: text.common.undo, run: () => setOnHand(ingredientId, !on) });
   }
 
   function push(keys, message) {
@@ -306,11 +313,14 @@
                 <p class="text-body-sm text-on-surface-variant print:hidden">{text.recipe.ingredients.hint}</p>
               </div>
             </div>
-            <button type="button" class="-mr-2 inline-flex min-h-11 shrink-0 items-center gap-1 px-2 text-label-sm text-on-surface-variant hover:text-primary fine:mr-0 fine:min-h-0 fine:px-0 print:hidden" onclick={toggleAll}>
-              <Icon name={checked.length === allKeys.length ? 'remove_done' : 'done_all'} class="text-[16px]" />
-              {checked.length === allKeys.length ? text.recipe.ingredients.clearAll : text.recipe.ingredients.checkAll}
-            </button>
           </div>
+
+          <!-- In the tick column (icon over the circles, label over the names), so it reads as acting on the prep
+               ticks, not the house buttons on the right. -->
+          <button type="button" class="focus-ring -mt-2 mb-2 ml-5 inline-flex min-h-11 items-center gap-3 rounded text-label-sm text-on-surface-variant hover:text-primary fine:mt-0 fine:min-h-0 print:hidden" onclick={toggleAll}>
+            <Icon name={prepped.length === allKeys.length ? 'remove_done' : 'done_all'} class="w-[18px] text-center text-[16px]" />
+            {prepped.length === allKeys.length ? text.recipe.ingredients.clearAll : text.recipe.ingredients.checkAll}
+          </button>
 
           <div class="flex flex-col gap-4">
             {#each recipe.ingredients as group, g (group.title)}
@@ -322,21 +332,24 @@
                 <ul class="flex flex-col">
                   {#each group.items as item, i (i)}
                     {@const key = `${recipe.id}:${g}:${i}`}
-                    {@const isChecked = checked.includes(key)}
+                    {@const isPrepped = prepped.includes(key)}
                     {@const ingredient = ingredientOf(item.id)}
+                    {@const home = !!ingredient?.onHand}
                     {@const line = lineParts(item, ingredient, scale)}
-                    <li class="print:break-inside-avoid">
-                      <label class="flex min-h-11 cursor-pointer items-center gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container fine:min-h-0 fine:items-start">
-                        <input type="checkbox" class="peer sr-only" checked={isChecked} onchange={() => toggleCheck(key)} />
+                    <li class="flex items-center gap-1 print:break-inside-avoid fine:items-start">
+                      <label class="flex min-h-11 flex-1 cursor-pointer items-center gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container fine:min-h-0 fine:items-start">
+                        <input type="checkbox" class="peer sr-only" checked={isPrepped} onchange={() => togglePrepped(key)} />
                         <span
-                          class="mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary-container {isChecked
+                          class="mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary-container print:border-outline print:bg-transparent print:text-transparent {isPrepped
                             ? 'border-primary-container bg-primary-container text-on-primary'
                             : 'border-outline bg-surface-container-lowest text-transparent'}"
                           aria-hidden="true"
                         >
                           <Icon name="check" class="text-[13px]" />
                         </span>
-                        <span class="flex-1 text-body-lg text-on-surface md:text-body-sm print:text-body-sm">
+                        <!-- Below sm the aisle drops under the name, leaving the row's width to the name. -->
+                        <span class="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:gap-3">
+                        <span class="text-body-lg sm:flex-1 md:text-body-sm print:text-body-sm print:text-on-surface print:no-underline {isPrepped ? 'text-on-surface-variant line-through' : 'text-on-surface'}">
                           {#if line.amount}<strong class="font-semibold">{line.amount}</strong>{/if}
                           <span class={ingredient ? '' : 'italic'}>{line.name}</span>{#if line.note}{' '}<span class="text-on-surface-variant">({line.note})</span>{/if}{#if line.prep}, {line.prep}{/if}
                           {#if line.optional}<span class="ml-1 text-label-sm text-outline">{text.recipe.ingredients.optional}</span>{/if}
@@ -346,7 +359,28 @@
                             {aisleLabel(ingredient.aisle)}
                           </span>
                         {/if}
+                        </span>
                       </label>
+                      {#if ingredient}
+                        <button
+                          type="button"
+                          class="group focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-full fine:mt-0.5 fine:h-7 fine:w-7 print:hidden"
+                          aria-pressed={home}
+                          aria-label={text.recipe.ingredients.atHomeAria(line.name)}
+                          title={home ? text.recipe.ingredients.atHomeTitle : text.recipe.ingredients.notAtHomeTitle}
+                          onclick={() => toggleAtHome(item.id, line.name)}
+                        >
+                          <span
+                            class="flex h-8 w-8 items-center justify-center rounded-full transition-colors fine:h-7 fine:w-7 {home
+                              ? 'bg-primary-container text-on-primary group-hover:bg-primary'
+                              : 'text-on-surface-variant group-hover:bg-surface-container group-hover:text-primary'}"
+                          >
+                            <Icon name="home" class="text-[18px] fine:text-[16px] {home ? 'icon-filled' : ''}" />
+                          </span>
+                        </button>
+                      {:else}
+                        <span class="w-11 shrink-0 fine:w-7 print:hidden" aria-hidden="true"></span>
+                      {/if}
                     </li>
                   {/each}
                 </ul>
