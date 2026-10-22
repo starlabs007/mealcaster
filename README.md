@@ -121,7 +121,9 @@ npm run preview    # http://localhost:4173
   else, see Ingredients), with a toast and **Undo**: it stays off every week's grocery list until unmarked. **Add
   Missing to Grocery List** (under the checklist, the only grocery button on the page and its one sage primary button; a quiet outline once nothing is missing) skips ingredients at home and
   ones already on the list; prepped ticks don't change it. Lines read like "1 lb beef (flank or ribeye), sliced"; amounts and plurals follow the serving scaler.
-- Numbered method steps with durations; "Next: {Day} {Recipe}" (or Back to Weekly Menu, outline buttons) walks through the week's dinners.
+- Numbered method steps with durations; tap a step's number to mark it done (the card sinks into the page; kept
+  with the prepped ticks, today on this device). The screen stays awake while the method is on screen (Screen Wake
+  Lock, where supported); on phones a **Method ↓** link in the ingredients header jumps there; "Next: {Day} {Recipe}" (or Back to Weekly Menu, outline buttons) walks through the week's dinners.
 
 ## Recipe tags
 
@@ -340,7 +342,7 @@ Keys from before schema version 2 (`recipeBox.v1`, `grocery.v2`, `settings.v1`, 
 startup (`env.js`): the new build never reads old-format data, and a stale sync base would delete sheet rows.
 
 Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`, `mealcaster.catalogHidePlanned.v1`;
-today's prepped ticks on recipe pages in `mealcaster.recipePrep.v1`; the Recipe Editor keeps unsaved work as a draft a moment after each change (a new recipe in `mealcaster.recipeDraft.v2`, edits to an existing one in `mealcaster.recipeEditDrafts.v1`, per recipe id and only for the recipe as it was opened). Saving or discarding clears it; leaving the editor keeps it and the editor restores it on reopening.
+today's prepped ticks and done steps on recipe pages in `mealcaster.recipePrep.v1`; the Recipe Editor keeps unsaved work as a draft a moment after each change (a new recipe in `mealcaster.recipeDraft.v2`, edits to an existing one in `mealcaster.recipeEditDrafts.v1`, per recipe id and only for the recipe as it was opened). Saving or discarding clears it; leaving the editor keeps it and the editor restores it on reopening.
 
 The grocery badge counts items still to buy for the viewed week.
 

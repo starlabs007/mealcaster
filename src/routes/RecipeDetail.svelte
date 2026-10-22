@@ -12,7 +12,7 @@
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
   import { groceryKeys, isOnHandKey, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
   import { ingredientOf, setOnHand } from '../lib/ingredients.svelte.js';
-  import { preppedKeys, setPrepped } from '../lib/recipePrep.svelte.js';
+  import { preppedKeys, setPrepped, doneSteps, setDoneSteps } from '../lib/recipePrep.svelte.js';
   import { lineParts } from '../lib/ingredients.js';
   import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe } from '../lib/planner.svelte.js';
   import { href, navigate } from '../lib/router.svelte.js';
@@ -60,6 +60,69 @@
   function toggleAll() {
     setPrepped(recipe.id, prepped.length === allKeys.length ? [] : allKeys);
   }
+
+  // Method steps marked done (tap the number): today, on this device, like the prepped ticks.
+  const stepsDone = $derived(recipe ? doneSteps(recipe.id) : []);
+
+  /** @param {number} i */
+  function toggleStep(i) {
+    setDoneSteps(recipe.id, stepsDone.includes(i) ? stepsDone.filter((s) => s !== i) : [...stepsDone, i]);
+  }
+
+  /** @type {HTMLElement | undefined} */
+  let methodSection = $state();
+  /** @type {HTMLElement | undefined} */
+  let methodHeading = $state();
+
+  function jumpToMethod() {
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    methodSection?.scrollIntoView({ behavior, block: 'start' });
+    methodHeading?.focus({ preventScroll: true });
+  }
+
+  // Keeps the screen on while the method is on screen (a phone propped up in the kitchen). Released when it scrolls
+  // away, the page is hidden (the browser drops it then too; it's asked for again on return) or left. Does nothing
+  // where Screen Wake Lock isn't supported or is refused.
+  $effect(() => {
+    const section = methodSection;
+    if (!section || !('wakeLock' in navigator)) return;
+    let inView = false;
+    let wanted = false;
+    /** @type {WakeLockSentinel | null} */
+    let lock = null;
+    async function sync() {
+      wanted = inView && document.visibilityState === 'visible';
+      if (wanted && !lock) {
+        try {
+          const next = await navigator.wakeLock.request('screen');
+          // Scrolled away or left while the request was pending.
+          if (!wanted || lock) return void next.release();
+          lock = next;
+          next.addEventListener('release', () => {
+            if (lock === next) lock = null;
+          });
+        } catch {
+          // Refused (battery saver, no user activation yet): the screen just sleeps as usual.
+        }
+      } else if (!wanted && lock) {
+        const held = lock;
+        lock = null;
+        held.release().catch(() => {});
+      }
+    }
+    const observer = new IntersectionObserver(([entry]) => {
+      inView = entry.isIntersecting;
+      sync();
+    });
+    observer.observe(section);
+    document.addEventListener('visibilitychange', sync);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', sync);
+      inView = false;
+      sync();
+    };
+  });
 
   const capFirst = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -354,6 +417,11 @@
                 <p class="text-body-sm text-on-surface-variant print:hidden">{text.recipe.ingredients.hint}</p>
               </div>
             </div>
+            {#if recipe.steps.length}
+              <button type="button" class="focus-ring -mr-2 -mt-2 inline-flex min-h-11 shrink-0 items-center gap-1 rounded px-2 text-label-sm text-on-surface-variant hover:text-primary md:hidden print:hidden" onclick={jumpToMethod}>
+                {text.recipe.method.jump} <Icon name="arrow_downward" class="text-[16px]" />
+              </button>
+            {/if}
           </div>
 
           <!-- Phones: the servings stepper sits with the amounts it scales. -->
@@ -454,26 +522,52 @@
         </section>
 
         {#if recipe.steps.length}
-        <section>
-          <div class="mb-4 flex items-center justify-between">
-            <h2 class="flex items-center gap-2 font-display text-headline-md text-on-surface">
-              <Icon name="outdoor_grill" class="text-[22px] text-primary" /> {text.recipe.method.title}
-            </h2>
-            <span class="text-label-caps uppercase text-outline">{text.recipe.method.count(recipe.steps.length)}</span>
+        <!-- Scroll margin clears the sticky header on a jump. -->
+        <section bind:this={methodSection} class="scroll-mt-44 md:scroll-mt-28">
+          <div class="mb-4">
+            <div class="flex items-center justify-between gap-4">
+              <h2 bind:this={methodHeading} tabindex="-1" class="flex items-center gap-2 font-display text-headline-md text-on-surface outline-none">
+                <Icon name="outdoor_grill" class="text-[22px] text-primary" /> {text.recipe.method.title}
+              </h2>
+              <span class="shrink-0 text-label-caps uppercase text-outline">{text.recipe.method.count(recipe.steps.length)}</span>
+            </div>
+            <p class="mt-1 text-body-sm text-on-surface-variant print:hidden">{text.recipe.method.hint}</p>
           </div>
           <ol class="flex flex-col gap-4 print:gap-3">
             {#each recipe.steps as step, i (i)}
-              <li class="flex gap-4 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card print:break-inside-avoid print:p-4">
-                <span
-                  class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-display text-body-lg font-semibold {step.critical
-                    ? 'bg-secondary-fixed/50 text-secondary'
-                    : 'bg-surface-container-low text-on-surface'}"
+              {@const done = stepsDone.includes(i)}
+              <!-- A done step sinks into the page (oat ground, no shadow, muted title); prints as usual. -->
+              <li
+                class="flex gap-4 rounded-2xl border p-5 transition-colors print:break-inside-avoid print:border-surface-container-high print:bg-surface-container-lowest print:p-4 {done
+                  ? 'border-transparent bg-surface-container-low'
+                  : 'border-surface-container-high bg-surface-container-lowest shadow-card'}"
+              >
+                <button
+                  type="button"
+                  aria-pressed={done}
+                  aria-label={text.recipe.method.doneAria(i + 1)}
+                  title={done ? text.recipe.method.undoneTitle : text.recipe.method.doneTitle}
+                  class="group focus-ring -m-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg fine:m-0 fine:h-9 fine:w-9"
+                  onclick={() => toggleStep(i)}
                 >
-                  {String(i + 1).padStart(2, '0')}
-                </span>
+                  <!-- A filled sage tile with a check in its corner reads as something to tap; done fills the check.
+                       A done step prints like the rest. -->
+                  <span
+                    class="relative flex h-9 w-9 items-center justify-center rounded-lg bg-primary-container font-display text-body-lg font-semibold text-on-primary transition-colors group-hover:bg-primary print:bg-surface-container-low print:text-on-surface"
+                  >
+                    {String(i + 1).padStart(2, '0')}
+                    <span
+                      class="absolute -bottom-2 -right-2.5 flex h-[18px] w-[18px] items-center justify-center rounded-full border-[1.5px] transition-colors print:hidden {done
+                        ? 'border-surface-container-low bg-primary text-on-primary'
+                        : 'border-outline bg-surface-container-lowest text-outline group-hover:text-primary'}"
+                    >
+                      <Icon name="check" class="text-[12px] {done ? 'icon-filled' : ''}" />
+                    </span>
+                  </span>
+                </button>
                 <div class="flex-1">
                   <div class="mb-1.5 flex items-start justify-between gap-3">
-                    <h3 class="font-display text-headline-sm text-on-surface">{step.title}</h3>
+                    <h3 class="font-display text-headline-sm print:text-on-surface {done ? 'text-on-surface-variant' : 'text-on-surface'}">{step.title}</h3>
                     {#if step.minutes}
                       <span class="shrink-0 rounded-full px-2 py-0.5 text-label-caps uppercase {stepTone(step, i)}">
                         {mins(step.minutes)}
