@@ -8,6 +8,7 @@
   import { text } from '../text.js';
   import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
   import { MediaQuery } from 'svelte/reactivity';
+  import { headerChrome } from '../headerChrome.svelte.js';
 
   // The tabs are rendered once: in the header row from `xl`, in their own row below it. (Two copies, one hidden by CSS,
   // would still be two "Primary" landmarks to some assistive tech.)
@@ -65,7 +66,10 @@
   </nav>
 {/snippet}
 
-<header class="fixed left-0 top-0 z-50 w-full print:hidden bg-surface/90 shadow-header backdrop-blur-xl">
+<!-- Fixed, or scrolling with the page while a screen asks for it (grocery store mode). -->
+<header
+  class="{headerChrome.scrollsAway ? 'absolute' : 'fixed'} left-0 top-0 z-50 w-full print:hidden bg-surface/90 shadow-header backdrop-blur-xl"
+>
   <div class="flex h-20 w-full items-center justify-between gap-4 px-gutter md:px-gutter-desktop">
     <div class="flex items-center gap-6">
       <a href={href('/')} class="flex items-center gap-2" aria-label={text.header.homeAria}>

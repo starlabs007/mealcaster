@@ -31,6 +31,8 @@ export const devicePrefs = $state({
   plannerMinimal: false,
   /** Grocery list: minimal view (no On Hand section or sidebar). Same lifetime as plannerMinimal. */
   groceryMinimal: false,
+  /** Grocery list on touch screens: the full list instead of store mode, for this visit (same lifetime, not saved). */
+  groceryFull: false,
 });
 
 /** @param {boolean} on */

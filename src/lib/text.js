@@ -660,6 +660,22 @@ export const text = {
     share: 'Share',
     addItem: 'Add Item',
     closeForm: 'Close',
+    /** Store mode: the phone layout for the shop (touch screens). One bar with the week, what's left and a ⋯ menu. */
+    store: {
+      /** "This week", "Next week", "Last week", "Week of Oct 10" */
+      weekTitle: (/** @type {string} */ weekName) => weekName.replace(/^the /, '').replace(/^./, (c) => c.toUpperCase()),
+      left: (/** @type {number} */ n) => `${n} left`,
+      menuAria: 'Grocery list options',
+      thisWeek: 'This Week',
+      nextWeek: 'Next Week',
+      earlier: 'Earlier Week',
+      later: 'Later Week',
+      print: 'Print Checklist',
+      fullList: 'Full List',
+      fullListNote: 'Aisle filters, in-stock items, overview',
+      storeMode: 'Store Mode',
+      synced: (/** @type {string} */ tab) => `Synced with the [${tab}] tab of your Google Sheet.`,
+    },
     form: {
       ingredient: 'Ingredient',
       newBadge: 'New',
@@ -699,6 +715,7 @@ export const text = {
       more: (/** @type {number} */ n) => `+${n} more`,
       optional: 'Optional',
       menuAria: (/** @type {string} */ name) => `More for ${name}`,
+      forNote: (/** @type {string[]} */ labels) => `For ${labels.join(', ')}`,
       onHandMenu: 'Have It at Home',
       onHandTitle: 'Have it at home — mark as on hand',
       onHandAria: (/** @type {string} */ name) => `Mark ${name} as on hand`,

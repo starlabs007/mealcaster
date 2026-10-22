@@ -174,7 +174,12 @@ for every recipe and the grocery list.
   week** (from this week on until you buy it, then only in the week you bought it). Adding an in-stock ingredient
   clears its stock. Removing an added item (trash icon) or marking it in stock shows a toast with **Undo**. The
   ingredients left off because they're in stock are listed alphabetically. **Share** (native share sheet or clipboard),
-  **Print Kitchen Checklist** (print-friendly layout). **Minimal view** also hides the intro text and Share.
+  **Print Kitchen Checklist** (print-friendly layout). **Minimal view** (mouse only) also hides the intro text and Share.
+- **Store mode** (touch screens, phones and tablets): the list opens straight away under one bar with the week,
+  "N left" and a ⋯ menu (Add Item, This / Next / Earlier / Later Week, Share, Print Checklist, Full List, and the sync
+  line as small print). Lines show name and amount; the dinners a line is for sit in its own ⋯. Aisle headings stay
+  pinned while you scroll, and the app header scrolls away with the page (back in place when you reach the top) instead of staying fixed. **Full List** switches
+  to the full layout for this visit (not saved); **Store Mode** there switches back.
 - Synced to the optional `[Provisions]` tab, one row per ingredient per week (`Line_Key` = `ing:<Ingredient_ID>`,
   `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
   future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
