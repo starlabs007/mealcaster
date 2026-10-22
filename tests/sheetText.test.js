@@ -14,15 +14,17 @@ const HINT = ' (sheet text changed: see the comment at the top of src/lib/sheetT
 
 describe('sheetText', () => {
   it('grocery Status values', () => {
-    assert.deepEqual(t.status, { onHand: 'On hand', bought: 'Bought', toBuy: 'To buy' }, HINT);
+    assert.deepEqual(t.status, { onHand: 'On hand', bought: 'Bought', toBuy: 'To buy', skipped: 'Skipped' }, HINT);
   });
 
   it('Status patterns read each written value back', () => {
     assert.equal(parseStatus(t.status.onHand), 'owned', HINT);
     assert.equal(parseStatus(t.status.bought), 'bought', HINT);
     assert.equal(parseStatus(t.status.toBuy), 'need', HINT);
+    assert.equal(parseStatus(t.status.skipped), 'skipped', HINT);
     assert.equal(parseStatus('In pantry'), 'owned');
     assert.equal(String(t.statusPatterns.bought), String(/^(bought|done|got|checked|true|x|✓)/), HINT);
+    assert.equal(String(t.statusPatterns.skipped), String(/^skip/), HINT);
     assert.equal(String(t.statusPatterns.owned), String(/on hand|pantry|owned|have|stock/), HINT);
   });
 
@@ -109,7 +111,7 @@ describe('sheetText', () => {
 
   it('column help in Column Conflicts quotes the same sheet values', () => {
     const { provisions, settings } = COLUMN_INFO;
-    assert.ok(provisions.Status.note.includes(`${t.status.toBuy} or ${t.status.bought}. ${t.status.onHand}`), HINT);
+    assert.ok(provisions.Status.note.includes(`${t.status.toBuy} or ${t.status.bought}. ${t.status.skipped}`), HINT);
     assert.ok(provisions.Source.note.includes(t.sourceAddedByYou) && provisions.Source.note.includes(t.sourceEveryWeek), HINT);
     assert.ok(settings.Name.note.includes(t.weekStartsOnRow.Name) && settings.Section.note.includes(t.returnToPlannerRow.Section), HINT);
   });

@@ -731,9 +731,10 @@ export const text = {
     past: {
       note: 'A past week: its list stays as it was. You can still tick what you bought.',
       boughtOf: (/** @type {number} */ total) => `of ${total} bought`,
+      skipped: (/** @type {number} */ n) => `${n} skipped`,
     },
     done: {
-      title: (/** @type {number} */ n) => `All ${n} bought`,
+      title: (/** @type {number} */ n, /** @type {number} */ skipped = 0) => (skipped ? `${n ? `${n} bought` : 'Nothing bought'}, ${skipped} skipped` : `All ${n} bought`),
       body: (/** @type {string} */ week) => `Nothing left to buy for ${week}.`,
     },
     itemCount: (/** @type {number} */ n) => `${n} ${plural(n, 'item')}`,
@@ -744,6 +745,10 @@ export const text = {
       optional: 'Optional',
       menuAria: (/** @type {string} */ name) => `More for ${name}`,
       forNote: (/** @type {string[]} */ labels) => `For ${labels.join(', ')}`,
+      skipMenu: 'Skip This Week',
+      skipTitle: 'Sold out or not needed? Skip it for this week only',
+      skipAria: (/** @type {string} */ name) => `Skip ${name} this week`,
+      restoreAria: (/** @type {string} */ name) => `Put ${name} back on the list`,
       onHandMenu: 'Mark At Home',
       onHandTitle: 'Have it at home — keep it off the list',
       onHandAria: (/** @type {string} */ name) => `Mark ${name} as at home`,
@@ -761,11 +766,13 @@ export const text = {
       currentNote: 'Out of one? Tap Need it (or untick it on a recipe page) and it’s back on every week’s list.',
     },
     bought: { title: 'Bought', hide: 'Hide', show: 'Show' },
+    skipped: { title: 'Skipped', hide: 'Hide', show: 'Show', note: 'Skipped for this week only. Tap one to put it back.' },
     overview: {
       title: 'Shopping Overview',
       toBuy: 'items to buy',
       onHand: 'at home',
       completion: 'Shopping completion',
+      skipped: (/** @type {number} */ n) => `${n} skipped this week`,
     },
     toasts: {
       added: (/** @type {string} */ name, /** @type {boolean} */ everyWeek, /** @type {string} */ week, /** @type {boolean} */ wasOnHand) =>
@@ -773,6 +780,7 @@ export const text = {
       onHand: (/** @type {string} */ name) => `${name} is at home: it stays off every week’s list until you say you need it.`,
       needIt: (/** @type {string} */ name) => `${name} is back on the list.`,
       got: (/** @type {string} */ name) => `Got ${name}.`,
+      skipped: (/** @type {string} */ name) => `Skipped ${name} this week.`,
       removed: (/** @type {string} */ name, /** @type {boolean} */ everyWeek) =>
         `Removed ${name} from ${everyWeek ? 'every week’s list' : 'this week’s list'}.`,
       copied: 'Grocery list copied to your clipboard.',
@@ -1218,7 +1226,7 @@ export const text = {
           Item: 'Ingredient or product to buy.',
           Detail: 'Amount and notes, e.g. 450 g.',
           Department: 'Store aisle the item is filed under.',
-          Status: `${sheetText.status.toBuy} or ${sheetText.status.bought}. ${sheetText.status.onHand}: left off the list because it’s at home (change that in [Ingredients]).`,
+          Status: `${sheetText.status.toBuy} or ${sheetText.status.bought}. ${sheetText.status.skipped}: not bought this week only. ${sheetText.status.onHand}: left off the list because it’s at home (change that in [Ingredients]).`,
           Source: `Meals the item is for, “${sheetText.sourceAddedByYou}” or “${sheetText.sourceEveryWeek}”.`,
           Line_Key: 'MealCaster’s ID for the line — leave it as is.',
           Added: 'What was added by hand, for MealCaster — leave it as is.',

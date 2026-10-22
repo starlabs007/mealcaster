@@ -65,6 +65,9 @@
   const showBought = $derived(minimal ? showBoughtMinimal : showBoughtFull);
   /** @type {HTMLButtonElement | undefined} */
   let boughtToggle = $state();
+  let showSkipped = $state(false);
+  /** @type {HTMLButtonElement | undefined} */
+  let skippedToggle = $state();
   let adding = $state(false);
   let draft = $state({ name: '', note: '', aisle: 'Produce', everyWeek: false });
   // The aisle follows the item's name until you pick one yourself; an existing ingredient keeps its own.
@@ -101,12 +104,15 @@
   // Bought lines leave the aisle lists for the Bought ledger.
   const shopping = $derived(lines.filter((l) => l.status === 'need'));
   const acquired = $derived(lines.filter((l) => l.status === 'bought'));
+  const passed = $derived(lines.filter((l) => l.status === 'skipped'));
   const toBuy = $derived(shopping.length);
   const bought = $derived(acquired.length);
+  const skipped = $derived(passed.length);
   // Nothing on the list at all, or everything ticked off.
-  const nothingListed = $derived(!toBuy && !bought);
-  const allBought = $derived(!toBuy && bought > 0);
-  const completion = $derived(toBuy + bought ? Math.round((bought / (toBuy + bought)) * 100) : 0);
+  const nothingListed = $derived(!toBuy && !bought && !skipped);
+  const allBought = $derived(!toBuy && bought + skipped > 0);
+  // A skipped line is handled for the week: it counts toward done but not as bought.
+  const completion = $derived(toBuy + bought + skipped ? Math.round(((bought + skipped) / (toBuy + bought + skipped)) * 100) : 0);
 
   const sections = $derived(
     departments.map((d) => ({ ...d, ...text.grocery.departments[d.id], items: shopping.filter((l) => l.dept === d.id) })),
@@ -186,7 +192,7 @@
   function toggleLine(item) {
     const wasBought = item.status === 'bought';
     // Ticking the last line folds the Bought list under the finish message.
-    if (!wasBought && toBuy === 1) showBoughtFull = showBoughtMinimal = false;
+    if (!wasBought && toBuy === 1) showBoughtFull = showBoughtMinimal = showSkipped = false;
     const rows = /** @type {HTMLElement[]} */ ([...document.querySelectorAll(`[data-line-toggle][data-was="${wasBought}"]`)]);
     const at = rows.findIndex((el) => el.dataset.lineToggle === item.key);
     const nextKey = (rows[at + 1] ?? rows[at - 1])?.dataset.lineToggle;
@@ -197,7 +203,28 @@
     });
     const byKey = (/** @type {string} */ key) => /** @type {HTMLElement | null} */ (document.querySelector(`[data-line-toggle="${CSS.escape(key)}"]`));
     // After the last line to buy, Bought's Show / Hide button; after the last bought one, the line back in its aisle.
-    tick().then(() => (nextKey ? byKey(nextKey) : wasBought ? byKey(item.key) : boughtToggle)?.focus());
+    tick().then(() => (nextKey ? byKey(nextKey) : wasBought ? byKey(item.key) : (boughtToggle ?? skippedToggle))?.focus());
+  }
+
+  /**
+   * Skips a line for the viewed week (sold out): it moves to Skipped and comes back next week. Focus goes on to the next line.
+   * @param {import('../lib/grocery.svelte.js').GroceryLine} item
+   */
+  function skipItem(item) {
+    const rows = /** @type {HTMLElement[]} */ ([...document.querySelectorAll('[data-line-toggle][data-was="false"]')]);
+    const at = rows.findIndex((el) => el.dataset.lineToggle === item.key);
+    const nextKey = (rows[at + 1] ?? rows[at - 1])?.dataset.lineToggle;
+    if (toBuy === 1) showBoughtFull = showBoughtMinimal = showSkipped = false;
+    setLineStatus(item.ingredientId, 'skipped');
+    showToast(text.grocery.toasts.skipped(item.name), { label: text.common.undo, run: () => setLineStatus(item.ingredientId, 'need') });
+    tick().then(() => (nextKey ? /** @type {HTMLElement | null} */ (document.querySelector(`[data-line-toggle="${CSS.escape(nextKey)}"]`)) : (boughtToggle ?? skippedToggle))?.focus());
+  }
+
+  /** Puts a skipped line back on the list. @param {import('../lib/grocery.svelte.js').GroceryLine} item */
+  function restoreItem(item) {
+    setLineStatus(item.ingredientId, 'need');
+    showToast(text.grocery.toasts.needIt(item.name), { label: text.common.undo, run: () => setLineStatus(item.ingredientId, 'skipped') });
+    tick().then(() => /** @type {HTMLElement | null} */ (document.querySelector(`[data-line-toggle="${CSS.escape(item.key)}"]`))?.focus());
   }
 
   /**
@@ -206,8 +233,10 @@
    */
   function lineActions(item, done) {
     const actions = [];
-    if (!done && !pastWeek)
+    if (!done && !pastWeek) {
+      actions.push({ id: 'skip', icon: 'event_busy', label: text.grocery.line.skipMenu, title: text.grocery.line.skipTitle, aria: text.grocery.line.skipAria(item.name), onselect: () => skipItem(item) });
       actions.push({ id: 'on-hand', icon: 'home', label: text.grocery.line.onHandMenu, title: text.grocery.line.onHandTitle, aria: text.grocery.line.onHandAria(item.name), onselect: () => markOnHand(item) });
+    }
     if (item.added != null || item.every != null)
       actions.push({ id: 'remove', icon: 'delete', label: text.grocery.line.removeMenu, title: item.every != null ? text.grocery.line.removeEveryTitle : text.grocery.line.removeTitle, aria: text.grocery.line.removeAria(item.name), onselect: () => removeItem(item) });
     return actions;
@@ -300,18 +329,25 @@
 
 {#snippet line(item, done)}
   {@const actions = lineActions(item, done)}
+  {@const skippedLine = item.status === 'skipped'}
   <li class="flex gap-1 px-2 transition-colors hover:bg-surface-container-low/60 {minimal ? 'items-center py-0.5' : 'items-start py-1'}">
     <div class="min-w-0 flex-1">
       <!-- The whole name / amount area ticks the line; the circle is only its picture. -->
       <button
         type="button"
-        role="checkbox"
-        aria-checked={looksBought(item)}
+        role={skippedLine ? undefined : 'checkbox'}
+        aria-checked={skippedLine ? undefined : looksBought(item)}
+        aria-label={skippedLine ? text.grocery.line.restoreAria(item.name) : undefined}
         data-line-toggle={item.key}
-        data-was={item.status === 'bought'}
-        onclick={() => tapLine(item)}
+        data-was={skippedLine ? 'skipped' : item.status === 'bought'}
+        onclick={() => (skippedLine ? restoreItem(item) : tapLine(item))}
         class="focus-ring group/tick flex min-h-11 w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left"
       >
+        {#if skippedLine}
+          <span aria-hidden="true" class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] border-outline-variant bg-surface-container-low text-on-surface-variant transition-colors group-hover/tick:border-primary-container group-hover/tick:text-primary">
+            <Icon name="undo" class="text-[16px]" />
+          </span>
+        {:else}
         <span
           aria-hidden="true"
           class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors {looksBought(item)
@@ -320,8 +356,9 @@
         >
           <Icon name="check" class="text-[16px]" />
         </span>
+        {/if}
         <span class="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2">
-          <span class="font-medium {store ? 'text-body-lg' : 'text-body-md'} {done ? 'text-on-surface-variant line-through decoration-on-surface-variant' : 'text-on-surface'}">{item.name}</span>
+          <span class="font-medium {store ? 'text-body-lg' : 'text-body-md'} {skippedLine ? 'text-on-surface-variant' : done ? 'text-on-surface-variant line-through decoration-on-surface-variant' : 'text-on-surface'}">{item.name}</span>
           {#if item.amount}<span class="text-on-surface-variant {store ? 'text-body-md' : 'text-body-sm'}">{item.amount}</span>{/if}
           {#if item.optional}
             <span class="rounded bg-surface-container-high px-1.5 py-px text-label-caps uppercase text-on-surface-variant">{text.grocery.line.optional}</span>
@@ -368,7 +405,7 @@
       <span class="whitespace-nowrap font-sans text-body-sm text-on-surface-variant">{formatRangeCompact(planner.weekStart)}</span>
     </h1>
     {#if pastWeek}
-      {#if !nothingListed}<p class="whitespace-nowrap text-label-md text-on-surface-variant">{text.grocery.store.boughtOf(bought, toBuy + bought)}</p>{/if}
+      {#if !nothingListed}<p class="whitespace-nowrap text-label-md text-on-surface-variant">{text.grocery.store.boughtOf(bought, toBuy + bought)}{skipped ? ` · ${text.grocery.past.skipped(skipped)}` : ''}</p>{/if}
     {:else if toBuy}
       <p class="whitespace-nowrap text-label-md text-on-surface">{text.grocery.store.left(toBuy)}</p>
     {/if}
@@ -582,7 +619,7 @@
       {:else if allBought}
         <div class="flex flex-col items-center gap-2 rounded-2xl bg-surface-container-low px-6 text-center {store ? 'py-8' : 'py-12'}">
           <Icon name="check_circle" class="text-[36px] text-primary-container" />
-          <h2 class="font-display text-headline-sm text-on-surface">{text.grocery.done.title(bought)}</h2>
+          <h2 class="font-display text-headline-sm text-on-surface">{text.grocery.done.title(bought, skipped)}</h2>
           {#if !pastWeek}<p class="max-w-md text-body-sm text-on-surface-variant">{text.grocery.done.body(weekName)}</p>{/if}
         </div>
       {/if}
@@ -683,6 +720,37 @@
           {/if}
         </section>
       {/if}
+
+      {#if passed.length}
+        <section class="rounded-2xl bg-surface-container-low" aria-labelledby="skipped-heading">
+          <div class="flex items-center justify-between gap-2 px-4 py-3">
+            <h2 id="skipped-heading" class="flex items-center gap-2 font-display text-on-surface {store ? 'text-body-lg font-semibold' : 'text-headline-sm'}">
+              <Icon name="event_busy" class={store ? 'text-[18px]' : 'text-[20px]'} />
+              {text.grocery.skipped.title}
+              <span class="rounded-full bg-surface-container-high px-2 py-0.5 font-sans text-label-caps uppercase text-on-surface-variant">
+                {text.grocery.itemCount(passed.length)}
+              </span>
+            </h2>
+            <button
+              bind:this={skippedToggle}
+              type="button"
+              aria-expanded={showSkipped}
+              onclick={() => (showSkipped = !showSkipped)}
+              class="focus-ring -mr-2 inline-flex min-h-11 items-center gap-0.5 rounded-md px-2 text-label-md md:fine:mr-0 md:fine:min-h-0 md:fine:px-0 text-on-surface-variant hover:text-on-surface"
+            >
+              {showSkipped ? text.grocery.skipped.hide : text.grocery.skipped.show} <Icon name={showSkipped ? 'expand_less' : 'expand_more'} class="text-[18px]" />
+            </button>
+          </div>
+          {#if showSkipped}
+            <ul transition:slide={{ duration: 180 }} class="divide-y divide-surface-container-high border-t border-surface-container-high">
+              {#each passed as item (item.key)}
+                {@render line(item, true)}
+              {/each}
+            </ul>
+            <p class="border-t border-surface-container-high px-4 py-2 text-body-sm text-on-surface-variant">{text.grocery.skipped.note}</p>
+          {/if}
+        </section>
+      {/if}
     </div>
 
     <!-- Right: overview -->
@@ -696,7 +764,7 @@
         <div class="mt-3 flex items-end justify-between">
           <p class="flex items-baseline gap-2 text-body-md text-on-surface">
             {#if pastWeek}
-              <span class="font-display text-[40px] leading-none">{bought}</span> {text.grocery.past.boughtOf(toBuy + bought)}
+              <span class="font-display text-[40px] leading-none">{bought}</span> {text.grocery.past.boughtOf(toBuy + bought)}{#if skipped}<span class="text-body-sm text-on-surface-variant">· {text.grocery.past.skipped(skipped)}</span>{/if}
             {:else}
               <span class="font-display text-[40px] leading-none">{toBuy}</span> {text.grocery.overview.toBuy}
             {/if}
@@ -705,6 +773,8 @@
             <span class="block text-body-lg text-on-surface">{haveHidden.length}</span> {text.grocery.overview.onHand}
           </p>
         </div>
+
+        {#if skipped && !pastWeek}<p class="mt-3 text-body-sm text-on-surface-variant">{text.grocery.overview.skipped(skipped)}</p>{/if}
 
         {#if !pastWeek}
         <div class="mt-5">

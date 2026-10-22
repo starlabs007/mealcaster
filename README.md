@@ -169,6 +169,9 @@ for every recipe and the grocery list.
 - Tap a line when bought: it shows its tick for a moment, then moves to the **Bought** section (a second quick tap
   is ignored), with a **Got X · Undo** toast; the house icon marks the ingredient at home.
   Bought is per week and leaves stock alone.
+- **Skip This Week** (line menu or icon) is for a sold-out item: the line moves to a folded **Skipped** section, counts
+  as handled ("N left", done state, completion), stays off Print and Share, and comes back next week (an every-week
+  item too). Tap a skipped line to put it back. Mark At Home is the lasting version.
 - **Past weeks are frozen**: changing stock never changes a past week's list (each past week keeps a snapshot of what
   it left off; Need it and the house icon are hidden there). Add Item is hidden on past weeks too. A past week reads
   as a record: a note says its list stays as it was, the overview and store bar show "x of y bought" instead of what's
@@ -185,7 +188,7 @@ for every recipe and the grocery list.
   pinned while you scroll, and the app header scrolls away with the page (back in place when you reach the top) instead of staying fixed. Toasts show over the store bar, so they never cover a line. **Full List** switches
   to the full layout for this visit (not saved); **Store Mode** there switches back.
 - Synced to the optional `[Provisions]` tab, one row per ingredient per week (`Line_Key` = `ing:<Ingredient_ID>`,
-  `Status` To buy / Bought / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
+  `Status` To buy / Bought / Skipped / On hand, `Added` = JSON of what was added by hand): this week, the 7 before it and any
   future weeks. Older weeks are no longer synced; their rows stay in the sheet and their lists stay on the device.
   `On hand` rows of this week and later are read-only — stock lives in `[Ingredients]`.
 - Sidebar: items to buy and at home, the week's dates and completion.

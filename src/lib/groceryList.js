@@ -9,7 +9,8 @@ import { formatQty } from './format.js';
 import { formatWeekday, fromISO } from './dates.js';
 
 /**
- * @typedef {'need' | 'bought'} LineStatus
+ * @typedef {'need' | 'bought' | 'skipped'} LineStatus
+ *   `skipped`: not bought this week (sold out), and not asked for again: it counts as handled for this week only
  * @typedef {'produce' | 'meat' | 'dairy' | 'pantry' | 'other'} Dept
  * @typedef {{
  *   pushed: string[],

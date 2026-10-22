@@ -193,6 +193,14 @@ describe('codec', () => {
     assert.deepEqual(read([row('2026-10-10', 'Bought')]), [{ ingredientId: 'salt', note: '1 box', status: 'bought', doneWeek: '2026-10-10' }]);
   });
 
+  it('round-trips a skipped line for its week only, and keeps an every-week item to buy', () => {
+    const row = { Week_Of: '2026-10-10', Item: 'Salt', Status: 'Skipped', Line_Key: 'ing:salt', Added: '{"every":"1 box"}' };
+    assert.equal(codec.provisionToRow('2026-10-10', { key: 'ing:salt', ingredientId: 'salt', name: 'Salt', amount: '', optional: false, dept: 'pantry', status: 'skipped', sources: [], pushed: [], added: undefined, every: undefined }).Status, 'Skipped');
+    const got = codec.groceryFromRows([row], { thisWeek: '2026-10-10', idForName: () => '' });
+    assert.equal(got.weeks['2026-10-10'].status.salt, 'skipped');
+    assert.deepEqual(got.every, [{ ingredientId: 'salt', note: '1 box', status: 'need', doneWeek: '' }]);
+  });
+
   it('writes one row per merged line, with what was added by hand', () => {
     const line = {
       key: 'ing:beef',
