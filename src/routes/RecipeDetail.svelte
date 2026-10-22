@@ -443,7 +443,9 @@
               type="button"
               disabled={!missing.length}
               onclick={() => push(missing, (n) => text.recipe.toasts.addedFromRecipe(n, recipe.shortTitle))}
-              class="btn min-h-11 shrink-0 justify-center border border-outline-variant bg-surface-container-high py-2 text-on-surface hover:bg-surface-dim fine:min-h-0"
+              class="min-h-11 shrink-0 justify-center py-2 fine:min-h-0 {missing.length
+                ? 'btn-primary'
+                : 'btn-outline disabled:opacity-100 disabled:hover:bg-surface-container-lowest disabled:hover:text-on-surface-variant'}"
             >
               <Icon name={missing.length ? 'add_shopping_cart' : 'check_circle'} class="text-[16px]" />
               {missing.length ? text.recipe.ingredients.push(missing.length) : text.recipe.ingredients.pushed}
@@ -501,14 +503,14 @@
       </div>
       <div class="flex flex-wrap gap-2">
         {#if editable}
-          <a href={href('/catalog', { day })} class="btn-outline py-2 text-on-surface">{text.recipe.buttons.swapFromCatalog}</a>
+          <a href={href('/catalog', { day })} class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0">{text.recipe.buttons.swapFromCatalog}</a>
         {/if}
         {#if next}
-          <a href={href(`/recipe/${next.recipe.id}`, { day: next.iso })} class="btn-primary min-h-11 py-2 fine:min-h-0">
+          <a href={href(`/recipe/${next.recipe.id}`, { day: next.iso })} class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0">
             {text.recipe.buttons.next(formatWeekday(next.iso), next.recipe.shortTitle)} <Icon name="arrow_forward" class="text-[16px]" />
           </a>
         {:else}
-          <a href={href('/')} class="btn-primary min-h-11 py-2 fine:min-h-0">
+          <a href={href('/')} class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0">
             {text.recipe.buttons.backToWeekly} <Icon name="arrow_forward" class="text-[16px]" />
           </a>
         {/if}
