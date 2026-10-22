@@ -91,11 +91,20 @@
   const acquired = $derived(lines.filter((l) => l.status === 'bought'));
   const toBuy = $derived(shopping.length);
   const bought = $derived(acquired.length);
+  // Nothing on the list at all, or everything ticked off.
+  const nothingListed = $derived(!toBuy && !bought);
+  const allBought = $derived(!toBuy && bought > 0);
   const completion = $derived(toBuy + bought ? Math.round((bought / (toBuy + bought)) * 100) : 0);
 
   const sections = $derived(
     departments.map((d) => ({ ...d, where: text.grocery.where[d.id], items: shopping.filter((l) => l.dept === d.id) })),
   );
+  // Aisle tabs only for aisles with something left; the chosen one falls back to All when it empties.
+  const aisleTabs = $derived([
+    { id: 'all', short: text.grocery.allAisles, count: shopping.length },
+    ...sections.filter((s) => s.items.length).map((s) => ({ id: s.id, short: s.short, count: s.items.length })),
+  ]);
+  const activeAisle = $derived(aisleTabs.some((t) => t.id === aisle) ? aisle : 'all');
   const spread = $derived(
     sections
       .filter((s) => s.items.length)
@@ -147,6 +156,8 @@
    */
   function toggleLine(item) {
     const wasBought = item.status === 'bought';
+    // Ticking the last line folds the Bought list under the finish message.
+    if (!wasBought && toBuy === 1) showBoughtFull = showBoughtMinimal = false;
     const rows = /** @type {HTMLElement[]} */ ([...document.querySelectorAll(`[data-line-toggle][aria-checked="${wasBought}"]`)]);
     const at = rows.findIndex((el) => el.dataset.lineToggle === item.key);
     const nextKey = (rows[at + 1] ?? rows[at - 1])?.dataset.lineToggle;
@@ -219,13 +230,13 @@
     sheets.spreadsheet && sheets.syncProvisions ? text.grocery.store.synced(sheets.tabs.provisions) : text.grocery.savedOnDevice(!!sheets.spreadsheet),
   );
   const storeMenu = $derived([
-    { id: 'add', icon: 'add', label: text.grocery.addItem, onselect: openForm },
+    ...(pastWeek ? [] : [{ id: 'add', icon: 'add', label: text.grocery.addItem, onselect: openForm }]),
     ...(offset !== 0 ? [{ id: 'this-week', icon: 'today', label: text.grocery.store.thisWeek, onselect: () => goToWeek(0) }] : []),
     ...(offset !== 1 ? [{ id: 'next-week', icon: 'date_range', label: text.grocery.store.nextWeek, onselect: () => goToWeek(1) }] : []),
     { id: 'earlier', icon: 'chevron_left', label: text.grocery.store.earlier, onselect: () => shiftWeek(-1) },
     { id: 'later', icon: 'chevron_right', label: text.grocery.store.later, onselect: () => shiftWeek(1) },
     { id: 'share', icon: 'share', label: text.grocery.share, divider: true, onselect: share },
-    { id: 'print', icon: 'print', label: text.grocery.store.print, onselect: () => window.print() },
+    ...(nothingListed ? [] : [{ id: 'print', icon: 'print', label: text.grocery.store.print, onselect: () => window.print() }]),
     { id: 'full', icon: 'view_list', label: text.grocery.store.fullList, note: text.grocery.store.fullListNote, divider: true, onselect: () => setStore(false) },
     // A rule before the week group, whichever of its items comes first.
   ].map((a, i) => (i === 1 ? { ...a, divider: true } : a)));
@@ -326,7 +337,9 @@
       <span class="truncate">{text.grocery.store.weekTitle(weekName)}</span>
       <span class="whitespace-nowrap font-sans text-body-sm text-on-surface-variant">{formatRangeCompact(planner.weekStart)}</span>
     </h1>
-    <p class="whitespace-nowrap text-label-md text-on-surface">{text.grocery.store.left(toBuy)}</p>
+    {#if toBuy}
+      <p class="whitespace-nowrap text-label-md text-on-surface">{text.grocery.store.left(toBuy)}</p>
+    {/if}
     <ActionMenu items={storeMenu} label={text.grocery.store.menuAria} footnote={syncLine} />
   </div>
   {:else}
@@ -401,15 +414,17 @@
           <Icon name="share" class="text-[16px]" /> {text.grocery.share}
         </button>
       {/if}
-      <button type="button" class="btn-primary min-h-11 md:fine:min-h-0" aria-expanded={adding} onclick={() => (adding = !adding)}>
-        <Icon name={adding ? 'close' : 'add'} class="text-[16px]" /> {adding ? text.grocery.closeForm : text.grocery.addItem}
-      </button>
+      {#if !pastWeek}
+        <button type="button" class="btn-primary min-h-11 md:fine:min-h-0" aria-expanded={adding} onclick={() => (adding = !adding)}>
+          <Icon name={adding ? 'close' : 'add'} class="text-[16px]" /> {adding ? text.grocery.closeForm : text.grocery.addItem}
+        </button>
+      {/if}
     </div>
   </div>
 
   {/if}
 
-  {#if adding}
+  {#if adding && !pastWeek}
     <form
       bind:this={form}
       transition:slide={{ duration: 180 }}
@@ -479,16 +494,16 @@
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
     <!-- Left: the list -->
     <div class="flex flex-col {store ? 'gap-3' : 'gap-6'} {minimal ? 'lg:col-span-12' : 'lg:col-span-8'}">
-      {#if !minimal}
+      {#if !minimal && toBuy}
       <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-card">
         <div class="flex flex-wrap gap-1" role="tablist" aria-label={text.grocery.filterAria}>
-          {#each [{ id: 'all', short: text.grocery.allAisles, count: shopping.length }, ...sections.map((s) => ({ id: s.id, short: s.short, count: s.items.length }))] as tab (tab.id)}
+          {#each aisleTabs as tab (tab.id)}
             <button
               type="button"
               role="tab"
-              aria-selected={aisle === tab.id}
+              aria-selected={activeAisle === tab.id}
               onclick={() => (aisle = tab.id)}
-              class="min-h-11 rounded-lg px-3 py-1.5 text-label-md transition-colors md:fine:min-h-0 {aisle === tab.id
+              class="min-h-11 rounded-lg px-3 py-1.5 text-label-md transition-colors md:fine:min-h-0 {activeAisle === tab.id
                 ? 'bg-surface-container-high text-on-surface'
                 : 'text-on-surface-variant hover:bg-surface-container-low'}"
             >
@@ -502,19 +517,30 @@
       </div>
       {/if}
 
-      {#if !shopping.length && !acquired.length}
+      {#if nothingListed}
         <div class="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-outline-variant bg-surface-container-low/70 px-6 py-14 text-center">
           <Icon name="shopping_basket" class="text-[36px] text-outline" />
-          <h2 class="font-display text-headline-sm text-on-surface">{text.grocery.empty.title(weekName)}</h2>
-          <p class="max-w-md text-body-sm text-on-surface-variant">
-            {text.grocery.empty.body}
-          </p>
-          <a href={href('/')} class="btn-primary mt-2 min-h-11 py-2 md:fine:min-h-0">{text.grocery.empty.openPlan}</a>
+          {#if pastWeek}
+            <h2 class="font-display text-headline-sm text-on-surface">{text.grocery.empty.pastTitle(weekName)}</h2>
+            <p class="max-w-md text-body-sm text-on-surface-variant">{text.grocery.empty.pastBody}</p>
+          {:else}
+            <h2 class="font-display text-headline-sm text-on-surface">{text.grocery.empty.title(weekName)}</h2>
+            <p class="max-w-md text-body-sm text-on-surface-variant">
+              {text.grocery.empty.body}
+            </p>
+            <a href={href('/')} class="btn-primary mt-2 min-h-11 py-2 md:fine:min-h-0">{text.grocery.empty.openPlan}</a>
+          {/if}
+        </div>
+      {:else if allBought}
+        <div class="flex flex-col items-center gap-2 rounded-2xl bg-surface-container-low px-6 text-center {store ? 'py-8' : 'py-12'}">
+          <Icon name="check_circle" class="text-[36px] text-primary-container" />
+          <h2 class="font-display text-headline-sm text-on-surface">{text.grocery.done.title(bought)}</h2>
+          {#if !pastWeek}<p class="max-w-md text-body-sm text-on-surface-variant">{text.grocery.done.body(weekName)}</p>{/if}
         </div>
       {/if}
 
       {#each sections as section (section.id)}
-        {#if section.items.length && (minimal || aisle === 'all' || aisle === section.id)}
+        {#if section.items.length && (minimal || activeAisle === 'all' || activeAisle === section.id)}
           <section aria-labelledby="dept-{section.id}">
             <div
               class="flex items-center justify-between gap-2 px-1 {store ? 'sticky z-10 -mx-1 mb-1 min-h-9 bg-background' : 'mb-2'}"
@@ -659,7 +685,8 @@
         <div class="mt-5 flex flex-col gap-2">
           <button
             type="button"
-            class="btn min-h-11 bg-secondary py-2.5 text-on-secondary md:fine:min-h-0 shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] hover:bg-[#b34728]"
+            class="btn min-h-11 bg-secondary py-2.5 text-on-secondary md:fine:min-h-0 shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] hover:bg-[#b34728] disabled:cursor-not-allowed disabled:opacity-50"
+            disabled={nothingListed}
             onclick={() => window.print()}
           >
             <Icon name="print" class="text-[18px]" /> {text.grocery.overview.print}
