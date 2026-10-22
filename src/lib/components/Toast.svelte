@@ -24,10 +24,11 @@
 <svelte:window onfocusin={track} />
 
 <!-- Above dialogs (z-[70]), so a toast from inside one isn't dimmed by its backdrop. On phones it sits at the bottom,
-     within thumb reach of Undo; from `md` at the top, just below the fixed header (80 px, plus the tab row below `xl`) so it
-     never covers the tabs. -->
+     within thumb reach of Undo; from `md` it is centred just below the planner's toolbar (title, summary pill, Auto-fill,
+     Copy, Clear: bottom ~262 px under the two-row header, ~166 px from `xl`), so the readout it reports on stays visible
+     and the header tabs are never covered. Fixed, so on other screens it sits at the same height. -->
 <div
-  class="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[80] flex justify-center px-4 print:hidden md:bottom-auto md:top-36 xl:top-24"
+  class="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[80] flex justify-center px-4 print:hidden md:bottom-auto md:top-[17rem] xl:top-44"
   aria-live="polite"
 >
   {#key toast.id}
