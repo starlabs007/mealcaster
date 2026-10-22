@@ -24,12 +24,15 @@
   /** @param {'first' | 'last'} [focus] */
   function show(focus = 'first') {
     const rect = /** @type {HTMLButtonElement} */ (toggle).getBoundingClientRect();
-    position = { top: rect.bottom + 6, right: Math.max(8, window.innerWidth - rect.right) };
+    // Opens below the button, or below the card's whole header row when it has one (`data-menu-clear`), so the menu
+    // doesn't sit over the date under the button.
+    const clearBottom = toggle?.closest('[data-menu-clear]')?.getBoundingClientRect().bottom ?? rect.bottom;
+    position = { top: Math.max(rect.bottom, clearBottom) + 6, right: Math.max(8, window.innerWidth - rect.right) };
     open = true;
     tick().then(() => {
       // Opens upwards when there's no room below (a card near the bottom of a phone screen).
       const height = menu?.offsetHeight ?? 0;
-      if (rect.bottom + 6 + height > window.innerHeight - 8 && rect.top - 6 - height >= 8) position.top = rect.top - 6 - height;
+      if (position.top + height > window.innerHeight - 8 && rect.top - 6 - height >= 8) position.top = rect.top - 6 - height;
       const list = entries();
       (focus === 'last' ? list.at(-1) : list[0])?.focus();
     });

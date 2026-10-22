@@ -38,14 +38,15 @@
   }
 
   let closed = false;
-  /** @param {string} [to] the evening the meal went to */
-  async function close(to) {
+  /** @param {string} [to] the evening the meal went to @param {boolean} [followMeal] it went to an open evening */
+  async function close(to, followMeal = false) {
     if (closed) return;
     closed = true;
     onclose();
     await tick();
-    // A meal moved to an open evening takes its controls along: focus follows the meal.
-    const card = to && !opener?.isConnected ? document.getElementById(`day-${to}`) : null;
+    // A meal moved to an open evening takes its controls along: focus follows the meal (even when the old evening's
+    // ⋯ button survives, because an open evening has its own menu).
+    const card = to && (followMeal || !opener?.isConnected) ? document.getElementById(`day-${to}`) : null;
     const back = card
       ? (card.querySelector(`[data-switch-opener="${opener?.dataset.switchOpener}"]`) ?? card.querySelector('[data-switch-opener]'))
       : opener;
@@ -62,8 +63,9 @@
 
   /** @param {string} d */
   function pick(d) {
+    const intoOpen = statusOf(d) === 'open';
     switchDays(iso, d);
-    close(d);
+    close(d, intoOpen);
   }
 </script>
 

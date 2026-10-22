@@ -109,11 +109,11 @@
 
     <!-- Day label, with the ⋯ menu and the drag handle on the right (Minimal view: they end the meal row instead, and
          tonight's row adds Mark Done and a Tonight marker here; from `sm` the label is a column on the left). -->
-    <div class="flex items-center gap-1 {day.isToday ? 'pl-1' : ''} {minimal ? 'sm:w-36 sm:flex-shrink-0' : ''}">
+    <div data-menu-clear class="flex items-center gap-1 {day.isToday ? 'pl-1' : ''} {minimal ? 'sm:w-36 sm:flex-shrink-0' : ''}">
       <div class="min-w-0 flex-1">
-        <div class="text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}">
+        <h2 class="text-sm uppercase tracking-wide {day.isToday ? 'font-bold text-secondary' : 'font-semibold text-on-surface-variant'}">
           {weekdayName}
-        </div>
+        </h2>
         {#if minimal && day.isToday}
           <span class="mt-0.5 inline-flex items-center gap-1.5 text-label-sm uppercase text-primary">
             <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.tonight}
@@ -122,7 +122,7 @@
         {#if !minimal}
           <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span class="font-display text-on-surface {day.isToday ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
-            {#if day.status === 'completed'}
+            {#if day.status === 'completed' && !day.isPast}
               <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
                 <Icon name="check_circle" class="text-[13px]" /> {text.planner.card.completed}
               </span>
@@ -131,7 +131,7 @@
                 <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.tonight}
               </span>
             {:else if day.status === 'diningOut'}
-              <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
+              <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
             {/if}
           </div>
         {/if}
@@ -221,16 +221,17 @@
             {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
           </a>
           {#if day.isToday}
-            <!-- A fixed label with aria-pressed, so it's announced as "Mark Done, pressed" (not "Done, pressed"). -->
+            <!-- Shows "Done" once pressed; the name stays "Mark Done" (it contains the visible word) with aria-pressed. -->
             <button
               type="button"
               aria-pressed={day.status === 'completed'}
+              aria-label={text.planner.card.markDone}
               class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {tall} {day.status === 'completed'
                 ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
                 : 'border border-outline-variant text-on-surface hover:bg-surface-container-high'}"
               onclick={() => setDone(day.iso, day.status !== 'completed')}
             >
-              <Icon name="check_circle" class="text-[14px]" /> {text.planner.card.markDone}
+              <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.planner.card.done : text.planner.card.markDone}
             </button>
           {/if}
         </div>
@@ -281,14 +282,14 @@
 
 {#snippet pastWeekday()}
   <!-- Minimal view from `sm`: the same 9 rem label column as the upcoming rows, so the thumbnails line up. -->
-  <span class="w-10 flex-shrink-0 {minimal ? 'sm:w-36' : ''} text-xs font-semibold uppercase tracking-wide text-on-surface-variant">{formatWeekdayShort(day.iso)}</span>
+  <h2 class="w-10 flex-shrink-0 {minimal ? 'sm:w-36' : ''} text-xs font-semibold uppercase tracking-wide text-on-surface-variant" aria-label={weekdayName}>{formatWeekdayShort(day.iso)}</h2>
 {/snippet}
 
 {#snippet tagList(/** @type {string[]} */ tags, /** @type {string} */ extra)}
   {#if tags.length}
     <div class="flex flex-wrap gap-1.5 {extra}">
       {#each tags as tag (tag)}
-        <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-caps {tagClass(tag)}" title={tag}>{tag}</span>
+        <span class="max-w-full truncate rounded-full px-2 py-0.5 text-label-sm {tagClass(tag)}" title={tag}>{tag}</span>
       {/each}
     </div>
   {/if}

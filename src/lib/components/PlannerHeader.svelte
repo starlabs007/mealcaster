@@ -44,7 +44,8 @@
 </script>
 
 <div class="flex flex-col justify-between gap-3 border-b border-surface-container-highest pb-4 md:flex-row md:items-end md:gap-4">
-  <div>
+  <!-- Phones have 8 px page gutters: bare text gets 8 px more so it isn't set against the screen edge (cards have their own padding). -->
+  <div class="px-2 md:px-0">
     <!-- The fixed header's week stepper shows the dates on phones. -->
     <p class="mb-1.5 hidden text-xs font-semibold text-on-surface-variant md:block">
       {formatLong(planner.weekStart)} – {formatLong(addDays(planner.weekStart, 6))}
@@ -55,11 +56,13 @@
   <div class="flex flex-col gap-1.5 md:items-end">
     <div class="flex flex-nowrap items-center gap-2 md:max-w-[420px] md:flex-wrap md:justify-end lg:max-w-none">
       <div class="inline-flex min-w-0 items-center gap-2 rounded-full bg-surface-container-high px-3 py-1.5 text-xs">
-        <span class="h-2 w-2 rounded-full bg-primary {summary.open ? 'motion-safe:animate-pulse' : ''}"></span>
-        <span class="font-semibold text-on-surface">{text.planner.header.counts(summary.planned, summary.off)}</span>
+        <span class="h-2 w-2 rounded-full bg-primary"></span>
+        <span class="whitespace-nowrap font-semibold text-on-surface">
+          <span class="sm:hidden">{text.planner.header.countsShort(summary.planned, summary.off)}</span><span class="hidden sm:inline">{text.planner.header.counts(summary.planned, summary.off)}</span>
+        </span>
         {#if editable}
-          <span class="hidden text-[11px] text-on-surface-variant sm:inline">
-            ({summary.open ? text.planner.header.toPlan(summary.open) : text.planner.header.allSet})
+          <span class="whitespace-nowrap text-[11px] text-on-surface-variant">
+            (<span class="sm:hidden">{summary.open ? text.planner.header.toPlanShort(summary.open) : text.planner.header.allSet}</span><span class="hidden sm:inline">{summary.open ? text.planner.header.toPlan(summary.open) : text.planner.header.allSet}</span>)
           </span>
         {/if}
       </div>
@@ -68,7 +71,9 @@
         <button
           bind:this={autoFillButton}
           type="button"
-          class="btn-primary ml-auto min-h-11 flex-shrink-0 md:ml-0 md:min-h-0 {summary.open ? '' : 'cursor-not-allowed opacity-50 hover:bg-primary'}"
+          class="ml-auto min-h-11 flex-shrink-0 md:ml-0 md:min-h-0 {summary.open
+            ? 'btn-primary'
+            : 'btn-outline cursor-not-allowed border-outline-variant text-on-surface-variant hover:bg-transparent'}"
           aria-disabled={!summary.open}
           onclick={autoFillRemaining}
         >
@@ -91,7 +96,7 @@
       {/if}
     </div>
     {#if editable && summary.open}
-      <p class="text-xs text-on-surface-variant">{text.planner.header.autoFillNote(RECENT_DAYS)}</p>
+      <p class="px-2 text-xs text-on-surface-variant md:px-0">{text.planner.header.autoFillNote(RECENT_DAYS)}</p>
     {/if}
   </div>
 </div>
