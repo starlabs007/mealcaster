@@ -2,7 +2,7 @@
   import { slide } from 'svelte/transition';
   import { tick } from 'svelte';
   import { text } from '../lib/text.js';
-  import { SvelteSet } from 'svelte/reactivity';
+  import { MediaQuery, SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
   import Combobox from '../lib/components/Combobox.svelte';
   import ActionMenu from '../lib/components/ActionMenu.svelte';
@@ -21,8 +21,9 @@
   import { shoppingName } from '../lib/ingredients.js';
   import { planner, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
-  import { formatRange, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
+  import { formatRange, formatRangeCompact, formatShort, formatWeekday, isoWeek, mondayInWeek } from '../lib/dates.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
+  import { headerChrome } from '../lib/headerChrome.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { sheets } from '../lib/sheets.svelte.js';
   import SyncStatus from '../lib/components/SyncStatus.svelte';
@@ -35,11 +36,24 @@
     neutral: 'bg-surface-container-high text-on-surface-variant',
   };
 
+  // Touch screens open in store mode (the list first, for the shop); "Full List" switches for this visit. With a mouse
+  // the Minimal view checkbox keeps today's lighter list instead.
+  const coarse = new MediaQuery('pointer: coarse');
+  const store = $derived(coarse.current && !devicePrefs.groceryFull);
+  const minimal = $derived(coarse.current ? store : devicePrefs.groceryMinimal);
+
+  // In store mode the app header scrolls away with the page; the store bar pins at the top, aisle headings under it.
+  $effect(() => {
+    headerChrome.scrollsAway = store;
+    return () => (headerChrome.scrollsAway = false);
+  });
+  let barHeight = $state(0);
+
   let aisle = $state('all');
   // Bought starts open in the full view and folded to one row in minimal view.
   let showBoughtFull = $state(true);
   let showBoughtMinimal = $state(false);
-  const showBought = $derived(devicePrefs.groceryMinimal ? showBoughtMinimal : showBoughtFull);
+  const showBought = $derived(minimal ? showBoughtMinimal : showBoughtFull);
   /** @type {HTMLButtonElement | undefined} */
   let boughtToggle = $state();
   let adding = $state(false);
@@ -185,6 +199,39 @@
       if (err?.name !== 'AbortError') showToast(text.grocery.toasts.shareFailed);
     }
   }
+
+  /** @param {boolean} on */
+  function setStore(on) {
+    devicePrefs.groceryFull = !on;
+    window.scrollTo({ top: 0 });
+  }
+
+  // The Add Item form opens at the top of the list with its Ingredient field ready.
+  /** @type {HTMLFormElement | undefined} */
+  let form = $state();
+  async function openForm() {
+    adding = true;
+    await tick();
+    form?.querySelector('input')?.focus();
+  }
+
+  const syncLine = $derived(
+    sheets.spreadsheet && sheets.syncProvisions ? text.grocery.store.synced(sheets.tabs.provisions) : text.grocery.savedOnDevice(!!sheets.spreadsheet),
+  );
+  const storeMenu = $derived([
+    { id: 'add', icon: 'add', label: text.grocery.addItem, onselect: openForm },
+    ...(offset !== 0 ? [{ id: 'this-week', icon: 'today', label: text.grocery.store.thisWeek, onselect: () => goToWeek(0) }] : []),
+    ...(offset !== 1 ? [{ id: 'next-week', icon: 'date_range', label: text.grocery.store.nextWeek, onselect: () => goToWeek(1) }] : []),
+    { id: 'earlier', icon: 'chevron_left', label: text.grocery.store.earlier, onselect: () => shiftWeek(-1) },
+    { id: 'later', icon: 'chevron_right', label: text.grocery.store.later, onselect: () => shiftWeek(1) },
+    { id: 'share', icon: 'share', label: text.grocery.share, divider: true, onselect: share },
+    { id: 'print', icon: 'print', label: text.grocery.store.print, onselect: () => window.print() },
+    { id: 'full', icon: 'view_list', label: text.grocery.store.fullList, note: text.grocery.store.fullListNote, divider: true, onselect: () => setStore(false) },
+    // A rule before the week group, whichever of its items comes first.
+  ].map((a, i) => (i === 1 ? { ...a, divider: true } : a)));
+
+  /** Which dinners a line is for, as one line of small print (store mode shows it in the line's ⋯ menu). @param {import('../lib/grocery.svelte.js').GroceryLine} item */
+  const forNote = (item) => text.grocery.line.forNote(item.sources.map((s) => (s.note ? `${s.label} · ${s.note}` : s.label)));
 </script>
 
 {#snippet chips(item, done)}
@@ -213,7 +260,7 @@
 
 {#snippet line(item, done)}
   {@const actions = lineActions(item, done)}
-  <li class="flex gap-1 px-2 transition-colors hover:bg-surface-container-low/60 {devicePrefs.groceryMinimal ? 'items-center py-0.5' : 'items-start py-1'} {done ? 'opacity-70' : ''}">
+  <li class="flex gap-1 px-2 transition-colors hover:bg-surface-container-low/60 {minimal ? 'items-center py-0.5' : 'items-start py-1'} {done ? 'opacity-70' : ''}">
     <div class="min-w-0 flex-1">
       <!-- The whole name / amount area ticks the line; the circle is only its picture. -->
       <button
@@ -240,10 +287,10 @@
           {/if}
         </span>
       </button>
-      {#if !devicePrefs.groceryMinimal}<div class="-mt-1 pb-1.5 pl-11">{@render chips(item, done)}</div>{/if}
+      {#if !minimal}<div class="-mt-1 pb-1.5 pl-11">{@render chips(item, done)}</div>{/if}
     </div>
-    {#if actions.length}
-      <div class="flex shrink-0 items-center {devicePrefs.groceryMinimal ? '' : 'pt-1.5'}">
+    {#if actions.length || (store && item.sources.length)}
+      <div class="flex shrink-0 items-center {minimal ? '' : 'pt-1.5'}">
         <span class="hidden fine:contents">
           {#each actions as action (action.id)}
             <button
@@ -258,7 +305,7 @@
           {/each}
         </span>
         <span class="contents fine:hidden">
-          <ActionMenu items={actions} label={text.grocery.line.menuAria(item.name)} />
+          <ActionMenu items={actions} label={text.grocery.line.menuAria(item.name)} heading={store && item.sources.length ? forNote(item) : undefined} />
         </span>
       </div>
     {/if}
@@ -266,7 +313,23 @@
 {/snippet}
 
 <!-- Screen only; printing uses the plain checklist below. -->
-<div class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-6 md:px-gutter-desktop print:hidden">
+<div class="mx-auto flex w-full flex-col px-gutter md:px-gutter-desktop print:hidden {store ? 'max-w-3xl gap-4 pb-6' : 'max-w-page gap-6 py-6'}">
+  {#if store}
+  <!-- Store mode: one bar with the week, what's left and everything else in ⋯. It pins at the top once the header
+       has scrolled away. -->
+  <div
+    bind:offsetHeight={barHeight}
+    class="sticky top-0 z-20 -mx-gutter flex min-h-14 items-center gap-2 border-b border-surface-container-high bg-background py-1 pl-gutter pr-2 md:-mx-gutter-desktop md:pl-gutter-desktop"
+  >
+    <h1 class="flex min-w-0 flex-1 items-baseline gap-2 font-display text-headline-sm text-on-surface">
+      <span class="sr-only">{text.grocery.title}:</span>
+      <span class="truncate">{text.grocery.store.weekTitle(weekName)}</span>
+      <span class="whitespace-nowrap font-sans text-body-sm text-on-surface-variant">{formatRangeCompact(planner.weekStart)}</span>
+    </h1>
+    <p class="whitespace-nowrap text-label-md text-on-surface">{text.grocery.store.left(toBuy)}</p>
+    <ActionMenu items={storeMenu} label={text.grocery.store.menuAria} footnote={syncLine} />
+  </div>
+  {:else}
   <!-- Breadcrumb & sync status -->
   <div class="flex flex-wrap items-center justify-between gap-3">
     <nav aria-label={text.grocery.breadcrumbAria} class="flex items-center gap-1.5 text-label-md text-on-surface-variant">
@@ -285,7 +348,7 @@
       <h1 class="font-display text-headline-lg-mobile tracking-tight text-on-surface md:text-headline-lg">
         {text.grocery.title}
       </h1>
-      {#if !devicePrefs.groceryMinimal}
+      {#if !minimal}
       <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">
         {text.grocery.introBefore(weekName)} <strong class="text-on-surface">({formatRange(planner.weekStart)})</strong>.
         {#if sheets.spreadsheet && sheets.syncProvisions}
@@ -319,14 +382,21 @@
             <Icon name="chevron_right" class="text-[18px]" />
           </button>
         </div>
+        {#if !coarse.current}
         <label class="flex min-h-11 cursor-pointer items-center gap-2 px-1 text-label-md text-on-surface-variant md:fine:min-h-0">
           <input type="checkbox" bind:checked={devicePrefs.groceryMinimal} class="h-4 w-4 rounded accent-primary" />
           {text.grocery.weekPicker.minimalView}
         </label>
+        {/if}
       </div>
     </div>
     <div class="flex flex-wrap items-center gap-2 md:justify-end">
-      {#if !devicePrefs.groceryMinimal}
+      {#if coarse.current}
+        <button type="button" class="btn-outline min-h-11" onclick={() => setStore(true)}>
+          <Icon name="storefront" class="text-[16px]" /> {text.grocery.store.storeMode}
+        </button>
+      {/if}
+      {#if !minimal}
         <button type="button" class="btn-outline min-h-11 md:fine:min-h-0" onclick={share}>
           <Icon name="share" class="text-[16px]" /> {text.grocery.share}
         </button>
@@ -337,12 +407,23 @@
     </div>
   </div>
 
+  {/if}
+
   {#if adding}
     <form
+      bind:this={form}
       transition:slide={{ duration: 180 }}
       onsubmit={submitItem}
       class="grid grid-cols-1 gap-3 rounded-2xl border border-surface-container-high bg-surface-container-lowest p-4 shadow-card sm:grid-cols-[2fr_2fr_1.3fr_auto] sm:items-end"
     >
+      {#if store}
+        <div class="-my-2 -mr-2 flex items-center justify-between sm:col-span-full">
+          <h2 class="font-display text-headline-sm text-on-surface">{text.grocery.addItem}</h2>
+          <button type="button" class="focus-ring flex h-11 w-11 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high" aria-label={text.grocery.closeForm} onclick={() => (adding = false)}>
+            <Icon name="close" class="text-[20px]" />
+          </button>
+        </div>
+      {/if}
       <div class="flex flex-col gap-1 text-label-sm text-on-surface-variant">
         <span class="flex items-center gap-2">
           {text.grocery.form.ingredient}
@@ -397,8 +478,8 @@
 
   <div class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
     <!-- Left: the list -->
-    <div class="flex flex-col gap-6 {devicePrefs.groceryMinimal ? 'lg:col-span-12' : 'lg:col-span-8'}">
-      {#if !devicePrefs.groceryMinimal}
+    <div class="flex flex-col {store ? 'gap-3' : 'gap-6'} {minimal ? 'lg:col-span-12' : 'lg:col-span-8'}">
+      {#if !minimal}
       <div class="rounded-2xl bg-surface-container-lowest p-3 shadow-card">
         <div class="flex flex-wrap gap-1" role="tablist" aria-label={text.grocery.filterAria}>
           {#each [{ id: 'all', short: text.grocery.allAisles, count: shopping.length }, ...sections.map((s) => ({ id: s.id, short: s.short, count: s.items.length }))] as tab (tab.id)}
@@ -433,11 +514,14 @@
       {/if}
 
       {#each sections as section (section.id)}
-        {#if section.items.length && (devicePrefs.groceryMinimal || aisle === 'all' || aisle === section.id)}
+        {#if section.items.length && (minimal || aisle === 'all' || aisle === section.id)}
           <section aria-labelledby="dept-{section.id}">
-            <div class="mb-2 flex items-center justify-between gap-2 px-1">
-              <h2 id="dept-{section.id}" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-                <Icon name={section.icon} class="text-[20px]" style="color: {section.color}" />
+            <div
+              class="flex items-center justify-between gap-2 px-1 {store ? 'sticky z-10 -mx-1 mb-1 min-h-9 bg-background' : 'mb-2'}"
+              style={store ? `top: ${barHeight}px` : undefined}
+            >
+              <h2 id="dept-{section.id}" class="flex items-center gap-2 font-display text-on-surface {store ? 'text-body-lg font-semibold' : 'text-headline-sm'}">
+                <Icon name={section.icon} class={store ? 'text-[18px]' : 'text-[20px]'} style="color: {section.color}" />
                 {section.label}
                 <span class="rounded-full bg-primary-fixed/50 px-2 py-0.5 font-sans text-label-caps uppercase text-primary">
                   {text.grocery.itemCount(section.items.length)}
@@ -454,7 +538,7 @@
         {/if}
       {/each}
 
-      {#if haveHidden.length && !devicePrefs.groceryMinimal}
+      {#if haveHidden.length && !minimal}
         <details class="group rounded-xl bg-surface-container-low text-body-sm text-on-surface-variant">
           <summary class="flex cursor-pointer list-none items-center gap-2 px-3 py-2 [&::-webkit-details-marker]:hidden">
             <Icon name="visibility_off" class="text-[16px] text-outline" />
@@ -511,7 +595,7 @@
               bind:this={boughtToggle}
               type="button"
               aria-expanded={showBought}
-              onclick={() => (devicePrefs.groceryMinimal ? (showBoughtMinimal = !showBoughtMinimal) : (showBoughtFull = !showBoughtFull))}
+              onclick={() => (minimal ? (showBoughtMinimal = !showBoughtMinimal) : (showBoughtFull = !showBoughtFull))}
               class="focus-ring -mr-2 inline-flex min-h-11 items-center gap-0.5 rounded-md px-2 text-label-md md:fine:mr-0 md:fine:min-h-0 md:fine:px-0 text-on-surface-variant hover:text-on-surface"
             >
               {showBought ? text.grocery.bought.hide : text.grocery.bought.show} <Icon name={showBought ? 'expand_less' : 'expand_more'} class="text-[18px]" />
@@ -529,7 +613,7 @@
     </div>
 
     <!-- Right: overview + print -->
-    {#if !devicePrefs.groceryMinimal}
+    {#if !minimal}
     <aside class="flex flex-col gap-6 lg:sticky lg:top-28 lg:col-span-4">
       <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card">
         <div class="flex items-center justify-between text-label-caps uppercase text-on-surface-variant">
