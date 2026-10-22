@@ -373,6 +373,7 @@ export const text = {
       total: 'Total Time',
       servings: 'Servings',
       servingsValue: (/** @type {number} */ n) => `${n} Servings`,
+      scaled: (/** @type {number} */ n) => `${n} ${plural(n, 'serving')}, amounts updated`,
       fewer: 'Fewer servings',
       more: 'More servings',
     },
