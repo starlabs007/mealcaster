@@ -678,6 +678,8 @@ export const text = {
       /** "This week", "Next week", "Last week", "Week of Oct 10" */
       weekTitle: (/** @type {string} */ weekName) => weekName.replace(/^the /, '').replace(/^./, (c) => c.toUpperCase()),
       left: (/** @type {number} */ n) => `${n} left`,
+      /** A past week's bar: what was bought, not what's left. */
+      boughtOf: (/** @type {number} */ bought, /** @type {number} */ total) => `${bought} of ${total} bought`,
       menuAria: 'Grocery list options',
       thisWeek: 'This Week',
       nextWeek: 'Next Week',
@@ -725,6 +727,11 @@ export const text = {
       pastBody: 'Past weeks stay as they were.',
     },
     /** Everything is bought: a quiet finish. */
+    /** A past week is a record: shown as it was, still tickable to note what you bought. */
+    past: {
+      note: 'A past week: its list stays as it was. You can still tick what you bought.',
+      boughtOf: (/** @type {number} */ total) => `of ${total} bought`,
+    },
     done: {
       title: (/** @type {number} */ n) => `All ${n} bought`,
       body: (/** @type {string} */ week) => `Nothing left to buy for ${week}.`,
