@@ -68,5 +68,9 @@ export default {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // `fine:` = a mouse or trackpad. Compact controls key off it (`md:fine:min-h-0`), so touch screens of any width
+    // (an iPad held upright is 768 px) keep 44 px targets.
+    ({ addVariant }) => addVariant('fine', '@media (pointer: fine)'),
+  ],
 };

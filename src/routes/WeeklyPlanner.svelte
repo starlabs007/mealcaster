@@ -117,7 +117,7 @@
   <PlannerHeader />
 
   <section aria-labelledby="planner-title" class="flex flex-col {devicePrefs.plannerMinimal ? 'gap-2.5' : 'gap-4'}">
-    <label class="flex min-h-11 cursor-pointer items-center gap-2 self-end md:min-h-0 text-label-md text-on-surface-variant">
+    <label class="flex min-h-11 cursor-pointer items-center gap-2 self-end md:fine:min-h-0 text-label-md text-on-surface-variant">
       <input type="checkbox" bind:checked={devicePrefs.plannerMinimal} class="h-4 w-4 rounded accent-primary" />
       {text.planner.minimalView}
     </label>

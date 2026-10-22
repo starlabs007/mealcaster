@@ -103,7 +103,7 @@
   }
 
   const itemClass =
-    'flex w-full items-center gap-2.5 px-3 py-3 text-left md:py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container focus:bg-surface-container-high';
+    'flex w-full items-center gap-2.5 px-3 py-3 text-left md:fine:py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container focus:bg-surface-container-high';
 </script>
 
 <button
@@ -115,7 +115,7 @@
   aria-label={label}
   title={title ?? label}
   data-switch-opener={opener}
-  class="focus-ring flex h-11 w-11 flex-shrink-0 md:h-8 md:w-8 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface {open
+  class="focus-ring flex h-11 w-11 flex-shrink-0 md:fine:h-8 md:fine:w-8 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface {open
     ? 'bg-surface-container-high text-on-surface'
     : ''} {className}"
   onclick={() => (open ? close() : show())}

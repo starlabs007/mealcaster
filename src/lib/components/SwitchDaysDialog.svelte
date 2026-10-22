@@ -95,7 +95,7 @@
           </p>
         </div>
       </div>
-      <button type="button" aria-label={text.common.close} class="focus-ring rounded-md p-1 text-on-surface-variant hover:bg-surface-container-high" onclick={() => close()}>
+      <button type="button" aria-label={text.common.close} class="focus-ring -m-2.5 flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high fine:m-0 fine:h-auto fine:w-auto fine:p-1" onclick={() => close()}>
         <Icon name="close" class="text-[20px]" />
       </button>
     </div>
