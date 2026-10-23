@@ -114,6 +114,11 @@ export default defineConfig(({ command, mode }) => {
     define: {
       __GOOGLE_CONFIG__: JSON.stringify(google),
     },
+    build: {
+      // One chunk for the whole app is fine at this size. 800 kB minified is about 250 kB gzipped: the point where
+      // splitting routes with import() is worth doing (#210).
+      chunkSizeWarningLimit: 800,
+    },
     css: {
       postcss: {
         plugins: [tailwindcss({ config: `${root}tailwind.config.js` }), autoprefixer()],
