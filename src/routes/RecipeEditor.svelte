@@ -722,12 +722,26 @@
   let showMapping = $state(false);
   const columnLetter = (i) => String.fromCharCode(65 + i);
 
+  // On touch every field is 44 px tall with 16 px text (iOS Safari zooms into anything smaller); `fine:` keeps the
+  // compact desktop sizes.
   const field =
-    'w-full rounded-lg border bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface placeholder:text-on-surface-variant/80 focus:outline-none focus:ring-2 focus:ring-primary-container';
+    'min-h-11 w-full rounded-lg border bg-surface-container-lowest px-3 py-2 text-body-lg text-on-surface placeholder:text-on-surface-variant/80 focus:outline-none focus:ring-2 focus:ring-primary-container fine:min-h-0 fine:text-body-md';
   const border = (bad) => (bad ? 'border-error' : 'border-outline-variant');
   // Placeholders, here and in `field`: lighter than typed text but readable (5.3:1 on white).
   const cellField =
-    'min-h-11 min-w-0 rounded-md border bg-surface-container-lowest px-2 py-1.5 text-body-md text-on-surface placeholder:text-on-surface-variant/80 focus:outline-none focus:ring-2 focus:ring-primary-container fine:min-h-0 fine:text-body-sm';
+    'min-h-11 min-w-0 rounded-md border bg-surface-container-lowest px-2 py-1.5 text-body-lg text-on-surface placeholder:text-on-surface-variant/80 focus:outline-none focus:ring-2 focus:ring-primary-container fine:min-h-0 fine:text-body-sm';
+  // Save Draft, Discard and Revert sit behind ⋯ in the phone save bar.
+  const saveMenu = $derived([
+    ...(editing ? [] : [{ id: 'draft', label: text.editor.actions.saveDraft, icon: 'save_as', onselect: saveDraft }]),
+    ...(editing?.edited ? [{ id: 'revert', label: text.editor.actions.revert, icon: 'restore', onselect: revert }] : []),
+    {
+      id: 'discard',
+      label: editing ? text.editor.actions.discardChanges : text.editor.actions.discardDraft,
+      icon: 'delete_sweep',
+      divider: !editing || Boolean(editing.edited),
+      onselect: discard,
+    },
+  ]);
   // Ingredient rows and the labels over them: qty · unit · name · aisle (from md) · ⋯.
   const rowGrid = 'grid grid-cols-[3rem_4.5rem_minmax(0,1fr)_auto] items-center gap-1.5 md:grid-cols-[3.5rem_5rem_minmax(0,1fr)_8rem_auto] md:gap-2';
   // What sits under a row lines up with its name from md (3.5rem + 5rem + two gaps).
@@ -853,37 +867,40 @@
           <div>
             {@render fieldLabel(text.editor.photo.label)}
             <!-- svelte-ignore a11y_no_static_element_interactions (drop target; the button inside is the keyboard path) -->
+            <!-- Below sm: one row (camera + Add photo, or a thumbnail + Replace / Remove) instead of the 192 px drop zone. -->
             <div
-              class="relative h-48 overflow-hidden rounded-xl border-2 border-dashed transition-colors {dragging
+              class="relative overflow-hidden rounded-xl border-2 border-dashed transition-colors sm:h-48 {dragging
                 ? 'border-primary bg-primary-fixed/30'
-                : 'border-outline-variant bg-surface-container-low'}"
+                : 'border-outline-variant bg-surface-container-low'} {form.image ? 'max-sm:flex max-sm:items-center max-sm:gap-3 max-sm:p-1.5' : ''}"
               ondragover={(e) => { e.preventDefault(); dragging = true; }}
               ondragleave={() => (dragging = false)}
               ondrop={onDrop}
             >
               {#if form.image}
                 {#key form.image}
-                  <RecipeImage src={form.image} alt={text.editor.photo.previewAlt} class="h-full w-full" />
+                  <RecipeImage src={form.image} alt={text.editor.photo.previewAlt} class="h-full w-full max-sm:h-16 max-sm:w-20 max-sm:shrink-0 max-sm:rounded-lg" />
                 {/key}
-                <div class="absolute bottom-2 right-2 flex gap-1.5">
-                  <button type="button" class="btn bg-surface-container-lowest/90 text-on-surface shadow-sm backdrop-blur hover:bg-surface-container-lowest" onclick={() => fileInput.click()}>
+                <div class="flex gap-1.5 max-sm:ml-auto sm:absolute sm:bottom-2 sm:right-2">
+                  <button type="button" class="btn min-h-11 bg-surface-container-lowest/90 text-on-surface shadow-sm backdrop-blur hover:bg-surface-container-lowest fine:min-h-0" onclick={() => fileInput.click()}>
                     <Icon name="photo_camera" class="text-[15px]" /> {text.editor.photo.replace}
                   </button>
-                  <button type="button" class="btn bg-surface-container-lowest/90 text-secondary shadow-sm backdrop-blur hover:bg-surface-container-lowest" onclick={() => (form.image = '')}>
+                  <button type="button" class="btn min-h-11 bg-surface-container-lowest/90 text-secondary shadow-sm backdrop-blur hover:bg-surface-container-lowest fine:min-h-0" onclick={() => (form.image = '')}>
                     <Icon name="delete" class="text-[15px]" /> {text.editor.photo.remove}
                   </button>
                 </div>
               {:else}
                 <button
                   type="button"
-                  class="flex h-full w-full flex-col items-center justify-center gap-1.5 text-on-surface-variant hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container"
+                  class="flex h-full w-full items-center gap-3 px-3 py-2 text-left text-on-surface-variant hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container sm:flex-col sm:justify-center sm:gap-1.5 sm:p-0 sm:text-center"
                   onclick={() => fileInput.click()}
                 >
-                  <span class="flex h-11 w-11 items-center justify-center rounded-full bg-surface-container-lowest shadow-card">
+                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface-container-lowest shadow-card">
                     <Icon name="photo_camera" class="text-[22px]" />
                   </span>
-                  <span class="text-label-md">{text.editor.photo.drop}</span>
-                  <span class="text-body-sm text-outline">{text.editor.photo.limits}</span>
+                  <span class="flex flex-col gap-0.5 sm:items-center sm:gap-1.5">
+                    <span class="text-label-md"><span class="sm:hidden">{text.editor.photo.add}</span><span class="max-sm:hidden">{text.editor.photo.drop}</span></span>
+                    <span class="text-body-sm text-outline">{text.editor.photo.limits}</span>
+                  </span>
                 </button>
               {/if}
             </div>
@@ -957,7 +974,7 @@
                       data-tag
                       type="button"
                       aria-label={text.editor.tags.removeAria(tag)}
-                      class="focus-ring flex h-11 w-10 shrink-0 items-center justify-center rounded-full hover:bg-on-surface/10 fine:h-7 fine:w-7"
+                      class="focus-ring relative flex h-7 w-8 shrink-0 items-center justify-center rounded-full before:absolute before:-inset-x-1.5 before:-inset-y-2 before:content-[''] hover:bg-on-surface/10 fine:w-7 fine:before:hidden"
                       onclick={() => removeTag(tag)}
                     >
                       <Icon name="close" class="text-[14px]" />
@@ -1058,7 +1075,7 @@
                 rows="6"
                 bind:value={bulkText}
                 placeholder={text.editor.paste.placeholder}
-                class="{field} {border(false)} font-mono text-body-sm"
+                class="{field} {border(false)} font-mono fine:text-body-sm"
               ></textarea>
               <div class="flex flex-wrap items-center justify-between gap-2">
                 <button
@@ -1250,7 +1267,7 @@
                     aria-label={text.editor.method.titleAria(i + 1)}
                     placeholder={text.editor.method.titlePlaceholder}
                     bind:value={step.title}
-                    class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 font-display text-headline-sm text-on-surface placeholder:font-sans placeholder:text-body-md placeholder:text-on-surface-variant/80 hover:border-outline-variant focus:border-outline-variant focus:bg-surface-container-lowest focus:outline-none"
+                    class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 font-display text-headline-sm text-on-surface placeholder:font-sans placeholder:text-body-md placeholder:text-on-surface-variant/80 hover:border-outline-variant focus:border-outline-variant focus:bg-surface-container-lowest focus:outline-none min-h-11 fine:min-h-0"
                   />
                   <div class="flex shrink-0 items-center">
                     <button type="button" aria-label={text.editor.method.moveUp(i + 1)} disabled={i === 0} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30" onclick={() => moveStep(i, -1)}>
@@ -1341,31 +1358,32 @@
       </div>
 
       <!-- Action bar -->
-      <div class="z-10 grid grid-cols-2 gap-3 sm:sticky sm:bottom-4 sm:flex sm:flex-row sm:flex-wrap sm:items-center sm:justify-between rounded-2xl bg-surface-container-lowest/95 px-4 py-3 shadow-lift backdrop-blur lg:col-span-12 sm:px-6">
+      <!-- Sticky on every width; below sm one compact row: status · ⋯ (Save Draft, Revert, Discard) · Save. -->
+      <div class="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-surface-container-lowest/95 px-3 py-2 shadow-lift backdrop-blur sm:bottom-4 sm:justify-between sm:gap-3 sm:px-6 sm:py-3 lg:col-span-12">
         {#if submitted && problems.length}
-          <div role="group" aria-labelledby="problems-title" class="order-first col-span-2 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-outline-variant pb-3 sm:basis-full">
-            <p id="problems-title" role="status" class="flex items-center gap-1.5 text-body-sm font-semibold text-error">
+          <div role="group" aria-labelledby="problems-title" class="order-first flex basis-full items-center gap-x-3 gap-y-2 border-b border-outline-variant pb-2 max-sm:overflow-x-auto sm:flex-wrap sm:pb-3">
+            <p id="problems-title" role="status" class="flex shrink-0 items-center gap-1.5 text-body-sm font-semibold text-error">
               <Icon name="error" class="text-[18px]" /> {text.editor.problems.count(problems.length)}
             </p>
             {#each problems as problem (problem.id)}
-              <button type="button" class="focus-ring min-h-11 rounded-full border border-error/40 px-3 py-1 text-label-sm text-error hover:bg-error/10 fine:min-h-0" onclick={() => goTo(problem)}>{problem.label}</button>
+              <button type="button" class="focus-ring min-h-11 shrink-0 whitespace-nowrap rounded-full border border-error/40 px-3 py-1 text-label-sm text-error hover:bg-error/10 fine:min-h-0" onclick={() => goTo(problem)}>{problem.label}</button>
             {/each}
           </div>
         {/if}
         <div class="flex flex-wrap items-center gap-x-4 gap-y-1 max-sm:contents">
-          <button type="button" class="btn justify-center whitespace-nowrap max-sm:order-2 {editing?.edited ? '' : 'max-sm:col-span-2'} border border-secondary/50 bg-transparent px-4 py-2 text-body-md text-secondary hover:bg-secondary/10" onclick={discard}>
+          <button type="button" class="btn justify-center whitespace-nowrap border border-secondary/50 bg-transparent px-4 py-2 text-body-md text-secondary hover:bg-secondary/10 max-sm:hidden" onclick={discard}>
             <Icon name="delete_sweep" class="text-[18px]" />
             {editing ? text.editor.actions.discardChanges : text.editor.actions.discardDraft}
           </button>
           {#if editing?.edited}
-            <button type="button" class="inline-flex items-center justify-center gap-1 text-body-md text-on-surface-variant hover:text-secondary max-sm:order-2 max-sm:rounded-full max-sm:border max-sm:border-outline-variant max-sm:px-4 max-sm:py-2" onclick={revert}>
+            <button type="button" class="inline-flex items-center justify-center gap-1 text-body-md text-on-surface-variant hover:text-secondary max-sm:hidden" onclick={revert}>
               <Icon name="restore" class="text-[18px]" /> {text.editor.actions.revert}
             </button>
           {/if}
-          <span class="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:order-3 max-sm:col-span-2 max-sm:justify-center">
-            <SyncStatus />
-            <span class="flex items-center gap-1.5 text-body-sm text-on-surface-variant">
-              <Icon name="cloud_off" class="text-[16px]" />
+          <span class="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:min-w-0 max-sm:flex-1">
+            <span class="max-sm:hidden"><SyncStatus /></span>
+            <span class="flex items-center gap-1.5 text-body-sm text-on-surface-variant max-sm:line-clamp-2">
+              <Icon name="cloud_off" class="text-[16px] max-sm:hidden" />
               {#if keeping === 'pending'}
                 {text.editor.actions.unsaved}
               {:else if keeping === 'kept'}
@@ -1380,13 +1398,14 @@
             </span>
           </span>
         </div>
-        <div class="flex items-center justify-end gap-2 max-sm:order-1 max-sm:col-span-2">
+        <div class="flex shrink-0 items-center justify-end gap-2 max-sm:gap-1">
           {#if !editing}
-            <button type="button" class="btn justify-center whitespace-nowrap max-sm:flex-1 bg-surface-container-high px-4 py-2 text-body-md text-on-surface hover:bg-surface-dim" onclick={saveDraft}>
+            <button type="button" class="btn justify-center whitespace-nowrap bg-surface-container-high px-4 py-2 text-body-md text-on-surface hover:bg-surface-dim max-sm:hidden" onclick={saveDraft}>
               {text.editor.actions.saveDraft}
             </button>
           {/if}
-          <button type="submit" class="btn-primary justify-center whitespace-nowrap max-sm:flex-1 px-5 py-2 text-body-md">
+          <ActionMenu label={text.editor.actions.moreAria} items={saveMenu} class="sm:hidden" />
+          <button type="submit" class="btn-primary min-h-11 justify-center whitespace-nowrap px-5 py-2 text-body-md fine:min-h-0">
             <Icon name="save" class="text-[18px]" /> {editing ? text.editor.actions.saveChanges : text.editor.actions.saveRecipe}
           </button>
         </div>
