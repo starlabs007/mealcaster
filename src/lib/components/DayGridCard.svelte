@@ -14,6 +14,7 @@
   import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
   import { href } from '../router.svelte.js';
   import { tagClass } from '../tagColors.svelte.js';
+  import DayHeadsUps from './DayHeadsUps.svelte';
 
   /**
    * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], lead?: boolean,
@@ -154,6 +155,7 @@
           {/each}
         </div>
       {/if}
+      <DayHeadsUps {day} named={lead} />
       <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
         <a
           href={recipeHref}
@@ -186,6 +188,7 @@
   {:else if compact}
     <p class="text-sm text-on-surface-variant">{day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.noPlan}</p>
   {:else}
+    <DayHeadsUps {day} named={lead} />
     <!-- Empty evenings (open, night off, not logged) sit centred in their card, like the photo placeholder. -->
     <div class="flex flex-1 flex-col items-center justify-center gap-3 pb-8 text-center">
       <!-- Stacked: side by side, the text wraps word by word in the narrow seven-column cells. -->

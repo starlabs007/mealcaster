@@ -17,7 +17,7 @@ import { EDGE_CASES } from './edgeCases.js';
 import { DESC_EXTRA, GENERAL_TIPS, NOTE_HEADINGS } from './phrases.js';
 
 /** Bump whenever the output for a given seed and count changes (it is part of the dev data key). */
-export const GENERATOR_VERSION = 1;
+export const GENERATOR_VERSION = 2;
 
 /**
  * The day `addedAt` dates count back from, as a UTC timestamp: `today` ("YYYY-MM-DD"), else the SAMPLE_DATE
@@ -190,6 +190,7 @@ const pickPattern = (rng, patterns, words) => {
  *   groups: { title: string, category: string, lines: ReturnType<typeof parseLine>[] }[],
  *   steps: { title: string, minutes: number, text: string, critical?: boolean }[],
  *   notes: string,
+ *   headsUps: { text: string, daysBefore: number }[],
  *   customTags: string[],
  * }} Draft
  */
@@ -240,6 +241,7 @@ function edgeDraft(edge, rng) {
     groups: adjustLines(groups, { vegetarian: false, prefer: cuisineByName.get(edge.cuisine)?.prefer }).groups,
     steps: edge.steps.map(([title, minutes, text, critical]) => ({ title, minutes, text, ...(critical && { critical: true }) })),
     notes: edge.notes,
+    headsUps: [],
     customTags: edge.tags,
   };
 }
@@ -375,6 +377,7 @@ function templateDraft(rng) {
       ...(s.critical && keepCritical && all.findIndex((x) => x.critical) === i && { critical: true }),
     })),
     notes: makeNotes(rng, t.tips.map(text), cuisine.pairings),
+    headsUps: (t.headsUps ?? []).map(([pattern, daysBefore]) => ({ text: text(pattern), daysBefore })),
     customTags: [
       ...(rng.chance(0.75) ? [cuisine.name] : []),
       ...(t.tags ?? []).filter(() => rng.chance(0.5)),
@@ -553,6 +556,7 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
       notes: draft.notes,
       ingredients: draft.groups.map((g) => ({ title: g.title, category: g.category, items: g.lines.map(toLine) })),
       steps: draft.steps,
+      headsUps: draft.headsUps,
     });
   }
 

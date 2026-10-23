@@ -6,7 +6,8 @@ import './settings.svelte.js'; // sets the week start day before the first week 
 import { recipes, recipeById } from './recipes.svelte.js';
 import { addDays, daysBetween, formatLong, formatWeekday, formatWeekdayShort, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
 import { switchedEntries } from './switchDays.js';
-import { copiedEntries, dayStatus, dinnerPool, resetDays, restoreDays, snapshotDays } from './planDays.js';
+import { byLead, missedHeadsUps, remindersOn } from './headsUps.js';
+import { copiedEntries, dayStatus, dinnerPool, pickTier, resetDays, restoreDays, snapshotDays } from './planDays.js';
 import { dismissToast, showToast, toast } from './toast.svelte.js';
 import { text } from './text.js';
 import { samples } from 'virtual:sample-data';
@@ -127,6 +128,9 @@ export function spotlightDay(days) {
   spotlightTimer = setTimeout(() => (spotlight.days = []), SPOTLIGHT_MS);
 }
 
+/** The recipe planned for an evening, if any (a night off has none). @param {string} iso */
+const dinnerOn = (iso) => recipeById.get(planner.entries[iso]?.recipeId ?? '');
+
 /** Days of the viewed week (or of `weekStart`). */
 export function currentWeek(weekStart = planner.weekStart) {
   return weekDates(weekStart).map((iso, weekday) => {
@@ -138,6 +142,7 @@ export function currentWeek(weekStart = planner.weekStart) {
       isPast: iso < planner.today,
       status: statusOf(iso),
       recipe: recipeId ? recipeById.get(recipeId) : undefined,
+      reminders: remindersOn(iso, planner.today, dinnerOn),
     };
   });
 }
@@ -180,18 +185,13 @@ function snapshotWeek() {
 }
 
 /**
- * Pick a random recipe from `pool`, preferring ones neither on the viewed week's menu nor
- * made in the last RECENT_DAYS days, then ones just not on the menu, then any.
- * @param {import('./data/recipes.js').Recipe[]} pool
+ * Pick a random recipe from `pool` for `iso`, from the best tier pickTier finds (planDays.js: not on the menu, not
+ * made recently, heads-up still in time).
+ * @param {string} iso @param {import('./data/recipes.js').Recipe[]} pool
  */
-function pickRecipe(pool = dinnerPool(recipes)) {
-  const used = new Set(weekDates(planner.weekStart).map((iso) => planner.entries[iso]?.recipeId));
-  const tiers = [
-    pool.filter((r) => !used.has(r.id) && !madeRecently(r.id)),
-    pool.filter((r) => !used.has(r.id)),
-    pool,
-  ];
-  const best = tiers.find((tier) => tier.length) ?? [];
+function pickRecipe(iso, pool = dinnerPool(recipes)) {
+  const used = new Set(weekDates(planner.weekStart).map((d) => planner.entries[d]?.recipeId));
+  const best = pickTier(pool, iso, planner.today, { used, madeRecently });
   return best[Math.floor(Math.random() * best.length)];
 }
 
@@ -267,6 +267,23 @@ export function goToThisWeek() {
   viewWeek(weekStartOf(new Date()));
 }
 
+/**
+ * " Hummus needs a day’s notice: Soak the chickpeas overnight." when the meal now planned on one of `days` leaves no
+ * time for one of its heads-ups (the day to do it has gone), else ''. Goes on the toast of whatever planned it.
+ * @param {...string} days
+ */
+export function tooSoonNote(...days) {
+  for (const iso of days) {
+    const recipe = recipeById.get(planner.entries[iso]?.recipeId ?? '');
+    const [missed] = byLead(missedHeadsUps(recipe, iso, planner.today));
+    if (missed) return text.common.headsUps.tooSoon(recipe.shortTitle || recipe.title, missed.daysBefore, missed.text);
+  }
+  return '';
+}
+
+/** @param {string} message @param {string} note from tooSoonNote */
+const withNote = (message, note) => (note ? `${message} ${note}` : message);
+
 /** @param {string} iso @param {string} recipeId */
 export function assignRecipe(iso, recipeId) {
   rememberDay(text.planner.toasts.assigned(formatWeekday(iso), recipeById.get(recipeId)?.title ?? ''), iso);
@@ -283,14 +300,14 @@ export function surpriseMe(iso, pool) {
   const previous = planner.entries[iso] && { ...planner.entries[iso] };
   // Replacing a meal never "surprises" with the same one, unless it's the only choice.
   const candidates = (pool?.length ? pool : dinnerPool(recipes)).filter((r) => r.id !== previous?.recipeId);
-  const recipe = pickRecipe(candidates.length ? candidates : pool?.length ? pool : dinnerPool(recipes));
+  const recipe = pickRecipe(iso, candidates.length ? candidates : pool?.length ? pool : dinnerPool(recipes));
   if (!recipe) {
     showWeekToast(NO_RECIPES);
     return undefined;
   }
   planner.entries[iso] = { recipeId: recipe.id };
   spotlightDay(iso);
-  showWeekToast(text.planner.toasts.surpriseOn(formatWeekday(iso), recipe.title), undoDay(iso, previous));
+  showWeekToast(withNote(text.planner.toasts.surpriseOn(formatWeekday(iso), recipe.title), tooSoonNote(iso)), undoDay(iso, previous));
   return recipe;
 }
 
@@ -344,7 +361,7 @@ export function switchDays(a, b) {
   put(switchedEntries(planner.entries, a, b));
   spotlightDay(b);
   const message = intoEmptyDay ? text.planner.toasts.moved(formatWeekday(b)) : text.planner.toasts.switched(formatWeekday(a), formatWeekday(b));
-  showWeekToast(message, { label: text.common.undo, run: () => put(before) });
+  showWeekToast(withNote(message, tooSoonNote(b, a)), { label: text.common.undo, run: () => put(before) });
 }
 
 /** @param {string} iso */
@@ -368,11 +385,11 @@ export function autoFillRemaining() {
   if (!open.length) return showWeekToast(text.planner.toasts.allPlanned);
   if (!recipes.length) return showWeekToast(NO_RECIPES);
   const undo = snapshotWeek();
-  for (const iso of open) planner.entries[iso] = { recipeId: pickRecipe().id };
+  for (const iso of open) planner.entries[iso] = { recipeId: pickRecipe(iso).id };
   spotlightDay(open);
   const message =
     open.length === 1 ? text.planner.toasts.filledOne(formatWeekday(open[0]), titleOn(open[0])) : text.planner.toasts.filled(open.map(formatWeekdayShort));
-  showWeekToast(message, { label: text.common.undo, run: undo }, BULK_UNDO_MS);
+  showWeekToast(withNote(message, tooSoonNote(...open)), { label: text.common.undo, run: undo }, BULK_UNDO_MS);
 }
 
 /** Fills open upcoming evenings from last week; planned and finished ones stay as they are. */
@@ -386,7 +403,7 @@ export function copyLastWeek() {
   spotlightDay(copied);
   const message =
     copied.length === 1 ? text.planner.toasts.copiedOne(formatWeekday(copied[0]), titleOn(copied[0])) : text.planner.toasts.copied(copied.map(formatWeekdayShort));
-  showWeekToast(message, { label: text.common.undo, run: undo }, BULK_UNDO_MS);
+  showWeekToast(withNote(message, tooSoonNote(...copied)), { label: text.common.undo, run: undo }, BULK_UNDO_MS);
 }
 
 const resetTargets = () => resetDays(planner.entries, weekDates(planner.weekStart), planner.today, statusOf);

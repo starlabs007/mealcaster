@@ -118,6 +118,21 @@ describe('a spreadsheet kept in sync over several passes', () => {
     assert.equal(result.pushed, 0);
   });
 
+  it('reads heads-ups typed in the sheet and leaves a cell that does not parse as it is', async () => {
+    const grid = sheet.find('Recipes').grid;
+    const col = grid[0].indexOf('Heads_Up_JSON');
+    assert.ok(col >= 0);
+    grid[1][col] = 'Take the butter out.'; // Tacos
+    grid[2][col] = '[{"text": "Soak'; // Typed In Sheet
+    await sync();
+    assert.deepEqual(device.recipes[0].headsUps, [{ text: 'Take the butter out.', daysBefore: 0 }]);
+    assert.deepEqual(device.recipes[1].headsUps, []);
+    device.recipes[1] = { ...device.recipes[1], title: 'Typed, Renamed' };
+    await sync();
+    assert.equal(sheet.column('Recipes', 'Title')[1], 'Typed, Renamed');
+    assert.equal(sheet.column('Recipes', 'Heads_Up_JSON')[1], '[{"text": "Soak');
+  });
+
   it('syncs grocery lines by week and line key', async () => {
     const [row, i] = cell('Provisions', 1, 'Status');
     row[i] = 'Bought';

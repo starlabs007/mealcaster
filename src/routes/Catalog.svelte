@@ -17,7 +17,7 @@
   import { favorites } from '../lib/favorites.svelte.js';
   import { ingredientOf } from '../lib/ingredients.svelte.js';
   import { foldKey } from '../lib/ingredients.js';
-  import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
+  import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate, left } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -203,12 +203,16 @@
    * wherever the catalog is scrolled to.
    */
   function announce(iso, recipe, surprised = false) {
+    // Surprise Me's own toast already says when a heads-up is late.
+    const note = surprised ? '' : tooSoonNote(iso);
     if (settings.returnToPlanner) {
       spotlightDay(iso);
       navigate('/');
+      if (note) showToast(note);
       return;
     }
-    showToast(text.catalog.toasts.added(surprised ? text.planner.toasts.surprise(recipe.shortTitle) : recipe.shortTitle, formatLong(iso)), {
+    const added = text.catalog.toasts.added(surprised ? text.planner.toasts.surprise(recipe.shortTitle) : recipe.shortTitle, formatLong(iso));
+    showToast(note ? `${added} ${note}` : added, {
       label: text.catalog.toasts.goToWeekly,
       run: () => navigate('/'),
     });

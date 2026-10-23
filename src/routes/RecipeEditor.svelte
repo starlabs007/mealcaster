@@ -42,6 +42,7 @@
   import { tagClasses } from '../lib/tagColors.svelte.js';
   import Combobox from '../lib/components/Combobox.svelte';
   import ActionMenu from '../lib/components/ActionMenu.svelte';
+  import { HEADS_UP_MAX_LENGTH, MAX_EDITOR_LEAD } from '../lib/headsUps.js';
 
   /** @type {{ id?: string }} */
   let { id } = $props();
@@ -63,8 +64,8 @@
    * @typedef {{
    *   title: string, description: string, image: string, category: string,
    *   serves: number, prepMinutes: number | '', cookMinutes: number | '', tags: string[],
-   *   groups: IngredientGroup[], steps: StepRow[], notes: string,
-   * }} Form
+   *   groups: IngredientGroup[], steps: StepRow[], notes: string, headsUp: string, headsUpDays: number,
+   * }} Form   `headsUp` / `headsUpDays` edit the recipe's first heads-up; others (from the sheet) are kept as they are
    */
 
   let lastKey = 0;
@@ -90,6 +91,8 @@
       groups: [blankGroup(1)],
       steps: [blankStep()],
       notes: '',
+      headsUp: '',
+      headsUpDays: 0,
     };
   }
 
@@ -134,6 +137,8 @@
         critical: s.critical,
       })),
       notes: r.notes ?? '',
+      headsUp: r.headsUps?.[0]?.text ?? '',
+      headsUpDays: r.headsUps?.[0]?.daysBefore ?? 0,
     };
   }
 
@@ -144,8 +149,13 @@
 
   /** The saved draft with fresh row keys, so they can't collide with rows added from here on. @returns {Form | null} */
   function loadDraft() {
-    let draft = drafts.read(editing?.id, baseline) ?? (editing ? drafts.read(editing.id, signature(flatForm(opened))) : null);
+    // Edit drafts kept before heads-ups (#209) were signed without the two heads-up fields (they come last).
+    const { headsUp, headsUpDays, ...beforeHeadsUps } = opened;
+    let draft =
+      drafts.read(editing?.id, baseline) ??
+      (editing ? drafts.read(editing.id, signature(beforeHeadsUps)) ?? drafts.read(editing.id, signature(flatForm(beforeHeadsUps))) : null);
     if (!draft) return null;
+    draft = { headsUp, headsUpDays, ...draft };
     if (!Array.isArray(draft.groups)) {
       const { ingredients: rows = [], steps, notes, ...head } = draft;
       const categoryOf = (title) => editing?.ingredients.find((g) => g.title.toLowerCase() === title.toLowerCase())?.category ?? '';
@@ -255,6 +265,11 @@
     });
   }
   let submitted = $state(false);
+
+  // Lead times offered for the heads-up: up to two days, or further when the sheet already says so.
+  const leadOptions = $derived(Array.from({ length: Math.max(MAX_EDITOR_LEAD, form.headsUpDays) + 1 }, (_, n) => n));
+  /** Heads-ups the form doesn't show (the sheet can hold more than the editor's one). */
+  const moreHeadsUps = Math.max(0, (editing?.headsUps?.length ?? 0) - 1);
   let bulkOpen = $state(false);
   // The paste rules, shown under the paste box on request so they can stay open while typing.
   let pasteHelpOpen = $state(false);
@@ -714,9 +729,19 @@
           text: s.text.trim(),
           ...(s.critical && { critical: true }),
         })),
+      headsUps: savedHeadsUps(base.headsUps),
     };
     if (!recipe.image) delete recipe.image;
+    // A sheet cell that didn't parse is replaced once the recipe has a heads-up of its own.
+    if (recipe.headsUps.length) delete recipe.headsUpsRaw;
     return recipe;
+  }
+
+  /** The form's heads-up as the first one, in place of the one it was opened with; keys it doesn't show are kept. */
+  function savedHeadsUps(previous = []) {
+    const [first, ...others] = previous;
+    const headsUpText = form.headsUp.trim();
+    return headsUpText ? [{ ...first, text: headsUpText, daysBefore: form.headsUpDays }, ...others] : others;
   }
 
   function save() {
@@ -944,6 +969,37 @@
               use:autogrow={form.description}
               class="{field} {border(false)} resize-y"
             ></textarea>
+          </div>
+
+          <div>
+            {@render fieldLabel(text.editor.essentials.headsUp, 'recipe-heads-up')}
+            <!-- Side by side where the card is wide enough for the sentence; stacked in the narrow column. -->
+            <div class="flex flex-wrap gap-2">
+              <input
+                id="recipe-heads-up"
+                type="text"
+                bind:value={form.headsUp}
+                maxlength={HEADS_UP_MAX_LENGTH}
+                placeholder={text.editor.essentials.headsUpPlaceholder}
+                aria-describedby="recipe-heads-up-hint"
+                class="{field} {border(false)} min-w-[min(100%,20rem)] flex-1"
+              />
+              <!-- Disabled until there's a heads-up to time. -->
+              <select
+                aria-label={text.editor.essentials.headsUpWhen}
+                bind:value={form.headsUpDays}
+                disabled={!form.headsUp.trim()}
+                class="{field} {border(false)} disabled:cursor-not-allowed disabled:bg-surface-container-low disabled:text-on-surface-variant !w-auto"
+              >
+                {#each leadOptions as n (n)}
+                  <option value={n}>{text.common.headsUps.lead(n)}</option>
+                {/each}
+              </select>
+            </div>
+            <p id="recipe-heads-up-hint" class="mt-1.5 text-body-sm text-on-surface-variant">
+              {text.editor.essentials.headsUpHint}{#if moreHeadsUps}
+                {' '}{text.editor.essentials.headsUpMore(moreHeadsUps)}{/if}
+            </p>
           </div>
 
           <div>

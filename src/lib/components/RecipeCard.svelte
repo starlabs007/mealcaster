@@ -7,6 +7,7 @@
   import { href } from '../router.svelte.js';
   import { text } from '../text.js';
   import LastMade from './LastMade.svelte';
+  import { leadDays } from '../headsUps.js';
 
   /**
    * @type {{
@@ -20,6 +21,8 @@
   let { recipe, day, dayName, selected = false, onselect } = $props();
 
   const favorite = $derived(isFavorite(recipe.id));
+  // Days of notice a heads-up needs; on the photo so it's seen while choosing a meal for a day.
+  const lead = $derived(leadDays(recipe));
 </script>
 
 <article
@@ -41,6 +44,14 @@
           <span class="flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-primary shadow-sm backdrop-blur-md">
             <Icon name={recipe.minutes >= 120 ? 'soup_kitchen' : 'timer'} class="text-[13px]" />
             {formatMinutes(recipe.minutes)}
+          </span>
+        {/if}
+        {#if lead}
+          <span
+            class="flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-secondary shadow-sm backdrop-blur-md"
+            title={recipe.headsUps?.filter((h) => h.daysBefore > 0).map((h) => h.text).join('\n')}
+          >
+            <Icon name="alarm" class="text-[13px]" /> {text.common.headsUps.ahead(lead)}
           </span>
         {/if}
         {#if recipe.badge.label}

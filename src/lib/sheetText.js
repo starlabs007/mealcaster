@@ -145,3 +145,11 @@ export const defaultAisle = 'Pantry';
 
 /** Department short name written for a line whose department isn't known. */
 export const defaultDepartmentShort = 'Pantry';
+
+// ---- Heads-ups ([Recipes] tab, Heads_Up_JSON column) ---------------------------------------------------------------
+
+/**
+ * Keys of one heads-up in the Heads_Up_JSON cell: `[{"text": "Soak the chickpeas overnight.", "daysBefore": 1}]`.
+ * Keys the codec doesn't know are kept and written back, so a later build can add some.
+ */
+export const headsUpKeys = { text: 'text', daysBefore: 'daysBefore' };

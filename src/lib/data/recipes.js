@@ -5,6 +5,7 @@
  * @typedef {import('../ingredients.js').RecipeLine} Ingredient a recipe line; the ingredient it points at is in the ingredients store
  * @typedef {{ title: string, category: string, items: Ingredient[] }} IngredientGroup
  * @typedef {{ title: string, minutes: number, text: string, critical?: boolean }} Step
+ * @typedef {import('../headsUps.js').HeadsUp} HeadsUp
  * @typedef {{
  *   id: string,
  *   title: string,
@@ -21,6 +22,8 @@
  *   notes: string,
  *   ingredients: IngredientGroup[],
  *   steps: Step[],
+ *   headsUps?: HeadsUp[], // things to do ahead (headsUps.js); missing = none
+ *   headsUpsRaw?: string, // a Heads_Up_JSON cell that didn't parse, written back untouched
  *   custom?: boolean,
  *   edited?: boolean,
  * }} Recipe
