@@ -306,8 +306,39 @@
     return list;
   });
 
+  // Focus scrolls keep clear of the sticky save bar (`scroll-padding-bottom` in app.css): its height (it grows when the
+  // problems row shows), plus its offset and room for a two-line error under a field.
+  /** @type {HTMLElement | undefined} */
+  let saveBar = $state();
+  function clearSaveBar() {
+    if (saveBar) document.documentElement.style.setProperty('--save-bar-clearance', `${saveBar.offsetHeight + 64}px`);
+  }
+  $effect(() => {
+    clearSaveBar();
+    const observer = new ResizeObserver(clearSaveBar);
+    if (saveBar) observer.observe(saveBar);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--save-bar-clearance');
+    };
+  });
+
+  /**
+   * Chrome scrolls a focused textarea only as far as its caret, leaving the rest of a box with text in it under the
+   * header or the save bar. Bring in the whole box when it fits between them.
+   * @param {FocusEvent} event
+   */
+  function revealTextarea(event) {
+    const node = event.target;
+    if (!(node instanceof HTMLTextAreaElement)) return;
+    const { scrollPaddingTop, scrollPaddingBottom } = getComputedStyle(document.documentElement);
+    if (node.offsetHeight <= innerHeight - parseFloat(scrollPaddingTop) - parseFloat(scrollPaddingBottom)) node.scrollIntoView({ block: 'nearest' });
+  }
+
   /** @param {{ find: () => HTMLElement | null | undefined }} problem */
   function goTo(problem) {
+    // Right after a failed Save the observer hasn't seen the problems row yet.
+    clearSaveBar();
     const el = problem.find();
     el?.focus();
     el?.scrollIntoView({ block: 'center' });
@@ -691,8 +722,8 @@
   function save() {
     submitted = true;
     if (!valid) {
-      // Wait for the error styles to render, then jump to the first problem.
-      tick().then(() => /** @type {HTMLElement | null} */ (document.querySelector('[aria-invalid="true"]'))?.focus());
+      // Wait for the error styles to render, then jump to the first problem, centred like its chip does.
+      tick().then(() => goTo(problems[0]));
       return;
     }
     const recipe = toRecipe();
@@ -876,7 +907,7 @@
       {/if}
     </div>
 
-    <form class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12" novalidate onsubmit={(e) => { e.preventDefault(); save(); }}>
+    <form class="grid grid-cols-1 items-start gap-6 lg:grid-cols-12" novalidate onfocusin={revealTextarea} onsubmit={(e) => { e.preventDefault(); save(); }}>
       <!-- Left column -->
       <div class="flex flex-col gap-6 lg:col-span-5">
         <section class="flex flex-col gap-5 rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
@@ -1381,7 +1412,7 @@
 
       <!-- Action bar -->
       <!-- Sticky on every width; below sm one compact row: status · ⋯ (Revert, Discard) · Save. -->
-      <div class="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-surface-container-lowest/95 px-3 py-2 shadow-lift backdrop-blur sm:bottom-4 sm:justify-between sm:gap-3 sm:px-6 sm:py-3 lg:col-span-12">
+      <div bind:this={saveBar} class="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-surface-container-lowest/95 px-3 py-2 shadow-lift backdrop-blur sm:bottom-4 sm:justify-between sm:gap-3 sm:px-6 sm:py-3 lg:col-span-12">
         {#if submitted && problems.length}
           <div role="group" aria-labelledby="problems-title" class="order-first flex basis-full items-center gap-x-3 gap-y-2 border-b border-outline-variant pb-2 max-sm:overflow-x-auto sm:flex-wrap sm:pb-3">
             <p id="problems-title" role="status" class="flex shrink-0 items-center gap-1.5 text-body-sm font-semibold text-error">

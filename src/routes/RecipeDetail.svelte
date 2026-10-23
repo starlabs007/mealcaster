@@ -519,8 +519,8 @@
         </section>
 
         {#if recipe.steps.length}
-        <!-- Scroll margin clears the sticky header on a jump. -->
-        <section bind:this={methodSection} class="scroll-mt-44 md:scroll-mt-28">
+        <!-- The page's scroll padding clears the fixed header on a jump (app.css); the margin adds a little air. -->
+        <section bind:this={methodSection} class="scroll-mt-6">
           <div class="mb-4">
             <div class="flex items-center justify-between gap-4">
               <h2 bind:this={methodHeading} tabindex="-1" class="flex items-center gap-2 font-display text-headline-md text-on-surface outline-none">
