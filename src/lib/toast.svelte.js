@@ -5,7 +5,12 @@ export const toast = $state({
   message: '',
   /** @type {ToastAction | null} */
   action: null,
+  /** Set by a screen that shows the toast in its own bar (grocery store mode); the floating one then only announces it. */
+  docked: false,
 });
+
+/** Where focus was before it went into the toast, so Undo can hand it back. */
+export const toastFocus = { /** @type {EventTarget | null} */ cameFrom: null };
 
 let timer;
 let hideAt = 0;

@@ -3,6 +3,18 @@
 @tailwind utilities;
 
 @layer base {
+  /* Focus and anchor scrolls stop below the fixed header (two rows below xl, ~141 px on phones; one, 80 px, from xl) and
+     above the Recipe Editor's sticky save bar, which sets its own clearance (WCAG 2.4.11). The slack covers a textarea,
+     which Chrome scrolls by its caret, not its box. */
+  html {
+    scroll-padding-top: 9.5rem;
+    scroll-padding-bottom: var(--save-bar-clearance, 0px);
+  }
+  @screen xl {
+    html {
+      scroll-padding-top: 6rem;
+    }
+  }
   body {
     overscroll-behavior: none;
   }

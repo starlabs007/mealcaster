@@ -1,6 +1,7 @@
 <script>
   // A ⋯ button with a menu of actions (`divider` draws a rule before an item, `note` adds small print under its
-  // label; arrow keys skip dividers): arrow keys, Home / End, Escape (focus back on the button), Tab and a click
+  // label; arrow keys skip dividers), with optional small print above (`heading`) and below (`footnote`) the items,
+  // which also describe the menu to screen readers. Arrow keys, Home / End, Escape (focus back on the button), Tab and a click
   // outside close it. The menu is moved to <body> and fixed-positioned, so a card's overflow, opacity or a grid
   // can't clip or fade it; it closes on scroll and resize rather than following the button.
   import { tick } from 'svelte';
@@ -8,9 +9,9 @@
 
   /**
    * @typedef {{ id: string, label: string, icon: string, note?: string, divider?: boolean, href?: string, onselect?: () => void }} MenuAction
-   * @type {{ items: MenuAction[], label: string, title?: string, class?: string, opener?: string }}
+   * @type {{ items: MenuAction[], label: string, title?: string, class?: string, opener?: string, heading?: string, footnote?: string }}
    */
-  let { items, label, title, class: className = '', opener } = $props();
+  let { items, label, title, class: className = '', opener, heading, footnote } = $props();
 
   let open = $state(false);
   let position = $state({ top: 0, right: 0 });
@@ -35,7 +36,8 @@
       const height = menu?.offsetHeight ?? 0;
       if (position.top + height > window.innerHeight - 8 && rect.top - 6 - height >= 8) position.top = rect.top - 6 - height;
       const list = entries();
-      (focus === 'last' ? list.at(-1) : list[0])?.focus();
+      // A menu of small print only (a bought line's "For: …") takes focus itself.
+      ((focus === 'last' ? list.at(-1) : list[0]) ?? menu)?.focus();
     });
   }
 
@@ -103,7 +105,7 @@
   }
 
   const itemClass =
-    'flex w-full items-center gap-2.5 px-3 py-3 text-left md:fine:py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container focus:bg-surface-container-high';
+    'flex min-h-11 w-full items-center gap-2.5 px-3 py-3 text-left md:fine:min-h-0 md:fine:py-2 text-label-md text-on-surface transition-colors hover:bg-surface-container-high focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-container focus:bg-surface-container-high';
 </script>
 
 <button
@@ -132,10 +134,14 @@
     role="menu"
     tabindex="-1"
     aria-label={label}
-    class="fixed z-[65] min-w-48 overflow-hidden rounded-xl bg-surface-container-lowest py-1 shadow-lift ring-1 ring-outline-variant/40 print:hidden"
+    aria-describedby={[heading && `${menuId}-heading`, footnote && `${menuId}-footnote`].filter(Boolean).join(' ') || undefined}
+    class="fixed z-[65] max-w-[calc(100vw-16px)] min-w-48 focus-visible:outline-none overflow-hidden rounded-xl bg-surface-container-lowest py-1 shadow-lift ring-1 ring-outline-variant/40 print:hidden"
     style="top: {position.top}px; right: {position.right}px"
     onkeydown={onMenuKey}
   >
+    {#if heading}
+      <p id="{menuId}-heading" role="none" class="px-3 pb-2 pt-2 text-body-sm text-on-surface-variant {items.length ? 'border-b border-outline-variant/60 mb-1' : ''}">{heading}</p>
+    {/if}
     {#each items as action (action.id)}
       {#if action.divider}
         <div role="separator" class="my-1 border-t border-outline-variant/60"></div>
@@ -153,5 +159,8 @@
         </button>
       {/if}
     {/each}
+    {#if footnote}
+      <p id="{menuId}-footnote" role="none" class="mt-1 border-t border-outline-variant/60 px-3 pb-2 pt-2 text-body-sm text-on-surface-variant">{footnote}</p>
+    {/if}
   </div>
 {/if}

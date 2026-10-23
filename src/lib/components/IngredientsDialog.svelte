@@ -1,5 +1,5 @@
 <script>
-  // View / edit dialog for the ingredient list: add, search, mark in stock, edit name / plural / aisle, merge two
+  // View / edit dialog for the ingredient list: add, search, mark at home, edit name / plural / aisle, merge two
   // ingredients and delete unused ones. Changes save as they happen; merge and delete offer Undo.
   import Icon from './Icon.svelte';
   import Combobox from './Combobox.svelte';

@@ -4,6 +4,7 @@ import { storageKey } from './env.js';
 
 const HIDE_RECENT_KEY = storageKey('catalogHideRecent.v1');
 const HIDE_PLANNED_KEY = storageKey('catalogHidePlanned.v1');
+const GROCERY_HINT_KEY = storageKey('groceryHintSeen.v1');
 
 function readHideRecent() {
   try {
@@ -22,7 +23,17 @@ function readHidePlanned() {
   }
 }
 
+function readHintSeen() {
+  try {
+    return localStorage.getItem(GROCERY_HINT_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
 export const devicePrefs = $state({
+  /** Grocery list: the "tap an item" hint was dismissed. */
+  groceryHintSeen: readHintSeen(),
   /** Catalog: hide recipes made in the last week ("Not made recently", 7 days). */
   hideRecent: readHideRecent(),
   /** Catalog: hide recipes the viewed week already has planned or completed. On by default. */
@@ -31,6 +42,8 @@ export const devicePrefs = $state({
   plannerMinimal: false,
   /** Grocery list: minimal view (no On Hand section or sidebar). Same lifetime as plannerMinimal. */
   groceryMinimal: false,
+  /** Grocery list on touch screens: the full list instead of store mode, for this visit (same lifetime, not saved). */
+  groceryFull: false,
 });
 
 /** @param {boolean} on */
@@ -48,6 +61,16 @@ export function setHidePlanned(on) {
   devicePrefs.hidePlanned = on;
   try {
     localStorage.setItem(HIDE_PLANNED_KEY, String(on));
+  } catch {
+    // In-memory only.
+  }
+}
+
+/** The grocery tap hint stays gone once dismissed. */
+export function setGroceryHintSeen() {
+  devicePrefs.groceryHintSeen = true;
+  try {
+    localStorage.setItem(GROCERY_HINT_KEY, 'true');
   } catch {
     // In-memory only.
   }

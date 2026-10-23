@@ -1,23 +1,15 @@
 <script>
-  import { fly } from 'svelte/transition';
-  import { tick } from 'svelte';
-  import Icon from './Icon.svelte';
-  import { toast, dismissToast, pauseToast, resumeToast } from '../toast.svelte.js';
-  import { text } from '../text.js';
+  import ToastCard from './ToastCard.svelte';
+  import { toast, toastFocus } from '../toast.svelte.js';
   import { MediaQuery } from 'svelte/reactivity';
 
   const wide = new MediaQuery('min-width: 768px');
 
-  /** @param {HTMLElement} el */
-  const engaged = (el) => el.matches(':hover') || el.contains(document.activeElement);
-
   // Pressing Undo removes the toast and the button with it; focus goes back to where the keyboard came from, if
   // that control is still there, rather than dropping to <body>.
-  /** @type {EventTarget | null} */
-  let cameFrom = null;
   /** @param {FocusEvent} e */
   const track = (e) => {
-    if (e.target instanceof Element && !e.target.closest('[data-toast]')) cameFrom = e.target;
+    if (e.target instanceof Element && !e.target.closest('[data-toast]')) toastFocus.cameFrom = e.target;
   };
 </script>
 
@@ -27,47 +19,15 @@
      within thumb reach of Undo; from `md` it is centred just below the planner's toolbar (title, summary pill, Auto-fill,
      Copy, Clear: bottom ~290 px below `lg`, where the controls sit under the title, ~262 px under the two-row header
      from `lg`, ~166 px from `xl`), so the readout it reports on stays visible
-     and the header tabs are never covered. Fixed, so on other screens it sits at the same height. -->
+     and the header tabs are never covered. Fixed, so on other screens it sits at the same height.
+     A screen that docks toasts (grocery store mode) shows the card itself; this region then only announces it. -->
 <div
   class="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[80] flex justify-center px-4 print:hidden md:bottom-auto md:top-[19.5rem] lg:top-[17rem] xl:top-44"
   aria-live="polite"
 >
-  {#key toast.id}
-    {#if toast.message}
-      <div
-        transition:fly={{ y: wide.current ? -16 : 16, duration: 200 }}
-        class="pointer-events-auto flex max-w-lg items-center gap-4 rounded-xl bg-secondary px-4 py-3 text-body-sm text-on-secondary shadow-lift"
-        role="group"
-        data-toast
-        onmouseenter={pauseToast}
-        onfocusin={pauseToast}
-        onmouseleave={(e) => engaged(e.currentTarget) || resumeToast()}
-        onfocusout={(e) => e.currentTarget.contains(/** @type {Node | null} */ (e.relatedTarget)) || e.currentTarget.matches(':hover') || resumeToast()}
-      >
-        <span>{toast.message}</span>
-        {#if toast.action}
-          <button
-            type="button"
-            class="-my-2.5 min-h-11 min-w-11 shrink-0 rounded px-1 font-semibold text-secondary-fixed md:fine:my-0 md:fine:min-h-0 md:fine:px-0 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-secondary"
-            onclick={() => {
-              toast.action?.run();
-              dismissToast();
-              const back = cameFrom;
-              tick().then(() => back instanceof HTMLElement && back.isConnected && back.focus());
-            }}
-          >
-            {toast.action.label}
-          </button>
-        {/if}
-        <button
-          type="button"
-          aria-label={text.common.dismiss}
-          class="-my-2.5 -mr-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-on-secondary/70 md:fine:my-0 md:fine:-mr-1 md:fine:h-auto md:fine:w-auto md:fine:p-0.5 hover:bg-on-secondary/10 hover:text-on-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-secondary"
-          onclick={dismissToast}
-        >
-          <Icon name="close" class="text-[18px]" />
-        </button>
-      </div>
-    {/if}
-  {/key}
+  {#if toast.docked}
+    {#key toast.id}<span class="sr-only">{toast.message}</span>{/key}
+  {:else}
+    <ToastCard class="max-w-lg" fly={wide.current ? -16 : 16} />
+  {/if}
 </div>

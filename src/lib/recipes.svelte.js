@@ -243,7 +243,7 @@ export const newRecipeId = (title) => recipeIdFor(title, (id) => recipeById.has(
 
 // ---- Ingredient text helpers -------------------------------------------------
 
-export { parseQty, guessAisle, parseIngredientLines } from './ingredientText.js';
+export { parseQty, guessAisle, matchAisle, parseIngredientLines } from './ingredientText.js';
 export { aisles };
 
 /** Display name for an ingredient tag; tags outside the aisle list show as-is. @param {string} tag */

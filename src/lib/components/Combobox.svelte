@@ -18,8 +18,11 @@
    *   listClass?: string,
    *   align?: 'left' | 'right',
    *   invalid?: boolean,
+   *   describedby?: string,
    *   onpick?: (option: import('../ingredients.js').Suggestion) => void,
    *   oninput?: () => void,
+   *   onkey?: (event: KeyboardEvent) => void,
+   *   id?: string,
    * }}
    */
   let {
@@ -35,8 +38,12 @@
     // Which edge the list lines up with: 'right' for a field near the right of the screen, so it opens leftwards.
     align = 'left',
     invalid = false,
+    describedby = undefined,
     onpick,
     oninput,
+    // Keys the field doesn't use itself (Enter with no option picked, a comma…), for the form around it.
+    onkey,
+    id = undefined,
   } = $props();
 
   const uid = $props.id();
@@ -77,11 +84,13 @@
     } else if (event.key === 'Tab') {
       open = false;
     }
+    if (!event.defaultPrevented) onkey?.(event);
   }
 </script>
 
 <div class="relative {wrapClass}">
   <input
+    {id}
     type="text"
     role="combobox"
     aria-label={label}
@@ -90,6 +99,7 @@
     aria-controls="{uid}-list"
     aria-activedescendant={options[active] ? `${uid}-${active}` : undefined}
     aria-invalid={invalid ? 'true' : undefined}
+    aria-describedby={describedby}
     autocomplete="off"
     autocapitalize="none"
     spellcheck="false"

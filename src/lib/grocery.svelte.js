@@ -1,4 +1,4 @@
-// Quick Grocery & Provisions list, one per week (mirrors a [Provisions] sheet tab), one line per ingredient.
+// Grocery list, one per week (mirrors a [Provisions] sheet tab), one line per ingredient.
 //
 // A line merges every source of its ingredient that week:
 //  1. Dinners — every ingredient of the week's dinners, past days and ones marked done included (so items
@@ -8,9 +8,9 @@
 //  3. Added by you — ingredients added on the grocery screen, for that week only or every week. An every-week
 //     item shows on this week and later ones until bought; from then on only on the week it was bought in.
 //
-// Ingredients in stock (the ingredient's On hand flag) are left off every week's list and listed apart. A past
+// Ingredients at home (the ingredient's On hand flag) are left off every week's list and listed apart. A past
 // week never changes: just before stock changes, each past week saves what it left off (`stock`).
-// Each line is 'need' (to buy) or 'bought'. The merging itself is in groceryList.js.
+// Each line is 'need' (to buy), 'bought' or 'skipped' (this week only). The merging itself is in groceryList.js.
 
 import { recipeById } from './recipes.svelte.js';
 import { ingredientOf, onBeforeStockChange, setOnHand } from './ingredients.svelte.js';
@@ -168,6 +168,8 @@ export function addToGrocery(keys) {
 export function setLineStatus(ingredientId, status) {
   const week = planner.weekStart;
   weekList().status[ingredientId] = status;
+  // A skip is for the viewed week only: an every-week item stays to buy and shows again next week.
+  if (status === 'skipped') return;
   for (const item of grocery.every) {
     if (item.ingredientId !== ingredientId || !everyWeekShows(item, week, thisWeekStart())) continue;
     item.status = status;
@@ -242,7 +244,7 @@ export function relinkGrocery(from, to) {
       return id === from ? (to ? `${recipeId}:${to}` : '') : pair;
     }).filter(Boolean))];
     if (from in list.status) {
-      if (to) list.status[to] = list.status[to] === 'need' || list.status[from] === 'need' ? 'need' : 'bought';
+      if (to) list.status[to] = [list.status[to], list.status[from]].includes('need') ? 'need' : [list.status[to], list.status[from]].includes('bought') ? 'bought' : 'skipped';
       delete list.status[from];
     }
     if (from in list.added) {

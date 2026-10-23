@@ -37,7 +37,7 @@
         (lastMadeOn(b.id) ?? '').localeCompare(lastMadeOn(a.id) ?? '') ||
         a.title.localeCompare(b.title),
     },
-    { id: 'quickest', label: text.catalog.sorts.quickest, compare: (a, b) => a.minutes - b.minutes },
+    { id: 'quickest', label: text.catalog.sorts.quickest, compare: (a, b) => (a.minutes || Infinity) - (b.minutes || Infinity) || 0 },
     { id: 'name', label: text.catalog.sorts.nameAsc, compare: byTitle },
     { id: 'name-desc', label: text.catalog.sorts.nameDesc, compare: (a, b) => byTitle(b, a) },
     { id: 'recent', label: text.catalog.sorts.recent, compare: (a, b) => b.addedAt.localeCompare(a.addedAt) },

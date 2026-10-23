@@ -1,11 +1,11 @@
 <script>
-  // The printed Kitchen Checklist: one column, plain text, a department per section
+  // The printed grocery checklist: one column, plain text, a department per section
   // headed by a large bold title, an empty box to tick beside each item. Only what
-  // is still to buy; bought and in-stock items stay off the paper. Never shown on screen.
+  // is still to buy; bought and at-home items stay off the paper. Never shown on screen.
 
   import { text } from '../text.js';
 
-  /** @type {{ week: string, sections: { id: string, label: string, where: string, items: import('../grocery.svelte.js').GroceryLine[] }[], sources: string[] }} */
+  /** @type {{ week: string, sections: { id: string, label: string, items: import('../grocery.svelte.js').GroceryLine[] }[], sources: string[] }} */
   let { week, sections, sources } = $props();
 
   const toBuy = $derived(
@@ -22,10 +22,7 @@
 
   {#each toBuy as section (section.id)}
     <section>
-      <h2 class="mb-[0.3em] mt-[1.1em] flex items-baseline justify-between gap-4 break-after-avoid">
-        <span class="font-display text-[1.6em] font-bold leading-tight">{section.label}</span>
-        <span class="text-[0.9em] text-on-surface-variant">{section.where}</span>
-      </h2>
+      <h2 class="mb-[0.3em] mt-[1.1em] break-after-avoid font-display text-[1.6em] font-bold leading-tight">{section.label}</h2>
       <ul>
         {#each section.items as item (item.key)}
           <li class="flex break-inside-avoid items-baseline gap-[0.6em] py-[0.15em]">

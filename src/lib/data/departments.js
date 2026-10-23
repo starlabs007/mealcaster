@@ -1,4 +1,4 @@
-// Grocery store departments the Quick Grocery List is grouped by.
+// Grocery store departments the Grocery List is grouped by.
 
 // The labels and short names live in sheetText.js, as the short name is written to the sheet.
 

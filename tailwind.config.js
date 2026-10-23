@@ -25,7 +25,16 @@ export default {
         'on-secondary': '#ffffff',
         'secondary-container': '#fe8357',
         'secondary-fixed': '#ffdbcf',
+        // Errors only (a message and its field's border): paprika stays the brand and danger-action colour.
+        error: '#ba1a1a',
         tertiary: '#674600',
+        'tertiary-fixed': '#ffdead',
+        // Soft pill colours (the dinner chips on a grocery line), the same as the recipe tags'.
+        'tone-sage': '#eaf0ec',
+        'on-tone-sage': '#2c4635',
+        'tone-saffron': '#faf3e5',
+        'on-tone-saffron': '#8c6517',
+        'tone-paprika': '#faece8',
         'inverse-surface': '#31312d',
         'inverse-on-surface': '#f3f0ea',
       },

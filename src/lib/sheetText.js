@@ -27,15 +27,17 @@ export const status = {
   onHand: 'On hand',
   bought: 'Bought',
   toBuy: 'To buy',
+  skipped: 'Skipped',
 };
 
 /**
  * How parseStatus reads a Status cell (lower-cased, trimmed). Keep these next to `status` and edit them together:
- * a word that isn't matched by `bought` or `owned` reads back as "need".
- * `bought` is anchored at the start of the cell; `owned` matches anywhere in it.
+ * a word that isn't matched by `bought`, `skipped` or `owned` reads back as "need" (an older build reads "Skipped" so too).
+ * `bought` and `skipped` are anchored at the start of the cell; `owned` matches anywhere in it.
  */
 export const statusPatterns = {
   bought: /^(bought|done|got|checked|true|x|✓)/,
+  skipped: /^skip/,
   owned: /on hand|pantry|owned|have|stock/,
 };
 
