@@ -20,9 +20,10 @@
      Copy, Clear: bottom ~290 px below `lg`, where the controls sit under the title, ~262 px under the two-row header
      from `lg`, ~166 px from `xl`), so the readout it reports on stays visible
      and the header tabs are never covered. Fixed, so on other screens it sits at the same height.
-     A screen that docks toasts (grocery store mode) shows the card itself; this region then only announces it. -->
+     A screen that docks toasts (grocery store mode) shows the card itself; this region then only announces it.
+     A screen with its own bottom bar on phones (cook view) sets --toast-clearance to that bar's height. -->
 <div
-  class="pointer-events-none fixed inset-x-0 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[80] flex justify-center px-4 print:hidden md:bottom-auto md:top-[19.5rem] lg:top-[17rem] xl:top-44"
+  class="pointer-events-none fixed inset-x-0 bottom-[calc(max(1rem,env(safe-area-inset-bottom))+var(--toast-clearance,0px))] z-[80] flex justify-center px-4 print:hidden md:bottom-auto md:top-[19.5rem] lg:top-[17rem] xl:top-44"
   aria-live="polite"
 >
   {#if toast.docked}

@@ -128,6 +128,16 @@ npm run preview    # http://localhost:4173
 - Numbered method steps with durations; tap a step's number to mark it done (the card sinks into the page; kept
   with the prepped ticks, today on this device). The screen stays awake while the method is on screen (Screen Wake
   Lock, where supported); on phones a **Method ↓** link in the ingredients header jumps there; "Next: {Day} {Recipe}" (or Back to Weekly Menu, outline buttons) walks through the week's dinners.
+- The serving scaler remembers the last count per recipe on this device (never synced; the sheet's `Servings` stays
+  the recipe's own).
+- **Cook** (`?cook=1`, every width) turns the same page into a view for the counter: the action bar, photo, tags,
+  description, stat tiles, aisle chips, At home buttons, Add Missing and the sync card go; ingredient lines and steps
+  get bigger (Body XL), and step text runs the card's full width. Only same-day heads-ups stay. The first step not
+  done is marked **Next**; done steps fold to their title; once all are done, tonight's dinner offers **Mark Done**.
+  Phones get a bottom bar (Exit · Next step ↓ · servings), wider screens a top bar, and from `lg` the ingredients
+  stick in a left column beside the method. The app header scrolls away and the screen stays awake the whole time.
+  On until you leave the page (toggling doesn't add a history entry); Exit returns to the top with focus on Cook.
+  On phones, tonight's planner card links here with **Cook** instead of View Recipe.
 
 ## Heads-ups
 
@@ -364,7 +374,7 @@ Keys from before schema version 2 (`recipeBox.v1`, `grocery.v2`, `settings.v1`, 
 startup (`env.js`): the new build never reads old-format data, and a stale sync base would delete sheet rows.
 
 Device-only preferences (not synced): `mealcaster.printOptions.v1`, `mealcaster.catalogHideRecent.v1`, `mealcaster.catalogHidePlanned.v1`;
-today's prepped ticks and done steps on recipe pages in `mealcaster.recipePrep.v1`; the Recipe Editor keeps unsaved work as a draft a moment after each change (a new recipe in `mealcaster.recipeDraft.v2`, edits to an existing one in `mealcaster.recipeEditDrafts.v1`, per recipe id and only for the recipe as it was opened). Saving or discarding clears it; leaving the editor keeps it and the editor restores it on reopening.
+today's prepped ticks and done steps on recipe pages in `mealcaster.recipePrep.v1`; the servings last chosen per recipe in `mealcaster.recipeServings.v1`; the Recipe Editor keeps unsaved work as a draft a moment after each change (a new recipe in `mealcaster.recipeDraft.v2`, edits to an existing one in `mealcaster.recipeEditDrafts.v1`, per recipe id and only for the recipe as it was opened). Saving or discarding clears it; leaving the editor keeps it and the editor restores it on reopening.
 
 The grocery badge counts items still to buy for the viewed week.
 
