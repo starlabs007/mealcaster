@@ -149,7 +149,7 @@
   let confirmingDelete = $state(false);
   // Safari doesn't focus a button on click, so the dialog can't read its opener from the active element.
   /** @type {HTMLElement | null} */
-  let deleteOpener = null;
+  let deleteOpener = $state(null);
   function remove() {
     confirmingDelete = false;
     const removed = deleteRecipe(recipe.id);
