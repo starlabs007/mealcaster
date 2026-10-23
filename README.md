@@ -118,7 +118,7 @@ npm run preview    # http://localhost:4173
 - Mise-en-place checklist grouped by component. Ticking a line marks it **prepped** while you cook: kept on this
   device for today only (never synced; the next day the recipe starts clean). **Tick all** / **Clear ticks** act on the
   whole recipe. The house button at the end of each line marks the ingredient **at home** (the same flag as everywhere
-  else, see Ingredients), with a toast and **Undo**: it stays off every week's grocery list until unmarked. **Add
+  else, see Ingredients; a solid house when at home, an outline when not, never a filled disc like the prep tick), with a toast and **Undo**: it stays off every week's grocery list until unmarked. **Add
   Missing to Grocery List** (under the checklist, the only grocery button on the page and its one sage primary button; a quiet outline once nothing is missing) skips ingredients at home and
   ones already on the list; prepped ticks don't change it. Lines read like "1 lb beef (flank or ribeye), sliced"; amounts and plurals follow the serving scaler.
 - Numbered method steps with durations; tap a step's number to mark it done (the card sinks into the page; kept
