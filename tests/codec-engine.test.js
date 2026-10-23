@@ -18,10 +18,18 @@ describe('codec', () => {
   });
   it('round-trips method steps, including colons and multi-line text', () => {
     const steps = [
-      { title: 'Sear', minutes: 8, text: 'Hot pan: very hot', critical: true },
+      { title: 'Sear', minutes: 8, text: 'Hot pan: very hot' },
       { title: 'Rest', minutes: 0, text: 'Wait.\nThen slice.' },
     ];
     assert.deepEqual(codec.parseSteps(codec.formatSteps(steps)), steps);
+  });
+
+  it('reads the old "critical" word as a known flag, ignores it, and stops writing it', () => {
+    assert.deepEqual(codec.parseSteps('1. Sear the salmon (8 min, critical): Pat dry.\n2. Rest (critical): Wait.'), [
+      { title: 'Sear the salmon', minutes: 8, text: 'Pat dry.' },
+      { title: 'Rest', minutes: 0, text: 'Wait.' },
+    ]);
+    assert.equal(codec.formatSteps([{ title: 'Sear', minutes: 8, text: 'Pat dry.', critical: true }]), '1. Sear (8 min): Pat dry.');
   });
 
   it('reads plain numbered steps typed in the sheet', () => {

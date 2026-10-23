@@ -9,7 +9,7 @@
 //   titles / short / desc: patterns; {Main} {main} {Veg} {veg} {Flavor} {flavor} {herbs} {aromatics} {starch} {cuisine}
 //   groups: [title, category, lines]. A line is 'name|amount|prep|note' (see cuisines.js) or a slot:
 //     @main, @flavor, @aromatics, @sauce, @starch, @veg:min-max, @herbs:min-max, @broth:amount
-//   steps: [title, 'min-max flags', text]; flags: p = prep time (the rest counts as cook time), c = critical
+//   steps: [title, 'min-max flags', text]; flag: p = prep time (the rest counts as cook time)
 //   tips: Cook's Secrets lines for this dish
 //   headsUps: [pattern, daysBefore] things to do ahead (headsUps.js), on the dishes that really need them
 //   tags: custom tags it may get; veg: vegetables that suit it (see the pools below; default: any of the cuisine's)
@@ -71,7 +71,7 @@ export const TEMPLATES = [
     steps: [
       ['Velvet the {Main}', '10-15 p', 'Toss the {main} with the cornstarch and soy sauce and let it sit while you prep everything else.\n\n- Whisk the sauce ingredients in a small bowl.\n- Line the vegetables up next to the stove — this moves fast.'],
       ['Start the Rice', '5-5 p', 'Get the {starch} going so it finishes with the stir-fry.'],
-      ['Sear in a Smoking Wok', '4-6 c', 'Heat a wok over **high heat** until it smokes, add 1 tbsp oil and spread the {main} in one layer. Leave it alone for a minute to brown, then toss until just cooked and tip onto a plate.\n\n> A crowded wok steams instead of searing. Cook in two batches if needed.'],
+      ['Sear in a Smoking Wok', '4-6', 'Heat a wok over **high heat** until it smokes, add 1 tbsp oil and spread the {main} in one layer. Leave it alone for a minute to brown, then toss until just cooked and tip onto a plate.\n\n> A crowded wok steams instead of searing. Cook in two batches if needed.'],
       ['Vegetables & Aromatics', '4-5', 'Add the rest of the oil, then the {aromatics} for 30 seconds. Add the {veg} and stir-fry until bright and crisp-tender.'],
       ['Sauce & Toss', '2-3', 'Return the {main}, pour in the sauce and toss until it turns glossy and clings. Scatter with {herbs} and serve over the {starch}.'],
     ],
@@ -103,7 +103,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Season Ahead', '10-15 p', 'Season the {main} all over with the salt. If you have time, leave it uncovered in the fridge for a few hours or overnight.'],
-      ['Brown Deeply', '15-20 c', 'Heat the oil in a heavy Dutch oven over medium-high heat. Brown the {main} in batches until **deep brown** on every side, then set aside.\n\n> Pale meat means a pale sauce. Take your time here.'],
+      ['Brown Deeply', '15-20', 'Heat the oil in a heavy Dutch oven over medium-high heat. Brown the {main} in batches until **deep brown** on every side, then set aside.\n\n> Pale meat means a pale sauce. Take your time here.'],
       ['Build the Braise', '8-10', 'Pour off all but a spoonful of fat. Soften the {aromatics}, stir in the tomato paste and the {flavor} ingredients, then add the broth, scraping up the browned bits.'],
       ['Low & Slow', '90-150', 'Return the {main}, bring to a bare simmer, cover and braise in a 300°F oven until completely tender. Add the {veg} for the last 30 minutes.'],
       ['Reduce & Serve', '10-15', 'Skim the fat, then simmer the sauce on the stove until it coats a spoon. Serve over {starch} with {herbs} on top.'],
@@ -137,7 +137,7 @@ export const TEMPLATES = [
     steps: [
       ['Heat the Oven', '5-5 p', 'Heat the oven to **425°F** with a rack in the upper third. Line a large sheet pan with parchment if you like.'],
       ['Season Everything', '10-15 p', 'Toss the {veg} with half the oil and salt and spread out on the pan. Rub the {main} with the {flavor} seasoning, the {aromatics} and the rest of the oil.'],
-      ['Roast', '25-35 c', 'Nestle the {main} among the vegetables, leaving space between everything, and roast until the {main} is cooked through and the edges are charred.\n\n> Don\'t crowd the pan — use two if you need to, or nothing browns.'],
+      ['Roast', '25-35', 'Nestle the {main} among the vegetables, leaving space between everything, and roast until the {main} is cooked through and the edges are charred.\n\n> Don\'t crowd the pan — use two if you need to, or nothing browns.'],
       ['Finish', '2-3', 'Scatter with {herbs} and serve straight from the pan with lemon wedges.'],
     ],
     tips: [
@@ -171,7 +171,7 @@ export const TEMPLATES = [
       ['Cook the Grains', '15-25', 'Cook the {starch} according to the package and keep it warm.'],
       ['Marinate', '10-20 p', 'Toss the {main} with the {flavor} ingredients and the oil. Let it sit while you prep the toppings.'],
       ['Prep the Toppings', '10-15 p', 'Slice the {veg}, pick the {herbs}, and whisk the dressing.'],
-      ['Char the {Main}', '6-10 c', 'Cook the {main} in a very hot grill pan or skillet until charred at the edges and just cooked through. Rest for a few minutes.'],
+      ['Char the {Main}', '6-10', 'Cook the {main} in a very hot grill pan or skillet until charred at the edges and just cooked through. Rest for a few minutes.'],
       ['Build the Bowls', '3-5', 'Divide the grains between bowls, arrange the {main} and toppings in sections, and spoon over the dressing.'],
     ],
     tips: [
@@ -203,7 +203,7 @@ export const TEMPLATES = [
       ['Break Up the Rice', '5-5 p', 'Crumble the cold rice with your hands so there are no clumps.'],
       ['Scramble the Egg', '2-2', 'Heat 1 tbsp oil in a wok over high heat, scramble the eggs until just set and slide them onto a plate.'],
       ['Cook the {Main}', '3-5', 'Add another spoon of oil and stir-fry the {main} until cooked through, then the {aromatics} and {veg} for a minute more.'],
-      ['Fry the Rice', '5-6 c', 'Add the rest of the oil and the rice. Spread it out, let it sit 30 seconds to toast, then toss; repeat until every grain is hot and separate.\n\n> Freshly cooked rice turns mushy. Use cold, day-old rice.'],
+      ['Fry the Rice', '5-6', 'Add the rest of the oil and the rice. Spread it out, let it sit 30 seconds to toast, then toss; repeat until every grain is hot and separate.\n\n> Freshly cooked rice turns mushy. Use cold, day-old rice.'],
       ['Season & Serve', '2-2', 'Add the soy sauce, the {flavor} ingredients, white pepper, peas and egg; toss and finish with {herbs}.'],
     ],
     tips: ['No day-old rice? Spread freshly cooked rice on a tray and refrigerate it uncovered for an hour.', 'Season with soy sauce around the edge of the wok so it sizzles and caramelizes.'],
@@ -232,7 +232,7 @@ export const TEMPLATES = [
     steps: [
       ['Cook the Noodles', '5-8', 'Cook the noodles until just shy of tender, drain, rinse under cold water and toss with the sesame oil.'],
       ['Prep & Mix the Sauce', '10-10 p', 'Slice the {main} and {veg}, and stir the sauce together.'],
-      ['Sear', '4-5 c', 'Sear the {main} in a very hot wok with half the oil, then remove. Stir-fry the {aromatics} and {veg} in the rest.'],
+      ['Sear', '4-5', 'Sear the {main} in a very hot wok with half the oil, then remove. Stir-fry the {aromatics} and {veg} in the rest.'],
       ['Toss', '3-3', 'Add the noodles, {main} and sauce and toss until the noodles are coated and glossy. Top with {herbs}.'],
     ],
     tips: ['Rinsing the noodles stops them cooking and keeps them from clumping in the wok.'],
@@ -259,7 +259,7 @@ export const TEMPLATES = [
     steps: [
       ['Marinate', '15-20 p', 'Blend the marinade ingredients and toss with the {main}. Cover and refrigerate for at least 1 hour, or overnight.'],
       ['Thread', '10-10 p', 'Thread the {main} onto the soaked skewers, leaving a little space between pieces.'],
-      ['Grill', '8-12 c', 'Grill over **high, direct heat**, turning every couple of minutes, until charred in spots and cooked through.\n\n> Sugar in the marinade burns quickly. Move skewers to the cooler side if they blacken too fast.'],
+      ['Grill', '8-12', 'Grill over **high, direct heat**, turning every couple of minutes, until charred in spots and cooked through.\n\n> Sugar in the marinade burns quickly. Move skewers to the cooler side if they blacken too fast.'],
       ['Serve', '3-3', 'Pile onto a platter with {veg}, {herbs}, the {starch} and lime wedges.'],
     ],
     headsUps: [['Marinate the {main} in the fridge for at least 4 hours.', 0]],
@@ -283,7 +283,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Prep the Lettuce', '10-10 p', 'Separate, wash and dry the lettuce leaves, and chill them until serving.'],
-      ['Cook the Filling', '8-10 c', 'Brown the {main} in the oil over high heat, breaking it up, until crisp in places. Add the {aromatics} and the {flavor} ingredients and cook 1 minute more.'],
+      ['Cook the Filling', '8-10', 'Brown the {main} in the oil over high heat, breaking it up, until crisp in places. Add the {aromatics} and the {flavor} ingredients and cook 1 minute more.'],
       ['Sauce', '2-2', 'Stir in the hoisin and a splash of water until glossy.'],
       ['Serve', '2-2', 'Spoon into the lettuce cups and top with {veg} and {herbs}.'],
     ],
@@ -307,7 +307,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Soak the Crumbs', '5-5 p', 'Stir the panko into the milk and let it soften into a paste — this keeps the meatballs tender.'],
-      ['Mix & Roll', '15-20 pc', 'Mix the {main}, soaked crumbs, egg, {aromatics} and salt **with a light hand** until just combined, then roll into golf-ball-size meatballs.\n\n> Overmixing makes meatballs dense and bouncy.'],
+      ['Mix & Roll', '15-20 p', 'Mix the {main}, soaked crumbs, egg, {aromatics} and salt **with a light hand** until just combined, then roll into golf-ball-size meatballs.\n\n> Overmixing makes meatballs dense and bouncy.'],
       ['Brown', '8-10', 'Brown the meatballs in the oil in batches, turning, until golden on most sides.'],
       ['Simmer', '20-25', 'Add the crushed tomatoes and {flavor} ingredients, cover and simmer gently until cooked through. Serve with {starch} and {herbs}.'],
     ],
@@ -332,7 +332,7 @@ export const TEMPLATES = [
     steps: [
       ['Char the Aromatics', '10-12', 'Char the onion and ginger directly over a gas flame or under the broiler until blackened in spots.'],
       ['Toast the Spices', '2-3', 'Toast the star anise, cinnamon and cloves in a dry pot until fragrant.'],
-      ['Simmer the Broth', '40-60 c', 'Add the broth, charred onion and ginger, and simmer gently for 45 minutes. Season with fish sauce and sugar until it tastes **slightly too salty** — the noodles will mellow it.\n\n> Strain the spices out once it tastes right; star anise turns bitter if left too long.'],
+      ['Simmer the Broth', '40-60', 'Add the broth, charred onion and ginger, and simmer gently for 45 minutes. Season with fish sauce and sugar until it tastes **slightly too salty** — the noodles will mellow it.\n\n> Strain the spices out once it tastes right; star anise turns bitter if left too long.'],
       ['Noodles & {Main}', '5-8', 'Soak or cook the noodles, divide them between bowls and top with the {main}.'],
       ['Ladle & Serve', '3-3', 'Bring the broth to a hard boil and ladle it over the bowls. Serve with the herb plate, lime, chili, hoisin and sriracha.'],
     ],
@@ -360,7 +360,7 @@ export const TEMPLATES = [
       ['Marinate', '15-30 p', 'Mix the {main} with the {flavor} ingredients, shallot, fish sauce, sugar and oil. Marinate at least 30 minutes.'],
       ['Make Nước Chấm', '5-5 p', 'Whisk the lime juice, fish sauce, sugar and vinegar with 1/2 cup warm water until the sugar dissolves. Add the garlic, chili and shredded carrot.'],
       ['Cook the Noodles', '5-5', 'Boil the vermicelli for 3–4 minutes, rinse under cold water and drain well.'],
-      ['Grill', '8-10 c', 'Grill or broil the {main} until **caramelized and charred at the edges**.'],
+      ['Grill', '8-10', 'Grill or broil the {main} until **caramelized and charred at the edges**.'],
       ['Assemble', '5-5', 'Fill bowls with the noodles and {veg}. Top with the {main}, peanuts and a handful of {herbs}, and pour nước chấm over at the table.'],
     ],
     tips: ['Nước chấm should taste sweet, sour, salty and hot all at once. Adjust until no one flavour wins.', 'Make extra nước chấm — it keeps for a week in the fridge.'],
@@ -383,7 +383,7 @@ export const TEMPLATES = [
       ['To Serve', 'Serve', ['jasmine rice|1 1/2 cup', 'green onion|3 stalk|sliced', '@veg:1-1']],
     ],
     steps: [
-      ['Make the Caramel', '5-6 c', 'Melt the sugar in a clay pot or heavy saucepan over medium heat, without stirring, until it turns **the colour of dark coffee**. Immediately add 2 tbsp water (it will spit).\n\n> Too pale and the dish is just sweet; too far and it\'s acrid. Pull it at mahogany.'],
+      ['Make the Caramel', '5-6', 'Melt the sugar in a clay pot or heavy saucepan over medium heat, without stirring, until it turns **the colour of dark coffee**. Immediately add 2 tbsp water (it will spit).\n\n> Too pale and the dish is just sweet; too far and it\'s acrid. Pull it at mahogany.'],
       ['Build the Kho', '5-5', 'Add the shallots and garlic, then the {main}, and turn to coat in the caramel.'],
       ['Simmer', '30-60', 'Add the fish sauce, coconut and chili, and simmer uncovered until the sauce is thick and sticky and the {main} is tender. Finish with plenty of black pepper.'],
       ['Serve', '2-2', 'Scatter with green onion and serve with rice and {veg}.'],
@@ -410,7 +410,7 @@ export const TEMPLATES = [
     steps: [
       ['Blanch the Tofu', '5-5', 'Simmer the tofu cubes gently in salted water for 2 minutes to firm them up, then drain.'],
       ['Fry the {Main}', '5-6', 'Fry the {main} in the oil over high heat until crisp and browned.'],
-      ['Bloom the Paste', '2-3 c', 'Lower the heat, add the doubanjiang and fry until the oil turns **brick red**, then the black beans, garlic and ginger.'],
+      ['Bloom the Paste', '2-3', 'Lower the heat, add the doubanjiang and fry until the oil turns **brick red**, then the black beans, garlic and ginger.'],
       ['Simmer & Thicken', '6-8', 'Add the broth and soy sauce, slide in the tofu and simmer 5 minutes. Thicken with the cornstarch slurry in two additions, nudging the pan rather than stirring so the tofu stays whole.'],
       ['Serve', '1-1', 'Shower with ground Sichuan peppercorn and green onion and serve with rice.'],
     ],
@@ -436,7 +436,7 @@ export const TEMPLATES = [
     steps: [
       ['Make the Filling', '15-20 p', 'Finely chop the {veg}. Mix with the {main}, {aromatics}, soy sauce, sesame oil and white pepper, stirring in one direction until sticky.'],
       ['Fold', '30-40 p', 'Put a heaped teaspoon of filling on each wrapper, wet the edge and pleat closed. Keep finished dumplings under a damp towel.'],
-      ['Fry & Steam', '8-10 c', 'Fry the dumplings flat-side down in hot oil until golden, then add 1/3 cup water and cover at once. Steam until the water is gone and the bottoms re-crisp.\n\n> Keep the lid on until the water is fully gone, or the tops stay doughy.'],
+      ['Fry & Steam', '8-10', 'Fry the dumplings flat-side down in hot oil until golden, then add 1/3 cup water and cover at once. Steam until the water is gone and the bottoms re-crisp.\n\n> Keep the lid on until the water is fully gone, or the tops stay doughy.'],
       ['Serve', '2-2', 'Mix the dipping sauce and serve the dumplings crisp-side up.'],
     ],
     headsUps: [['Take the wrappers out of the freezer in the morning.', 0]],
@@ -461,7 +461,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Marinate', '10-10 p', 'Toss the {main} with the cornstarch and Shaoxing wine. Stir the sauce together.'],
-      ['Toast the Chilies', '1-1 c', 'Fry the chilies and peppercorns in the oil over medium heat **just until they darken** — seconds, not minutes.'],
+      ['Toast the Chilies', '1-1', 'Fry the chilies and peppercorns in the oil over medium heat **just until they darken** — seconds, not minutes.'],
       ['Stir-Fry', '5-6', 'Turn the heat to high, add the {main} and stir-fry until nearly cooked, then the {aromatics} and {veg}.'],
       ['Finish', '1-2', 'Pour in the sauce, toss until glossy, and fold in the peanuts.'],
     ],
@@ -485,7 +485,7 @@ export const TEMPLATES = [
       ['To Serve', 'Serve', ['jasmine rice|1 1/2 cup', 'thai basil|1 handful', 'lime|1|cut into wedges']],
     ],
     steps: [
-      ['Crack the Cream', '5-5 c', 'Simmer the thick cream from the top of the cans in a wok until the oil separates and glistens, then fry the curry paste in it until fragrant.'],
+      ['Crack the Cream', '5-5', 'Simmer the thick cream from the top of the cans in a wok until the oil separates and glistens, then fry the curry paste in it until fragrant.'],
       ['Simmer', '10-15', 'Add the rest of the coconut milk, the lime leaves, fish sauce and palm sugar, then the {main} and {veg}. Simmer until cooked.'],
       ['Balance', '2-2', 'Taste: it should be salty, sweet and rich. Adjust with fish sauce and sugar, then tear in the basil.'],
       ['Serve', '2-2', 'Serve over jasmine rice with lime wedges.'],
@@ -511,7 +511,7 @@ export const TEMPLATES = [
     steps: [
       ['Soak the Noodles', '30-30 p', 'Soak the noodles in room-temperature water for 30 minutes until pliable but still firm. Simmer the sauce ingredients until the sugar dissolves.'],
       ['Cook the {Main}', '3-4', 'Stir-fry the shallot, garlic and {main} in hot oil until just cooked. Push to the side.'],
-      ['Egg & Noodles', '4-5 c', 'Scramble the eggs in the space, then add the drained noodles and sauce. Toss constantly until the noodles absorb the sauce and soften.\n\n> Add water a tablespoon at a time if the noodles are still firm; too much at once turns them gluey.'],
+      ['Egg & Noodles', '4-5', 'Scramble the eggs in the space, then add the drained noodles and sauce. Toss constantly until the noodles absorb the sauce and soften.\n\n> Add water a tablespoon at a time if the noodles are still firm; too much at once turns them gluey.'],
       ['Finish', '1-1', 'Toss in half the sprouts and green onion. Serve topped with peanuts, the rest of the sprouts and lime.'],
     ],
     tips: ['Cook pad thai two portions at a time — a crowded wok makes soggy noodles.'],
@@ -534,7 +534,7 @@ export const TEMPLATES = [
     steps: [
       ['Make the Sauce', '3-3 p', 'Stir the soy sauce, mirin, sake and sugar together.'],
       ['Sear', '6-8', 'Sear the {main} in the oil over medium-high heat until browned on both sides.'],
-      ['Glaze', '3-5 c', 'Pour in the sauce and simmer, spooning it over the {main}, until it reduces to a **shiny glaze** that coats a spoon.\n\n> The glaze goes from perfect to burnt fast once it thickens — stay with it.'],
+      ['Glaze', '3-5', 'Pour in the sauce and simmer, spooning it over the {main}, until it reduces to a **shiny glaze** that coats a spoon.\n\n> The glaze goes from perfect to burnt fast once it thickens — stay with it.'],
       ['Serve', '2-2', 'Slice and serve over rice with {veg}, sesame and green onion.'],
     ],
     tips: ['Teriyaki keeps: make a double batch of sauce and store it in the fridge for two weeks.'],
@@ -556,7 +556,7 @@ export const TEMPLATES = [
       ['Bowls', 'Noodles & Toppings', ['ramen noodles|4 package||fresh or dried', '@main', 'egg|4', '@veg:1-2', 'nori|1 package|cut into strips', 'green onion|3 stalk|sliced']],
     ],
     steps: [
-      ['Jammy Eggs', '7-7 c', 'Lower the eggs into boiling water for **exactly 6½ minutes**, then into ice water. Peel when cool.'],
+      ['Jammy Eggs', '7-7', 'Lower the eggs into boiling water for **exactly 6½ minutes**, then into ice water. Peel when cool.'],
       ['Broth', '15-20', 'Simmer the broth and dashi with the garlic and ginger. Off the heat, whisk in the miso, soy sauce and sesame oil — don\'t boil it after the miso goes in.'],
       ['{Main} & Vegetables', '8-10', 'Cook the {main} and {veg} in a skillet until browned and tender.'],
       ['Noodles & Assemble', '4-5', 'Cook the noodles, divide between deep bowls, ladle over the broth and top with the {main}, {veg}, halved eggs, nori and green onion.'],
@@ -580,7 +580,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Bread the {Main}', '15-15 p', 'Season the {main} with salt, then dredge in flour, dip in egg and press firmly into the panko.'],
-      ['Fry', '8-10 c', 'Fry in **350°F** oil until deep golden and cooked through, about 4 minutes per side. Drain on a rack, not paper towels.\n\n> Oil that\'s too cool makes greasy katsu. Use a thermometer.'],
+      ['Fry', '8-10', 'Fry in **350°F** oil until deep golden and cooked through, about 4 minutes per side. Drain on a rack, not paper towels.\n\n> Oil that\'s too cool makes greasy katsu. Use a thermometer.'],
       ['Sauce', '2-2', 'Mix the mayonnaise, soy sauce and honey.'],
       ['Serve', '3-3', 'Slice the katsu and serve with cabbage, rice, sauce and lemon.'],
     ],
@@ -607,7 +607,7 @@ export const TEMPLATES = [
       ['Cook the Rice', '20-20', 'Cook the rice and keep it warm.'],
       ['Season the Vegetables', '20-25 p', 'Blanch or sauté each vegetable separately and season with a little sesame oil, salt and sesame seeds.'],
       ['Cook the {Main}', '5-8', 'Marinate the {main} briefly in the soy sauce, sugar, garlic and {flavor} ingredients, then stir-fry until caramelized.'],
-      ['Crisp the Rice', '8-10 c', 'Press rice into an oiled hot skillet and leave it alone until a golden crust forms underneath.'],
+      ['Crisp the Rice', '8-10', 'Press rice into an oiled hot skillet and leave it alone until a golden crust forms underneath.'],
       ['Assemble', '5-5', 'Arrange the vegetables and {main} over the rice, top with a fried egg, and serve the gochujang sauce alongside.'],
     ],
     tips: ['Each namul is seasoned separately — that\'s what keeps the flavours distinct.'],
@@ -629,7 +629,7 @@ export const TEMPLATES = [
       ['To Serve', 'Serve', ['@starch', '@herbs:1-1', '?plain yogurt|1/2 cup']],
     ],
     steps: [
-      ['Brown the Onions', '15-20 c', 'Fry the cumin seeds in the ghee, then the onion, stirring often, until **deep golden brown**. Add the garlic, ginger and chili and cook 2 minutes.\n\n> Rushing the onions gives a thin, sharp curry. Their colour is the curry\'s colour.'],
+      ['Brown the Onions', '15-20', 'Fry the cumin seeds in the ghee, then the onion, stirring often, until **deep golden brown**. Add the garlic, ginger and chili and cook 2 minutes.\n\n> Rushing the onions gives a thin, sharp curry. Their colour is the curry\'s colour.'],
       ['Spices & Tomato', '8-10', 'Stir in the ground spices for 30 seconds, then the tomatoes. Cook until the oil separates at the edges.'],
       ['Simmer', '20-40', 'Add the {main}, {veg}, salt and a splash of water, cover and simmer until tender. Stir in the {flavor} ingredients for the last few minutes.'],
       ['Serve', '2-2', 'Finish with {herbs} and serve with {starch}.'],
@@ -655,7 +655,7 @@ export const TEMPLATES = [
     steps: [
       ['Quick Pickle', '10-10 p', 'Cover the sliced onion with lime juice and a pinch of salt and set aside.'],
       ['Season', '10-15 p', 'Rub the {main} with the {flavor} ingredients, cumin, oil and salt.'],
-      ['Char', '8-12 c', 'Cook in a ripping-hot cast-iron pan or on the grill until charred outside and just cooked inside. Rest, then chop.'],
+      ['Char', '8-12', 'Cook in a ripping-hot cast-iron pan or on the grill until charred outside and just cooked inside. Rest, then chop.'],
       ['Warm the Tortillas', '5-5', 'Warm the tortillas over a flame or in a dry pan and stack in a towel.'],
       ['Build', '3-3', 'Fill the tortillas with {main}, {veg}, pickled onion, cotija, crema and {herbs}.'],
     ],
@@ -681,7 +681,7 @@ export const TEMPLATES = [
     steps: [
       ['Make the Sauce', '15-20', 'Simmer the sauce ingredients 10 minutes and blend until smooth.'],
       ['Make the Filling', '10-15 p', 'Cook the {main} and {veg} until tender and mix with the beans and a ladle of sauce.'],
-      ['Roll', '15-15 pc', 'Flash the tortillas in a dry hot pan so they\'re pliable, fill and roll tightly, and lay seam-side down in a baking dish.\n\n> Cold tortillas crack. Warm every one.'],
+      ['Roll', '15-15 p', 'Flash the tortillas in a dry hot pan so they\'re pliable, fill and roll tightly, and lay seam-side down in a baking dish.\n\n> Cold tortillas crack. Warm every one.'],
       ['Bake', '20-25', 'Pour over the rest of the sauce, cover with cheese and bake at 375°F until bubbling. Finish with crema and {herbs}.'],
     ],
     tips: ['Assemble up to a day ahead and bake straight from the fridge, adding 10 minutes.'],
@@ -703,7 +703,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Brown', '10-12', 'Brown the {main} in the oil, breaking it up, then add the {aromatics} and cook until soft.'],
-      ['Toast the Spices', '2-2 c', 'Stir in the chili powder, cumin and {flavor} ingredients and cook **1 minute** until fragrant and darker.'],
+      ['Toast the Spices', '2-2', 'Stir in the chili powder, cumin and {flavor} ingredients and cook **1 minute** until fragrant and darker.'],
       ['Simmer', '45-60', 'Add the tomatoes, beans and broth. Simmer partly covered, stirring now and then, until thick.'],
       ['Serve', '3-3', 'Season and serve with cheese, sour cream and {herbs}.'],
     ],
@@ -727,7 +727,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Shape', '10-10 p', 'Divide the {main} into four loose balls without packing them tight. Mix the mayonnaise with the {flavor} ingredients.'],
-      ['Smash & Sear', '6-8 c', 'Set the balls in a smoking-hot cast-iron pan and **smash flat** with a spatula. Season, cook until the edges are deeply browned, flip, and add the cheese.\n\n> Smash once, in the first 30 seconds, then leave them alone.'],
+      ['Smash & Sear', '6-8', 'Set the balls in a smoking-hot cast-iron pan and **smash flat** with a spatula. Season, cook until the edges are deeply browned, flip, and add the cheese.\n\n> Smash once, in the first 30 seconds, then leave them alone.'],
       ['Build', '3-3', 'Toast the buns in the pan, spread with the sauce, and stack with lettuce, tomato, onion and the patties.'],
     ],
     tips: ['Keep the meat cold until it hits the pan for the juiciest burgers.'],
@@ -751,7 +751,7 @@ export const TEMPLATES = [
     steps: [
       ['Dry-Brine', '10-10 p', 'Pat the chicken dry and salt it all over, inside and out. Refrigerate uncovered overnight if you can.'],
       ['Prep', '10-10 p', 'Heat the oven to 425°F. Rub the butter and {flavor} ingredients under and over the skin, stuff with the lemon and tie the legs.'],
-      ['Roast', '60-75 c', 'Roast on top of the {veg} and onions until the thigh reads **165°F**. Baste once or twice.\n\n> Check the thickest part of the thigh, not the breast.'],
+      ['Roast', '60-75', 'Roast on top of the {veg} and onions until the thigh reads **165°F**. Baste once or twice.\n\n> Check the thickest part of the thigh, not the breast.'],
       ['Rest & Carve', '15-15', 'Rest 15 minutes, deglaze the pan with the wine, and carve. Spoon the juices over the vegetables and finish with {herbs}.'],
     ],
     headsUps: [['Dry-brine the chicken: salt it and leave it uncovered in the fridge overnight.', 1]],
@@ -776,7 +776,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Dry the Fish', '10-10 p', 'Pat the {main} **bone-dry** and salt it 15 minutes before cooking.'],
-      ['Sear', '6-8 c', 'Lay the fish in a hot oiled skillet and press gently for 10 seconds so it stays flat. Cook undisturbed until it releases on its own, then flip for a minute.\n\n> If it sticks, it isn\'t ready to turn.'],
+      ['Sear', '6-8', 'Lay the fish in a hot oiled skillet and press gently for 10 seconds so it stays flat. Cook undisturbed until it releases on its own, then flip for a minute.\n\n> If it sticks, it isn\'t ready to turn.'],
       ['Vegetables', '5-6', 'Blister the {veg} in the same pan.'],
       ['Pan Sauce', '3-3', 'Soften the shallot, add the sauce and {flavor} ingredients and reduce until glossy. Spoon over the fish with {herbs}.'],
     ],
@@ -802,7 +802,7 @@ export const TEMPLATES = [
     steps: [
       ['Heat the Broth', '5-5 p', 'Keep the broth at a bare simmer in a saucepan next to the risotto pot.'],
       ['Toast the Rice', '5-5', 'Soften the shallot in the oil, add the rice and toast until the edges turn translucent. Add the wine and let it absorb.'],
-      ['Stir & Ladle', '18-20 c', 'Add hot broth a ladle at a time, stirring often and waiting until each is mostly absorbed. Add the {main} and {veg} for the last 8 minutes.\n\n> Stop when the rice is al dente and the risotto flows like lava — it keeps thickening off the heat.'],
+      ['Stir & Ladle', '18-20', 'Add hot broth a ladle at a time, stirring often and waiting until each is mostly absorbed. Add the {main} and {veg} for the last 8 minutes.\n\n> Stop when the rice is al dente and the risotto flows like lava — it keeps thickening off the heat.'],
       ['Mantecatura', '2-2', 'Off the heat, beat in the cold butter, parmesan and {flavor} ingredients until glossy. Rest 1 minute and serve.'],
     ],
     tips: ['Warm bowls keep risotto loose. Run them under hot water first.'],
@@ -829,7 +829,7 @@ export const TEMPLATES = [
       ['Boil the Water', '10-10 p', 'Bring a big pot of water to a boil and salt it well.'],
       ['Brown the {Main}', '8-10', 'Brown the {main} in the oil, then add the {aromatics} and {veg} and cook until tender.'],
       ['Cook the Pasta', '10-12', 'Cook the pasta 2 minutes short of the package time. Save a mug of pasta water.'],
-      ['Toss', '2-3 c', 'Add the pasta to the sauce with a splash of pasta water, the {flavor} ingredients and half the cheese, and toss hard until silky.\n\n> Too dry? More pasta water. The starch is what makes it cling.'],
+      ['Toss', '2-3', 'Add the pasta to the sauce with a splash of pasta water, the {flavor} ingredients and half the cheese, and toss hard until silky.\n\n> Too dry? More pasta water. The starch is what makes it cling.'],
     ],
     tips: ['Salt the pasta water like the sea — it\'s the only chance to season the pasta itself.'],
     tags: ['Kid Friendly'],
@@ -854,7 +854,7 @@ export const TEMPLATES = [
     steps: [
       ['Make the Ragù', '25-30', 'Brown the {main} in the oil, add the {aromatics} and {veg}, then the tomatoes crushed by hand. Simmer until thick.'],
       ['Boil the Pasta', '8-8', 'Cook the rigatoni **3 minutes** short of al dente — it finishes in the oven.'],
-      ['Assemble', '10-10 pc', 'Toss the pasta with the ragù, spread in a baking dish, dollop with ricotta and top with mozzarella and parmesan.'],
+      ['Assemble', '10-10 p', 'Toss the pasta with the ragù, spread in a baking dish, dollop with ricotta and top with mozzarella and parmesan.'],
       ['Bake', '25-30', 'Bake at 400°F until bubbling and browned on top. Rest 10 minutes before serving.'],
     ],
     tips: ['Assemble the day before; bake from cold with 15 extra minutes.'],
@@ -877,7 +877,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Simmer the Lentils', '25-30', 'Simmer the lentils with turmeric and 4 cups water until they collapse. Add the {veg} for the last 10 minutes, then season.'],
-      ['Tadka', '5-6 c', 'Heat the ghee until shimmering, add the mustard and cumin seeds and let them **pop**, then the curry leaves, {aromatics} and {flavor} ingredients.\n\n> Have the dal ready — the tadka goes from fragrant to burnt in seconds.'],
+      ['Tadka', '5-6', 'Heat the ghee until shimmering, add the mustard and cumin seeds and let them **pop**, then the curry leaves, {aromatics} and {flavor} ingredients.\n\n> Have the dal ready — the tadka goes from fragrant to burnt in seconds.'],
       ['Finish', '2-2', 'Pour the sizzling tadka over the dal and serve with {starch}, {herbs} and lime.'],
     ],
     tips: ['Dal thickens as it sits; loosen leftovers with hot water.'],
@@ -901,7 +901,7 @@ export const TEMPLATES = [
     steps: [
       ['Aromatics', '5-6', 'Soften the {aromatics} in a little oil in a soup pot.'],
       ['Simmer', '20-25', 'Add the broth and the {flavor} ingredients and simmer 10 minutes. Add the {main} and {veg} and cook until just done.'],
-      ['Season', '2-2 c', 'Taste and adjust — a soup almost always needs **more salt and acid** than you think.'],
+      ['Season', '2-2', 'Taste and adjust — a soup almost always needs **more salt and acid** than you think.'],
       ['Serve', '2-2', 'Ladle into bowls and finish with {herbs} and lime.'],
     ],
     tips: ['Add delicate proteins at the end so they don\'t overcook in the pot.'],
@@ -926,7 +926,7 @@ export const TEMPLATES = [
       ['Heat the Oven', '30-45 p', 'Heat the oven as hot as it goes with a pizza stone or upturned sheet pan inside for at least 30 minutes.'],
       ['Cook the {Main}', '6-8', 'Brown the {main} in a skillet with the {flavor} ingredients.'],
       ['Stretch & Top', '10-10 p', 'Stretch the dough thin on a floured board, brush with oil and scatter with cheese, {main} and {veg}.'],
-      ['Bake', '8-10 c', 'Slide onto the hot stone and bake until the crust is **blistered and charred** in spots. Finish with {herbs}.'],
+      ['Bake', '8-10', 'Slide onto the hot stone and bake until the crust is **blistered and charred** in spots. Finish with {herbs}.'],
     ],
     tips: ['Cold dough tears. Let it sit at room temperature for an hour first.'],
     tags: ['Date Night'],
@@ -947,7 +947,7 @@ export const TEMPLATES = [
     steps: [
       ['Soften the Peppers', '10-12', 'Cook the peppers and {aromatics} in the oil until soft and sweet.'],
       ['Spice & Simmer', '10-12', 'Add the spices and {flavor} ingredients, then the tomatoes. Simmer until thick enough to hold a well.'],
-      ['Poach the Eggs', '6-8 c', 'Make wells, crack in the eggs, cover and cook on low until the whites set but the yolks stay runny.\n\n> Take it off a minute early; the eggs keep cooking in the hot pan.'],
+      ['Poach the Eggs', '6-8', 'Make wells, crack in the eggs, cover and cook on low until the whites set but the yolks stay runny.\n\n> Take it off a minute early; the eggs keep cooking in the hot pan.'],
       ['Serve', '2-2', 'Scatter with feta and {herbs} and serve with warm pita.'],
     ],
     tips: ['Crack each egg into a cup first so a broken yolk doesn\'t end up in the pan.'],
@@ -972,7 +972,7 @@ export const TEMPLATES = [
     steps: [
       ['Quick Pickles', '10-10 p', 'Toss the carrot and daikon with the vinegar, sugar and a pinch of salt. Leave at least 20 minutes.'],
       ['Marinate & Cook', '15-20', 'Marinate the {main} in the {flavor} ingredients, fish sauce, sugar and oil, then cook in a hot pan until caramelized.'],
-      ['Crisp the Bread', '4-5 c', 'Warm the baguette in a hot oven until the crust **crackles**.'],
+      ['Crisp the Bread', '4-5', 'Warm the baguette in a hot oven until the crust **crackles**.'],
       ['Build', '5-5', 'Spread with mayonnaise and fill with {main}, pickles, cucumber, jalapeño and cilantro.'],
     ],
     tips: ['Look for a light Vietnamese-style baguette — a dense French one is too chewy.'],
@@ -994,7 +994,7 @@ export const TEMPLATES = [
     steps: [
       ['Cook the Filling', '8-10', 'Poach the {main} in simmering water until just done, cool and slice. Cook the vermicelli and rinse.'],
       ['Mix the Sauce', '5-5 p', 'Whisk the hoisin, peanut butter, lime and a splash of hot water. Top with crushed peanuts.'],
-      ['Roll', '20-25 pc', 'Dip each rice paper in warm water for **2 seconds**, lay on a damp board, fill and roll tightly, tucking in the sides.\n\n> Over-soaked paper tears. It keeps softening on the board.'],
+      ['Roll', '20-25 p', 'Dip each rice paper in warm water for **2 seconds**, lay on a damp board, fill and roll tightly, tucking in the sides.\n\n> Over-soaked paper tears. It keeps softening on the board.'],
       ['Serve', '1-1', 'Serve right away with the sauce.'],
     ],
     tips: ['Lay the {main} against the paper first so it shows through on the outside.'],
@@ -1015,7 +1015,7 @@ export const TEMPLATES = [
       ['Herbs & Serving', 'Herbs', ['mint|1/2 cup', 'cilantro|1/2 cup', 'green onion|2 stalk|sliced', 'butter lettuce|1 head', 'cucumber|1|sliced']],
     ],
     steps: [
-      ['Toast the Rice', '6-8 pc', 'Toast the rice in a dry pan until **deep golden**, then grind to a coarse powder.'],
+      ['Toast the Rice', '6-8 p', 'Toast the rice in a dry pan until **deep golden**, then grind to a coarse powder.'],
       ['Cook the {Main}', '5-6', 'Cook the {main} with a splash of water, breaking it up, just until done.'],
       ['Dress', '3-3', 'Off the heat, add fish sauce, lime, chili flakes and shallot. Toss in the herbs and rice powder.'],
       ['Serve', '1-1', 'Serve warm with lettuce and cucumber.'],
@@ -1090,7 +1090,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Whip the Feta', '5-5 p', 'Blend the feta, yogurt and lemon zest until smooth.'],
-      ['Roast the {Main}', '20-25 c', 'Toss the {main} with the oil and {flavor} ingredients and roast at 425°F until crisp at the edges.'],
+      ['Roast the {Main}', '20-25', 'Toss the {main} with the oil and {flavor} ingredients and roast at 425°F until crisp at the edges.'],
       ['Arrange', '5-5', 'Swoosh the feta onto a platter, top with the {main}, and add {veg}, olives, pita and {herbs}.'],
     ],
     tips: ['Warm the pita directly over a gas flame for a few seconds a side.'],
@@ -1111,7 +1111,7 @@ export const TEMPLATES = [
       ['To Serve', 'Toppings', ['blueberries|1 cup', 'maple syrup|1/2 cup', '?unsalted butter|2 tbsp']],
     ],
     steps: [
-      ['Mix', '10-10 pc', 'Whisk the dry ingredients, then the wet ones separately. Fold together **until just combined** — lumps are fine.\n\n> Overmixing makes tough, flat pancakes.'],
+      ['Mix', '10-10 p', 'Whisk the dry ingredients, then the wet ones separately. Fold together **until just combined** — lumps are fine.\n\n> Overmixing makes tough, flat pancakes.'],
       ['Rest', '5-10 p', 'Let the batter rest while the griddle heats.'],
       ['Cook', '15-20', 'Ladle onto a buttered griddle over medium heat, dot with blueberries, and flip when bubbles cover the surface.'],
       ['Serve', '1-1', 'Serve hot with butter and maple syrup.'],
@@ -1135,7 +1135,7 @@ export const TEMPLATES = [
       ['Toppings', 'Toppings', ['green onion|3 stalk|sliced', 'shallot|3|thinly sliced and fried crisp', 'white pepper|1/4 tsp', 'soy sauce|1 tbsp', '?chili crisp|1 tbsp', '@herbs:1-1']],
     ],
     steps: [
-      ['Simmer', '60-90 c', 'Simmer the rice in the broth with the ginger, stirring now and then, until the grains **burst and turn creamy**.\n\n> Stir the bottom regularly in the last half hour — congee scorches easily.'],
+      ['Simmer', '60-90', 'Simmer the rice in the broth with the ginger, stirring now and then, until the grains **burst and turn creamy**.\n\n> Stir the bottom regularly in the last half hour — congee scorches easily.'],
       ['Add the {Main}', '8-10', 'Stir in the {main} and simmer until cooked.'],
       ['Toppings', '10-10 p', 'Fry the shallots in oil until golden and crisp.'],
       ['Serve', '2-2', 'Ladle into bowls and top with green onion, crispy shallots, white pepper, soy sauce and {herbs}.'],
@@ -1160,7 +1160,7 @@ export const TEMPLATES = [
     steps: [
       ['Cook the Vegetables', '8-10', 'Sauté the {veg} and {aromatics} in the oil in an ovenproof skillet until tender.'],
       ['Whisk', '5-5 p', 'Whisk the eggs, cream, parmesan and salt.'],
-      ['Set', '15-18 c', 'Pour the eggs over the vegetables, cook on low until the edges set, then finish in a 350°F oven until **just set in the center**.\n\n> A dry frittata is overcooked; pull it while the middle barely jiggles.'],
+      ['Set', '15-18', 'Pour the eggs over the vegetables, cook on low until the edges set, then finish in a 350°F oven until **just set in the center**.\n\n> A dry frittata is overcooked; pull it while the middle barely jiggles.'],
       ['Serve', '5-5', 'Rest 5 minutes, slide onto a board and finish with {herbs}.'],
     ],
     tips: ['Good cold the next day, too.'],
@@ -1206,7 +1206,7 @@ export const TEMPLATES = [
     steps: [
       ['Prep', '10-10 p', 'Heat the oven to 350°F and line a 9-inch pan with parchment. Rub the sugar and zest together until fragrant.'],
       ['Batter', '10-10 p', 'Whisk the eggs into the sugar until pale, then stream in the oil, milk and juice. Fold in the dry ingredients.'],
-      ['Bake', '40-45 c', 'Bake until a skewer comes out clean and the top is **deep golden**.'],
+      ['Bake', '40-45', 'Bake until a skewer comes out clean and the top is **deep golden**.'],
       ['Cool', '30-30', 'Cool in the pan, then dust with powdered sugar.'],
     ],
     tips: ['Use a fruity olive oil you\'d happily eat on bread.'],
@@ -1228,7 +1228,7 @@ export const TEMPLATES = [
     steps: [
       ['Fruit', '15-15 p', 'Toss the fruit with the sugar, lemon, cornstarch and cinnamon and spread in a baking dish.'],
       ['Crumble', '10-10 p', 'Rub the butter into the oats, flour, sugar and salt until it forms clumps.'],
-      ['Bake', '40-50 c', 'Scatter over the fruit and bake at 375°F until the fruit bubbles **thickly at the edges** and the top is golden.'],
+      ['Bake', '40-50', 'Scatter over the fruit and bake at 375°F until the fruit bubbles **thickly at the edges** and the top is golden.'],
       ['Rest', '15-15', 'Let it set for 15 minutes and serve warm with ice cream.'],
     ],
     tips: ['Freeze a batch of crumble topping for last-minute desserts.'],
@@ -1248,7 +1248,7 @@ export const TEMPLATES = [
       ['To Serve', 'Toppings', ['mango|2|peeled and sliced|ripe', 'sesame seeds|1 tsp|toasted']],
     ],
     steps: [
-      ['Steam the Rice', '25-30 c', 'Steam the soaked rice in a cloth-lined steamer until tender and translucent.'],
+      ['Steam the Rice', '25-30', 'Steam the soaked rice in a cloth-lined steamer until tender and translucent.'],
       ['Soak in Coconut', '20-20', 'Warm most of the coconut milk with the sugar and salt, pour over the hot rice and cover for 20 minutes to absorb.'],
       ['Serve', '5-5', 'Serve with sliced mango, the rest of the coconut milk drizzled over, and sesame seeds.'],
     ],
@@ -1289,7 +1289,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Melt', '5-5 p', 'Melt the chocolate and butter together. Heat the oven to 350°F.'],
-      ['Whip', '5-5 pc', 'Beat the eggs and sugar for **5 full minutes** until thick and pale — this is what makes the crackly top.'],
+      ['Whip', '5-5 p', 'Beat the eggs and sugar for **5 full minutes** until thick and pale — this is what makes the crackly top.'],
       ['Fold & Bake', '25-30', 'Fold in the chocolate, then the dry ingredients. Bake until just set; a skewer should come out with moist crumbs.'],
       ['Cool', '60-60', 'Cool completely before cutting, then sprinkle with flaky salt.'],
     ],
@@ -1312,7 +1312,7 @@ export const TEMPLATES = [
     ],
     steps: [
       ['Heat the Cream', '10-10', 'Warm the cream, milk and sugar until steaming.'],
-      ['Set', '5-5 pc', 'Sprinkle the gelatin over 3 tbsp cold water, let it bloom, then whisk it into the hot cream with the vanilla, strain into glasses and chill until **just set**, at least 4 hours.'],
+      ['Set', '5-5 p', 'Sprinkle the gelatin over 3 tbsp cold water, let it bloom, then whisk it into the hot cream with the vanilla, strain into glasses and chill until **just set**, at least 4 hours.'],
       ['Serve', '5-5', 'Toss the berries with honey and spoon over the panna cotta.'],
     ],
     headsUps: [['Make it the day before so it can set overnight.', 1]],

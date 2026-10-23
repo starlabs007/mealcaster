@@ -54,13 +54,12 @@
   const missing = !!id && !editing;
 
   /**
-   * Rows carry `critical` through untouched so editing a sample doesn't lose them.
    * An ingredient row's `text` is the ingredient's name: saving picks the ingredient with that name (or plural), or
    * creates one in `aisle`. `id` keeps the ingredient of a line whose name wasn't touched (so an unknown id survives).
    * A group is a section of rows; its `category` ("Protein"…) is the sheet's and survives a rename.
    * @typedef {{ key: number, qty: string, unit: string, text: string, id?: string, note: string, prep: string, optional: boolean, aisle: string, aisleSet: boolean }} IngredientRow
    * @typedef {{ key: number, title: string, category: string, rows: IngredientRow[] }} IngredientGroup
-   * @typedef {{ key: number, title: string, text: string, minutes: string, critical?: boolean }} StepRow
+   * @typedef {{ key: number, title: string, text: string, minutes: string }} StepRow
    * @typedef {{
    *   title: string, description: string, image: string, category: string,
    *   serves: number, prepMinutes: number | '', cookMinutes: number | '', tags: string[],
@@ -134,7 +133,6 @@
         title: s.title,
         text: s.text,
         minutes: s.minutes ? String(s.minutes) : '',
-        critical: s.critical,
       })),
       notes: r.notes ?? '',
       headsUp: r.headsUps?.[0]?.text ?? '',
@@ -727,7 +725,6 @@
           title: s.title.trim() || defaultStepTitle(i + 1),
           minutes: Number(s.minutes) || 0,
           text: s.text.trim(),
-          ...(s.critical && { critical: true }),
         })),
       headsUps: savedHeadsUps(base.headsUps),
     };

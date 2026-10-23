@@ -238,7 +238,6 @@
 
   /** @param {import('../lib/data/recipes.js').Step} step @param {number} i */
   function stepTone(step, i) {
-    if (step.critical) return 'bg-secondary-fixed/50 text-secondary';
     if (i === recipe.steps.length - 1) return 'bg-primary-fixed/50 text-primary';
     return 'bg-surface-container-high text-on-surface-variant';
   }

@@ -4,7 +4,7 @@
 /**
  * @typedef {import('../ingredients.js').RecipeLine} Ingredient a recipe line; the ingredient it points at is in the ingredients store
  * @typedef {{ title: string, category: string, items: Ingredient[] }} IngredientGroup
- * @typedef {{ title: string, minutes: number, text: string, critical?: boolean }} Step
+ * @typedef {{ title: string, minutes: number, text: string }} Step
  * @typedef {import('../headsUps.js').HeadsUp} HeadsUp
  * @typedef {{
  *   id: string,
