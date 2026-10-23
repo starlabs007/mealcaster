@@ -26,4 +26,5 @@ jobs:
       - run: npm ci
       - run: npm test
       # No Google credentials here: the build just has sync switched off.
-      - run: npm run build
+      - name: Build (fails on warnings)
+        run: .github/scripts/build-without-warnings.sh
