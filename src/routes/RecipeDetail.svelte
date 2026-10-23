@@ -15,8 +15,11 @@
   import { ingredientOf, setOnHand } from '../lib/ingredients.svelte.js';
   import { preppedKeys, setPrepped, doneSteps, setDoneSteps } from '../lib/recipePrep.svelte.js';
   import { lineParts } from '../lib/ingredients.js';
-  import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe, tooSoonNote } from '../lib/planner.svelte.js';
-  import { href, navigate } from '../lib/router.svelte.js';
+  import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe, tooSoonNote, setDone } from '../lib/planner.svelte.js';
+  import { rememberedServings, rememberServings } from '../lib/recipeServings.svelte.js';
+  import { MIN_SERVINGS, MAX_SERVINGS } from '../lib/recipeServings.js';
+  import { href, navigate, route, replace } from '../lib/router.svelte.js';
+  import { headerChrome } from '../lib/headerChrome.svelte.js';
   import { formatLong, formatWeekday } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { sheetTabOf, syncPhase, PHASE_LOOK } from '../lib/sync/sync.svelte.js';
@@ -31,7 +34,52 @@
   // App.svelte keys this component by id, so reading it once is intentional.
   // svelte-ignore state_referenced_locally
   const recipe = recipeById.get(id);
-  let servings = $state(recipe?.serves ?? 2);
+  // Opens at the servings last chosen for this recipe on this device.
+  let servings = $state(recipe ? rememberedServings(recipe) : 2);
+
+  /** @param {number} n */
+  function setServings(n) {
+    servings = n;
+    rememberServings(recipe, n);
+  }
+
+  // Cook view (`?cook=1`): the same page stripped to ingredients and method, bigger, for the counter. On until the
+  // page is left; toggling replaces the history entry, so Back still leaves the page.
+  const cook = $derived(!!route.query.cook);
+  let cookAnnounce = $state('');
+  /** @type {HTMLElement | undefined} */
+  let cookButton = $state();
+  /** @type {HTMLElement | undefined} */
+  let cookTopBar = $state();
+  let cookBottomBar = $state(0);
+
+  /** @param {boolean} on */
+  async function setCook(on) {
+    replace(`/recipe/${id}${href('', { day: route.query.day, cook: on ? '1' : undefined }).slice(1)}`);
+    cookAnnounce = on ? text.recipe.cook.on : text.recipe.cook.off;
+    window.scrollTo({ top: 0 });
+    if (!on) {
+      await tick();
+      cookButton?.focus();
+    }
+  }
+
+  // The header scrolls away with the page (as in grocery store mode); on phones toasts and focus scrolling clear the
+  // bottom bar.
+  $effect(() => {
+    headerChrome.scrollsAway = cook;
+    return () => (headerChrome.scrollsAway = false);
+  });
+  $effect(() => {
+    if (!cook || !cookBottomBar) return;
+    const root = document.documentElement.style;
+    root.setProperty('--toast-clearance', `${cookBottomBar}px`);
+    root.setProperty('--save-bar-clearance', `${cookBottomBar}px`);
+    return () => {
+      root.removeProperty('--toast-clearance');
+      root.removeProperty('--save-bar-clearance');
+    };
+  });
 
   const day = $derived(
     recipe && dayParam && planner.entries[dayParam]?.recipeId === recipe.id ? dayParam : recipe && dayOfRecipe(recipe.id),
@@ -64,6 +112,22 @@
 
   // Method steps marked done (tap the number): today, on this device, like the prepped ticks.
   const stepsDone = $derived(recipe ? doneSteps(recipe.id) : []);
+  // Cook view marks the first step not done yet, and offers Mark Done on tonight's dinner once all are.
+  const nextStep = $derived(recipe ? recipe.steps.findIndex((_, i) => !stepsDone.includes(i)) : -1);
+  const tonight = $derived(!!day && day === planner.today);
+  const made = $derived(!!day && !!planner.entries[day]?.completed);
+  /** @type {HTMLElement[]} */
+  const stepItems = $state([]);
+
+  function jumpToNext() {
+    const item = stepItems[nextStep];
+    if (!item) return;
+    // The top bar (from md) is sticky; on phones the bar is at the bottom and nothing covers the top.
+    const clear = cookTopBar?.offsetHeight ?? 0;
+    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+    window.scrollTo({ top: item.getBoundingClientRect().top + window.scrollY - clear - 12, behavior });
+    item.focus({ preventScroll: true });
+  }
 
   /** @param {number} i */
   function toggleStep(i) {
@@ -81,11 +145,11 @@
     methodHeading?.focus({ preventScroll: true });
   }
 
-  // Keeps the screen on while the method is on screen (a phone propped up in the kitchen). Released when it scrolls
-  // away, the page is hidden (the browser drops it then too; it's asked for again on return) or left. Does nothing
-  // where Screen Wake Lock isn't supported or is refused.
+  // Keeps the screen on while the method is on screen (a phone propped up in the kitchen), or all the time in cook
+  // view. Released when it scrolls away, the page is hidden (the browser drops it then too; it's asked for again on
+  // return) or left. Does nothing where Screen Wake Lock isn't supported or is refused.
   $effect(() => {
-    const section = methodSection;
+    const section = cook ? document.body : methodSection;
     if (!section || !('wakeLock' in navigator)) return;
     let inView = false;
     let wanted = false;
@@ -124,6 +188,9 @@
       sync();
     };
   });
+
+  // Cook view shows only what's due on the day: earlier heads-ups were for the days before.
+  const headsUpsShown = $derived(recipe?.headsUps?.length ? byLead(recipe.headsUps).filter((h) => !cook || !h.daysBefore) : []);
 
   const capFirst = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -213,14 +280,26 @@
 
 {#snippet stepper()}
   <div class="flex items-center rounded-lg border border-outline-variant bg-surface-container-lowest print:hidden">
-    <button type="button" aria-label={text.recipe.stats.fewer} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings <= 1} onclick={() => servings--}>
+    <button type="button" aria-label={text.recipe.stats.fewer} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings <= MIN_SERVINGS} onclick={() => setServings(servings - 1)}>
       <Icon name="remove" class="text-[16px]" />
     </button>
     <span class="w-6 text-center text-label-md text-on-surface" aria-hidden="true">{servings}</span>
-    <button type="button" aria-label={text.recipe.stats.more} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings >= 12} onclick={() => servings++}>
+    <button type="button" aria-label={text.recipe.stats.more} class="flex h-11 w-11 items-center justify-center text-on-surface-variant hover:text-on-surface disabled:opacity-40 fine:h-auto fine:w-auto fine:p-1.5" disabled={servings >= MAX_SERVINGS} onclick={() => setServings(servings + 1)}>
       <Icon name="add" class="text-[16px]" />
     </button>
   </div>
+{/snippet}
+
+{#snippet exitButton()}
+  <button type="button" class="focus-ring inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 text-label-md text-on-surface hover:bg-surface-container" aria-label={text.recipe.cook.exitAria} onclick={() => setCook(false)}>
+    <Icon name="close" class="text-[20px]" /> {text.recipe.cook.exit}
+  </button>
+{/snippet}
+
+{#snippet nextButton(/** @type {string} */ tone)}
+  <button type="button" class="focus-ring inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-4 text-label-md transition-colors {tone}" onclick={jumpToNext}>
+    {text.recipe.cook.next} <Icon name="arrow_downward" class="text-[18px]" />
+  </button>
 {/snippet}
 
 {#if !recipe}
@@ -231,6 +310,28 @@
     <a href={href('/catalog')} class="btn-primary mt-2 py-2">{text.recipe.notFound.browse}</a>
   </div>
 {:else}
+  <span class="sr-only" aria-live="polite">{cookAnnounce}</span>
+  {#if cook}
+    <!-- Cook view's own bars; the app header has scrolled away. From md one bar on top, on phones one at the bottom,
+         within thumb reach. -->
+    <div bind:this={cookTopBar} class="sticky top-0 z-30 border-b border-surface-container-high bg-background max-md:hidden print:hidden">
+      <div class="mx-auto flex max-w-page items-center gap-2 px-gutter-desktop py-1.5">
+        <div class="-ml-3">{@render exitButton()}</div>
+        <span class="min-w-0 flex-1 truncate font-display text-headline-sm text-on-surface">{recipe.shortTitle}</span>
+        <span class="text-label-md text-on-surface-variant">{text.recipe.stats.servings}</span>
+        {@render stepper()}
+        {#if nextStep >= 0}{@render nextButton('bg-primary-fixed/60 text-primary hover:bg-primary-fixed')}{/if}
+      </div>
+    </div>
+    <div bind:offsetHeight={cookBottomBar} class="fixed inset-x-0 bottom-0 z-30 border-t border-surface-container-high bg-background pb-[env(safe-area-inset-bottom)] md:hidden print:hidden">
+      <div class="flex items-center gap-2 px-gutter py-2">
+        {@render exitButton()}
+        {#if nextStep >= 0}{@render nextButton('flex-1 bg-primary-container text-on-primary hover:bg-primary')}{:else}<span class="flex-1"></span>{/if}
+        <Icon name="group" class="text-[20px] text-on-surface-variant" />
+        {@render stepper()}
+      </div>
+    </div>
+  {:else}
   <!-- Breadcrumb & actions bar -->
   <div class="border-b border-surface-container-high bg-surface-container-low/60 print:hidden">
     <div class="mx-auto flex max-w-page flex-col gap-3 px-gutter py-3 md:flex-row md:items-center md:justify-between md:px-gutter-desktop">
@@ -248,6 +349,9 @@
       </nav>
 
       <div class="flex flex-wrap items-center gap-2">
+        <button bind:this={cookButton} type="button" class="btn-outline min-h-11 fine:min-h-0" onclick={() => setCook(true)}>
+          <Icon name="chef_hat" class="text-[16px]" /> {text.common.cook}
+        </button>
         <a href={href(`/recipe/${recipe.id}/edit`)} class="btn-outline min-h-11 fine:min-h-0">
           <Icon name="edit" class="text-[16px]" /> {text.recipe.buttons.edit}
         </a>
@@ -282,16 +386,17 @@
       </div>
     </div>
   </div>
+  {/if}
 
   <!-- Styled printout (two columns, tints kept); hidden when printing the simple layout. -->
   <div
     class="mx-auto flex w-full max-w-page flex-col gap-6 px-gutter py-5 md:gap-8 md:px-gutter-desktop md:py-8 print:gap-5 print:p-0 print:[-webkit-print-color-adjust:exact] print:[print-color-adjust:exact] print:[&_*]:shadow-none
-      {printOptions.simple ? 'print:hidden' : ''} {textDelta ? 'print-sized' : ''}"
+      {printOptions.simple ? 'print:hidden' : ''} {textDelta ? 'print-sized' : ''} {cook ? 'max-md:pb-24' : ''}"
     style="--print-delta: {textDelta}pt; --print-image: {printOptions.imageScale}%"
   >
     <!-- Title block -->
     <header class="flex flex-col gap-3 md:gap-4">
-      <div class="flex flex-wrap items-center gap-2 print:hidden {recipe.custom || recipe.edited ? '' : 'max-md:hidden'}">
+      <div class="flex flex-wrap items-center gap-2 print:hidden {recipe.custom || recipe.edited ? '' : 'max-md:hidden'} {cook ? '!hidden' : ''}">
         {#if day}
           <!-- Phones: the breadcrumb already names the day. -->
           <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/60 px-2.5 py-1 text-label-sm uppercase text-primary max-md:hidden">
@@ -312,12 +417,12 @@
           </span>
         {/if}
       </div>
-      <h1 class="max-w-4xl font-display text-headline-xl-mobile text-primary md:text-headline-xl">{recipe.title}</h1>
-      {#if recipe.description}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
-      {#if recipe.headsUps?.length}
+      <h1 class="max-w-4xl font-display text-primary {cook ? 'text-headline-lg-mobile md:text-headline-lg' : 'text-headline-xl-mobile md:text-headline-xl'}">{recipe.title}</h1>
+      {#if recipe.description && !cook}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
+      {#if headsUpsShown.length}
         <!-- Things to do ahead, longest lead first. Printed too: paper cooks need them as much. -->
         <ul class="flex max-w-3xl flex-col gap-2" aria-label={text.common.headsUps.calloutAria}>
-          {#each byLead(recipe.headsUps) as headsUp, i (i)}
+          {#each headsUpsShown as headsUp, i (i)}
             <li class="flex items-start gap-3 rounded-xl bg-tone-paprika px-4 py-3 print:border print:border-secondary/40 print:px-3 print:py-2">
               <Icon name="alarm" class="mt-0.5 text-[20px] text-secondary" />
               <div class="min-w-0">
@@ -328,8 +433,8 @@
           {/each}
         </ul>
       {/if}
-      <LastMade recipeId={recipe.id} class="-mt-1 text-label-md print:hidden" />
-      {#if recipe.tags.length}
+      {#if !cook}<LastMade recipeId={recipe.id} class="-mt-1 text-label-md print:hidden" />{/if}
+      {#if recipe.tags.length && !cook}
         <ul class="flex max-w-4xl flex-wrap gap-1.5 print:hidden" aria-label={text.recipe.tagsAria}>
           {#each recipe.tags as tag (tag)}
             <li class="max-w-full">
@@ -346,9 +451,9 @@
         </ul>
       {/if}
 
-      <!-- Phones: the times as one line; servings live in the Ingredients header. -->
+      <!-- Phones and cook view: the times as one line; servings live in the Ingredients header (or cook view's bar). -->
       {#if stats.length}
-        <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-md text-on-surface-variant md:hidden print:hidden">
+        <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-body-md text-on-surface-variant print:hidden {cook ? '' : 'md:hidden'}">
           <Icon name="schedule" class="text-[18px]" />
           {#each stats as stat, i (stat.label)}
             {#if i}<span aria-hidden="true">·</span>{/if}
@@ -357,7 +462,7 @@
         </p>
       {/if}
 
-      <div class="hidden gap-3 md:grid md:grid-cols-3 lg:max-w-4xl lg:grid-cols-4 print:grid print:max-w-none print:grid-cols-4">
+      <div class="hidden gap-3 md:grid md:grid-cols-3 {cook ? 'md:!hidden' : ''} lg:max-w-4xl lg:grid-cols-4 print:grid print:max-w-none print:grid-cols-4">
         {#each stats as stat (stat.label)}
           <div class="flex items-center gap-3 rounded-xl bg-surface-container-low px-4 py-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-container-lowest text-on-surface-variant shadow-card">
@@ -381,9 +486,11 @@
     </header>
 
     <div class="grid grid-cols-1 items-start gap-6 md:gap-8 lg:grid-cols-12 print:flex print:flex-col print:items-stretch print:gap-5">
-      <!-- Printed as one column: photo, ingredients, method, then notes. -->
+      <!-- Printed as one column: photo, ingredients, method, then notes. Cook view drops the photo and lays the
+           sections out directly: ingredients, method, notes; from lg the ingredients stick in a left column. -->
       <!-- Left: photo & notes -->
-      <aside class="flex flex-col gap-6 max-lg:contents lg:sticky lg:top-28 lg:col-span-5 print:contents">
+      <aside class={cook ? 'contents' : 'flex flex-col gap-6 max-lg:contents lg:sticky lg:top-28 lg:col-span-5 print:contents'}>
+        {#if !cook}
         <figure
           class="overflow-hidden rounded-2xl bg-surface-container-lowest shadow-card max-lg:order-1 print:order-1 print:mx-auto print:w-[var(--print-image)]
             {printOptions.image && photo ? '' : 'print:hidden'}"
@@ -404,9 +511,10 @@
             </div>
           </div>
         </figure>
+        {/if}
 
         {#if recipe.notes?.trim()}
-        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card max-lg:order-3 print:order-3 print:break-inside-avoid">
+        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card max-lg:order-3 print:order-3 print:break-inside-avoid {cook ? 'order-3 lg:col-span-7 lg:col-start-6' : ''}">
           <div class="mb-4 flex items-center gap-3">
             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-low text-primary">
               <Icon name="auto_awesome" class="text-[18px]" />
@@ -421,25 +529,26 @@
       </aside>
 
       <!-- Right: ingredients & method -->
-      <div class="flex flex-col gap-8 max-lg:order-2 lg:col-span-7 print:order-2 print:gap-5">
-        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card md:p-6">
+      <div class={cook ? 'contents' : 'flex flex-col gap-8 max-lg:order-2 lg:col-span-7 print:order-2 print:gap-5'}>
+        <!-- Cook view on phones: no card around the ingredients (like the method), so the group cards get the width. -->
+        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card md:p-6 {cook ? 'order-1 max-md:border-transparent max-md:bg-transparent max-md:p-0 max-md:shadow-none lg:sticky lg:top-[4.5rem] lg:col-span-5 lg:row-span-2 lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto' : ''}">
           <div class="mb-4 flex items-start justify-between gap-4">
             <div class="flex items-start gap-3">
               <Icon name="receipt_long" class="mt-0.5 text-[22px] text-secondary" />
               <div>
                 <h2 class="font-display text-headline-sm text-on-surface">{text.recipe.ingredients.title}</h2>
-                <p class="text-body-sm text-on-surface-variant print:hidden">{text.recipe.ingredients.hint}</p>
+                {#if !cook}<p class="text-body-sm text-on-surface-variant print:hidden">{text.recipe.ingredients.hint}</p>{/if}
               </div>
             </div>
-            {#if recipe.steps.length}
+            {#if recipe.steps.length && !cook}
               <button type="button" class="focus-ring -mr-2 -mt-2 inline-flex min-h-11 shrink-0 items-center gap-1 rounded px-2 text-label-sm text-on-surface-variant hover:text-primary md:hidden print:hidden" onclick={jumpToMethod}>
                 {text.recipe.method.jump} <Icon name="arrow_downward" class="text-[16px]" />
               </button>
             {/if}
           </div>
 
-          <!-- Phones: the servings stepper sits with the amounts it scales. -->
-          <div class="mb-3 flex items-center justify-between gap-3 rounded-xl bg-surface-container-low py-1 pl-4 pr-1 md:hidden print:hidden">
+          <!-- Phones: the servings stepper sits with the amounts it scales (in cook view, in the bottom bar). -->
+          <div class="mb-3 flex items-center justify-between gap-3 rounded-xl bg-surface-container-low py-1 pl-4 pr-1 md:hidden print:hidden {cook ? '!hidden' : ''}">
             <span class="text-body-md font-semibold text-on-surface">{text.recipe.stats.servings}</span>
             {@render stepper()}
           </div>
@@ -468,7 +577,7 @@
                       <label class="flex min-h-11 flex-1 cursor-pointer items-center gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container fine:min-h-0 fine:items-start">
                         <input type="checkbox" class="peer sr-only" checked={isPrepped} onchange={() => togglePrepped(key)} />
                         <span
-                          class="mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary-container print:border-outline print:bg-transparent print:text-transparent {isPrepped
+                          class="mt-0.5 flex shrink-0 {cook ? 'h-[22px] w-[22px] fine:mt-1' : 'h-[18px] w-[18px]'} items-center justify-center rounded-full border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary-container print:border-outline print:bg-transparent print:text-transparent {isPrepped
                             ? 'border-primary-container bg-primary-container text-on-primary'
                             : 'border-outline bg-surface-container-lowest text-transparent'}"
                           aria-hidden="true"
@@ -477,12 +586,12 @@
                         </span>
                         <!-- Below sm the aisle drops under the name, leaving the row's width to the name. -->
                         <span class="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:gap-3">
-                        <span class="text-body-lg sm:flex-1 md:text-body-sm print:text-body-sm print:text-on-surface print:no-underline {isPrepped ? 'text-on-surface-variant line-through' : 'text-on-surface'}">
+                        <span class="sm:flex-1 print:text-body-sm {cook ? 'text-body-xl' : 'text-body-lg md:text-body-sm'} print:text-on-surface print:no-underline {isPrepped ? 'text-on-surface-variant line-through' : 'text-on-surface'}">
                           {#if line.amount}<strong class="font-semibold">{line.amount}</strong>{/if}
                           <span class={ingredient ? '' : 'italic'}>{line.name}</span>{#if line.note}{' '}<span class="text-on-surface-variant">({line.note})</span>{/if}{#if line.prep}, {line.prep}{/if}
                           {#if line.optional}<span class="ml-1 text-label-sm text-on-surface-variant">{text.recipe.ingredients.optional}</span>{/if}
                         </span>
-                        {#if ingredient}
+                        {#if ingredient && !cook}
                           <!-- Seen, not read out: the aisle is for shopping, the line is for cooking. -->
                           <span aria-hidden="true" class="shrink-0 rounded bg-surface-container-highest px-1.5 py-0.5 text-label-sm text-on-surface-variant">
                             {aisleLabel(ingredient.aisle)}
@@ -490,7 +599,9 @@
                         {/if}
                         </span>
                       </label>
-                      {#if ingredient}
+                      {#if cook}
+                        <!-- Cook view: no shopping state on the cooking rows. -->
+                      {:else if ingredient}
                         <button
                           type="button"
                           class="group focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-full fine:mt-0.5 fine:h-7 fine:w-7 print:hidden"
@@ -519,6 +630,7 @@
             {/each}
           </div>
 
+          {#if !cook}
           <div class="mt-5 flex flex-col gap-3 border-t border-surface-container-high pt-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
             <p class="text-body-sm text-on-surface-variant">
               {text.recipe.ingredients.pushHint}
@@ -535,11 +647,12 @@
               {missing.length ? text.recipe.ingredients.push(missing.length) : text.recipe.ingredients.pushed}
             </button>
           </div>
+          {/if}
         </section>
 
         {#if recipe.steps.length}
         <!-- The page's scroll padding clears the fixed header on a jump (app.css); the margin adds a little air. -->
-        <section bind:this={methodSection} class="scroll-mt-6">
+        <section bind:this={methodSection} class="scroll-mt-6 {cook ? 'order-2 lg:col-span-7' : ''}">
           <div class="mb-4">
             <div class="flex items-center justify-between gap-4">
               <h2 bind:this={methodHeading} tabindex="-1" class="flex items-center gap-2 font-display text-headline-md text-on-surface outline-none">
@@ -547,14 +660,22 @@
               </h2>
               <span class="shrink-0 text-label-sm uppercase text-on-surface-variant">{text.recipe.method.count(recipe.steps.length)}</span>
             </div>
-            <p class="mt-1 text-body-sm text-on-surface-variant print:hidden">{text.recipe.method.hint}</p>
+            {#if !cook}<p class="mt-1 text-body-sm text-on-surface-variant print:hidden">{text.recipe.method.hint}</p>{/if}
           </div>
           <ol class="flex flex-col gap-4 print:gap-3">
             {#each recipe.steps as step, i (i)}
               {@const done = stepsDone.includes(i)}
-              <!-- A done step sinks into the page (oat ground, no shadow, muted title); prints as usual. -->
+              {@const isNext = cook && i === nextStep}
+              {@const folded = cook && done}
+              <!-- A done step sinks into the page (oat ground, no shadow, muted title); prints as usual. Cook view folds
+                   it to its title, outlines the next step, and gives the text the card's full width (the number sits
+                   beside the title only). -->
               <li
-                class="flex gap-4 rounded-2xl border p-5 transition-colors print:break-inside-avoid print:border-surface-container-high print:bg-surface-container-lowest print:p-4 {done
+                bind:this={stepItems[i]}
+                tabindex="-1"
+                class="rounded-2xl border outline-none transition-colors print:break-inside-avoid print:border-surface-container-high print:bg-surface-container-lowest print:p-4
+                  {cook ? `grid grid-cols-[auto_1fr] items-center gap-x-4 gap-y-3 ${folded ? 'px-4 py-3 md:px-5' : 'p-4 md:p-5'}` : 'flex gap-4 p-5'}
+                  {isNext ? 'border-primary bg-surface-container-lowest shadow-card ring-1 ring-primary' : done
                   ? 'border-transparent bg-surface-container-low'
                   : 'border-surface-container-high bg-surface-container-lowest shadow-card'}"
               >
@@ -563,13 +684,13 @@
                   aria-pressed={done}
                   aria-label={text.recipe.method.doneAria(i + 1)}
                   title={done ? text.recipe.method.undoneTitle : text.recipe.method.doneTitle}
-                  class="group focus-ring -m-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg fine:m-0 fine:h-9 fine:w-9"
+                  class="group focus-ring -m-1 flex shrink-0 {cook ? 'h-12 w-12' : 'h-11 w-11'} items-center justify-center rounded-lg fine:m-0 fine:h-9 fine:w-9"
                   onclick={() => toggleStep(i)}
                 >
                   <!-- A filled sage tile with a check in its corner reads as something to tap; done fills the check.
                        A done step prints like the rest. -->
                   <span
-                    class="relative flex h-9 w-9 items-center justify-center rounded-lg bg-primary-container font-display text-body-lg font-semibold text-on-primary transition-colors group-hover:bg-primary print:bg-surface-container-low print:text-on-surface"
+                    class="relative flex items-center justify-center rounded-lg bg-primary-container font-display font-semibold {cook ? 'h-11 w-11 text-headline-sm' : 'h-9 w-9 text-body-lg'} text-on-primary transition-colors group-hover:bg-primary print:bg-surface-container-low print:text-on-surface"
                   >
                     {String(i + 1).padStart(2, '0')}
                     <span
@@ -581,26 +702,51 @@
                     </span>
                   </span>
                 </button>
-                <div class="flex-1">
-                  <div class="mb-1.5 flex items-start justify-between gap-3">
-                    <h3 class="font-display text-headline-sm print:text-on-surface {done ? 'text-on-surface-variant' : 'text-on-surface'}">{step.title}</h3>
-                    {#if step.minutes}
+                <div class={cook ? 'contents' : 'flex-1'}>
+                  <div class={cook ? 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5' : 'mb-1.5 flex items-start justify-between gap-3'}>
+                    <h3 class="font-display print:text-on-surface {cook && !folded ? 'text-headline-md' : 'text-headline-sm'} {done ? 'text-on-surface-variant' : 'text-on-surface'}">{step.title}</h3>
+                    {#if isNext}
+                      <span class="shrink-0 rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary">{text.recipe.cook.nextBadge}</span>
+                    {/if}
+                    {#if step.minutes && !folded}
                       <span class="shrink-0 rounded-full px-2 py-0.5 text-label-sm uppercase {stepTone(step, i)}">
                         {mins(step.minutes)}
                       </span>
                     {/if}
                   </div>
-                  <div class="notes-md text-body-lg text-on-surface-variant">{@html renderMarkdown(step.text)}</div>
+                  {#if !folded}
+                    <div class="notes-md text-on-surface-variant {cook ? 'col-span-2 text-body-xl' : 'text-body-lg'}">{@html renderMarkdown(step.text)}</div>
+                  {/if}
                 </div>
               </li>
             {/each}
           </ol>
+          {#if cook && nextStep < 0}
+            <div class="mt-4 flex flex-col items-start gap-3 rounded-2xl bg-surface-container-low p-5 sm:flex-row sm:items-center sm:justify-between">
+              <p class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
+                <Icon name="check_circle" class="icon-filled text-[22px] text-primary" /> {text.recipe.cook.allDone}
+              </p>
+              {#if tonight}
+                <!-- The planner card's Mark Done: shows "Done" once pressed, with the toast and Undo. -->
+                <button
+                  type="button"
+                  aria-pressed={made}
+                  aria-label={text.common.markDone}
+                  class="min-h-11 py-2 fine:min-h-0 {made ? 'btn-outline' : 'btn-primary'}"
+                  onclick={() => setDone(day, !made)}
+                >
+                  <Icon name="check_circle" class="text-[16px]" /> {made ? text.common.done : text.common.markDone}
+                </button>
+              {/if}
+            </div>
+          {/if}
         </section>
         {/if}
       </div>
     </div>
 
     <!-- Bottom navigation -->
+    {#if !cook}
     <div class="flex flex-col gap-4 rounded-2xl bg-surface-container-low p-5 sm:flex-row sm:items-center sm:justify-between print:hidden">
       <div class="flex items-center gap-3">
         <span class="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-lowest text-on-surface-variant shadow-card">
@@ -626,6 +772,7 @@
         {/if}
       </div>
     </div>
+    {/if}
   </div>
 {/if}
 

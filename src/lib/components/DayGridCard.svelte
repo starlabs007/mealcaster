@@ -173,13 +173,13 @@
           <button
             type="button"
             aria-pressed={day.status === 'completed'}
-            aria-label={text.planner.card.markDone}
+            aria-label={text.common.markDone}
             class="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all fine:min-h-0 {day.status === 'completed'
               ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
               : 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'}"
             onclick={() => setDone(day.iso, day.status !== 'completed')}
           >
-            <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.planner.card.done : text.planner.card.markDone}
+            <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.common.done : text.common.markDone}
           </button>
         {/if}
       </div>

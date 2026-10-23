@@ -49,6 +49,8 @@ export default {
         'headline-lg-mobile': ['24px', { lineHeight: '32px', fontWeight: '600' }],
         'headline-md': ['22px', { lineHeight: '28px', fontWeight: '600' }],
         'headline-sm': ['18px', { lineHeight: '24px', fontWeight: '600' }],
+        // Cook view's ingredient lines and steps, read from across the counter.
+        'body-xl': ['18px', { lineHeight: '28px' }],
         'body-lg': ['16px', { lineHeight: '24px' }],
         'body-md': ['14px', { lineHeight: '20px' }],
         'body-sm': ['13px', { lineHeight: '18px' }],

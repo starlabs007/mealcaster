@@ -13,6 +13,7 @@
   import { href } from '../router.svelte.js';
   import { tagClass } from '../tagColors.svelte.js';
   import DayHeadsUps from './DayHeadsUps.svelte';
+  import { MediaQuery } from 'svelte/reactivity';
 
   /**
    * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], minimal?: boolean,
@@ -20,6 +21,9 @@
    *   drop?: '' | 'source' | 'over' | 'target' | 'off' }}
    */
   let { day, minimal = false, onswitch, draghandle, drop = '' } = $props();
+
+  // Phones (this list below md): tonight's link opens the recipe in cook view, "Cook" instead of View Recipe.
+  const phone = new MediaQuery('max-width: 767px');
 
   const weekdayName = $derived(formatWeekday(day.iso));
   const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
@@ -148,7 +152,8 @@
 
     {#if hasMeal && day.recipe}
       {@const recipe = day.recipe}
-      {@const recipeHref = href(`/recipe/${recipe.id}`, { day: day.iso })}
+      {@const cookLink = day.isToday && phone.current}
+      {@const recipeHref = href(`/recipe/${recipe.id}`, { day: day.iso, cook: cookLink ? '1' : undefined })}
       {#if minimal}
         <!-- Tonight's Mark Done and ⋯ sit at the card's top right on phones (beside the weekday); View Recipe and the drag
              handle end the title row like on every other row. DOM order = visual order, so Tab follows the eye. -->
@@ -164,8 +169,8 @@
               <button
                 type="button"
                 aria-pressed={day.status === 'completed'}
-                aria-label={text.planner.card.markDone}
-                title={text.planner.card.markDone}
+                aria-label={text.common.markDone}
+                title={text.common.markDone}
                 class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:fine:h-9 md:fine:w-9 {day.status === 'completed'
                   ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
                   : 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'}"
@@ -181,13 +186,13 @@
           <a
             href={recipeHref}
             data-day-focus
-            aria-label={text.planner.card.viewRecipeAria(recipe.title)}
-            title={text.planner.card.viewRecipe}
+            aria-label={cookLink ? text.planner.card.cookAria(recipe.title) : text.planner.card.viewRecipeAria(recipe.title)}
+            title={cookLink ? text.common.cook : text.planner.card.viewRecipe}
             class="focus-ring flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-md transition-all md:fine:h-9 md:fine:w-9 {day.isToday || day.status === 'planned'
               ? 'bg-surface-container-high text-on-surface hover:bg-surface-dim'
               : 'text-primary hover:bg-primary-fixed/50'}"
           >
-            <Icon name="arrow_forward" class="text-[20px]" />
+            <Icon name={cookLink ? 'chef_hat' : 'arrow_forward'} class="text-[20px]" />
           </a>
           {#if handle}
             {@render dragHandle('')}
@@ -218,7 +223,11 @@
             aria-label={day.isToday ? undefined : text.planner.card.viewRecipeAria(recipe.title)}
             class="focus-ring inline-flex items-center gap-1 rounded-md bg-surface-container-high px-3 py-1.5 text-xs font-semibold text-on-surface transition-all hover:bg-surface-dim {tall}"
           >
-            {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
+            {#if cookLink}
+              <Icon name="chef_hat" class="text-[14px]" /> {text.common.cook}
+            {:else}
+              {text.planner.card.viewRecipe} <Icon name="arrow_forward" class="text-[14px]" />
+            {/if}
           </a>
           {#if day.isToday}
             <!-- Tonight's primary action (View Recipe is tonal). Shows "Done" once pressed; the name stays "Mark Done" (it
@@ -226,13 +235,13 @@
             <button
               type="button"
               aria-pressed={day.status === 'completed'}
-              aria-label={text.planner.card.markDone}
+              aria-label={text.common.markDone}
               class="focus-ring inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all {tall} {day.status === 'completed'
                 ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
                 : 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'}"
               onclick={() => setDone(day.iso, day.status !== 'completed')}
             >
-              <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.planner.card.done : text.planner.card.markDone}
+              <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.common.done : text.common.markDone}
             </button>
           {/if}
         </div>
