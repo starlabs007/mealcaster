@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { copiedEntries, dayStatus, dinnerPool, resetDays, restoreDays, snapshotDays } from '../src/lib/planDays.js';
+import { copiedEntries, dayStatus, dinnerPool, pickTier, resetDays, restoreDays, snapshotDays } from '../src/lib/planDays.js';
 
 // Week of Mon 19 – Sun 25 Oct 2026; today is Wednesday and its dinner is done.
 const days = ['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'];
@@ -104,4 +104,36 @@ test('a single-day snapshot takes back Mark Done, a new pick and a cleared eveni
     assert.deepEqual(entries[iso], before);
     assert.equal(iso in entries, before !== undefined);
   }
+});
+
+// Auto-fill and Surprise Me: which recipes they pick from for an evening.
+const meal = (id, daysBefore) => ({ id, badge: { label: 'Dinner' }, ...(daysBefore !== undefined && { headsUps: [{ text: `Prep ${id}`, daysBefore }] }) });
+const ids = (tier) => tier.map((r) => r.id);
+const history = ({ used = [], recent = [] } = {}) => ({ used: new Set(used), madeRecently: (id) => recent.includes(id) });
+
+test('pickTier: a recipe whose heads-up is already late loses to one still in time', () => {
+  // Tomorrow (Thursday): a heads-up due the day before is in time (tonight); two days before was yesterday.
+  const pool = [meal('soak', 1), meal('order', 2), meal('pasta')];
+  assert.deepEqual(ids(pickTier(pool, '2026-10-22', today, history())), ['soak', 'pasta']);
+  // Tonight: even the day-before one is late.
+  assert.deepEqual(ids(pickTier(pool, today, today, history())), ['pasta']);
+  // A same-day heads-up is never late.
+  assert.deepEqual(ids(pickTier([meal('butter', 0), meal('soak', 1)], today, today, history())), ['butter']);
+});
+
+test('pickTier: a late recipe is still picked when nothing else fits', () => {
+  assert.deepEqual(ids(pickTier([meal('order', 2)], today, today, history())), ['order']);
+  assert.deepEqual(pickTier([], today, today, history()), []);
+});
+
+test('pickTier: in time comes first, then not on the menu, then not made recently', () => {
+  const pool = [meal('fresh'), meal('recent'), meal('onMenu'), meal('late', 1)];
+  const h = history({ used: ['onMenu'], recent: ['recent'] });
+  assert.deepEqual(ids(pickTier(pool, today, today, h)), ['fresh']);
+  // Without a fresh one: in time but made recently beats a fresh recipe that's late.
+  assert.deepEqual(ids(pickTier([meal('recent'), meal('onMenu'), meal('late', 1)], today, today, h)), ['recent']);
+  // Only the week's own meal is in time: it still beats a late one not on the menu.
+  assert.deepEqual(ids(pickTier([meal('onMenu'), meal('late', 1)], today, today, h)), ['onMenu']);
+  // Every recipe late: back to the usual order.
+  assert.deepEqual(ids(pickTier([meal('lateA', 1), meal('lateB', 2)], today, today, history({ recent: ['lateA'] }))), ['lateB']);
 });

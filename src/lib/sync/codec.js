@@ -15,6 +15,7 @@ import { aisles } from '../data/aisles.js';
 import { canonicalUnit, ingredientIdFor, recipeIdFor, tidyIngredientName } from '../ingredients.js';
 import { SCHEMA_VERSION } from '../schema.js';
 import * as sheetText from '../sheetText.js';
+import { formatHeadsUps, parseHeadsUps } from '../headsUps.js';
 
 /** @typedef {import('../data/recipes.js').Recipe} Recipe */
 /** @typedef {Record<string, string | number | boolean>} Row */
@@ -201,6 +202,16 @@ const RECIPE_COLUMNS = {
     get: (r) => r.notes ?? '',
     set: (r, v) => (r.notes = str(v)),
   },
+  // A cell that doesn't parse shows nothing and is written back as it was until the recipe gets a heads-up.
+  Heads_Up_JSON: {
+    get: (r) => formatHeadsUps(r.headsUps) || r.headsUpsRaw || '',
+    set: (r, v) => {
+      const { headsUps, raw } = parseHeadsUps(v);
+      r.headsUps = headsUps;
+      if (raw) r.headsUpsRaw = raw;
+      else delete r.headsUpsRaw;
+    },
+  },
 };
 
 /** @param {Recipe} recipe @param {Set<string>} favorites @returns {Row} */
@@ -226,6 +237,7 @@ function blankRecipe(id, today) {
     notes: '',
     ingredients: [],
     steps: [],
+    headsUps: [],
     custom: true,
   };
 }

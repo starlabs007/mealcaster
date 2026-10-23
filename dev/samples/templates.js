@@ -11,6 +11,7 @@
 //     @main, @flavor, @aromatics, @sauce, @starch, @veg:min-max, @herbs:min-max, @broth:amount
 //   steps: [title, 'min-max flags', text]; flags: p = prep time (the rest counts as cook time), c = critical
 //   tips: Cook's Secrets lines for this dish
+//   headsUps: [pattern, daysBefore] things to do ahead (headsUps.js), on the dishes that really need them
 //   tags: custom tags it may get; veg: vegetables that suit it (see the pools below; default: any of the cuisine's)
 
 /**
@@ -28,6 +29,7 @@
  *   groups: [string, string, string[]][],
  *   steps: [string, string, string][],
  *   tips: string[],
+ *   headsUps?: [string, number][],
  *   tags?: string[],
  *   veg?: string[],
  * }} Template
@@ -260,6 +262,7 @@ export const TEMPLATES = [
       ['Grill', '8-12 c', 'Grill over **high, direct heat**, turning every couple of minutes, until charred in spots and cooked through.\n\n> Sugar in the marinade burns quickly. Move skewers to the cooler side if they blacken too fast.'],
       ['Serve', '3-3', 'Pile onto a platter with {veg}, {herbs}, the {starch} and lime wedges.'],
     ],
+    headsUps: [['Marinate the {main} in the fridge for at least 4 hours.', 0]],
     tips: ['Soak bamboo skewers for 30 minutes so they don\'t catch fire.', 'No grill? Use the broiler, 4 inches from the element, turning once.'],
     tags: ['Summer'],
   },
@@ -333,6 +336,7 @@ export const TEMPLATES = [
       ['Noodles & {Main}', '5-8', 'Soak or cook the noodles, divide them between bowls and top with the {main}.'],
       ['Ladle & Serve', '3-3', 'Bring the broth to a hard boil and ladle it over the bowls. Serve with the herb plate, lime, chili, hoisin and sriracha.'],
     ],
+    headsUps: [['Make the broth up to two days ahead: it deepens overnight in the fridge.', 2]],
     tips: ['Freeze leftover broth in portions for instant phở nights.', 'For beef, slice it paper-thin and add it raw — the boiling broth cooks it in the bowl.', 'Rau răm or ngò gai (culantro) make the herb plate taste like Hà Nội.'],
     tags: ['Comfort Food'],
   },
@@ -384,6 +388,7 @@ export const TEMPLATES = [
       ['Simmer', '30-60', 'Add the fish sauce, coconut and chili, and simmer uncovered until the sauce is thick and sticky and the {main} is tender. Finish with plenty of black pepper.'],
       ['Serve', '2-2', 'Scatter with green onion and serve with rice and {veg}.'],
     ],
+    headsUps: [['Marinate the {main} overnight in the fridge.', 1]],
     tips: ['Kho is salty on purpose — it\'s meant to season a big bowl of plain rice.'],
     tags: ['Comfort Food'],
   },
@@ -434,6 +439,7 @@ export const TEMPLATES = [
       ['Fry & Steam', '8-10 c', 'Fry the dumplings flat-side down in hot oil until golden, then add 1/3 cup water and cover at once. Steam until the water is gone and the bottoms re-crisp.\n\n> Keep the lid on until the water is fully gone, or the tops stay doughy.'],
       ['Serve', '2-2', 'Mix the dipping sauce and serve the dumplings crisp-side up.'],
     ],
+    headsUps: [['Take the wrappers out of the freezer in the morning.', 0]],
     tips: ['Freeze extras on a floured tray, then bag them; cook from frozen with an extra 2 minutes of steaming.'],
     tags: ['Meal Prep'],
   },
@@ -701,6 +707,7 @@ export const TEMPLATES = [
       ['Simmer', '45-60', 'Add the tomatoes, beans and broth. Simmer partly covered, stirring now and then, until thick.'],
       ['Serve', '3-3', 'Season and serve with cheese, sour cream and {herbs}.'],
     ],
+    headsUps: [['If you’re using dried beans, soak them overnight.', 1]],
     tips: ['Chili freezes perfectly. Cool it fast in shallow containers.', 'A square of dark chocolate stirred in at the end adds depth.'],
     tags: ['Meal Prep', 'Comfort Food', 'One-Pot'],
   },
@@ -747,6 +754,7 @@ export const TEMPLATES = [
       ['Roast', '60-75 c', 'Roast on top of the {veg} and onions until the thigh reads **165°F**. Baste once or twice.\n\n> Check the thickest part of the thigh, not the breast.'],
       ['Rest & Carve', '15-15', 'Rest 15 minutes, deglaze the pan with the wine, and carve. Spoon the juices over the vegetables and finish with {herbs}.'],
     ],
+    headsUps: [['Dry-brine the chicken: salt it and leave it uncovered in the fridge overnight.', 1]],
     tips: ['An overnight dry-brine uncovered in the fridge is the secret to crackling skin.', 'Save the carcass for stock.'],
     tags: ['Comfort Food', 'Date Night'],
   },
@@ -1176,6 +1184,7 @@ export const TEMPLATES = [
       ['Chill', '0-0', 'Cover and refrigerate overnight.'],
       ['Top', '2-2', 'Top with banana, blueberries and walnuts and eat cold.'],
     ],
+    headsUps: [['Stir the oats together the night before.', 1]],
     tips: ['Make five jars on Sunday for the week.'],
     tags: ['Meal Prep'],
   },
@@ -1243,6 +1252,7 @@ export const TEMPLATES = [
       ['Soak in Coconut', '20-20', 'Warm most of the coconut milk with the sugar and salt, pour over the hot rice and cover for 20 minutes to absorb.'],
       ['Serve', '5-5', 'Serve with sliced mango, the rest of the coconut milk drizzled over, and sesame seeds.'],
     ],
+    headsUps: [['Soak the sticky rice overnight in plenty of cold water.', 1]],
     tips: ['It has to be glutinous (sticky) rice — jasmine won\'t work.'],
     tags: ['Summer'],
   },
@@ -1283,6 +1293,7 @@ export const TEMPLATES = [
       ['Fold & Bake', '25-30', 'Fold in the chocolate, then the dry ingredients. Bake until just set; a skewer should come out with moist crumbs.'],
       ['Cool', '60-60', 'Cool completely before cutting, then sprinkle with flaky salt.'],
     ],
+    headsUps: [['Take the butter and eggs out of the fridge in the morning.', 0]],
     tips: ['Chill before cutting for clean squares.'],
     tags: ['Kid Friendly'],
   },
@@ -1304,6 +1315,7 @@ export const TEMPLATES = [
       ['Set', '5-5 pc', 'Sprinkle the gelatin over 3 tbsp cold water, let it bloom, then whisk it into the hot cream with the vanilla, strain into glasses and chill until **just set**, at least 4 hours.'],
       ['Serve', '5-5', 'Toss the berries with honey and spoon over the panna cotta.'],
     ],
+    headsUps: [['Make it the day before so it can set overnight.', 1]],
     tips: ['It should wobble like jelly, not stand stiff.'],
     tags: ['Date Night'],
   },

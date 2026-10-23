@@ -12,6 +12,7 @@
   import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
   import { href } from '../router.svelte.js';
   import { tagClass } from '../tagColors.svelte.js';
+  import DayHeadsUps from './DayHeadsUps.svelte';
 
   /**
    * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], minimal?: boolean,
@@ -102,7 +103,7 @@
     tabindex="-1"
     data-drop-id={day.iso}
     aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
-    class="focus-ring relative flex flex-col rounded-xl transition-all {minimal ? 'gap-2 p-3 sm:flex-row sm:items-center sm:gap-3' : 'gap-3 p-4'} {cardClass} {spotlightClass} {dropClass[drop]}"
+    class="focus-ring relative flex flex-col rounded-xl transition-all {minimal ? 'gap-2 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3' : 'gap-3 p-4'} {cardClass} {spotlightClass} {dropClass[drop]}"
   >
     {#if day.isToday}
       <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
@@ -209,6 +210,7 @@
             </div>
           </div>
         {/if}
+        <DayHeadsUps {day} named />
         <div class="flex items-center gap-2">
           <a
             href={recipeHref}
@@ -260,6 +262,7 @@
         {/if}
       </div>
 
+      {#if !minimal}<DayHeadsUps {day} named />{/if}
       {#if minimal}
         <!-- Minimal view: just Choose on open evenings. -->
       {:else if day.status === 'open'}
@@ -278,6 +281,10 @@
           </button>
         </div>
       {/if}
+    {/if}
+    {#if minimal}
+      <!-- Under the row, lined up with the thumbnails (from `sm`: after the 9 rem label column and its gap). -->
+      <DayHeadsUps {day} named minimal class="sm:basis-full sm:pl-[9.75rem]" />
     {/if}
   </article>
 {/if}
