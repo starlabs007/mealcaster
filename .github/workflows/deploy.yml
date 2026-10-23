@@ -29,7 +29,16 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm test
-      - run: npm run build
+      # Vite, Rollup and Svelte print warnings on stderr and a clean build prints nothing there, so any stderr output
+      # fails the deploy (#210).
+      - name: Build (fails on warnings)
+        run: |
+          npm run build 2> "$RUNNER_TEMP/build-stderr.txt" || { cat "$RUNNER_TEMP/build-stderr.txt" >&2; exit 1; }
+          if [ -s "$RUNNER_TEMP/build-stderr.txt" ]; then
+            cat "$RUNNER_TEMP/build-stderr.txt" >&2
+            echo "::error title=Build warnings::npm run build printed warnings (above). Fix them before deploying."
+            exit 1
+          fi
         env:
           GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID || secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_API_KEY: ${{ vars.GOOGLE_API_KEY || secrets.GOOGLE_API_KEY }}
