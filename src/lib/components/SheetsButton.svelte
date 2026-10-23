@@ -148,7 +148,6 @@
   } ${extra}`}
   {#if link}
     <a
-      data-signs-in
       role="menuitem"
       tabindex="-1"
       href={link}
@@ -159,7 +158,7 @@
       <Icon name={action.icon} class="text-[18px]" />{action.label}
     </a>
   {:else}
-    <button data-signs-in role="menuitem" tabindex="-1" type="button" class={cls} disabled={action.disabled} onclick={() => run(action.id)}>
+    <button role="menuitem" tabindex="-1" type="button" class={cls} disabled={action.disabled} onclick={() => run(action.id)}>
       <Icon name={action.icon} class="text-[18px]" />{action.label}
     </button>
   {/if}
@@ -177,7 +176,7 @@
     <span class="max-sm:sr-only">{actions.primary.label}</span>
   </a>
 {:else}
-  <span data-signs-in class="inline-flex items-stretch whitespace-nowrap rounded-lg text-label-md {groupClass}" role="group" aria-label={label}>
+  <span class="inline-flex items-stretch whitespace-nowrap rounded-lg text-label-md {groupClass}" role="group" aria-label={label}>
     <!-- Main action (from sm up; below sm it's the menu's first item). -->
     {#if LINKS[actions.primary.id]}
       <a

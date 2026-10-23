@@ -96,9 +96,6 @@ export function signIn(hint, { chooseAccount = false } = {}) {
   });
 }
 
-/** Whether a sign-in popup is open and waiting for Google. */
-export const signingIn = () => pending !== null;
-
 /** A usable token, or '' when the person needs to reconnect. */
 export const currentToken = () => (auth.token && Date.now() < auth.expiresAt ? auth.token : '');
 
