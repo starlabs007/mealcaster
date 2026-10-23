@@ -68,18 +68,20 @@ export const isBlankRow = (row) => Object.values(row).every((v) => str(v) === ''
 
 // ---- Recipes ----------------------------------------------------------------
 
-/** "1. Sear the salmon (8 min, critical): Pat the fillets dry…" per line. */
+/** "1. Sear the salmon (8 min): Pat the fillets dry…" per line. */
 export function formatSteps(steps) {
   return steps
     .map((s, i) => {
-      const flags = [s.minutes ? `${s.minutes} min` : '', s.critical ? 'critical' : ''].filter(Boolean).join(', ');
       // Continuation lines are indented so Markdown lists inside a step aren't read as new steps.
-      return `${i + 1}. ${s.title}${flags ? ` (${flags})` : ''}: ${s.text.replace(/\n/g, '\n    ')}`;
+      return `${i + 1}. ${s.title}${s.minutes ? ` (${s.minutes} min)` : ''}: ${s.text.replace(/\n/g, '\n    ')}`;
     })
     .join('\n');
 }
 
-/** Tolerant reverse of formatSteps; plain numbered lines work too. */
+/**
+ * Tolerant reverse of formatSteps; plain numbered lines work too. "critical" in the brackets is an old flag that
+ * is still recognised (so "(8 min, critical)" parses as 8 minutes) but ignored; the next write drops it.
+ */
 export function parseSteps(text) {
   const steps = [];
   for (const line of str(text).split(/\r?\n/)) {
@@ -94,14 +96,12 @@ export function parseSteps(text) {
     let head = split > 0 ? body.slice(0, split) : '';
     const rest = split > 0 ? body.slice(split + 2).trim() : body;
     let minutes = 0;
-    let critical = false;
     const flags = head.match(/\s*\(([^)]*)\)\s*$/);
     if (flags && /\bmin\b|\bcritical\b/i.test(flags[1])) {
       minutes = Number(flags[1].match(/(\d+)\s*min/i)?.[1] ?? 0);
-      critical = /\bcritical\b/i.test(flags[1]);
       head = head.slice(0, flags.index);
     }
-    steps.push({ title: head.trim() || `Step ${steps.length + 1}`, minutes, text: rest, ...(critical && { critical: true }) });
+    steps.push({ title: head.trim() || `Step ${steps.length + 1}`, minutes, text: rest });
   }
   for (const s of steps) s.text = s.text.trim();
   return steps;

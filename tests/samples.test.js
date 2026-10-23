@@ -136,10 +136,10 @@ describe('generateSamples', () => {
     assert.ok(tags.has('Chinese') && tags.has('Vietnamese'));
   });
 
-  it('keeps recipes consistent: minutes add up, at most one critical step, normalized tags', () => {
+  it('keeps recipes consistent: minutes add up, normalized tags', () => {
     for (const r of s.recipes) {
       assert.equal(r.minutes, r.prepMinutes + r.cookMinutes, r.id);
-      assert.ok(r.steps.filter((st) => st.critical).length <= 1, r.id);
+      assert.ok(r.steps.every((st) => !('critical' in st)), r.id);
       assert.deepEqual(r.tags.map(normalizeTag), r.tags, r.id);
       assert.equal(new Set(r.tags).size, r.tags.length, r.id);
       assert.ok(/^\d{4}-\d{2}-\d{2}$/.test(r.addedAt));

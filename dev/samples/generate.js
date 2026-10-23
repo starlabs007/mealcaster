@@ -17,7 +17,7 @@ import { EDGE_CASES } from './edgeCases.js';
 import { DESC_EXTRA, GENERAL_TIPS, NOTE_HEADINGS } from './phrases.js';
 
 /** Bump whenever the output for a given seed and count changes (it is part of the dev data key). */
-export const GENERATOR_VERSION = 2;
+export const GENERATOR_VERSION = 3;
 
 /**
  * The day `addedAt` dates count back from, as a UTC timestamp: `today` ("YYYY-MM-DD"), else the SAMPLE_DATE
@@ -188,7 +188,7 @@ const pickPattern = (rng, patterns, words) => {
  *   prepMinutes: number,
  *   cookMinutes: number,
  *   groups: { title: string, category: string, lines: ReturnType<typeof parseLine>[] }[],
- *   steps: { title: string, minutes: number, text: string, critical?: boolean }[],
+ *   steps: { title: string, minutes: number, text: string }[],
  *   notes: string,
  *   headsUps: { text: string, daysBefore: number }[],
  *   customTags: string[],
@@ -239,7 +239,7 @@ function edgeDraft(edge, rng) {
     prepMinutes: edge.prepMinutes,
     cookMinutes: edge.cookMinutes,
     groups: adjustLines(groups, { vegetarian: false, prefer: cuisineByName.get(edge.cuisine)?.prefer }).groups,
-    steps: edge.steps.map(([title, minutes, text, critical]) => ({ title, minutes, text, ...(critical && { critical: true }) })),
+    steps: edge.steps.map(([title, minutes, text]) => ({ title, minutes, text })),
     notes: edge.notes,
     headsUps: [],
     customTags: edge.tags,
@@ -331,11 +331,10 @@ function templateDraft(rng) {
   const steps = t.steps.map(([title, spec, text]) => {
     const [mins, flags = ''] = spec.split(' ');
     const [lo, hi] = mins.split('-').map(Number);
-    return { title, minutes: rng.minutes(lo, hi), text, prep: flags.includes('p'), critical: flags.includes('c') };
+    return { title, minutes: rng.minutes(lo, hi), text, prep: flags.includes('p') };
   });
   const prepMinutes = steps.filter((s) => s.prep).reduce((n, s) => n + s.minutes, 0);
   const cookMinutes = steps.filter((s) => !s.prep).reduce((n, s) => n + s.minutes, 0);
-  const keepCritical = rng.chance(0.85);
 
   const vegNames = shown(picked.veg);
   /** @type {Record<string, string>} */
@@ -370,12 +369,7 @@ function templateDraft(rng) {
     prepMinutes,
     cookMinutes,
     groups: adjusted.map((g) => ({ ...g, title: fill(g.title, textWords) })),
-    steps: steps.map((s, i, all) => ({
-      title: text(s.title),
-      minutes: s.minutes,
-      text: text(s.text),
-      ...(s.critical && keepCritical && all.findIndex((x) => x.critical) === i && { critical: true }),
-    })),
+    steps: steps.map((s) => ({ title: text(s.title), minutes: s.minutes, text: text(s.text) })),
     notes: makeNotes(rng, t.tips.map(text), cuisine.pairings),
     headsUps: (t.headsUps ?? []).map(([pattern, daysBefore]) => ({ text: text(pattern), daysBefore })),
     customTags: [
