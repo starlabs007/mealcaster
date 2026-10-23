@@ -1,8 +1,9 @@
-// Day statuses and the evenings a bulk action (Copy Last Week, Reset Week) may change.
-// Plain JS so node tests can load it; planner.svelte.js passes in its state.
+// Day statuses, the evenings a bulk action (Copy Last Week, Reset Week) may change, and which recipes Auto-fill and
+// Surprise Me pick from first. Plain JS so node tests can load it; planner.svelte.js passes in its state.
 
 import { addDays } from './dates.js';
 import { foldKey } from './ingredients.js';
+import { missedHeadsUps } from './headsUps.js';
 
 /**
  * @param {import('./planner.svelte.js').PlanEntry | undefined} entry
@@ -71,4 +72,20 @@ export function restoreDays(entries, saved) {
 export function dinnerPool(recipes) {
   const dinners = recipes.filter((r) => ['', 'dinner'].includes(foldKey(r.badge?.label)));
   return dinners.length ? dinners : recipes;
+}
+
+/**
+ * The recipes Auto-fill and Surprise Me pick from for `iso`: the first non-empty tier of `pool`, best first.
+ * Recipes neither on the week's menu (`used`) nor made recently come first, then ones just not on the menu, then any;
+ * within that order, recipes whose heads-up would already be late on `iso` come after all the ones still in time
+ * (doing the prep this evening for tomorrow is in time). Empty only when `pool` is.
+ * @template {import('./data/recipes.js').Recipe} R
+ * @param {R[]} pool @param {string} iso @param {string} today
+ * @param {{ used: Set<string | undefined>, madeRecently: (recipeId: string) => boolean }} history
+ * @returns {R[]}
+ */
+export function pickTier(pool, iso, today, { used, madeRecently }) {
+  const byHistory = [pool.filter((r) => !used.has(r.id) && !madeRecently(r.id)), pool.filter((r) => !used.has(r.id)), pool];
+  const inTime = (r) => !missedHeadsUps(r, iso, today).length;
+  return [...byHistory.map((tier) => tier.filter(inTime)), ...byHistory].find((tier) => tier.length) ?? [];
 }

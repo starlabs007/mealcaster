@@ -70,6 +70,24 @@ export const text = {
     dismiss: 'Dismiss',
     syncNow: 'Sync Now',
     reconnect: 'Reconnect',
+    /** Heads-ups (things a recipe needs done ahead) on the recipe page, planner cards and catalog cards. */
+    headsUps: {
+      /** When it's due, before the dinner: "The day before". */
+      lead: (/** @type {number} */ n) => (n === 0 ? 'On the day' : n === 1 ? 'The day before' : `${n} days before`),
+      /** Catalog and planner pill: "1 day ahead". */
+      ahead: (/** @type {number} */ n) => `${n} ${plural(n, 'day')} ahead`,
+      aheadAria: (/** @type {number} */ n, /** @type {string[]} */ texts) => `Needs ${n === 1 ? 'a day’s' : `${n} days’`} notice: ${texts.join(' ')}`,
+      today: 'Today',
+      /** A reminder on an earlier card: "For tomorrow", "For Monday". */
+      forDay: (/** @type {number} */ days, /** @type {string} */ weekday) => (days === 1 ? 'For tomorrow' : `For ${weekday}`),
+      /** The same with the dinner, where there's room: "For tomorrow · Hummus". */
+      forDinner: (/** @type {number} */ days, /** @type {string} */ weekday, /** @type {string} */ title) =>
+        `${days === 1 ? 'For tomorrow' : `For ${weekday}`} · ${title}`,
+      calloutAria: 'Heads-up',
+      /** Toast when a dinner lands on a day too soon for its heads-up. */
+      tooSoon: (/** @type {string} */ title, /** @type {number} */ n, /** @type {string} */ what) =>
+        `${title} needs ${n === 1 ? 'a day’s' : `${n} days’`} notice: ${what}`,
+    },
   },
 
   // App shell: header, footer, Sheets button and menu, sync status, disconnect dialog, sync-phase labels (phase.js).
@@ -483,6 +501,11 @@ export const text = {
       cook: 'Cook Time',
       minutesUnit: 'min',
       minutesPlaceholder: 'Not set',
+      headsUp: 'Heads-up',
+      headsUpPlaceholder: 'e.g., Soak the chickpeas overnight.',
+      headsUpWhen: 'When it’s due',
+      headsUpHint: 'Something to do ahead. It shows on the recipe and on the planner the day it’s due.',
+      headsUpMore: (/** @type {number} */ n) => `Your sheet has ${n} more ${plural(n, 'heads-up', 'heads-ups')} for this recipe; ${n === 1 ? 'it stays' : 'they stay'} as ${n === 1 ? 'it is' : 'they are'}.`,
     },
     photo: {
       label: 'Photo',
@@ -538,6 +561,7 @@ export const text = {
         Prep_Minutes: 'Prep Time',
         Cook_Minutes: 'Cook Time',
         Notes: 'Cook’s Secrets',
+        Heads_Up_JSON: 'Heads-up',
       },
     },
 
@@ -1255,6 +1279,7 @@ export const text = {
           Prep_Minutes: 'Hands-on prep time in minutes.',
           Cook_Minutes: 'Cooking time in minutes.',
           Notes: 'Cook’s secrets, in Markdown.',
+          Heads_Up_JSON: `Things to do ahead, e.g. [{"${sheetText.headsUpKeys.text}": "Soak the chickpeas overnight.", "${sheetText.headsUpKeys.daysBefore}": 1}]; plain text = on the day.`,
         },
         provisions: {
           Week_Of: `First day of the grocery week (${sheetText.weekdays[6]} unless changed in Profile & Settings).`,

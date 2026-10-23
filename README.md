@@ -66,7 +66,7 @@ npm run preview    # http://localhost:4173
 - Week stepper in the header (click the date range to jump back to this week).
 - **Auto-fill Remaining**, **Copy Previous Week** (**Copy This Week** on next week), **Clear n Upcoming Evenings** — each with an Undo toast.
   Past days are kept as history and never overwritten. Auto-fill also prefers meals not already on the week's
-  plan and not made in the last 7 days.
+  plan and not made in the last 7 days, and meals whose heads-up is still in time (see Heads-ups).
 - Each day card offers actions for its state:
   - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Night Off**.
   - **Planned meal** (including today): **View Recipe**, **Choose a Different Meal** (opens the catalog), **Surprise Me**,
@@ -90,6 +90,9 @@ npm run preview    # http://localhost:4173
   - **Mark Done** (today only) flags the meal as made without waiting for the day to pass; it turns into a **Done** toggle that undoes it. A done meal counts as made for the catalog and syncs as `Completed_Flag`.
   - **Completed** and **no plan** past days only offer **View Recipe** where there is a meal.
 - Grocery badge counts the items still to buy for the viewed week (every dinner of the week, past days included).
+- **Heads-ups** on today's and upcoming cards: a dinner's own heads-up due on the day, an **N days ahead** pill when it
+  needed doing earlier, and reminders for the next dinners ("For tomorrow · Hummus: Soak the chickpeas overnight.").
+  A reminder opens that dinner's recipe. Nothing to tick off; past days show none.
 
 ## Recipe Catalog (`#/catalog?day=YYYY-MM-DD`)
 
@@ -107,6 +110,7 @@ npm run preview    # http://localhost:4173
   highlighting it (or, with that
   switched off in Profile, stays and confirms with a toast); "Planning for" switches the target day.
 - **Surprise Me & Assign** picks at random from the current results, preferring meals not made recently.
+- A recipe whose heads-up needs notice shows **N days ahead** on its photo.
 
 ## Recipe Detail (`#/recipe/:id?day=YYYY-MM-DD`)
 
@@ -124,6 +128,24 @@ npm run preview    # http://localhost:4173
 - Numbered method steps with durations; tap a step's number to mark it done (the card sinks into the page; kept
   with the prepped ticks, today on this device). The screen stays awake while the method is on screen (Screen Wake
   Lock, where supported); on phones a **Method ↓** link in the ingredients header jumps there; "Next: {Day} {Recipe}" (or Back to Weekly Menu, outline buttons) walks through the week's dinners.
+
+## Heads-ups
+
+A recipe can carry a **heads-up**: one short sentence about something to do ahead ("Soak the chickpeas overnight.") and
+when it's due: on the day, the day before or 2 days before. The editor sets one (About This Recipe); the sheet can hold
+more, and the editor keeps those as they are.
+
+- **Recipe page:** a callout under the description, longest lead first (printed too).
+- **Planner:** each heads-up shows on the card of the day it's due (see the home screen), across week boundaries.
+- **Catalog:** an **N days ahead** pill on the photo.
+- **Planning too late** (picking, Surprise Me, moving, copying or Auto-fill onto a day whose heads-up day has gone, not
+  counting this evening): the toast says so ("Hummus needs a day’s notice: …"). Auto-fill and Surprise Me avoid it
+  when another meal fits.
+- **Sheet:** the `Heads_Up_JSON` column of `[Recipes]`, a list like
+  `[{"text":"Soak the chickpeas overnight.","daysBefore":1}]` (empty = none). Plain text reads as a heads-up on the
+  day; keys MealCaster doesn't know are kept; a cell that isn't valid JSON shows nothing and is left as it is until
+  the recipe gets a heads-up in the app. Optional: added to an existing sheet on the next sync, no schema change
+  (older builds leave the column alone).
 
 ## Recipe tags
 

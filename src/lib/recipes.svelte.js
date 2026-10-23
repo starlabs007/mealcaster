@@ -9,6 +9,7 @@ import { migrateNotes } from './markdown.js';
 import { normalizeCategory, normalizeTags, retag } from './tags.js';
 import { aisles } from './data/aisles.js';
 import { recipeIdFor } from './ingredients.js';
+import { normalizeHeadsUps } from './headsUps.js';
 import { restoreSampleIngredients } from './ingredients.svelte.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 import { storageKey } from './env.js';
@@ -41,6 +42,7 @@ const migrate = (r) => {
     badge: { label: normalizeCategory(rest.badge?.label ?? 'Dinner') },
     tags: normalizeTags(r.tags),
     ingredients: (rest.ingredients ?? []).map((g) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
+    headsUps: normalizeHeadsUps(rest.headsUps),
   };
 };
 

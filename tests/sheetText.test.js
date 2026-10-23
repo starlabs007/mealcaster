@@ -109,6 +109,11 @@ describe('sheetText', () => {
     assert.equal(t.defaultDepartmentShort, 'Pantry', HINT);
   });
 
+  it('heads-up keys (Heads_Up_JSON cell)', () => {
+    assert.deepEqual(t.headsUpKeys, { text: 'text', daysBefore: 'daysBefore' }, HINT);
+    assert.ok(COLUMN_INFO.recipes.Heads_Up_JSON.note.includes(`"${t.headsUpKeys.daysBefore}"`), HINT);
+  });
+
   it('column help in Column Conflicts quotes the same sheet values', () => {
     const { provisions, settings } = COLUMN_INFO;
     assert.ok(provisions.Status.note.includes(`${t.status.toBuy} or ${t.status.bought}. ${t.status.skipped}`), HINT);

@@ -1,4 +1,5 @@
 <script>
+  import { byLead } from '../lib/headsUps.js';
   import Icon from '../lib/components/Icon.svelte';
   import { renderMarkdown } from '../lib/markdown.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
@@ -14,7 +15,7 @@
   import { ingredientOf, setOnHand } from '../lib/ingredients.svelte.js';
   import { preppedKeys, setPrepped, doneSteps, setDoneSteps } from '../lib/recipePrep.svelte.js';
   import { lineParts } from '../lib/ingredients.js';
-  import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe } from '../lib/planner.svelte.js';
+  import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe, tooSoonNote } from '../lib/planner.svelte.js';
   import { href, navigate } from '../lib/router.svelte.js';
   import { formatLong, formatWeekday } from '../lib/dates.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -140,7 +141,9 @@
 
   function planOn(iso) {
     assignRecipe(iso, recipe.id);
-    showToast(text.recipe.toasts.planned(recipe.shortTitle, formatLong(iso)));
+    const note = tooSoonNote(iso);
+    const planned = text.recipe.toasts.planned(recipe.shortTitle, formatLong(iso));
+    showToast(note ? `${planned} ${note}` : planned);
   }
 
   let confirmingDelete = $state(false);
@@ -311,6 +314,20 @@
       </div>
       <h1 class="max-w-4xl font-display text-headline-xl-mobile text-primary md:text-headline-xl">{recipe.title}</h1>
       {#if recipe.description}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
+      {#if recipe.headsUps?.length}
+        <!-- Things to do ahead, longest lead first. Printed too: paper cooks need them as much. -->
+        <ul class="flex max-w-3xl flex-col gap-2" aria-label={text.common.headsUps.calloutAria}>
+          {#each byLead(recipe.headsUps) as headsUp, i (i)}
+            <li class="flex items-start gap-3 rounded-xl bg-tone-paprika px-4 py-3 print:border print:border-secondary/40 print:px-3 print:py-2">
+              <Icon name="alarm" class="mt-0.5 text-[20px] text-secondary" />
+              <div class="min-w-0">
+                <div class="text-label-sm uppercase text-secondary">{text.common.headsUps.lead(headsUp.daysBefore)}</div>
+                <p class="break-words text-body-md text-on-surface">{headsUp.text}</p>
+              </div>
+            </li>
+          {/each}
+        </ul>
+      {/if}
       <LastMade recipeId={recipe.id} class="-mt-1 text-label-md print:hidden" />
       {#if recipe.tags.length}
         <ul class="flex max-w-4xl flex-wrap gap-1.5 print:hidden" aria-label={text.recipe.tagsAria}>

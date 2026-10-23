@@ -5,10 +5,10 @@ export const SCHEMA = {
   // One row per ingredient; recipe lines point at Ingredient_ID. Aisle is written as its label.
   ingredients: ['Ingredient_ID', 'Name', 'Plural', 'Aisle', 'On_Hand'],
   weeklyPlan: ['Date_ISO', 'Day_Of_Week', 'Recipe_ID_Assigned', 'Completed_Flag', 'Custom_Notes'],
-  // PRD columns first; Category → Notes were added so custom recipes round-trip.
+  // PRD columns first; Category → Notes were added so custom recipes round-trip; Heads_Up_JSON for heads-ups (#209).
   recipes: [
     'Recipe_ID', 'Title', 'Description', 'Ingredients_JSON', 'Method_Steps', 'Image_URL', 'Tags', 'Favorite_Flag',
-    'Category', 'Servings', 'Prep_Minutes', 'Cook_Minutes', 'Notes',
+    'Category', 'Servings', 'Prep_Minutes', 'Cook_Minutes', 'Notes', 'Heads_Up_JSON',
   ],
   // One row per ingredient per week. Line_Key ties a row back to its grocery line so edits round-trip; Added keeps
   // what was added by hand.
