@@ -29,7 +29,6 @@
     saveRecipe,
     revertSample,
     newRecipeId,
-    customRecipeCount,
   } from '../lib/recipes.svelte.js';
   import { SCHEMA, sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
   import { addIngredient as createIngredient, findIngredient, ingredientOf, ingredients } from '../lib/ingredients.svelte.js';
@@ -41,7 +40,6 @@
   import { toISO } from '../lib/dates.js';
   import { normalizeTags } from '../lib/tags.js';
   import { tagClasses } from '../lib/tagColors.svelte.js';
-  import SyncStatus from '../lib/components/SyncStatus.svelte';
   import Combobox from '../lib/components/Combobox.svelte';
   import ActionMenu from '../lib/components/ActionMenu.svelte';
 
@@ -521,6 +519,43 @@
 
   // ---- Steps -----------------------------------------------------------------
 
+  /** A step's ⋯ menu. @param {number} index @param {number} key */
+  const stepActions = (index, key) => [
+    ...(index > 0 ? [{ id: 'up', label: text.editor.method.moveUp, icon: 'arrow_upward', onselect: () => moveStep(index, -1) }] : []),
+    ...(index < form.steps.length - 1 ? [{ id: 'down', label: text.editor.method.moveDown, icon: 'arrow_downward', onselect: () => moveStep(index, 1) }] : []),
+    { id: 'remove', label: text.editor.method.remove, icon: 'delete', divider: form.steps.length > 1, onselect: () => removeStep(key) },
+  ];
+
+  /**
+   * Grows a textarea to fit its text (never below its `rows`), on typing and when the text changes from outside
+   * (Undo, a restored draft). Dragging the corner still works until the next change.
+   * @param {HTMLTextAreaElement} node @param {string} _value
+   */
+  function autogrow(node, _value) {
+    const fit = () => {
+      node.style.height = 'auto';
+      node.style.height = `${node.scrollHeight + node.offsetHeight - node.clientHeight}px`;
+    };
+    fit();
+    node.addEventListener('input', fit);
+    // Text wraps differently once the web font loads or the column changes width.
+    document.fonts?.ready.then(fit);
+    let width = node.clientWidth;
+    const resized = new ResizeObserver(() => {
+      if (node.clientWidth === width) return;
+      width = node.clientWidth;
+      fit();
+    });
+    resized.observe(node);
+    return {
+      update: fit,
+      destroy: () => {
+        node.removeEventListener('input', fit);
+        resized.disconnect();
+      },
+    };
+  }
+
   /** @param {number} index @param {-1 | 1} delta */
   function moveStep(index, delta) {
     const steps = [...form.steps];
@@ -686,11 +721,6 @@
     });
   }
 
-  /** Save Draft: the same copy autosave keeps, with a word about it. */
-  function saveDraft() {
-    showToast(keepDraft() ? text.editor.toasts.draftSaved : text.editor.toasts.draftNoSpace);
-  }
-
   function discard() {
     const previous = $state.snapshot(form);
     const wasDirty = dirty;
@@ -730,18 +760,26 @@
   // Placeholders, here and in `field`: lighter than typed text but readable (5.3:1 on white).
   const cellField =
     'min-h-11 min-w-0 rounded-md border bg-surface-container-lowest px-2 py-1.5 text-body-lg text-on-surface placeholder:text-on-surface-variant/80 focus:outline-none focus:ring-2 focus:ring-primary-container fine:min-h-0 fine:text-body-sm';
-  // Save Draft, Discard and Revert sit behind ⋯ in the phone save bar.
+  // Discard and Revert sit behind ⋯ in the phone save bar.
   const saveMenu = $derived([
-    ...(editing ? [] : [{ id: 'draft', label: text.editor.actions.saveDraft, icon: 'save_as', onselect: saveDraft }]),
     ...(editing?.edited ? [{ id: 'revert', label: text.editor.actions.revert, icon: 'restore', onselect: revert }] : []),
     {
       id: 'discard',
       label: editing ? text.editor.actions.discardChanges : text.editor.actions.discardDraft,
       icon: 'delete_sweep',
-      divider: !editing || Boolean(editing.edited),
+      divider: Boolean(editing?.edited),
       onselect: discard,
     },
   ]);
+  // The save bar's one status line.
+  const status = $derived(
+    {
+      clean: { icon: 'check', label: text.editor.actions.noChanges },
+      pending: { icon: 'edit', label: text.editor.actions.unsaved },
+      kept: { icon: 'edit', label: text.editor.actions.unsavedKept },
+      full: { icon: 'warning', label: text.editor.actions.unsavedFull },
+    }[keeping],
+  );
   // Ingredient rows and the labels over them: qty · unit · name · aisle (from md) · ⋯.
   const rowGrid = 'grid grid-cols-[3rem_4.5rem_minmax(0,1fr)_auto] items-center gap-1.5 md:grid-cols-[3.5rem_5rem_minmax(0,1fr)_8rem_auto] md:gap-2';
   // What sits under a row lines up with its name from md (3.5rem + 5rem + two gaps).
@@ -762,6 +800,19 @@
 
 {#snippet error(key)}
   {#if show(key)}{@render errorText(key, errors[key])}{/if}
+{/snippet}
+
+{#snippet writePreview(preview, set)}
+  <div class="inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
+    {#each [[false, text.editor.method.write], [true, text.editor.method.preview]] as [on, label] (label)}
+      <button
+        type="button"
+        aria-pressed={preview === on}
+        class="min-h-11 rounded-md px-3 py-1 fine:min-h-0 {preview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}"
+        onclick={() => set(on)}
+      >{label}</button>
+    {/each}
+  </div>
 {/snippet}
 
 {#snippet numberField(key, label, icon, unit, required = true)}
@@ -860,6 +911,7 @@
               bind:value={form.description}
               maxlength="400"
               placeholder={text.editor.essentials.descriptionPlaceholder}
+              use:autogrow={form.description}
               class="{field} {border(false)} resize-y"
             ></textarea>
           </div>
@@ -1245,15 +1297,7 @@
             <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
           </p>
           <div class="mb-3 flex items-center justify-between gap-3">
-            <div class="inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
-              {#each [[false, text.editor.method.write], [true, text.editor.method.preview]] as [on, label] (label)}
-                <button
-                  type="button"
-                  class="rounded-md px-3 py-1 {stepPreview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}"
-                  onclick={() => (stepPreview = on)}
-                >{label}</button>
-              {/each}
-            </div>
+            {@render writePreview(stepPreview, (on) => (stepPreview = on))}
             <span class="text-label-caps uppercase text-outline">{text.editor.method.count(form.steps.length)}</span>
           </div>
 
@@ -1269,17 +1313,7 @@
                     bind:value={step.title}
                     class="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-1 font-display text-headline-sm text-on-surface placeholder:font-sans placeholder:text-body-md placeholder:text-on-surface-variant/80 hover:border-outline-variant focus:border-outline-variant focus:bg-surface-container-lowest focus:outline-none min-h-11 fine:min-h-0"
                   />
-                  <div class="flex shrink-0 items-center">
-                    <button type="button" aria-label={text.editor.method.moveUp(i + 1)} disabled={i === 0} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30" onclick={() => moveStep(i, -1)}>
-                      <Icon name="arrow_upward" class="text-[18px]" />
-                    </button>
-                    <button type="button" aria-label={text.editor.method.moveDown(i + 1)} disabled={i === form.steps.length - 1} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-on-surface disabled:opacity-30" onclick={() => moveStep(i, 1)}>
-                      <Icon name="arrow_downward" class="text-[18px]" />
-                    </button>
-                    <button type="button" aria-label={text.editor.method.remove(i + 1)} class="rounded-md p-1 text-outline hover:bg-surface-container-high hover:text-secondary" onclick={() => removeStep(step.key)}>
-                      <Icon name="delete" class="text-[18px]" />
-                    </button>
-                  </div>
+                  <ActionMenu label={text.editor.method.menuAria(i + 1)} items={stepActions(i, step.key)} />
                 </div>
                 {#if stepPreview}
                   <div class="notes-md min-h-[3.5rem] rounded-lg bg-surface-container-low p-3 text-body-sm text-on-surface-variant">
@@ -1295,6 +1329,7 @@
                     aria-label={text.editor.method.directionsAria(i + 1)}
                     placeholder={text.editor.method.directionsPlaceholder}
                     bind:value={step.text}
+                    use:autogrow={step.text}
                     class="{field} {border(false)} resize-y"
                   ></textarea>
                 {/if}
@@ -1323,20 +1358,8 @@
               <Icon name="stylus_note" class="text-[20px] text-primary" /> <span>{text.editor.notes.title} <span class="font-sans text-label-md text-outline">{text.editor.optional}</span></span>
             </label>
           </div>
-          <p class="mb-1 text-body-sm text-on-surface-variant">{text.editor.notes.hint}</p>
-          <p class="mb-3 text-body-sm text-on-surface-variant">
-            {text.editor.method.markdown}
-            <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
-          </p>
-          <div class="mb-2 inline-flex rounded-lg bg-surface-container-low p-0.5 text-label-sm">
-            {#each [[false, text.editor.method.write], [true, text.editor.method.preview]] as [on, label] (label)}
-              <button
-                type="button"
-                class="rounded-md px-3 py-1 {notesPreview === on ? 'bg-surface-container-lowest text-primary shadow-sm' : 'text-on-surface-variant'}"
-                onclick={() => (notesPreview = on)}
-              >{label}</button>
-            {/each}
-          </div>
+          <p class="mb-3 text-body-sm text-on-surface-variant">{text.editor.notes.hint} {text.editor.notes.markdown}</p>
+          <div class="mb-2">{@render writePreview(notesPreview, (on) => (notesPreview = on))}</div>
           {#if notesPreview}
             <div class="notes-md min-h-[6.5rem] rounded-lg bg-surface-container-low p-4 text-body-sm text-on-surface-variant">
               {#if form.notes.trim()}
@@ -1351,6 +1374,7 @@
               rows="5"
               bind:value={form.notes}
               placeholder={text.editor.notes.placeholder}
+              use:autogrow={form.notes}
               class="{field} {border(false)} resize-y"
             ></textarea>
           {/if}
@@ -1358,7 +1382,7 @@
       </div>
 
       <!-- Action bar -->
-      <!-- Sticky on every width; below sm one compact row: status · ⋯ (Save Draft, Revert, Discard) · Save. -->
+      <!-- Sticky on every width; below sm one compact row: status · ⋯ (Revert, Discard) · Save. -->
       <div class="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-10 flex flex-wrap items-center gap-x-3 gap-y-2 rounded-2xl bg-surface-container-lowest/95 px-3 py-2 shadow-lift backdrop-blur sm:bottom-4 sm:justify-between sm:gap-3 sm:px-6 sm:py-3 lg:col-span-12">
         {#if submitted && problems.length}
           <div role="group" aria-labelledby="problems-title" class="order-first flex basis-full items-center gap-x-3 gap-y-2 border-b border-outline-variant pb-2 max-sm:overflow-x-auto sm:flex-wrap sm:pb-3">
@@ -1380,30 +1404,12 @@
               <Icon name="restore" class="text-[18px]" /> {text.editor.actions.revert}
             </button>
           {/if}
-          <span class="flex flex-wrap items-center gap-x-3 gap-y-1 max-sm:min-w-0 max-sm:flex-1">
-            <span class="max-sm:hidden"><SyncStatus /></span>
-            <span class="flex items-center gap-1.5 text-body-sm text-on-surface-variant max-sm:line-clamp-2">
-              <Icon name="cloud_off" class="text-[16px] max-sm:hidden" />
-              {#if keeping === 'pending'}
-                {text.editor.actions.unsaved}
-              {:else if keeping === 'kept'}
-                {text.editor.actions.unsavedKept}
-              {:else if keeping === 'full'}
-                {text.editor.actions.unsavedFull}
-              {:else if editing}
-                {text.editor.actions.noChanges}
-              {:else}
-                {text.editor.actions.customSaved(customRecipeCount())}
-              {/if}
-            </span>
+          <span class="flex items-center gap-1.5 text-body-sm text-on-surface-variant max-sm:min-w-0 max-sm:flex-1">
+            <Icon name={status.icon} class="shrink-0 text-[16px] {keeping === 'full' ? 'text-tertiary' : ''}" />
+            <span class="max-sm:line-clamp-2">{status.label}</span>
           </span>
         </div>
         <div class="flex shrink-0 items-center justify-end gap-2 max-sm:gap-1">
-          {#if !editing}
-            <button type="button" class="btn justify-center whitespace-nowrap bg-surface-container-high px-4 py-2 text-body-md text-on-surface hover:bg-surface-dim max-sm:hidden" onclick={saveDraft}>
-              {text.editor.actions.saveDraft}
-            </button>
-          {/if}
           <ActionMenu label={text.editor.actions.moreAria} items={saveMenu} class="sm:hidden" />
           <button type="submit" class="btn-primary min-h-11 justify-center whitespace-nowrap px-5 py-2 text-body-md fine:min-h-0">
             <Icon name="save" class="text-[18px]" /> {editing ? text.editor.actions.saveChanges : text.editor.actions.saveRecipe}
