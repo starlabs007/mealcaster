@@ -788,7 +788,7 @@
 
 {#snippet fieldLabel(label, forId = undefined, required = false)}
   <label for={forId} class="mb-1.5 block text-label-md text-on-surface">
-    {label}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-outline">&nbsp;{text.editor.optional}</span>{/if}
+    {label}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-on-surface-variant">&nbsp;{text.editor.optional}</span>{/if}
   </label>
 {/snippet}
 
@@ -818,7 +818,7 @@
 {#snippet numberField(key, label, icon, unit, required = true)}
   <div>
     <label for="recipe-{key}" class="mb-1.5 flex items-center gap-1 text-label-md text-on-surface">
-      {#if icon}<Icon name={icon} class="text-[16px] text-secondary" />{/if}{label}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-outline">&nbsp;{text.editor.optional}</span>{/if}
+      {#if icon}<Icon name={icon} class="text-[16px] text-secondary" />{/if}{label}{#if required}<span class="text-secondary">&nbsp;*</span>{:else}<span class="text-on-surface-variant">&nbsp;{text.editor.optional}</span>{/if}
     </label>
     <div class="flex items-center gap-2">
       <input
@@ -833,7 +833,7 @@
         aria-describedby={show(key) ? `err-${key}` : undefined}
         class="{field} {border(show(key))}"
       />
-      <span class="shrink-0 text-body-sm text-outline">{unit}</span>
+      <span class="shrink-0 text-body-sm text-on-surface-variant">{unit}</span>
     </div>
     {@render error(key)}
   </div>
@@ -885,7 +885,7 @@
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
               <Icon name="restaurant_menu" class="text-[20px] text-primary" /> {text.editor.essentials.title}
             </h2>
-            <span class="text-body-sm text-outline"><span class="text-secondary">*</span> {text.editor.required}</span>
+            <span class="text-body-sm text-on-surface-variant"><span class="text-secondary">*</span> {text.editor.required}</span>
           </div>
 
           <div>
@@ -951,7 +951,7 @@
                   </span>
                   <span class="flex flex-col gap-0.5 sm:items-center sm:gap-1.5">
                     <span class="text-label-md"><span class="sm:hidden">{text.editor.photo.add}</span><span class="max-sm:hidden">{text.editor.photo.drop}</span></span>
-                    <span class="text-body-sm text-outline">{text.editor.photo.limits}</span>
+                    <span class="text-body-sm text-on-surface-variant">{text.editor.photo.limits}</span>
                   </span>
                 </button>
               {/if}
@@ -971,7 +971,7 @@
             {#if photoError}
               <p class="mt-1 text-body-sm text-secondary">{photoError}</p>
             {:else if uploaded}
-              <p class="mt-1 text-body-sm text-outline">{sheets.spreadsheet ? text.editor.photo.uploadedConnected : text.editor.photo.uploadedLocal}</p>
+              <p class="mt-1 text-body-sm text-on-surface-variant">{sheets.spreadsheet ? text.editor.photo.uploadedConnected : text.editor.photo.uploadedLocal}</p>
             {/if}
           </div>
 
@@ -1020,7 +1020,7 @@
             {#if form.tags.length}
               <ul id="recipe-tags" class="mb-2 flex flex-wrap gap-1.5">
                 {#each form.tags as tag (tag)}
-                  <li class="inline-flex max-w-full items-center rounded-full pl-3 text-label-caps {tagColor.get(tag)}">
+                  <li class="inline-flex max-w-full items-center rounded-full pl-3 text-label-sm {tagColor.get(tag)}">
                     <span class="truncate">{tag}</span>
                     <button
                       data-tag
@@ -1062,7 +1062,7 @@
               <Icon name="view_column" class="text-[20px] text-primary" /> {text.editor.mapping.title}
             </h2>
             <div class="flex items-center gap-3">
-              <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-caps uppercase text-on-surface-variant">
+              <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">
                 {text.editor.mapping.tab(sheets.tabs.recipes)}
               </span>
               <button
@@ -1084,7 +1084,7 @@
                 {#each SCHEMA.recipes as column, i (column)}
                   <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-lowest px-3 py-2">
                     <dt class="flex min-w-0 items-center gap-2">
-                      <span class="text-label-sm text-outline">{columnLetter(i)}</span>
+                      <span class="text-label-sm text-on-surface-variant">{columnLetter(i)}</span>
                       <span class="truncate font-mono text-[12px] text-on-surface">{column}</span>
                     </dt>
                     <dd class="shrink-0 text-body-sm text-on-surface-variant">{text.editor.mapping.source[column]}</dd>
@@ -1226,7 +1226,7 @@
                     {#if badQty}<div class={indent}>{@render errorText(`qty-${row.key}`, text.editor.errors.qty)}</div>{/if}
                     {#if isNew}
                       <div class="{indent} flex flex-wrap items-center gap-x-2 gap-y-1.5">
-                        <span class="rounded bg-tertiary-fixed px-1.5 py-0.5 text-label-caps uppercase text-tertiary" title={text.editor.ingredients.newBadgeTitle(row.text.trim())}>{text.editor.ingredients.newBadge}</span>
+                        <span class="rounded bg-tertiary-fixed px-1.5 py-0.5 text-label-sm uppercase text-tertiary" title={text.editor.ingredients.newBadgeTitle(row.text.trim())}>{text.editor.ingredients.newBadge}</span>
                         <span aria-hidden="true" class="text-body-sm text-on-surface-variant">{text.editor.ingredients.aisleLabel}</span>
                         <select
                           aria-label={text.editor.ingredients.aisleAria(n)}
@@ -1288,7 +1288,7 @@
         <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
             <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="skillet" class="text-[20px] text-primary" /> <span>{text.editor.method.title} <span class="font-sans text-label-md text-outline">{text.editor.optional}</span></span>
+              <Icon name="skillet" class="text-[20px] text-primary" /> <span>{text.editor.method.title} <span class="font-sans text-label-md text-on-surface-variant">{text.editor.optional}</span></span>
             </h2>
           </div>
           <p class="text-body-sm text-on-surface-variant">{text.editor.method.ordered}</p>
@@ -1298,7 +1298,7 @@
           </p>
           <div class="mb-3 flex items-center justify-between gap-3">
             {@render writePreview(stepPreview, (on) => (stepPreview = on))}
-            <span class="text-label-caps uppercase text-outline">{text.editor.method.count(form.steps.length)}</span>
+            <span class="text-label-sm uppercase text-on-surface-variant">{text.editor.method.count(form.steps.length)}</span>
           </div>
 
           <ol id="step-rows" class="flex flex-col gap-3">
@@ -1320,7 +1320,7 @@
                     {#if step.text.trim()}
                       {@html renderMarkdown(step.text)}
                     {:else}
-                      <p class="text-outline">{text.editor.method.nothingToPreview}</p>
+                      <p class="text-on-surface-variant">{text.editor.method.nothingToPreview}</p>
                     {/if}
                   </div>
                 {:else}
@@ -1333,7 +1333,7 @@
                     class="{field} {border(false)} resize-y"
                   ></textarea>
                 {/if}
-                <label class="flex items-center gap-2 self-end text-body-sm text-outline">
+                <label class="flex items-center gap-2 self-end text-body-sm text-on-surface-variant">
                   <Icon name="schedule" class="text-[16px]" />
                   <input type="number" min="0" step="1" inputmode="numeric" placeholder={text.editor.method.minutesPlaceholder} bind:value={step.minutes} class="{cellField} {border(false)} w-16 text-center" />
                   {text.editor.method.minutes}
@@ -1355,7 +1355,7 @@
         <section class="rounded-2xl bg-surface-container-lowest p-5 shadow-card md:p-6">
           <div class="mb-1 flex flex-wrap items-center justify-between gap-2">
             <label for="recipe-notes" class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="stylus_note" class="text-[20px] text-primary" /> <span>{text.editor.notes.title} <span class="font-sans text-label-md text-outline">{text.editor.optional}</span></span>
+              <Icon name="stylus_note" class="text-[20px] text-primary" /> <span>{text.editor.notes.title} <span class="font-sans text-label-md text-on-surface-variant">{text.editor.optional}</span></span>
             </label>
           </div>
           <p class="mb-3 text-body-sm text-on-surface-variant">{text.editor.notes.hint} {text.editor.notes.markdown}</p>
@@ -1365,7 +1365,7 @@
               {#if form.notes.trim()}
                 {@html renderMarkdown(form.notes)}
               {:else}
-                <p class="text-outline">{text.editor.method.nothingToPreview}</p>
+                <p class="text-on-surface-variant">{text.editor.method.nothingToPreview}</p>
               {/if}
             </div>
           {:else}

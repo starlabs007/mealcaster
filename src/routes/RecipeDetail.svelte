@@ -291,7 +291,7 @@
       <div class="flex flex-wrap items-center gap-2 print:hidden {recipe.custom || recipe.edited ? '' : 'max-md:hidden'}">
         {#if day}
           <!-- Phones: the breadcrumb already names the day. -->
-          <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/60 px-2.5 py-1 text-label-caps uppercase text-primary max-md:hidden">
+          <span class="inline-flex items-center gap-1.5 rounded-full bg-primary-fixed/60 px-2.5 py-1 text-label-sm uppercase text-primary max-md:hidden">
             <span class="h-1.5 w-1.5 rounded-full bg-primary"></span> {text.recipe.badges.scheduled(formatLong(day))}
           </span>
         {/if}
@@ -319,7 +319,7 @@
               <a
                 href={href('/catalog', { filter: tag, day: planningDay })}
                 title={text.recipe.tagTitle(tag)}
-                class="inline-flex min-h-6 max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-label-caps transition-opacity hover:opacity-80 {tagClass(tag)}"
+                class="inline-flex min-h-6 max-w-full items-center gap-1 rounded-full px-2.5 py-1 text-label-sm transition-opacity hover:opacity-80 {tagClass(tag)}"
               >
                 {#if tagIcon(tag)}<Icon name={tagIcon(tag)} class="text-[13px]" />{/if}
                 <span class="truncate">{tag}</span>
@@ -347,14 +347,14 @@
               <Icon name={stat.icon} class="text-[18px]" />
             </span>
             <div>
-              <div class="text-label-caps uppercase text-outline">{stat.label}</div>
+              <div class="text-label-sm uppercase text-on-surface-variant">{stat.label}</div>
               <div class="text-body-sm font-semibold text-on-surface">{stat.value}</div>
             </div>
           </div>
         {/each}
         <div class="flex items-center justify-between gap-2 rounded-xl bg-surface-container-low px-4 py-3">
           <div>
-            <div class="text-label-caps uppercase text-outline">{text.recipe.stats.servings}</div>
+            <div class="text-label-sm uppercase text-on-surface-variant">{text.recipe.stats.servings}</div>
             <div class="whitespace-nowrap text-body-sm font-semibold text-on-surface">{text.recipe.stats.servingsValue(servings)}</div>
           </div>
           {@render stepper()}
@@ -376,11 +376,11 @@
             <RecipeImage src={recipe.image} alt={recipe.title} class="h-full w-full" />
             <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
               <!-- Phones show the times above, and servings with the ingredients. -->
-              <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-caps text-on-surface shadow-sm backdrop-blur-md max-md:invisible">
+              <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-sm text-on-surface shadow-sm backdrop-blur-md max-md:invisible">
                 <Icon name="restaurant_menu" class="text-[13px]" /> {text.recipe.photoMeta(recipe.minutes ? formatMinutes(recipe.minutes) : '', recipe.serves)}
               </span>
               {#if recipe.badge.label}
-                <span class="rounded-full bg-primary-container/90 px-2.5 py-1 text-label-caps text-on-primary shadow-sm backdrop-blur-md">
+                <span class="rounded-full bg-primary-container/90 px-2.5 py-1 text-label-sm text-on-primary shadow-sm backdrop-blur-md">
                   {recipe.badge.label}
                 </span>
               {/if}
@@ -396,10 +396,10 @@
             </span>
             <div>
               <h2 class="font-display text-headline-sm text-on-surface">{text.recipe.notes.title}</h2>
-              <p class="text-label-caps uppercase text-outline">{text.recipe.notes.label}</p>
+              <p class="text-label-sm uppercase text-on-surface-variant">{text.recipe.notes.label}</p>
             </div>
           </div>
-          <div class="notes-md rounded-r-lg border-l-4 border-secondary bg-surface-container-low p-4 text-body-md text-on-surface-variant md:text-body-sm">
+          <div class="notes-md rounded-lg bg-surface-container-low p-4 text-body-md text-on-surface-variant md:text-body-sm">
             {@html renderMarkdown(recipe.notes)}
           </div>
         </section>
@@ -441,8 +441,7 @@
             {#each recipe.ingredients as group, g (group.title)}
               <div class="rounded-xl bg-surface-container-low p-4">
                 <div class="mb-2 flex items-center justify-between gap-2">
-                  <h3 class="text-label-caps uppercase text-secondary">{g + 1}. {group.title}</h3>
-                  <span class="text-label-caps uppercase text-outline">{group.category}</span>
+                  <h3 class="text-label-sm uppercase text-secondary">{g + 1}. {group.title}</h3>
                 </div>
                 <ul class="flex flex-col">
                   {#each group.items as item, i (i)}
@@ -467,10 +466,11 @@
                         <span class="text-body-lg sm:flex-1 md:text-body-sm print:text-body-sm print:text-on-surface print:no-underline {isPrepped ? 'text-on-surface-variant line-through' : 'text-on-surface'}">
                           {#if line.amount}<strong class="font-semibold">{line.amount}</strong>{/if}
                           <span class={ingredient ? '' : 'italic'}>{line.name}</span>{#if line.note}{' '}<span class="text-on-surface-variant">({line.note})</span>{/if}{#if line.prep}, {line.prep}{/if}
-                          {#if line.optional}<span class="ml-1 text-label-sm text-outline">{text.recipe.ingredients.optional}</span>{/if}
+                          {#if line.optional}<span class="ml-1 text-label-sm text-on-surface-variant">{text.recipe.ingredients.optional}</span>{/if}
                         </span>
                         {#if ingredient}
-                          <span class="shrink-0 rounded bg-surface-container-highest px-1.5 py-0.5 text-label-caps text-on-surface-variant">
+                          <!-- Seen, not read out: the aisle is for shopping, the line is for cooking. -->
+                          <span aria-hidden="true" class="shrink-0 rounded bg-surface-container-highest px-1.5 py-0.5 text-label-sm text-on-surface-variant">
                             {aisleLabel(ingredient.aisle)}
                           </span>
                         {/if}
@@ -529,7 +529,7 @@
               <h2 bind:this={methodHeading} tabindex="-1" class="flex items-center gap-2 font-display text-headline-md text-on-surface outline-none">
                 <Icon name="outdoor_grill" class="text-[22px] text-primary" /> {text.recipe.method.title}
               </h2>
-              <span class="shrink-0 text-label-caps uppercase text-outline">{text.recipe.method.count(recipe.steps.length)}</span>
+              <span class="shrink-0 text-label-sm uppercase text-on-surface-variant">{text.recipe.method.count(recipe.steps.length)}</span>
             </div>
             <p class="mt-1 text-body-sm text-on-surface-variant print:hidden">{text.recipe.method.hint}</p>
           </div>
@@ -569,7 +569,7 @@
                   <div class="mb-1.5 flex items-start justify-between gap-3">
                     <h3 class="font-display text-headline-sm print:text-on-surface {done ? 'text-on-surface-variant' : 'text-on-surface'}">{step.title}</h3>
                     {#if step.minutes}
-                      <span class="shrink-0 rounded-full px-2 py-0.5 text-label-caps uppercase {stepTone(step, i)}">
+                      <span class="shrink-0 rounded-full px-2 py-0.5 text-label-sm uppercase {stepTone(step, i)}">
                         {mins(step.minutes)}
                       </span>
                     {/if}
