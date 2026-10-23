@@ -50,6 +50,12 @@ function joinList(items) {
 
 export const text = {
   common: {
+    /** Tonight's dinner made (planner card, recipe cook view). */
+    markDone: 'Mark Done',
+    // What the Mark Done button shows once pressed; its name stays "Mark Done" with aria-pressed.
+    done: 'Done',
+    /** Opens a recipe in cook view (recipe page, tonight's planner card on phones). */
+    cook: 'Cook',
     /** The browser tab / history title: "MealCaster · <page>". */
     pageTitle: (/** @type {string} */ page) => `MealCaster · ${page}`,
     pages: {
@@ -218,9 +224,8 @@ export const text = {
       meta: (/** @type {number} */ minutes, /** @type {number} */ serves) => (minutes ? `${minutes} min · Serves ${serves}` : `Serves ${serves}`),
       viewRecipe: 'View Recipe',
       viewRecipeAria: (/** @type {string} */ title) => `View recipe: ${title}`,
-      markDone: 'Mark Done',
-      // What the Mark Done button shows once pressed; its name stays "Mark Done" with aria-pressed.
-      done: 'Done',
+      // Tonight's link on phones, in place of View Recipe: opens the recipe in cook view.
+      cookAria: (/** @type {string} */ title) => `Cook ${title}`,
       swapMeal: 'Choose a Different Meal',
       surpriseMe: 'Surprise Me',
       nightOffAction: 'Night Off',
@@ -426,6 +431,15 @@ export const text = {
       undoneTitle: 'Done — tap to undo',
     },
     sync: 'Google Sheets sync',
+    cook: {
+      exit: 'Exit',
+      exitAria: 'Exit cook view',
+      next: 'Next step',
+      nextBadge: 'Next',
+      allDone: 'All steps done.',
+      on: 'Cook view on.',
+      off: 'Cook view off.',
+    },
     deleteDialog: {
       title: 'Delete this recipe?',
       afterTitle: ' will be removed from your recipes. You can undo this right after.',
