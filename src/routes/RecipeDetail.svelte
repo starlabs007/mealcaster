@@ -482,10 +482,12 @@
                           title={home ? text.recipe.ingredients.atHomeTitle : text.recipe.ingredients.notAtHomeTitle}
                           onclick={() => toggleAtHome(item.id, line.name)}
                         >
+                          <!-- Never a filled disc: that's the prep tick's look. At home = a solid sage house,
+                               not at home = a lighter outline house, so the two differ in shape as well as colour. -->
                           <span
-                            class="flex h-8 w-8 items-center justify-center rounded-full transition-colors fine:h-7 fine:w-7 {home
-                              ? 'bg-primary-container text-on-primary group-hover:bg-primary'
-                              : 'text-on-surface-variant group-hover:bg-surface-container group-hover:text-primary'}"
+                            class="flex h-8 w-8 items-center justify-center rounded-full transition-colors group-hover:bg-surface-container fine:h-7 fine:w-7 {home
+                              ? 'text-primary'
+                              : 'text-outline group-hover:text-primary'}"
                           >
                             <Icon name="home" class="text-[18px] fine:text-[16px] {home ? 'icon-filled' : ''}" />
                           </span>
