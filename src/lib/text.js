@@ -384,9 +384,9 @@ export const text = {
     /** "15 mins", "1 min" (60 minutes and over use formatMinutes). */
     minutes: (/** @type {number} */ m) => `${m} ${plural(m, 'min', 'mins')}`,
     photoMeta: (/** @type {string} */ time, /** @type {number} */ serves) => (time ? `${time} · Serves ${serves}` : `Serves ${serves}`),
-    notes: { title: 'Cook’s Secrets', label: 'Notes' },
+    notes: { title: 'Cook’s Secrets' },
     ingredients: {
-      title: 'Mise en Place Ingredients',
+      title: 'Ingredients',
       hint: 'Tick each one as you prep it. Ticks clear tomorrow.',
       clearAll: 'Clear ticks',
       checkAll: 'Tick all',
@@ -399,8 +399,8 @@ export const text = {
       pushed: 'Everything is on your list or at home',
     },
     method: {
-      title: 'Step-by-Step Method',
-      count: (/** @type {number} */ n) => `${n} Essential Movements`,
+      title: 'Method',
+      count: (/** @type {number} */ n) => `${n} ${plural(n, 'step')}`,
       jump: 'Method',
       hint: 'Tap a step’s number once it’s done. Done steps clear tomorrow.',
       doneAria: (/** @type {number} */ n) => `Step ${n} done`,
@@ -465,20 +465,19 @@ export const text = {
       breadcrumbAria: 'Breadcrumb',
       catalog: 'Recipe Catalog',
       edit: 'Edit',
-      createNew: 'Create New Recipe',
+      createNew: 'New Recipe',
       titleEdit: 'Edit Recipe',
-      titleNew: 'Add a Custom Family Recipe',
-      intro: 'Document signature dinners, treasured family heirlooms, or handpicked online finds.',
+      titleNew: 'New Recipe',
       restoredDraft: 'Restored your saved draft',
     },
 
     essentials: {
-      title: 'Recipe Essentials',
+      title: 'About This Recipe',
       recipeTitle: 'Recipe Title',
       titlePlaceholder: 'e.g., Mom’s Lemon Basil Ricotta Rigatoni',
       description: 'Description',
       descriptionPlaceholder: 'One or two lines that make you want to cook it tonight.',
-      servings: 'Yield / Servings',
+      servings: 'Servings',
       servingsUnit: 'servings',
       prep: 'Prep Time',
       cook: 'Cook Time',
@@ -486,11 +485,11 @@ export const text = {
       minutesPlaceholder: 'Not set',
     },
     photo: {
-      label: 'Culinary Photo',
+      label: 'Photo',
       previewAlt: 'Recipe photo preview',
       replace: 'Replace',
       remove: 'Remove',
-      drop: 'Drop a kitchen snapshot or click to upload',
+      drop: 'Drop a photo here or click to choose one',
       add: 'Add a photo',
       limits: 'JPG, WebP or PNG up to 10 MB',
       linkAria: 'Image link',
@@ -543,7 +542,7 @@ export const text = {
     },
 
     ingredients: {
-      title: 'Ingredients & Mise en Place',
+      title: 'Ingredients',
       closePaste: 'Close',
       paste: 'Paste bulk text',
       /** The labels over the rows. */
@@ -551,7 +550,7 @@ export const text = {
       addRow: 'Add Ingredient',
       addTo: (/** @type {string} */ group) => `Add Ingredient to ${group}`,
       addGroup: 'Add Group',
-      groupsHint: 'Groups become the numbered Mise en Place sections in the recipe view.',
+      groupsHint: 'Groups become the numbered sections of Ingredients on the recipe page.',
       aisleNote: 'Aisles come from your ingredient list and are shared by every recipe; you choose one only for a new ingredient.',
       groupNameAria: (/** @type {number} */ n) => `Group ${n} name`,
       groupNamePlaceholder: 'Group name (e.g. Sauce)',
@@ -608,8 +607,7 @@ export const text = {
     },
 
     method: {
-      title: 'Preparation & Method',
-      ordered: 'Ordered steps',
+      title: 'Method',
       markdown: 'Supports Markdown:',
       write: 'Write',
       preview: 'Preview',
@@ -669,7 +667,7 @@ export const text = {
       noIngredientsFound: 'No ingredients found — put one per line, e.g. “1 lb rigatoni”.',
       addedIngredients: (/** @type {number} */ n) => `Added ${n} ${plural(n, 'ingredient')} — check the amounts and aisles.`,
       updated: 'Recipe updated.',
-      added: (/** @type {string} */ title) => `${title} added to your recipe box.`,
+      added: (/** @type {string} */ title) => `${title} saved.`,
       reverted: 'Recipe reverted to the original.',
       draftNoSpace: 'This device ran out of space for the draft. Try a smaller photo or an image link.',
       draftDiscarded: 'Draft discarded.',

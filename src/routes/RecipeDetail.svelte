@@ -394,10 +394,7 @@
             <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-low text-primary">
               <Icon name="auto_awesome" class="text-[18px]" />
             </span>
-            <div>
-              <h2 class="font-display text-headline-sm text-on-surface">{text.recipe.notes.title}</h2>
-              <p class="text-label-sm uppercase text-on-surface-variant">{text.recipe.notes.label}</p>
-            </div>
+            <h2 class="font-display text-headline-sm text-on-surface">{text.recipe.notes.title}</h2>
           </div>
           <div class="notes-md rounded-lg bg-surface-container-low p-4 text-body-md text-on-surface-variant md:text-body-sm">
             {@html renderMarkdown(recipe.notes)}
