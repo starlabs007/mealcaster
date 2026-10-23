@@ -868,7 +868,6 @@
         <h1 class="mt-2 font-display text-headline-lg-mobile tracking-tight text-primary md:text-headline-xl">
           {editing ? text.editor.header.titleEdit : text.editor.header.titleNew}
         </h1>
-        <p class="mt-1 max-w-2xl text-body-md text-on-surface-variant">{text.editor.header.intro}</p>
       </div>
       {#if savedDraft}
         <span class="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full bg-primary-fixed/60 px-3 py-1 text-label-sm text-primary md:self-auto">
@@ -1291,7 +1290,6 @@
               <Icon name="skillet" class="text-[20px] text-primary" /> <span>{text.editor.method.title} <span class="font-sans text-label-md text-on-surface-variant">{text.editor.optional}</span></span>
             </h2>
           </div>
-          <p class="text-body-sm text-on-surface-variant">{text.editor.method.ordered}</p>
           <p class="mb-3 text-body-sm text-on-surface-variant">
             {text.editor.method.markdown}
             <code class="font-sans">**bold**</code>, <code class="font-sans">*italic*</code>, <code class="font-sans">- lists</code>, <code class="font-sans">## headings</code>, <code class="font-sans">[links](https://…)</code>.
