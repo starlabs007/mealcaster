@@ -1,8 +1,8 @@
 <script>
   // Header Google Sheets button. Not connected: a plain link to the connection screen. Connected:
   // a split button — the main action follows the sync state (Reconnect, Sync Now, Resolve Columns…)
-  // and the menu offers the connection screen, the spreadsheet and Disconnect. Below `sm` it's
-  // icon-only and a tap opens the menu, which then lists the main action first.
+  // and the menu offers the connection screen, the spreadsheet and Disconnect. Below `sm` both
+  // segments are icon-only, so the main action stays one tap away.
   import { tick } from 'svelte';
   import Icon from './Icon.svelte';
   import { text } from '../text.js';
@@ -177,28 +177,28 @@
   </a>
 {:else}
   <span class="inline-flex items-stretch whitespace-nowrap rounded-lg text-label-md {groupClass}" role="group" aria-label={label}>
-    <!-- Main action (from sm up; below sm it's the menu's first item). -->
+    <!-- Main action: labelled from sm up, icon-only below. -->
     {#if LINKS[actions.primary.id]}
       <a
         href={LINKS[actions.primary.id]()}
         aria-current={current ? 'page' : undefined}
         title={label}
-        class="inline-flex items-center gap-1.5 rounded-l-lg py-2 pl-4 pr-3 max-sm:hidden {segment}"
+        class="inline-flex items-center justify-center gap-1.5 rounded-l-lg py-2 pl-4 pr-3 max-sm:min-w-10 max-sm:px-2.5 {segment}"
       >
-        {@render statusIcon()}{actions.primary.label}
+        {@render statusIcon()}<span class="max-sm:sr-only">{actions.primary.label}</span>
       </a>
     {:else}
       <button
         type="button"
         title={label}
         disabled={actions.primary.disabled}
-        class="inline-flex items-center gap-1.5 rounded-l-lg py-2 pl-4 pr-3 max-sm:hidden {segment}"
+        class="inline-flex items-center justify-center gap-1.5 rounded-l-lg py-2 pl-4 pr-3 max-sm:min-w-10 max-sm:px-2.5 {segment}"
         onclick={() => run(actions.primary.id)}
       >
-        {@render statusIcon()}{actions.primary.disabled ? text.header.sheets.syncing : actions.primary.label}
+        {@render statusIcon()}<span class="max-sm:sr-only">{actions.primary.disabled ? text.header.sheets.syncing : actions.primary.label}</span>
       </button>
     {/if}
-    <span class="my-2 w-px bg-current opacity-25 max-sm:hidden" aria-hidden="true"></span>
+    <span class="my-2 w-px bg-current opacity-25" aria-hidden="true"></span>
     <button
       bind:this={toggle}
       type="button"
@@ -207,12 +207,11 @@
       aria-controls={open ? menuId : undefined}
       aria-label={text.header.sheets.moreOptionsAria(label)}
       title={text.header.sheets.moreOptionsTitle}
-      class="inline-flex items-center rounded-lg px-3 py-2 sm:rounded-l-none sm:px-1.5 {segment}"
+      class="inline-flex items-center justify-center rounded-lg rounded-l-none px-1.5 py-2 max-sm:min-w-9 {segment}"
       onclick={() => (open ? close() : show())}
       onkeydown={onToggleKey}
     >
-      {@render statusIcon('sm:hidden')}
-      <Icon name="expand_more" class="text-[18px] transition-transform max-sm:hidden {open ? 'rotate-180' : ''}" />
+      <Icon name="expand_more" class="text-[18px] transition-transform {open ? 'rotate-180' : ''}" />
     </button>
   </span>
 
@@ -230,8 +229,6 @@
       <p class="flex items-center gap-2 px-3 pb-1.5 pt-1 text-label-caps uppercase text-on-surface-variant">
         {@render statusIcon('!text-[14px]')}{look.short}
       </p>
-      {@render item(actions.primary, 'sm:hidden')}
-      <div class="my-1 h-px bg-surface-container-high sm:hidden" role="separator"></div>
       {#each actions.menu as action (action.id)}
         {#if action.id === 'disconnect'}<div class="my-1 h-px bg-surface-container-high" role="separator"></div>{/if}
         {@render item(action)}
