@@ -13,11 +13,12 @@
   import DisconnectDialog, { disconnectPrompt } from './lib/components/DisconnectDialog.svelte';
   import { syncState } from './lib/sync/sync.svelte.js';
   import { route, navigate } from './lib/router.svelte.js';
+  import { editRouteId, recipeRouteId } from './lib/routes.js';
   import { recipeById } from './lib/recipes.svelte.js';
   import { text } from './lib/text.js';
 
-  const recipeId = $derived(route.path.match(/^\/recipe\/([\w-]+)$/)?.[1]);
-  const editId = $derived(route.path.match(/^\/recipe\/([\w-]+)\/edit$/)?.[1]);
+  const recipeId = $derived(recipeRouteId(route.path));
+  const editId = $derived(editRouteId(route.path));
 
   // One title per route, so the tab, history and screen readers say where you are.
   const pageTitle = $derived.by(() => {

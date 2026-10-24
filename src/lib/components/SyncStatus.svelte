@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import { sheets } from '../sheets.svelte.js';
   import { text } from '../text.js';
+  import { ago as timeAgo } from '../syncAgo.js';
   import { syncState, syncPhase, PHASE_LOOK } from '../sync/sync.svelte.js';
 
   /** @type {{ variant?: 'badge' | 'line', note?: string }} note: more detail for the badge's tooltip and screen reader text */
@@ -17,13 +18,7 @@
 
   const phase = $derived(syncPhase());
 
-  function ago(iso) {
-    const minutes = Math.floor((now - Date.parse(iso)) / 60_000);
-    if (minutes < 1) return text.header.syncStatus.justNow;
-    if (minutes < 60) return text.header.syncStatus.minutesAgo(minutes);
-    const hours = Math.floor(minutes / 60);
-    return hours < 24 ? text.header.syncStatus.hoursAgo(hours) : new Date(iso).toLocaleDateString();
-  }
+  const ago = (iso) => timeAgo(iso, now, text.header.syncStatus);
 
   const TONE = {
     ok: { dot: 'bg-primary', badge: 'bg-primary-fixed/70 text-primary' },

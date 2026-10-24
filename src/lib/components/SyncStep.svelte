@@ -9,6 +9,7 @@
   import { sheets, saveSheetsSettings, spreadsheetUrl, shortId } from '../sheets.svelte.js';
   import { auth } from '../google/auth.svelte.js';
   import { syncState, syncPhase, syncFromClick, connect, initialized } from '../sync/sync.svelte.js';
+  import { directionChange } from '../sync/phase.js';
   import { navigate } from '../router.svelte.js';
   import { showToast } from '../toast.svelte.js';
   import { text } from '../text.js';
@@ -28,9 +29,9 @@
   /** @param {'bidirectional' | 'pushOnly'} value */
   function chooseDirection(value) {
     confirmBackup = false;
-    if (value === sheets.direction) return;
-    if (value === 'pushOnly' && initialized()) confirmBackup = true;
-    else save({ direction: value });
+    const change = directionChange(value, sheets.direction, initialized());
+    if (change === 'confirm') confirmBackup = true;
+    else if (change === 'save') save({ direction: value });
   }
 
   // Arriving to start syncing (e.g. just after choosing a sheet) the Start Syncing button sits below the fold: scroll to it.

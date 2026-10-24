@@ -2,6 +2,7 @@
 
 import { currentToken, expire } from './auth.svelte.js';
 import { text } from '../text.js';
+import { isPhotoDataUrl } from '../photoUrl.js';
 
 const SHEETS = 'https://sheets.googleapis.com/v4/spreadsheets';
 const DRIVE = 'https://www.googleapis.com/drive/v3';
@@ -134,8 +135,7 @@ export async function ensurePhotoFolder(knownId) {
   return folder.id;
 }
 
-/** A photo from the recipe editor that's waiting to be uploaded. */
-export const isPhotoDataUrl = (url) => /^data:image\/(jpeg|png|webp)[;,]/.test(url ?? '');
+export { isPhotoDataUrl };
 
 /**
  * Uploads a recipe photo and shares it as "anyone with the link can view", so

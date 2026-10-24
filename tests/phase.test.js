@@ -4,7 +4,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { text } from '../src/lib/text.js';
-import { PHASE_LOOK, headerActions, phaseOf, startStep } from '../src/lib/sync/phase.js';
+import { PHASE_LOOK, directionChange, headerActions, phaseOf, startStep } from '../src/lib/sync/phase.js';
 
 /** Connected, signed in and in sync; each test changes what it needs. */
 const state = (changes = {}) => ({
@@ -123,5 +123,25 @@ describe('startStep', () => {
 
   it('opens on the sync step once a spreadsheet is linked', () => {
     for (const phase of LINKED) assert.equal(startStep(phase), 'sync', phase);
+  });
+});
+
+describe('directionChange', () => {
+  it('choosing the current direction does nothing', () => {
+    assert.equal(directionChange('bidirectional', 'bidirectional', true), 'none');
+    assert.equal(directionChange('pushOnly', 'pushOnly', true), 'none');
+  });
+
+  it('Sheets as Backup after the first sync asks first', () => {
+    assert.equal(directionChange('pushOnly', 'bidirectional', true), 'confirm');
+  });
+
+  it('Sheets as Backup before the first sync just saves', () => {
+    assert.equal(directionChange('pushOnly', 'bidirectional', false), 'save');
+  });
+
+  it('going back to two-way just saves, whenever', () => {
+    assert.equal(directionChange('bidirectional', 'pushOnly', true), 'save');
+    assert.equal(directionChange('bidirectional', 'pushOnly', false), 'save');
   });
 });
