@@ -12,7 +12,8 @@
   import { settings, setReturnToPlanner, setWeekStartDay } from '../lib/settings.svelte.js';
   import { realignWeeks } from '../lib/weekStart.svelte.js';
   import { printOptions, setPrintOptions } from '../lib/printOptions.svelte.js';
-  import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
+  import { devicePrefs, setHideRecent, setHidePlanned, setTheme } from '../lib/devicePrefs.svelte.js';
+  import { THEME_CHOICES } from '../lib/theme.js';
   import { TONES, tagClass, toneClassOf, setTagTone, renameTag, deleteTag, resetTagColors } from '../lib/tagColors.svelte.js';
   import { RECENT_DAYS, planner } from '../lib/planner.svelte.js';
   import { weekStartOf } from '../lib/dates.js';
@@ -34,6 +35,7 @@
 
   /** A group of related device options in This Device. */
   const deviceCard = 'flex flex-col rounded-xl border border-surface-container-high p-4';
+  const THEME_ICONS = { light: 'light_mode', dark: 'dark_mode', system: 'brightness_auto' };
 
   let confirmingWipe = $state(false);
   let editingIngredients = $state(false);
@@ -311,6 +313,25 @@
 
     <!-- One card per group of related options. -->
     <div class="flex flex-col gap-3">
+      <div class="{deviceCard} gap-3">
+        {@render cardHeading('contrast', text.profile.device.appearance.title, text.profile.device.appearance.hint)}
+        <div class="inline-flex flex-wrap gap-1 self-start rounded-lg bg-surface-container-low p-1" role="group" aria-label={text.profile.device.appearance.title}>
+          {#each THEME_CHOICES as choice (choice)}
+            <button
+              type="button"
+              aria-pressed={devicePrefs.theme === choice}
+              class="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-1.5 text-label-md transition-colors md:fine:min-h-0 {devicePrefs.theme === choice
+                ? 'bg-primary-container text-on-primary shadow-sm'
+                : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}"
+              onclick={() => setTheme(choice)}
+            >
+              <Icon name={THEME_ICONS[choice]} class="text-[16px]" />
+              {text.profile.device.appearance[choice]}
+            </button>
+          {/each}
+        </div>
+      </div>
+
       <div class="{deviceCard}">
         {@render cardHeading('print', text.profile.device.printing.title, text.profile.device.printing.hint)}
         <PrintOptionsFields bind:draft={print} rowClass="max-w-md" />
@@ -398,7 +419,7 @@
       <p class="max-w-xl text-body-sm text-on-surface-variant">
         {@html text.profile.danger.description}
       </p>
-      <button type="button" class="btn shrink-0 bg-secondary py-2.5 text-on-secondary hover:bg-[#b34728]" onclick={() => (confirmingWipe = true)}>
+      <button type="button" class="btn shrink-0 bg-secondary py-2.5 text-on-secondary hover:bg-secondary-hover" onclick={() => (confirmingWipe = true)}>
         <Icon name="delete_forever" class="text-[16px]" /> {text.profile.danger.button}
       </button>
     </div>

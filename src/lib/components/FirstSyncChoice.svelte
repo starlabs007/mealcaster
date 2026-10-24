@@ -37,7 +37,7 @@
   }
 </script>
 
-<section class="flex flex-col gap-4 rounded-xl bg-[#ffdead]/40 p-4 ring-1 ring-tertiary/30" aria-labelledby="first-sync-title" role="alert">
+<section class="flex flex-col gap-4 rounded-xl bg-tertiary-fixed/40 p-4 ring-1 ring-tertiary/30" aria-labelledby="first-sync-title" role="alert">
   <div class="flex items-start gap-3">
     <Icon name={backup ? 'warning' : 'merge'} class="mt-0.5 text-[22px] text-tertiary" />
     <div class="flex flex-col gap-1">

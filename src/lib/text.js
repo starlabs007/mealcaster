@@ -898,6 +898,13 @@ export const text = {
     },
     device: {
       title: 'This Device',
+      appearance: {
+        title: 'Appearance',
+        hint: 'Light, dark, or the same as this device’s setting.',
+        light: 'Light',
+        dark: 'Dark',
+        system: 'System',
+      },
       printing: { title: 'Recipe Printing', hint: 'Defaults for the Print Options dialog on a recipe.' },
       catalog: {
         title: 'Catalog',

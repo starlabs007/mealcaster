@@ -60,7 +60,7 @@
 
       <div class="mt-5 flex justify-end gap-2">
         <button bind:this={cancel} type="button" class="btn-outline" onclick={close}>{text.common.cancel}</button>
-        <button type="button" class="btn bg-secondary text-on-secondary hover:bg-[#b34728]" onclick={confirm}>
+        <button type="button" class="btn bg-secondary text-on-secondary hover:bg-secondary-hover" onclick={confirm}>
           <Icon name="link_off" class="text-[16px]" /> {text.header.disconnect.confirm}
         </button>
       </div>

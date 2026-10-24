@@ -22,8 +22,8 @@
 
   const TONE = {
     ok: { dot: 'bg-primary', badge: 'bg-primary-fixed/70 text-primary' },
-    busy: { dot: 'bg-tertiary animate-pulse', badge: 'bg-[#ffdead] text-tertiary' },
-    warn: { dot: 'bg-tertiary', badge: 'bg-[#ffdead] text-tertiary' },
+    busy: { dot: 'bg-tertiary animate-pulse', badge: 'bg-tertiary-fixed text-tertiary' },
+    warn: { dot: 'bg-tertiary', badge: 'bg-tertiary-fixed text-tertiary' },
     bad: { dot: 'bg-secondary', badge: 'bg-secondary-fixed text-secondary' },
     off: { dot: 'bg-outline', badge: 'bg-surface-container-high text-on-surface-variant' },
   };

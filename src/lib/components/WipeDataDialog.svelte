@@ -55,7 +55,7 @@
 
       <div class="mt-5 flex justify-end gap-2">
         <button bind:this={cancel} type="button" class="btn-outline" onclick={onclose}>{text.common.cancel}</button>
-        <button type="button" class="btn bg-secondary text-on-secondary hover:bg-[#b34728]" onclick={wipeLocalData}>
+        <button type="button" class="btn bg-secondary text-on-secondary hover:bg-secondary-hover" onclick={wipeLocalData}>
           <Icon name="delete_forever" class="text-[16px]" /> {text.profile.wipe.confirm}
         </button>
       </div>

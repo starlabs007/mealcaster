@@ -26,7 +26,7 @@
 </script>
 
 <article
-  class="group flex flex-col justify-between overflow-hidden rounded-2xl bg-surface-container-lowest shadow-[0_2px_10px_rgba(50,40,30,0.04)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_16px_32px_-6px_rgba(45,38,30,0.12)]"
+  class="group flex flex-col justify-between overflow-hidden rounded-2xl bg-surface-container-lowest shadow-recipe transition-all duration-300 hover:-translate-y-1 hover:shadow-recipe-hover"
 >
   <div>
     <div class="relative h-56 w-full overflow-hidden bg-surface-container">
@@ -73,7 +73,7 @@
         <Icon name="favorite" class="text-[19px] {favorite ? 'icon-filled' : ''}" />
       </button>
 
-      <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-on-primary">
+      <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white">
         <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">{text.catalog.card.serves(recipe.serves)}</span>
         {#if recipe.custom}
           <span class="rounded bg-black/30 px-2 py-0.5 text-label-sm backdrop-blur-md">{text.catalog.card.yourRecipe}</span>

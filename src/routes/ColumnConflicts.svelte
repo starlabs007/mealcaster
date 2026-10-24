@@ -228,7 +228,7 @@
   const BADGE = {
     bound: { icon: 'verified', label: text.sheets.columns.badges.bound, class: 'bg-primary-fixed/60 text-primary' },
     mapped: { icon: 'link', label: text.sheets.columns.badges.mapped, class: 'bg-primary-fixed/60 text-primary' },
-    suggested: { icon: 'alt_route', label: text.sheets.columns.badges.suggested, class: 'bg-[#ffdead] text-tertiary' },
+    suggested: { icon: 'alt_route', label: text.sheets.columns.badges.suggested, class: 'bg-tertiary-fixed text-tertiary' },
     missing: { icon: 'error', label: text.sheets.columns.badges.missing, class: 'bg-secondary-fixed text-secondary' },
     append: { icon: 'add_column_right', label: text.sheets.columns.badges.append, class: 'bg-surface-container-high text-primary' },
     ignored: { icon: 'block', label: text.sheets.columns.badges.ignored, class: 'bg-surface-container-high text-on-surface-variant' },
@@ -261,7 +261,7 @@
     'missing'
       ? 'bg-secondary-fixed/25'
       : status === 'suggested'
-        ? 'bg-[#ffdead]/20'
+        ? 'bg-tertiary-fixed/20'
         : ''}"
   >
     <div class="flex flex-col gap-1">
@@ -360,9 +360,9 @@
     aria-labelledby="conflicts-title"
     aria-describedby="conflicts-subtitle"
     tabindex="-1"
-    class="relative my-4 flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_24px_60px_-12px_rgba(28,28,24,0.25)] focus:outline-none"
+    class="relative my-4 flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-surface shadow-dialog focus:outline-none"
   >
-    <div class="h-1.5 w-full shrink-0 bg-gradient-to-r from-secondary via-secondary-container to-[#f6bd5e]"></div>
+    <div class="h-1.5 w-full shrink-0 bg-gradient-to-r from-secondary via-secondary-container to-tertiary-fixed"></div>
 
     <!-- Header -->
     <div class="flex items-start justify-between gap-3 px-4 pb-3 pt-4 sm:px-8 sm:pt-6">
