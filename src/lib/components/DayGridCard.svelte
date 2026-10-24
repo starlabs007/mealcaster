@@ -115,7 +115,7 @@
         data-switch-opener="handle"
         aria-label={text.planner.card.moveHandle(weekdayName)}
         title={text.planner.card.moveHandleHint}
-        class="focus-ring -mr-3 -mt-2.5 flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing fine:-mr-1 fine:-mt-1 fine:h-8 fine:w-8"
+        class="focus-ring -mr-3 -mt-2.5 flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline fine:hover:bg-surface-container-high fine:hover:text-on-surface active:cursor-grabbing fine:-mr-1 fine:-mt-1 fine:h-8 fine:w-8"
         onclick={() => onswitch(day.iso)}
       >
         <Icon name="drag_indicator" class="text-[20px]" />

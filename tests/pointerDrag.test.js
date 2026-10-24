@@ -1,12 +1,26 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { constrain, edgeScrollSpeed, findTarget, passedThreshold } from '../src/lib/pointerDrag.js';
+import { constrain, edgeScrollSpeed, findTarget, passedThreshold, pressStep } from '../src/lib/pointerDrag.js';
 
 test('a press becomes a drag once the pointer moves the threshold distance in any direction', () => {
   assert.equal(passedThreshold(0, 0, 5), false);
   assert.equal(passedThreshold(3, 3, 5), false); // ~4.2 px
   assert.equal(passedThreshold(3, 4, 5), true); // exactly 5 px
   assert.equal(passedThreshold(-6, 0, 5), true);
+});
+
+test('a touch that moves before its hold time is up scrolls the page instead of dragging', () => {
+  const step = (held, dx, dy) => pressStep({ held, dx, dy, threshold: 5, holdTolerance: 8 });
+  assert.equal(step(false, 3, 4), 'wait'); // a shaky finger keeps holding
+  assert.equal(step(false, 0, 8), 'release'); // a swipe: the page scrolls
+  assert.equal(step(false, 0, 40), 'release');
+});
+
+test('a held press (a mouse, or a touch past its hold time) drags once it moves the threshold distance', () => {
+  const step = (dx, dy) => pressStep({ held: true, dx, dy, threshold: 5, holdTolerance: 8 });
+  assert.equal(step(3, 3), 'wait');
+  assert.equal(step(3, 4), 'drag');
+  assert.equal(step(0, 40), 'drag'); // moving past the touch tolerance doesn't matter once held
 });
 
 test('an axis keeps the floating copy on that axis', () => {

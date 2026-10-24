@@ -7,8 +7,9 @@
 //   const detach = drag.handle('item-1')(handleElement);   // Svelte: {@attach drag.handle(id)}
 //   <li data-drag-source data-drop-id="item-2">…</li>       // what floats / where it can land
 //
-// Pressing the handle and moving past `threshold` starts the drag; a press without movement stays an ordinary
-// click. While dragging, a fixed copy of the source element follows the pointer, the page scrolls near the
+// With a mouse, pressing the handle and moving past `threshold` starts the drag. Touch and pen have to hold still on
+// the handle for `holdDelay` ms first (the copy lifts then), so a swipe that happens to start on the handle scrolls
+// the page instead. A press without a drag stays an ordinary click. While dragging, a fixed copy of the source element follows the pointer, the page scrolls near the
 // scroller's edges, and Escape cancels. The source element gets a `data-dragging` attribute for styling.
 
 /**
@@ -19,7 +20,10 @@
  *   `[data-drag-source]`, else the handle itself
  * @property {(sourceId: string, targetId: string) => boolean} [canDrop] default: any target but the source
  * @property {'x' | 'y'} [axis] keep the floating copy on one axis
- * @property {number} [threshold] px the pointer moves before a press becomes a drag (default 5)
+ * @property {number} [threshold] px a mouse moves before a press becomes a drag (default 5)
+ * @property {number} [holdDelay] ms a touch or pen press holds still before it becomes a drag (default 300)
+ * @property {number} [holdTolerance] px a touch or pen press may move while holding; moving further hands the
+ *   gesture back to the page, so it scrolls (default 8)
  * @property {{ edge?: number, speed?: number, insets?: Insets | (() => Insets) } | false} [autoScroll] scroll when
  *   within `edge` px of the scroller's edge, up to `speed` px per frame (defaults 64 / 18); `insets` move the edges
  *   in, e.g. below a fixed header; false turns it off
@@ -39,6 +43,16 @@
 /** Has the pointer moved far enough to start dragging? */
 export function passedThreshold(dx, dy, threshold) {
   return dx * dx + dy * dy >= threshold * threshold;
+}
+
+/**
+ * What a move does to a press that isn't a drag yet: 'drag' to start one, 'release' to give the gesture back to the
+ * page (a touch that moves before its hold time is up is a scroll), 'wait' otherwise. `held` is whether the hold
+ * time is up; a mouse needs no hold, so it is always held.
+ */
+export function pressStep({ held, dx, dy, threshold, holdTolerance }) {
+  if (held) return passedThreshold(dx, dy, threshold) ? 'drag' : 'wait';
+  return passedThreshold(dx, dy, holdTolerance) ? 'release' : 'wait';
 }
 
 /** The pointer offset with the other axis zeroed when `axis` is set. */
@@ -76,6 +90,8 @@ export function createPointerDrag(options = {}) {
     source: (/** @type {Element} */ handle) => handle.closest('[data-drag-source]') ?? handle,
     canDrop: () => true,
     threshold: 5,
+    holdDelay: 300,
+    holdTolerance: 8,
     zIndex: 1000,
     ...options,
     autoScroll: options.autoScroll === false ? false : { edge: 64, speed: 18, ...options.autoScroll },
@@ -84,20 +100,30 @@ export function createPointerDrag(options = {}) {
   /**
    * The press or drag in progress.
    * @type {null | { id: string, handle: HTMLElement, pointerId: number, x0: number, y0: number, x: number, y: number,
-   *   dragging: boolean, over: string | null, source?: HTMLElement, ghost?: HTMLElement, frame?: number,
-   *   restore?: () => void, stop: () => void }}
+   *   held: boolean, dragging: boolean, over: string | null, source?: HTMLElement, ghost?: HTMLElement,
+   *   frame?: number, restore?: () => void, stop: () => void }}
    */
   let s = null;
 
   /** Attaches drag behaviour to a handle element; returns the detach function. @param {string} id */
   function handle(id) {
     return (/** @type {HTMLElement} */ el) => {
-      // No panning, long-press callout or text selection starting on the handle, so touch drags instead.
-      Object.assign(el.style, { touchAction: 'none', userSelect: 'none', webkitUserSelect: 'none', webkitTouchCallout: 'none' });
+      // A swipe from the handle still scrolls (until a hold lifts the copy, see `touchmove`); no long-press callout,
+      // double-tap zoom or text selection.
+      Object.assign(el.style, { touchAction: 'manipulation', userSelect: 'none', webkitUserSelect: 'none', webkitTouchCallout: 'none' });
       const down = (/** @type {PointerEvent} */ e) => press(e, el, id);
+      // Once dragging, the finger moves the copy, not the page. touch-action is fixed when the touch starts, so this
+      // needs a non-passive listener.
+      const touchmove = (/** @type {TouchEvent} */ e) => s?.handle === el && s.dragging && e.cancelable && e.preventDefault();
+      // Android opens a context menu on a long press, which would cancel the pointer.
+      const menu = (/** @type {Event} */ e) => s?.handle === el && e.preventDefault();
       el.addEventListener('pointerdown', down);
+      el.addEventListener('touchmove', touchmove, { passive: false });
+      el.addEventListener('contextmenu', menu);
       return () => {
         el.removeEventListener('pointerdown', down);
+        el.removeEventListener('touchmove', touchmove);
+        el.removeEventListener('contextmenu', menu);
         if (s?.handle === el) cancel();
       };
     };
@@ -123,9 +149,13 @@ export function createPointerDrag(options = {}) {
     el.addEventListener('lostpointercapture', lost);
     window.addEventListener('keydown', key, true);
     window.addEventListener('scroll', scrolled, true);
+    const held = e.pointerType === 'mouse' || o.holdDelay <= 0;
+    // Holding still for the hold time lifts the copy, even before the finger moves.
+    const timer = held ? undefined : setTimeout(lift, o.holdDelay);
     s = {
-      id, handle: el, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, dragging: false, over: null,
+      id, handle: el, pointerId: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY, held, dragging: false, over: null,
       stop: () => {
+        clearTimeout(timer);
         el.removeEventListener('pointermove', move);
         el.removeEventListener('pointerup', up);
         el.removeEventListener('pointercancel', lost);
@@ -143,9 +173,21 @@ export function createPointerDrag(options = {}) {
     s.x = x;
     s.y = y;
     if (!s.dragging) {
-      if (!passedThreshold(x - s.x0, y - s.y0, o.threshold)) return;
+      const step = pressStep({ held: s.held, dx: x - s.x0, dy: y - s.y0, threshold: o.threshold, holdTolerance: o.holdTolerance });
+      if (step === 'release') return finish(); // a scroll: the page has it
+      if (step === 'wait') return;
       begin();
     }
+    place();
+    hover();
+  }
+
+  /** The hold time is up: the press becomes a drag where the finger is. */
+  function lift() {
+    if (!s || s.dragging) return;
+    s.held = true;
+    begin();
+    navigator.vibrate?.(10); // Android only: a tick that says the card is picked up
     place();
     hover();
   }

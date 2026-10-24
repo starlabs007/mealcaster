@@ -319,7 +319,7 @@
     data-switch-opener="handle"
     aria-label={text.planner.card.moveHandle(weekdayName)}
     title={text.planner.card.moveHandleHint}
-    class="focus-ring flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline hover:bg-surface-container-high hover:text-on-surface active:cursor-grabbing md:fine:h-10 md:fine:w-8 {extra}"
+    class="focus-ring flex h-11 w-11 flex-shrink-0 cursor-grab items-center justify-center rounded-md text-outline fine:hover:bg-surface-container-high fine:hover:text-on-surface active:cursor-grabbing md:fine:h-10 md:fine:w-8 {extra}"
     onclick={() => onswitch?.(day.iso)}
   >
     <Icon name="drag_indicator" class="text-[20px]" />
