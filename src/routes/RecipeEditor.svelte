@@ -52,7 +52,7 @@
     revertSample,
     newRecipeId,
   } from '../lib/recipes.svelte.js';
-  import { SCHEMA, sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
+  import { sheets } from '../lib/sheets.svelte.js';
   import { addIngredient as createIngredient, findIngredient, ingredientOf, ingredients } from '../lib/ingredients.svelte.js';
   import { UNIT_SUGGESTIONS, aisleFor, similarIngredients } from '../lib/ingredients.js';
   import { href, navigate } from '../lib/router.svelte.js';
@@ -602,9 +602,6 @@
     });
   }
 
-  let showMapping = $state(false);
-  const columnLetter = (i) => String.fromCharCode(65 + i);
-
   // On touch every field is 44 px tall with 16 px text (iOS Safari zooms into anything smaller); `fine:` keeps the
   // compact desktop sizes.
   const field =
@@ -937,55 +934,6 @@
             />
             <p class="mt-1 text-body-sm text-on-surface-variant">{text.editor.tags.hint(TAG_MAX)}</p>
           </div>
-        </section>
-
-        <section class="rounded-2xl bg-surface-container-low p-5">
-          <div class="flex items-center justify-between gap-2">
-            <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="view_column" class="text-[20px] text-primary" /> {text.editor.mapping.title}
-            </h2>
-            <div class="flex items-center gap-3">
-              <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">
-                {text.editor.mapping.tab(sheets.tabs.recipes)}
-              </span>
-              <button
-                type="button"
-                aria-expanded={showMapping}
-                aria-controls="column-mapping"
-                onclick={() => (showMapping = !showMapping)}
-                class="inline-flex items-center gap-0.5 text-label-md text-on-surface-variant hover:text-on-surface"
-              >
-                {showMapping ? text.editor.mapping.hide : text.editor.mapping.show} <Icon name={showMapping ? 'expand_less' : 'expand_more'} class="text-[18px]" />
-              </button>
-            </div>
-          </div>
-          {#if showMapping}
-            <div id="column-mapping" class="mt-2">
-              {#if sheets.spreadsheet}<p class="mb-1 text-body-sm text-on-surface-variant">{text.editor.mapping.savingWrites}</p>{/if}
-              <p class="mb-3 text-body-sm text-on-surface-variant">{text.editor.mapping.intro}</p>
-              <dl class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                {#each SCHEMA.recipes as column, i (column)}
-                  <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-lowest px-3 py-2">
-                    <dt class="flex min-w-0 items-center gap-2">
-                      <span class="text-label-sm text-on-surface-variant">{columnLetter(i)}</span>
-                      <span class="truncate font-mono text-[12px] text-on-surface">{column}</span>
-                    </dt>
-                    <dd class="shrink-0 text-body-sm text-on-surface-variant">{text.editor.mapping.source[column]}</dd>
-                  </div>
-                {/each}
-              </dl>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <a href={href('/sheets-sync')} class="btn focus-ring min-h-11 text-on-surface-variant hover:bg-surface-container-high fine:min-h-0">
-                  <Icon name="settings" class="text-[16px]" /> {text.editor.mapping.sheetsSettings}
-                </a>
-                {#if sheets.spreadsheet}
-                  <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="btn focus-ring min-h-11 text-on-surface-variant hover:bg-surface-container-high fine:min-h-0">
-                    {text.editor.mapping.viewSheet} <Icon name="open_in_new" class="text-[16px]" />
-                  </a>
-                {/if}
-              </div>
-            </div>
-          {/if}
         </section>
       </div>
 
