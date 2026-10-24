@@ -197,7 +197,7 @@ for every recipe and the grocery list.
 - Ingredient **groups** are edited as sections (**Add Group**; a heading's ⋯ menu moves or deletes it, its rows joining
   the group above). A row is qty · unit · ingredient · ⋯ (note, prep and optional; move to another group; remove);
   Enter in the ingredient field adds the next row. One group shows no heading; it saves as "Main" when untitled. A
-  group keeps its sheet category when renamed. Sheet column names appear only under **Sheet Column Mapping**.
+  group keeps its sheet category when renamed.
 - A recipe line whose ingredient isn't in the tab shows as "Unknown ingredient" and keeps its id; sync doesn't stop.
 
 ## Grocery List (`#/grocery`)
