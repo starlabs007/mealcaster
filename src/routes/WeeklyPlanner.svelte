@@ -92,9 +92,9 @@
     if (!card) return;
     const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
     if (spotlight.days.length) return card.scrollIntoView({ block: 'center', behavior });
-    // Below `md` the toast sits at the bottom (about 94 px tall with its inset): keep tonight above it, so pressing
+    // The toast sits at the bottom (up to about 94 px tall with its inset): keep tonight above it, so pressing
     // Mark Done doesn't hide the button under its own toast.
-    const bottom = window.innerHeight - (wide.current ? 12 : 106);
+    const bottom = window.innerHeight - 106;
     const reveal = (scrolled = window.scrollY) => {
       const top = (document.querySelector('header')?.getBoundingClientRect().bottom ?? 0) + 12;
       const rect = card.getBoundingClientRect();

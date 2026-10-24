@@ -320,11 +320,14 @@
   });
 
   // Focus scrolls keep clear of the sticky save bar (`scroll-padding-bottom` in app.css): its height (it grows when the
-  // problems row shows), plus its offset and room for a two-line error under a field.
+  // problems row shows), plus its offset and room for a two-line error under a field. Toasts sit just above it.
   /** @type {HTMLElement | undefined} */
   let saveBar = $state();
   function clearSaveBar() {
-    if (saveBar) document.documentElement.style.setProperty('--save-bar-clearance', `${saveBar.offsetHeight + 64}px`);
+    if (!saveBar) return;
+    const root = document.documentElement.style;
+    root.setProperty('--save-bar-clearance', `${saveBar.offsetHeight + 64}px`);
+    root.setProperty('--toast-clearance', `${saveBar.offsetHeight + 8}px`);
   }
   $effect(() => {
     clearSaveBar();
@@ -333,6 +336,7 @@
     return () => {
       observer.disconnect();
       document.documentElement.style.removeProperty('--save-bar-clearance');
+      document.documentElement.style.removeProperty('--toast-clearance');
     };
   });
 
