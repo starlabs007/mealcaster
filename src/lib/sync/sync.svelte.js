@@ -7,7 +7,7 @@
 import { flushSync } from 'svelte';
 import { googleConfigured } from '../google/config.js';
 import { auth, checkToken, currentToken, prepareAuth, signIn, signOut } from '../google/auth.svelte.js';
-import { GoogleApiError, createSpreadsheet, ensurePhotoFolder, getAccount, isPhotoDataUrl, sheetsApi, uploadPhoto } from '../google/api.js';
+import { createSpreadsheet, ensurePhotoFolder, getAccount, isPhotoDataUrl, sheetsApi, uploadPhoto } from '../google/api.js';
 import { pickSpreadsheet, preparePicker } from '../google/picker.js';
 import { sheets, updateSheetsSettings } from '../sheets.svelte.js';
 import { recipes, replaceRecipes, saveRecipe } from '../recipes.svelte.js';
@@ -18,25 +18,24 @@ import { grocery, groceryLines, replaceGrocery, stockHiddenLines, thisWeekStart 
 import { AISLE_OF_DEPT } from '../groceryList.js';
 import { settings, replaceSettings } from '../settings.svelte.js';
 import { realignWeeks } from '../weekStart.svelte.js';
-import { addDays, weekStartOf } from '../dates.js';
+import { weekStartOf } from '../dates.js';
 import { showToast } from '../toast.svelte.js';
 import { text } from '../text.js';
 import { storageKey } from '../env.js';
 import { allSaved } from '../storage.svelte.js';
+import { settingsFromRows, settingsToRows } from './codec.js';
+import { applyGrocery, applyIngredients, applyPlan, applyRecipes, ingredientRows, planRows, provisionRows, recipeRows } from './deviceMerge.js';
+import { errorMessage, versionMessage } from './errors.js';
 import {
-  ingredientFromRow,
-  ingredientToRow,
-  groceryFromRows,
-  planEntryHasContent,
-  planFromRow,
-  planToRow,
-  provisionKey,
-  provisionToRow,
-  recipeFromRow,
-  recipeToRow,
-  settingsFromRows,
-  settingsToRows,
-} from './codec.js';
+  canStoreBase,
+  groceryWeeks,
+  mergeQueued,
+  provisionsSince,
+  PUSH_DELAY_MS,
+  shouldRunPush,
+  shouldSchedulePush,
+  shouldSyncOnFocus,
+} from './schedule.js';
 import { emptyBase, runSync } from './run.js';
 import { SCHEMA_VERSION } from '../schema.js';
 import { PHASE_LOOK, phaseOf } from './phase.js';
@@ -102,7 +101,7 @@ function saveBase(next) {
   // brings back older data, and a newer base would read the difference as edits made here and
   // push it over the sheet. Kept in memory only, the stored base stays older than the data, and
   // the next pass after a reload lets the sheet win those rows. (An empty base is always safe.)
-  if (next.initialized && !allSaved()) return;
+  if (!canStoreBase({ initialized: next.initialized, allSaved: allSaved() })) return;
   try {
     localStorage.setItem(BASE_KEY, JSON.stringify(base));
   } catch {
@@ -138,83 +137,29 @@ const syncedTabs = () =>
     ].filter(Boolean)
   );
 
-/** How many weeks of grocery lists sync, counting this one; future weeks always do. */
-const PROVISION_WEEKS = 8;
-
-/** Start of the oldest week whose grocery list syncs. Older lists stay as they are, here and in the sheet. */
-const provisionsSince = () => addDays(weekStartOf(new Date()), -7 * (PROVISION_WEEKS - 1));
-
-/** Weeks whose grocery list is synced: recent or future ones with saved changes, plus this week. */
-const groceryWeeks = () => {
-  const since = provisionsSince();
-  return [...new Set([...Object.keys(grocery.weeks), weekStartOf(new Date())])].filter((w) => w >= since).sort();
-};
-
 const today = () => planner.today;
 
 /** @type {import('./run.js').LocalAdapter} */
 const device = {
   localRows(tab) {
-    if (tab === 'ingredients') return new Map(ingredients.map((i) => [i.id, ingredientToRow($state.snapshot(i))]));
-    if (tab === 'recipes') {
-      const favs = new Set(favorites.ids);
-      return new Map(recipes.map((r) => [r.id, recipeToRow($state.snapshot(r), favs)]));
-    }
-    if (tab === 'weeklyPlan') {
-      return new Map(
-        Object.entries(planner.entries)
-          .filter(([, e]) => planEntryHasContent(e))
-          .sort(([a], [b]) => a.localeCompare(b))
-          .map(([iso, e]) => [iso, planToRow(iso, e)]),
-      );
-    }
+    if (tab === 'ingredients') return ingredientRows($state.snapshot(ingredients));
+    if (tab === 'recipes') return recipeRows($state.snapshot(recipes), favorites.ids);
+    if (tab === 'weeklyPlan') return planRows($state.snapshot(planner.entries));
     if (tab === 'settings') return settingsToRows($state.snapshot(settings));
-    const rows = new Map();
-    for (const week of groceryWeeks()) {
-      for (const line of groceryLines(week)) rows.set(provisionKey(week, line.key), provisionToRow(week, line));
-      for (const line of stockHiddenLines(week)) rows.set(provisionKey(week, line.key), provisionToRow(week, line, true));
-    }
-    return rows;
+    return provisionRows(groceryWeeks(Object.keys(grocery.weeks)).map((week) => ({ week, lines: groceryLines(week), hidden: stockHiddenLines(week) })));
   },
 
   apply(tab, final, fromSheet, columns) {
     // Nothing came from the sheet: the device already holds the result.
     if (!fromSheet.size) return;
     if (tab === 'ingredients') {
-      const list = [];
-      for (const [id, row] of final) {
-        const existing = ingredientOf(id);
-        if (!fromSheet.has(id)) {
-          if (existing) list.push($state.snapshot(existing));
-          continue;
-        }
-        list.push(ingredientFromRow(row, existing && $state.snapshot(existing), columns));
-      }
-      replaceIngredients(list);
+      replaceIngredients(applyIngredients({ final, fromSheet, existing: $state.snapshot(ingredients), columns }));
     } else if (tab === 'recipes') {
-      const byId = new Map(recipes.map((r) => [r.id, $state.snapshot(r)]));
-      const favs = new Set(favorites.ids);
-      const nextFavs = [];
-      const list = [];
-      for (const [id, row] of final) {
-        if (!fromSheet.has(id)) {
-          if (byId.has(id)) list.push(byId.get(id));
-          if (favs.has(id)) nextFavs.push(id);
-          continue;
-        }
-        const { recipe, favorite } = recipeFromRow(row, byId.get(id), { columns, favorites: favs, today: today() });
-        list.push(recipe);
-        if (favorite ?? favs.has(id)) nextFavs.push(id);
-      }
-      replaceRecipes(list);
-      setFavorites(nextFavs);
+      const next = applyRecipes({ final, fromSheet, existing: $state.snapshot(recipes), favorites: $state.snapshot(favorites.ids), columns, today: today() });
+      replaceRecipes(next.recipes);
+      setFavorites(next.favorites);
     } else if (tab === 'weeklyPlan') {
-      const entries = {};
-      for (const [iso, row] of final) {
-        const entry = fromSheet.has(iso) ? planFromRow(row, $state.snapshot(planner.entries[iso]), columns) : planner.entries[iso];
-        if (entry) entries[iso] = $state.snapshot(entry);
-      }
-      replacePlan(entries);
+      replacePlan(applyPlan({ final, fromSheet, entries: $state.snapshot(planner.entries), columns }));
     } else if (tab === 'settings') {
       const wasThisWeek = planner.weekStart === weekStartOf(new Date());
       replaceSettings(settingsFromRows([...final.values()]));
@@ -222,15 +167,14 @@ const device = {
     } else {
       // A row typed into the sheet names its item: that ingredient, or a new one in the row's department.
       const idForName = (name, dept) => findIngredient(name)?.id ?? addIngredient({ name, aisle: AISLE_OF_DEPT[dept] }).id;
-      // Weeks too old to sync keep their lists, and every-week items bought back then stay bought there.
-      const since = provisionsSince();
-      const { weeks, every } = groceryFromRows([...final.values()], { thisWeek: thisWeekStart(), idForName });
-      for (const [week, list] of Object.entries(grocery.weeks)) if (week < since) weeks[week] = $state.snapshot(list);
-      for (const item of grocery.every) {
-        if (item.status !== 'need' && item.doneWeek < since && !every.some((x) => x.ingredientId === item.ingredientId)) {
-          every.push($state.snapshot(item));
-        }
-      }
+      const { weeks, every } = applyGrocery({
+        final,
+        since: provisionsSince(),
+        thisWeek: thisWeekStart(),
+        idForName,
+        weeks: $state.snapshot(grocery.weeks),
+        every: $state.snapshot(grocery.every),
+      });
       replaceGrocery(weeks, every);
     }
   },
@@ -261,25 +205,6 @@ async function uploadPendingPhotos() {
   }
 }
 
-/** Plain-language message for a failed pass. */
-function describe(error) {
-  if (error instanceof GoogleApiError) {
-    if (error.status === 401) return text.sheets.errors.sessionEnded;
-    if (error.status === 403) return text.sheets.errors.noAccess;
-    if (error.status === 404) return text.sheets.errors.notFound;
-    if (error.status === 429 || error.status >= 500) return text.sheets.errors.busy;
-    if (error.status === 0) return text.sheets.errors.offline;
-    return text.sheets.errors.googleSaid(error.message);
-  }
-  return error instanceof Error ? error.message : text.sheets.errors.syncFailed;
-}
-
-/** Why a spreadsheet in another layout isn't synced. @param {number} sheetVersion 0 when it has no version row */
-function versionMessage(sheetVersion) {
-  if (sheetVersion > SCHEMA_VERSION) return text.sheets.errors.newerVersion;
-  return text.sheets.errors.olderVersion;
-}
-
 /**
  * Runs a sync pass now (or right after the current one).
  * @param {{ choice?: 'merge' | 'sheetOnly' | 'confirm', quiet?: boolean }} [options]
@@ -288,7 +213,7 @@ export function syncNow(options = {}) {
   // A token that ran out shows as Reconnect rather than leaving Sync Now doing nothing.
   if (!googleConfigured || !sheets.spreadsheet || !checkToken()) return Promise.resolve();
   if (running) {
-    again = { ...again, ...options, quiet: Boolean(again?.quiet ?? true) && Boolean(options.quiet) };
+    again = mergeQueued(again, options);
     return running;
   }
   running = (async () => {
@@ -312,7 +237,7 @@ export function syncNow(options = {}) {
       syncState.error = '';
       syncState.conflict = result.status === 'conflict' ? { tab: result.tab, columns: result.columns } : null;
       syncState.choice = result.status === 'choose' ? { sheet: result.sheet, device: result.device, backup: result.backup } : null;
-      if (result.status === 'version') syncState.error = versionMessage(result.sheetVersion);
+      if (result.status === 'version') syncState.error = versionMessage(result.sheetVersion, SCHEMA_VERSION, text.sheets.errors);
       if (result.status === 'done') {
         // Run the stores' save effects now, so saveBase knows whether the pulled data was stored.
         flushSync();
@@ -322,7 +247,7 @@ export function syncNow(options = {}) {
         if (!options.quiet && result.pulled) showToast(text.sheets.toasts.updated(result.pulled));
       }
     } catch (error) {
-      syncState.error = describe(error);
+      syncState.error = errorMessage(error, text.sheets.errors);
     } finally {
       syncState.busy = false;
       running = null;
@@ -360,7 +285,7 @@ export async function connect() {
   try {
     await signIn(sheets.accountEmail || undefined);
   } catch (error) {
-    showToast(describe(error));
+    showToast(errorMessage(error, text.sheets.errors));
     return;
   }
   await afterSignIn();
@@ -377,7 +302,7 @@ export async function switchAccount() {
   try {
     await signIn(undefined, { chooseAccount: true });
   } catch (error) {
-    showToast(describe(error));
+    showToast(errorMessage(error, text.sheets.errors));
     return false;
   }
   await afterSignIn();
@@ -401,7 +326,7 @@ async function ensureSignedIn() {
   try {
     await signIn(sheets.accountEmail || undefined);
   } catch (error) {
-    showToast(describe(error));
+    showToast(errorMessage(error, text.sheets.errors));
     return false;
   }
   await afterSignIn();
@@ -420,7 +345,7 @@ export async function chooseSpreadsheet() {
     link(file);
     return true;
   } catch (error) {
-    showToast(describe(error));
+    showToast(errorMessage(error, text.sheets.errors));
     return false;
   }
 }
@@ -436,7 +361,7 @@ export async function createNewSpreadsheet(name = '') {
     link(await createSpreadsheet(name.trim() || 'MealCaster', syncedTabs().map((t) => t.name)));
     return true;
   } catch (error) {
-    showToast(describe(error));
+    showToast(errorMessage(error, text.sheets.errors));
     return false;
   }
 }
@@ -482,12 +407,14 @@ export function startSync() {
       const print = deviceFingerprint();
       // Waiting on the person (first-sync choice, column conflicts): don't retry on every edit.
       // Before the first sync of a linked spreadsheet: that one is started from the connection screen.
-      if (!sheets.instantPush || !auth.token || !initialized() || syncState.choice || syncState.conflict || print === lastFingerprint) return;
+      const waitingOnPerson = Boolean(syncState.choice || syncState.conflict);
+      if (!shouldSchedulePush({ instantPush: sheets.instantPush, signedIn: Boolean(auth.token), initialized: initialized(), waitingOnPerson, changed: print !== lastFingerprint })) return;
       clearTimeout(timer);
       timer = setTimeout(() => {
         // A pass may have caught up with these edits in the meantime.
-        if (deviceFingerprint() !== lastFingerprint && initialized() && !syncState.choice && !syncState.conflict) syncNow({ quiet: true });
-      }, 1500);
+        const state = { initialized: initialized(), waitingOnPerson: Boolean(syncState.choice || syncState.conflict), changed: deviceFingerprint() !== lastFingerprint };
+        if (shouldRunPush(state)) syncNow({ quiet: true });
+      }, PUSH_DELAY_MS);
     });
   });
 
@@ -497,9 +424,8 @@ export function startSync() {
 
   // Pick up changes made in the sheet when coming back to the app.
   const onFocus = () => {
-    if (document.visibilityState !== 'visible' || !checkToken() || syncState.busy || !initialized()) return;
-    const last = syncState.lastSyncedAt ? Date.parse(syncState.lastSyncedAt) : 0;
-    if (Date.now() - last > 20_000) syncNow();
+    if (document.visibilityState !== 'visible' || !checkToken()) return;
+    if (shouldSyncOnFocus({ busy: syncState.busy, initialized: initialized(), lastSyncedAt: syncState.lastSyncedAt, now: Date.now() })) syncNow();
   };
   document.addEventListener('visibilitychange', onFocus);
   window.addEventListener('focus', onFocus);
