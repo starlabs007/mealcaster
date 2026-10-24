@@ -105,3 +105,14 @@ export function headerActions(phase) {
  * @returns {ConnectionStep}
  */
 export const startStep = (phase) => (phase === 'unavailable' || phase === 'unlinked' ? 'account' : 'sync');
+
+/**
+ * What choosing a sync direction does. Switching to Sheets as Backup after the first sync rewrites the spreadsheet on
+ * the next pass, so it asks first; anything else just saves, and choosing the current one does nothing.
+ * @param {'bidirectional' | 'pushOnly'} value @param {'bidirectional' | 'pushOnly'} current @param {boolean} initialized
+ * @returns {'none' | 'confirm' | 'save'}
+ */
+export function directionChange(value, current, initialized) {
+  if (value === current) return 'none';
+  return value === 'pushOnly' && initialized ? 'confirm' : 'save';
+}

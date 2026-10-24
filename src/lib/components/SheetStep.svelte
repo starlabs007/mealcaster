@@ -10,6 +10,7 @@
   import { downloadBlob } from '../xlsx.js';
   import { showToast } from '../toast.svelte.js';
   import { text } from '../text.js';
+  import { isFirefox, isSafari } from '../browserHints.js';
 
   /** @type {{ onback: () => void, onnext: () => void }} */
   let { onback, onnext } = $props();
@@ -20,13 +21,10 @@
   const busy = $derived(working || syncPhase() === 'syncing');
   // Firefox's Enhanced Tracking Protection blocks the Google Picker frame's sign-in cookies:
   // it stays blank or says the API developer key is invalid. Pages can't tell, so always hint.
-  const firefox = /firefox/i.test(navigator.userAgent);
+  const firefox = isFirefox(navigator.userAgent);
   // Safari's tracking prevention does the same (#79), worst in the Home Screen app, which has its
   // own cookies. Covers Safari on Mac/iPad, every iPhone browser (all WebKit) and the Home Screen app.
-  const safari =
-    (/safari/i.test(navigator.userAgent) && !/chrome|chromium|android|firefox/i.test(navigator.userAgent)) ||
-    /iphone|ipod/i.test(navigator.userAgent) ||
-    /** @type {any} */ (navigator).standalone === true;
+  const safari = isSafari(navigator.userAgent, /** @type {any} */ (navigator).standalone === true);
 
   // Required tabs, then the optional grocery list tab.
   const REQUIRED = /** @type {const} */ ([

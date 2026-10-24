@@ -6,6 +6,7 @@ import { signOut } from './google/auth.svelte.js';
 import { storageKey } from './env.js';
 import { showToast } from './toast.svelte.js';
 import { text } from './text.js';
+import { ownedKeys } from './localKeys.js';
 
 const WIPED_FLAG = storageKey('wiped');
 // The dev-mode marker only records which build flavour wrote the data; keeping it stops the dev
@@ -14,17 +15,12 @@ const KEEP = new Set([storageKey('devDataMode')]);
 
 /** localStorage keys MealCaster owns. */
 export function localDataKeys() {
-  const prefix = storageKey('');
-  const keys = [];
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key?.startsWith(prefix) && !KEEP.has(key)) keys.push(key);
-    }
+    return ownedKeys(Array.from({ length: localStorage.length }, (_, i) => localStorage.key(i)), storageKey(''), KEEP);
   } catch {
     // Storage unavailable: nothing to erase.
+    return [];
   }
-  return keys;
 }
 
 /** Signs out, erases this browser's MealCaster data and reloads. */
