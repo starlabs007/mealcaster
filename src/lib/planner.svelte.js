@@ -212,7 +212,7 @@ function showWeekToast(message, action, duration) {
   if (action) {
     const run = action.run;
     lastChange = { message, run };
-    action = { ...action, run: () => ((lastChange = null), run()) };
+    action = { ...action, shortcut: true, run: () => ((lastChange = null), run()) };
   }
   weekToastId = showToast(message, action, duration);
 }

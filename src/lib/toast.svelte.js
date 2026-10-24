@@ -1,4 +1,4 @@
-/** @typedef {{ label: string, run: () => void }} ToastAction */
+/** @typedef {{ label: string, run: () => void, shortcut?: boolean }} ToastAction `shortcut`: Cmd/Ctrl+Z does the same (planner) */
 
 export const toast = $state({
   id: 0,

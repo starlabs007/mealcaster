@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isUndoShortcut } from '../src/lib/undoShortcut.js';
+import { isUndoShortcut, undoShortcutHint } from '../src/lib/undoShortcut.js';
 
 // A stand-in for the focused element: `closest` matches when the element sits inside one of `inside`.
 const el = (/** @type {string[]} */ ...inside) => ({
@@ -30,4 +30,11 @@ test('text fields and dialogs keep their own undo; checkboxes and buttons do not
   assert.equal(isUndoShortcut(key({ metaKey: true, target: el('[role="dialog"]') })), false);
   assert.equal(isUndoShortcut(key({ metaKey: true, target: el('dialog') })), false);
   assert.equal(isUndoShortcut(key({ metaKey: true, target: el('button') })), true);
+});
+
+test('the Undo hint names the key for the platform', () => {
+  assert.equal(undoShortcutHint('MacIntel'), '⌘Z');
+  assert.equal(undoShortcutHint('iPad'), '⌘Z');
+  assert.equal(undoShortcutHint('Win32'), 'Ctrl+Z');
+  assert.equal(undoShortcutHint(), 'Ctrl+Z');
 });

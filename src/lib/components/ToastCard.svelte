@@ -4,6 +4,9 @@
   import Icon from './Icon.svelte';
   import { toast, toastFocus, dismissToast, pauseToast, resumeToast } from '../toast.svelte.js';
   import { text } from '../text.js';
+  import { undoShortcutHint } from '../undoShortcut.js';
+
+  const hint = undoShortcutHint(typeof navigator === 'undefined' ? '' : navigator.platform);
 
   /**
    * The visible toast with its Undo and close buttons. `Toast` shows it floating; a screen that docks toasts (the
@@ -32,6 +35,7 @@
       {#if toast.action}
         <button
           type="button"
+          aria-keyshortcuts={toast.action.shortcut ? 'Meta+Z Control+Z' : undefined}
           class="-my-2.5 min-h-11 min-w-11 shrink-0 rounded px-1 font-semibold text-secondary-fixed md:fine:my-0 md:fine:min-h-6 md:fine:px-0 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-on-secondary"
           onclick={() => {
             toast.action?.run();
@@ -40,7 +44,7 @@
             tick().then(() => back instanceof HTMLElement && back.isConnected && back.focus());
           }}
         >
-          {toast.action.label}
+          {toast.action.label}{#if toast.action.shortcut}<span class="ml-1 hidden font-normal fine:inline">({hint})</span>{/if}
         </button>
       {/if}
       <button

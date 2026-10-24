@@ -19,3 +19,6 @@ export function isUndoShortcut(event) {
   const target = /** @type {{ closest?: (selector: string) => unknown }} */ (event.target);
   return !target?.closest?.(KEEPS_OWN_UNDO);
 }
+
+/** Key combination for the hint beside Undo: "⌘Z" on Apple platforms, "Ctrl+Z" elsewhere. @param {string} [platform] navigator.platform */
+export const undoShortcutHint = (platform = '') => (/mac|iphone|ipad/i.test(platform) ? '⌘Z' : 'Ctrl+Z');
