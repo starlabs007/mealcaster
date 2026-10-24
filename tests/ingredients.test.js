@@ -157,3 +157,31 @@ describe('near duplicates', () => {
     assert.deepEqual(similar('on'), []);
   });
 });
+
+describe('stored ingredients', () => {
+  it('are tidied: names trimmed and lowercase, a missing name spelled from the id, an unknown aisle the default', () => {
+    assert.deepEqual(ing.cleanIngredient({ id: 'rau-ram', name: '  Rau  Răm ', plural: ' RAU ', aisle: 'Herbs', onHand: true }), {
+      id: 'rau-ram', name: 'rau răm', plural: 'rau', aisle: 'Herbs', onHand: true,
+    });
+    assert.deepEqual(ing.cleanIngredient({ id: 'green-onion', name: '', aisle: 'Garage' }), {
+      id: 'green-onion', name: 'green onion', plural: '', aisle: 'Pantry', onHand: false,
+    });
+  });
+
+  it('are in stock only when the flag is exactly true', () => {
+    for (const onHand of ['true', 1, 'yes', null, undefined]) assert.equal(ing.cleanIngredient({ id: 'a', name: 'a', onHand }).onHand, false, String(onHand));
+    assert.equal(ing.cleanIngredient({ id: 'a', name: 'a', onHand: true }).onHand, true);
+  });
+
+  it('tell when replacing the list changes what is in stock', () => {
+    const list = [onion, sugar]; // sugar in stock
+    assert.equal(ing.stockChanges(list, [onion, sugar]), false);
+    assert.equal(ing.stockChanges(list, [{ ...onion, name: 'brown onion' }, sugar]), false); // not a stock change
+    assert.equal(ing.stockChanges(list, [{ ...onion, onHand: true }, sugar]), true); // flag on
+    assert.equal(ing.stockChanges(list, [onion, { ...sugar, onHand: false }]), true); // flag off
+    assert.equal(ing.stockChanges(list, [onion, sugar, { ...rauRam, onHand: true }]), true); // arrives in stock
+    assert.equal(ing.stockChanges(list, [onion, sugar, rauRam]), false); // arrives not in stock
+    assert.equal(ing.stockChanges(list, [onion]), true); // an in-stock one goes
+    assert.equal(ing.stockChanges(list, [sugar]), false); // one not in stock goes
+  });
+});
