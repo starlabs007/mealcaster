@@ -20,10 +20,11 @@
   } from '../lib/grocery.svelte.js';
   import { aisles, aisleLabel, guessAisle } from '../lib/recipes.svelte.js';
   import { addIngredient, findIngredient, ingredients, setOnHand } from '../lib/ingredients.svelte.js';
-  import { shoppingName } from '../lib/ingredients.js';
+  import { aisleFor, shoppingName } from '../lib/ingredients.js';
+  import { activeAisle as chosenAisle, aisleTabs as tabsOf, groceryStats, sectionsOf, shareText, sourceCounts, storeMenuPlan } from '../lib/groceryView.js';
   import { planner, weekOffset, goToWeek, shiftWeek } from '../lib/planner.svelte.js';
   import { href } from '../lib/router.svelte.js';
-  import { formatRange, formatRangeCompact, formatShort, formatWeekday } from '../lib/dates.js';
+  import { formatRange, formatRangeCompact, formatWeekday, weekLabel } from '../lib/dates.js';
   import { devicePrefs, setGroceryHintSeen } from '../lib/devicePrefs.svelte.js';
   import { headerChrome } from '../lib/headerChrome.svelte.js';
   import { showToast, toast } from '../lib/toast.svelte.js';
@@ -74,8 +75,8 @@
   let aislePicked = false;
   const draftIngredient = $derived(draft.name.trim() ? findIngredient(draft.name) : undefined);
   const onDraftName = () => {
-    if (draftIngredient) draft.aisle = draftIngredient.aisle;
-    else if (!aislePicked && draft.name.trim()) draft.aisle = guessAisle(draft.name);
+    if (!draft.name.trim()) return;
+    draft.aisle = aisleFor({ existing: draftIngredient, picked: aislePicked, current: draft.aisle, guess: guessAisle(draft.name) });
   };
 
   /** The list shows names with a capital first letter. @param {string} s */
@@ -89,9 +90,7 @@
 
   const offset = $derived(weekOffset());
   /** "this week", "next week", "last week" or "the week of Oct 10" */
-  const weekName = $derived(
-    offset === 0 ? text.grocery.weekName.thisWeek : offset === 1 ? text.grocery.weekName.nextWeek : offset === -1 ? text.grocery.weekName.lastWeek : text.grocery.weekName.weekOf(formatShort(planner.weekStart)),
-  );
+  const weekName = $derived(weekLabel(offset, text.grocery.weekName, planner.weekStart));
   const weekChoices = [
     { offset: 0, label: text.grocery.weekPicker.thisWeek },
     { offset: 1, label: text.grocery.weekPicker.nextWeek },
@@ -101,40 +100,19 @@
 
   const lines = $derived(groceryLines());
   const haveHidden = $derived([...stockHiddenLines()].sort((a, b) => a.name.localeCompare(b.name)));
-  // Bought lines leave the aisle lists for the Bought ledger.
-  const shopping = $derived(lines.filter((l) => l.status === 'need'));
-  const acquired = $derived(lines.filter((l) => l.status === 'bought'));
-  const passed = $derived(lines.filter((l) => l.status === 'skipped'));
-  const toBuy = $derived(shopping.length);
-  const bought = $derived(acquired.length);
-  const skipped = $derived(passed.length);
-  // Nothing on the list at all, or everything ticked off.
-  const nothingListed = $derived(!toBuy && !bought && !skipped);
-  const allBought = $derived(!toBuy && bought + skipped > 0);
-  // A skipped line is handled for the week: it counts toward done but not as bought.
-  const completion = $derived(toBuy + bought + skipped ? Math.round(((bought + skipped) / (toBuy + bought + skipped)) * 100) : 0);
+  const stats = $derived(groceryStats(lines));
+  const { shopping, acquired, passed, toBuy, bought, skipped, nothingListed, allBought, completion } = $derived(stats);
 
-  const sections = $derived(
-    departments.map((d) => ({ ...d, ...text.grocery.departments[d.id], items: shopping.filter((l) => l.dept === d.id) })),
-  );
+  const sections = $derived(sectionsOf(shopping, departments, text.grocery.departments));
   // Aisle tabs only for aisles with something left; the chosen one falls back to All when it empties.
-  const aisleTabs = $derived([
-    { id: 'all', short: text.grocery.allAisles, count: shopping.length },
-    ...sections.filter((s) => s.items.length).map((s) => ({ id: s.id, short: s.short, count: s.items.length })),
-  ]);
-  const activeAisle = $derived(aisleTabs.some((t) => t.id === aisle) ? aisle : 'all');
+  const aisleTabs = $derived(tabsOf(sections, text.grocery.allAisles));
+  const activeAisle = $derived(chosenAisle(aisleTabs, aisle));
   // The Add Item form lists aisles under the department the list puts them in.
   const aisleGroups = departments
     .map((d) => ({ label: text.grocery.departments[d.id].label, options: aisles.filter((a) => deptOfTag(a.tag) === d.id) }))
     .filter((g) => g.options.length);
 
-  const sources = $derived(
-    weekDinners()
-      .map((d) => ({
-        day: d,
-        count: shopping.filter((l) => l.sources.some((s) => s.recipeId === d.recipe.id)).length,
-      })),
-  );
+  const sources = $derived(sourceCounts(weekDinners(), shopping));
 
   // Lines whose meal labels are all shown ("+N more" tapped).
   const expanded = new SvelteSet();
@@ -248,13 +226,7 @@
     showToast(text.grocery.toasts.needIt(item.name));
   }
 
-  function listAsText() {
-    const body = sections
-      .filter((s) => s.items.length)
-      .map((s) => `${s.label}\n${s.items.map((l) => `${'☐'} ${l.name}${l.amount ? ` — ${l.amount}` : ''}`).join('\n')}`)
-      .join('\n\n');
-    return `${text.grocery.shareText.heading(formatRange(planner.weekStart))}\n\n${body}`;
-  }
+  const listAsText = () => shareText(sections, text.grocery.shareText.heading(formatRange(planner.weekStart)));
 
   async function share() {
     const body = listAsText();
@@ -287,17 +259,17 @@
   const syncLine = $derived(
     sheets.spreadsheet && sheets.syncProvisions ? text.grocery.store.synced(sheets.tabs.provisions) : text.grocery.savedOnDevice(!!sheets.spreadsheet),
   );
-  const storeMenu = $derived([
-    ...(pastWeek ? [] : [{ id: 'add', icon: 'add', label: text.grocery.addItem, onselect: openForm }]),
-    ...(offset !== 0 ? [{ id: 'this-week', icon: 'today', label: text.grocery.store.thisWeek, onselect: () => goToWeek(0) }] : []),
-    ...(offset !== 1 ? [{ id: 'next-week', icon: 'date_range', label: text.grocery.store.nextWeek, onselect: () => goToWeek(1) }] : []),
-    { id: 'earlier', icon: 'chevron_left', label: text.grocery.store.earlier, onselect: () => shiftWeek(-1) },
-    { id: 'later', icon: 'chevron_right', label: text.grocery.store.later, onselect: () => shiftWeek(1) },
-    { id: 'share', icon: 'share', label: text.grocery.share, divider: true, onselect: share },
-    ...(nothingListed ? [] : [{ id: 'print', icon: 'print', label: text.grocery.printList, onselect: () => window.print() }]),
-    { id: 'full', icon: 'view_list', label: text.grocery.store.fullList, note: text.grocery.store.fullListNote, divider: true, onselect: () => setStore(false) },
-    // A rule before the week group, whichever of its items comes first.
-  ].map((a, i) => (i === 1 ? { ...a, divider: true } : a)));
+  const storeActions = {
+    add: { id: 'add', icon: 'add', label: text.grocery.addItem, onselect: openForm },
+    'this-week': { id: 'this-week', icon: 'today', label: text.grocery.store.thisWeek, onselect: () => goToWeek(0) },
+    'next-week': { id: 'next-week', icon: 'date_range', label: text.grocery.store.nextWeek, onselect: () => goToWeek(1) },
+    earlier: { id: 'earlier', icon: 'chevron_left', label: text.grocery.store.earlier, onselect: () => shiftWeek(-1) },
+    later: { id: 'later', icon: 'chevron_right', label: text.grocery.store.later, onselect: () => shiftWeek(1) },
+    share: { id: 'share', icon: 'share', label: text.grocery.share, onselect: share },
+    print: { id: 'print', icon: 'print', label: text.grocery.printList, onselect: () => window.print() },
+    full: { id: 'full', icon: 'view_list', label: text.grocery.store.fullList, note: text.grocery.store.fullListNote, onselect: () => setStore(false) },
+  };
+  const storeMenu = $derived(storeMenuPlan({ pastWeek, offset, nothingListed }).map(({ id, divider }) => ({ ...storeActions[id], ...(divider && { divider }) })));
 
   /** Which dinners a line is for, as one line of small print (store mode shows it in the line's ⋯ menu). @param {import('../lib/grocery.svelte.js').GroceryLine} item */
   const forNote = (item) => text.grocery.line.forNote(item.sources.map((s) => (s.note ? `${s.label} · ${s.note}` : s.label)));
