@@ -8,6 +8,7 @@
   import { surpriseMe, markDiningOut, clearDay, clearEvening, setDone, spotlight, switchTargets } from '../planner.svelte.js';
   import { focusDay } from '../focusDay.js';
   import { groupedActions } from '../menuGroups.js';
+  import { dayActionGroups, hasMeal as dayHasMeal, isMovable } from '../dayCard.js';
   import { text } from '../text.js';
   import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
   import { href } from '../router.svelte.js';
@@ -26,26 +27,23 @@
   const phone = new MediaQuery('max-width: 767px');
 
   const weekdayName = $derived(formatWeekday(day.iso));
-  const hasMeal = $derived(day.status === 'planned' || day.status === 'completed');
+  const hasMeal = $derived(dayHasMeal(day.status));
   // A planned meal that some other evening of the week can take (Switch Days… or dragging).
-  const movable = $derived(day.status === 'planned' && switchTargets(day.iso).length > 0);
+  const movable = $derived(isMovable(day.status, switchTargets(day.iso).length));
   const handle = $derived(movable && !!onswitch && !!draghandle);
 
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const actions = $derived.by(() => {
-    // Minimal view keeps the ⋯ menu on tonight only (the other rows stay one-tap quiet).
-    if (minimal && !day.isToday) return [];
-    const surprise = { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) };
-    const nightOff = { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } };
-    // Open evenings show Surprise Me beside Choose a Meal, so the menu keeps only Night Off.
-    if (day.status === 'open') return [nightOff];
-    if (day.status !== 'planned') return [];
-    // Change the meal · move it · take the evening out of the plan.
-    return groupedActions([
-      [{ id: 'swap', label: text.planner.card.swapMeal, icon: 'sync_alt', href: href('/catalog', { day: day.iso }) }, surprise],
-      onswitch && movable ? [{ id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch(day.iso) }] : [],
-      [nightOff, { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } }],
-    ]);
+    const available = {
+      swap: { id: 'swap', label: text.planner.card.swapMeal, icon: 'sync_alt', href: href('/catalog', { day: day.iso }) },
+      surprise: { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) },
+      switch: { id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch?.(day.iso) },
+      nightOff: { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } },
+      clear: { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } },
+    };
+    return groupedActions(
+      dayActionGroups({ status: day.status, isToday: day.isToday, minimal, movable, canSwitch: !!onswitch }).map((group) => group.map((id) => available[id])),
+    );
   });
 
   // While a meal is dragged: the card it came from, the one under the pointer, the ones it can go to, the rest.
