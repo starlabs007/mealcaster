@@ -10,11 +10,11 @@ import { TONES, assignTones, isSuggestedTag, normalizeTag, tagChoices } from './
 
 /** @type {Record<string, string>} */
 const toneClass = {
-  saffron: 'bg-[#faf3e5] text-[#8c6517]',
-  sage: 'bg-[#eaf0ec] text-[#2c4635]',
-  paprika: 'bg-[#faece8] text-secondary',
-  slate: 'bg-[#e8eef3] text-[#2f4a5e]',
-  plum: 'bg-[#f3ebf2] text-[#62385e]',
+  saffron: 'bg-tone-saffron text-on-tone-saffron',
+  sage: 'bg-tone-sage text-on-tone-sage',
+  paprika: 'bg-tone-paprika text-secondary',
+  slate: 'bg-tone-slate text-on-tone-slate',
+  plum: 'bg-tone-plum text-on-tone-plum',
 };
 const NEUTRAL = 'bg-surface-container-high text-on-surface-variant';
 

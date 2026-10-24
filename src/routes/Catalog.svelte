@@ -366,7 +366,7 @@
       <button
         type="button"
         onclick={surprise}
-        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-label-md text-on-secondary shadow-md transition-all hover:bg-[#b34728] sm:w-auto"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-label-md text-on-secondary shadow-md transition-all hover:bg-secondary-hover sm:w-auto"
       >
         <Icon name="casino" class="text-[18px]" /> {text.catalog.surprise.button}
       </button>

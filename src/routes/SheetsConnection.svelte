@@ -71,7 +71,7 @@
     aria-labelledby="sheets-dialog-title"
     aria-describedby="sheets-dialog-subtitle"
     tabindex="-1"
-    class="relative my-4 flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_24px_60px_-12px_rgba(28,28,24,0.25)] focus:outline-none"
+    class="relative my-4 flex max-h-[92vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-surface shadow-dialog focus:outline-none"
   >
     <div class="h-1.5 w-full shrink-0 bg-gradient-to-r from-primary via-primary-container to-secondary"></div>
 

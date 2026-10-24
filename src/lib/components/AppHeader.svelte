@@ -74,7 +74,8 @@
   <div class="flex h-20 w-full items-center justify-between gap-4 px-gutter md:px-gutter-desktop">
     <div class="flex items-center gap-6">
       <a href={href('/')} class="flex items-center gap-2" aria-label={text.header.homeAria}>
-        <img src="./logo-mark.png" alt="" class="h-8 w-8 rounded-lg object-cover shadow-sm" />
+        <img src="./logo-mark.png" alt="" class="h-8 w-8 rounded-lg object-cover shadow-sm dark:hidden" />
+        <img src="./logo-mark-dark.png" alt="" class="hidden h-8 w-8 rounded-lg object-cover shadow-sm dark:block" />
         <span class="hidden font-display text-headline-sm tracking-tight text-primary sm:inline">{text.header.appName}</span>
       </a>
       {#if xl.current}{@render navTabs('flex')}{/if}
@@ -118,7 +119,7 @@
       <a
         href={href('/grocery')}
         aria-current={active === 'grocery' ? 'page' : undefined}
-        class="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-label-md text-on-secondary shadow-[0_2px_8px_-2px_rgba(162,62,24,0.3)] transition-all hover:bg-[#b34728] sm:px-4 {active === 'grocery' ? 'ring-2 ring-secondary/30 ring-offset-2 ring-offset-surface' : ''}"
+        class="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-label-md text-on-secondary shadow-grocery transition-all hover:bg-secondary-hover sm:px-4 {active === 'grocery' ? 'ring-2 ring-secondary/30 ring-offset-2 ring-offset-surface' : ''}"
         aria-label={pastWeek ? text.header.grocery.label : text.header.grocery.aria(groceries)}
       >
         <Icon name="shopping_basket" class="text-[16px]" />

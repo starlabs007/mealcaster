@@ -94,7 +94,7 @@
       return by > 0 ? scrolled + by : scrolled;
     };
     const target = reveal();
-    // Web fonts (the icon ligatures and Playfair titles) can still be loading and grow the list above tonight by a
+    // Web fonts (the icon ligatures and the display-face titles) can still be loading and grow the list above tonight by a
     // few dozen px, which would leave Mark Done under the fold on phones; measure again once they are in.
     if (document.fonts.status !== 'loaded') document.fonts.ready.then(() => reveal(target));
   });
