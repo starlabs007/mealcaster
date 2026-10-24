@@ -5,6 +5,7 @@
   import { settings } from '../settings.svelte.js';
   import { groceryCount, thisWeekStart } from '../grocery.svelte.js';
   import { route, href, navigate } from '../router.svelte.js';
+  import { resolveDay } from '../recipePage.js';
   import { text } from '../text.js';
   import { formatRange, formatRangeCompact, weekStartOf } from '../dates.js';
   import { MediaQuery } from 'svelte/reactivity';
@@ -31,9 +32,7 @@
   let search = $state('');
   // On a recipe opened from the catalog while planning a day (that isn't the recipe's own), the tab returns to that day.
   const planningDay = $derived(
-    route.path.startsWith('/recipe/') && route.query.day && planner.entries[route.query.day]?.recipeId !== route.path.split('/')[2]
-      ? route.query.day
-      : undefined,
+    route.path.startsWith('/recipe/') ? resolveDay(route.path.split('/')[2], route.query.day, planner.entries, () => undefined).planningDay : undefined,
   );
 
   /** @param {{ id: string }} tab */
