@@ -127,13 +127,18 @@
         {#if !pastWeek}<span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">{groceries}</span>{/if}
       </a>
 
+      <!-- From 360 px; narrower phones keep the link in the footer. 44 px target on touch, the 32 px circle inside. -->
       <a
         href={href('/profile')}
         aria-label={text.header.profile}
         aria-current={route.path === '/profile' ? 'page' : undefined}
-        class="hidden h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-fixed text-primary ring-2 sm:flex {route.path === '/profile' ? 'ring-primary' : 'ring-surface-container-high'}"
+        class="hidden h-11 w-11 shrink-0 items-center justify-center min-[360px]:flex fine:h-8 fine:w-8"
       >
-        <Icon name="person" class="text-[18px]" />
+        <span
+          class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-fixed text-primary ring-2 {route.path === '/profile' ? 'ring-primary' : 'ring-surface-container-high'}"
+        >
+          <Icon name="person" class="text-[18px]" />
+        </span>
       </a>
     </div>
   </div>
