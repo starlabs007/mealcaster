@@ -255,6 +255,8 @@ export const text = {
       moveAfter: (/** @type {string} */ weekday) => `from ${weekday} to:`,
       nightOff: 'Night off',
       open: 'Open',
+      tonight: 'Tonight',
+      swaps: (/** @type {string} */ weekday) => `, swaps with ${weekday}`,
       note: (/** @type {string} */ weekday) => `If that evening has a meal or a night off, it moves to ${weekday}.`,
     },
 
