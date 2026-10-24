@@ -16,6 +16,7 @@ npm install
 cp .env.example .env.local   # then fill in the Google values (see below)
 npm run dev        # http://localhost:5173 — with generated sample data
 npm run dev:empty  # same, but starts empty like production
+npm run dev:lan    # same as dev, also on your network (the printed Network address, for a phone; no Google sign-in there)
 ```
 
 Without `.env.local` the app still runs; Google sync is just unavailable.

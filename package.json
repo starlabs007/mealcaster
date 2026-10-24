@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "vite",
     "dev:empty": "vite --mode empty",
+    "dev:lan": "vite --host",
     "build": "vite build",
     "preview": "vite preview",
     "samples:images": "node dev/samples/images.js",
