@@ -211,3 +211,150 @@ export function repairedHeaderRow(tab, headers, resolution) {
   const appended = SCHEMA[tab].filter((column) => resolution[column].index === null && resolution[column].action === 'append');
   return [...row, ...appended];
 }
+
+/** Copy of a resolution that the caller can change without touching the original. @param {Record<string, Resolution>} resolution */
+const copyResolution = (resolution) => Object.fromEntries(Object.entries(resolution).map(([column, r]) => [column, { ...r }]));
+
+/**
+ * Rebuilds a tab's mapping from what was saved last time.
+ * @param {keyof typeof SCHEMA} tab
+ * @param {{ headers: string[], map: Record<string, string | null>, append: string[], ignore: string[] }} saved
+ * @returns {Record<string, Resolution>}
+ */
+export function resolutionFromSaved(tab, saved) {
+  return Object.fromEntries(
+    SCHEMA[tab].map((column) => {
+      const header = saved.map[column];
+      const index = header == null ? -1 : saved.headers.indexOf(header);
+      if (index >= 0) {
+        return [column, { index, match: sameHeader(header, column) ? 'exact' : 'confirmed', score: 1, action: null }];
+      }
+      const action = saved.append.includes(column) ? 'append' : saved.ignore.includes(column) ? 'ignore' : null;
+      return [column, { index: null, match: null, score: 0, action }];
+    }),
+  );
+}
+
+/**
+ * Facts about one tab's mapping: each column's status, how many still need a
+ * decision, and which sheet columns nothing was matched to.
+ * @param {keyof typeof SCHEMA} tab @param {string[]} headers @param {Record<string, Resolution>} resolution
+ */
+export function summarizeResolution(tab, headers, resolution) {
+  const columns = SCHEMA[tab];
+  const statuses = Object.fromEntries(columns.map((c) => [c, statusOf(resolution[c])]));
+  const used = new Set(columns.map((c) => resolution[c].index).filter((i) => i !== null));
+  return {
+    statuses,
+    conflicts: Object.values(statuses).filter(isConflict).length,
+    missing: columns.filter((c) => resolution[c].index === null).length,
+    renamed: columns.filter((c) => resolution[c].index !== null && resolution[c].match !== 'exact').length,
+    extras: headers.map((header, index) => ({ header, index })).filter(({ header, index }) => header && !used.has(index)),
+    matched: used.size,
+  };
+}
+
+/**
+ * Checks a tab's first rows. Pasted rows (`strict`) must look like MealCaster's,
+ * to catch a copy that missed row 1; rows read from the sheet are taken as they are.
+ * @param {keyof typeof SCHEMA} tab @param {unknown[][]} rows
+ * @param {{ autoAppendOptional: boolean, strict?: boolean }} options
+ * @returns {{ problem: 'firstRowEmpty' | 'notMealCaster' } | { problem: null, headers: string[], rows: string[][], resolution: Record<string, Resolution> }}
+ */
+export function analyzeRows(tab, rows, { autoAppendOptional, strict = true }) {
+  const headers = (rows[0] ?? []).map((h) => String(h ?? '').trim());
+  while (headers.length && !headers.at(-1)) headers.pop();
+  if (!headers.length) return { problem: 'firstRowEmpty' };
+  const resolution = suggestMapping(tab, headers, { autoAppendOptional });
+  if (strict && !Object.values(resolution).some((r) => r.index !== null)) return { problem: 'notMealCaster' };
+  const sample = rows.slice(1, 3).map((r) => headers.map((_, i) => String(r[i] ?? '')));
+  return { problem: null, headers, rows: sample, resolution };
+}
+
+/**
+ * Points an expected column at a sheet column ('' for none). A sheet column
+ * feeds one field only, so whichever field had it loses it. Returns a new mapping.
+ * @param {keyof typeof SCHEMA} tab @param {string[]} headers @param {Record<string, Resolution>} resolution
+ * @param {string} column @param {string} value index as a string, or ''
+ */
+export function pickColumn(tab, headers, resolution, column, value) {
+  const next = copyResolution(resolution);
+  const none = { index: null, match: null, action: null };
+  if (value === '') {
+    Object.assign(next[column], none);
+    return next;
+  }
+  const index = Number(value);
+  for (const other of SCHEMA[tab]) {
+    if (other !== column && next[other].index === index) Object.assign(next[other], none);
+  }
+  Object.assign(next[column], { index, match: sameHeader(headers[index], column) ? 'exact' : 'confirmed', action: null });
+  return next;
+}
+
+/**
+ * Turns "add optional columns automatically" on or off for columns with no
+ * match: on makes an undecided one "append", off clears an "append".
+ * Required columns and matched ones are left alone. Returns a new mapping.
+ * @param {keyof typeof SCHEMA} tab @param {Record<string, Resolution>} resolution @param {boolean} on
+ */
+export function applyAutoAppend(tab, resolution, on) {
+  const next = copyResolution(resolution);
+  for (const column of SCHEMA[tab]) {
+    const r = next[column];
+    if (COLUMN_INFO[tab][column].required || r.index !== null) continue;
+    if (on && r.action === null) r.action = 'append';
+    if (!on && r.action === 'append') r.action = null;
+  }
+  return next;
+}
+
+/** Marks every column with no match and no decision as "append". Returns a new mapping. @param {keyof typeof SCHEMA} tab @param {Record<string, Resolution>} resolution */
+export function appendUndecided(tab, resolution) {
+  const next = copyResolution(resolution);
+  for (const column of SCHEMA[tab]) {
+    if (next[column].index === null && next[column].action === null) next[column].action = 'append';
+  }
+  return next;
+}
+
+/** Whether repair has anything to rename or add in row 1 (ignored columns stay out). @param {keyof typeof SCHEMA} tab @param {Record<string, Resolution>} resolution */
+export function needsRepair(tab, resolution) {
+  return SCHEMA[tab].some((c) => {
+    const r = resolution[c];
+    return r.index === null ? r.action !== 'ignore' : r.match !== 'exact';
+  });
+}
+
+/** Where appended columns land: right after the last named column. @param {keyof typeof SCHEMA} tab @param {number} headerCount @param {Record<string, Resolution>} resolution */
+export function appendSlots(tab, headerCount, resolution) {
+  const appended = SCHEMA[tab].filter((c) => resolution[c].index === null && resolution[c].action === 'append');
+  return Object.fromEntries(appended.map((c, i) => [c, columnLetter(headerCount + i)]));
+}
+
+/**
+ * The mapping for a sheet whose row 1 was just repaired: the new row read
+ * afresh, keeping the columns the person chose to ignore.
+ * @param {keyof typeof SCHEMA} tab @param {string[]} row @param {Record<string, Resolution>} before @param {boolean} autoAppendOptional
+ */
+export function resolutionAfterRepair(tab, row, before, autoAppendOptional) {
+  const resolution = suggestMapping(tab, row, { autoAppendOptional });
+  for (const column of SCHEMA[tab]) if (before[column].action === 'ignore') resolution[column].action = 'ignore';
+  return resolution;
+}
+
+/**
+ * What is stored for a checked tab.
+ * @param {keyof typeof SCHEMA} tab @param {{ headers: string[], rows: string[][], resolution: Record<string, Resolution> }} check @param {string} checkedAt
+ */
+export function toSavedCheck(tab, { headers, rows, resolution }, checkedAt) {
+  const columns = SCHEMA[tab];
+  return {
+    headers,
+    sample: rows.map((r) => r.map((v) => v.slice(0, 160))),
+    map: Object.fromEntries(columns.map((c) => [c, resolution[c].index === null ? null : headers[resolution[c].index]])),
+    append: columns.filter((c) => resolution[c].index === null && resolution[c].action === 'append'),
+    ignore: columns.filter((c) => resolution[c].index === null && resolution[c].action === 'ignore'),
+    checkedAt,
+  };
+}
