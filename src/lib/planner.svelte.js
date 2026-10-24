@@ -6,8 +6,9 @@ import './settings.svelte.js'; // sets the week start day before the first week 
 import { recipes, recipeById } from './recipes.svelte.js';
 import { addDays, daysBetween, formatLong, formatWeekday, formatWeekdayShort, fromISO, weekStartOf, toISO, weekDates } from './dates.js';
 import { switchedEntries } from './switchDays.js';
-import { byLead, missedHeadsUps, remindersOn } from './headsUps.js';
+import { remindersOn } from './headsUps.js';
 import { copiedEntries, dayStatus, dinnerPool, pickTier, resetDays, restoreDays, snapshotDays } from './planDays.js';
+import { createUndoSlot, firstTooSoon, madeIndex as buildMadeIndex, nextPlannedAfter as nextWithRecipe, rollToday, summarize, switchTargets as targetsFor, weekOffset as offsetBetween } from './plannerState.js';
 import { dismissToast, showToast, toast } from './toast.svelte.js';
 import { text } from './text.js';
 import { samples } from 'virtual:sample-data';
@@ -65,11 +66,9 @@ $effect.root(() => {
  * that was "this week" follows it into the new one.
  */
 export function refreshToday() {
-  const now = toISO(new Date());
-  if (now === planner.today) return;
-  const followed = planner.weekStart === weekStartOf(fromISO(planner.today));
-  planner.today = now;
-  if (followed) planner.weekStart = weekStartOf(new Date());
+  const rolled = rollToday(planner, toISO(new Date()));
+  planner.today = rolled.today;
+  planner.weekStart = rolled.weekStart;
 }
 
 if (typeof document !== 'undefined') {
@@ -90,19 +89,7 @@ export function statusOf(iso) {
 export const RECENT_DAYS = 7;
 
 // recipe id → how often and when it was last made: past days on the plan, plus today once marked done.
-const madeIndex = $derived.by(() => {
-  /** @type {Map<string, { last: string, count: number }>} */
-  const index = new Map();
-  for (const [iso, entry] of Object.entries(planner.entries)) {
-    if (!entry?.recipeId || iso > planner.today || (iso === planner.today && !entry.completed)) continue;
-    const made = index.get(entry.recipeId);
-    if (made) {
-      made.count += 1;
-      if (iso > made.last) made.last = iso;
-    } else index.set(entry.recipeId, { last: iso, count: 1 });
-  }
-  return index;
-});
+const madeIndex = $derived(buildMadeIndex(planner.entries, planner.today));
 
 /** ISO date a recipe was last made, if ever. @param {string} recipeId */
 export const lastMadeOn = (recipeId) => madeIndex.get(recipeId)?.last;
@@ -149,12 +136,7 @@ export function currentWeek(weekStart = planner.weekStart) {
 
 /** Summary for the header pill: dinners covered and open slots still plannable. */
 export function weekSummary() {
-  const days = weekDates(planner.weekStart).map(statusOf);
-  return {
-    planned: days.filter((s) => s === 'completed' || s === 'planned').length,
-    off: days.filter((s) => s === 'diningOut').length,
-    open: days.filter((s) => s === 'open').length,
-  };
+  return summarize(weekDates(planner.weekStart).map(statusOf));
 }
 
 /** First plannable open slot in the viewed week (today onward), if any. */
@@ -169,9 +151,8 @@ export function dayOfRecipe(recipeId) {
 
 /** Next day after `iso` in its week that has a recipe assigned. */
 export function nextPlannedAfter(iso) {
-  return weekDates(weekStartOf(fromISO(iso)))
-    .filter((d) => d > iso && recipeById.has(planner.entries[d]?.recipeId ?? ''))
-    .map((d) => ({ iso: d, recipe: recipeById.get(planner.entries[d].recipeId) }))[0];
+  const next = nextWithRecipe(iso, weekDates(weekStartOf(fromISO(iso))), (d) => recipeById.has(planner.entries[d]?.recipeId ?? ''));
+  return next && { iso: next, recipe: recipeById.get(planner.entries[next].recipeId) };
 }
 
 // ── Actions ────────────────────────────────────────────────────────────────
@@ -196,7 +177,7 @@ function pickRecipe(iso, pool = dinnerPool(recipes)) {
 }
 
 /** Weeks from this week to the viewed one: 0 this week, 1 next week, -1 last week. */
-export const weekOffset = () => Math.round(daysBetween(weekStartOf(new Date()), planner.weekStart) / 7);
+export const weekOffset = () => offsetBetween(weekStartOf(new Date()), planner.weekStart);
 
 // The planner's toasts (and their Undo) are about the viewed week, so they close when another week is shown.
 let weekToastId = 0;
@@ -204,27 +185,26 @@ let weekToastId = 0;
 const BULK_UNDO_MS = 10_000;
 
 // The last change that can still be taken back: by its toast's Undo, or by Cmd/Ctrl+Z after the toast has gone.
-/** @type {{ message: string, run: () => void } | null} */
-let lastChange = null;
+const lastChange = createUndoSlot();
 
 /** @param {string} message @param {import('./toast.svelte.js').ToastAction} [action] @param {number} [duration] ms */
 function showWeekToast(message, action, duration) {
   if (action) {
     const run = action.run;
-    lastChange = { message, run };
-    action = { ...action, run: () => ((lastChange = null), run()) };
+    lastChange.remember(message, run);
+    action = { ...action, shortcut: true, run: () => (lastChange.forget(), run()) };
   }
   weekToastId = showToast(message, action, duration);
 }
 
 /** Takes back the last planner change and says so (Cmd/Ctrl+Z); with none, says that. */
 export function undoLastChange() {
-  if (!lastChange) {
+  const change = lastChange.take();
+  if (!change) {
     showWeekToast(text.planner.toasts.nothingToUndo);
     return true;
   }
-  const { message, run } = lastChange;
-  lastChange = null;
+  const { message, run } = change;
   run();
   showWeekToast(text.planner.toasts.undone(message));
   return true;
@@ -237,12 +217,12 @@ export function undoLastChange() {
  */
 function rememberDay(message, iso, before = planner.entries[iso]) {
   const saved = { [iso]: before };
-  lastChange = { message, run: () => restoreDays(planner.entries, saved) };
+  lastChange.remember(message, () => restoreDays(planner.entries, saved));
 }
 
 /** A change without Undo, another week or leaving the planner ends what Cmd/Ctrl+Z can take back. */
 export function forgetLastChange() {
-  lastChange = null;
+  lastChange.forget();
 }
 
 /** @param {string} weekStart */
@@ -273,12 +253,8 @@ export function goToThisWeek() {
  * @param {...string} days
  */
 export function tooSoonNote(...days) {
-  for (const iso of days) {
-    const recipe = recipeById.get(planner.entries[iso]?.recipeId ?? '');
-    const [missed] = byLead(missedHeadsUps(recipe, iso, planner.today));
-    if (missed) return text.common.headsUps.tooSoon(recipe.shortTitle || recipe.title, missed.daysBefore, missed.text);
-  }
-  return '';
+  const late = firstTooSoon(days, (iso) => recipeById.get(planner.entries[iso]?.recipeId ?? ''), planner.today);
+  return late ? text.common.headsUps.tooSoon(late.recipe.shortTitle || late.recipe.title, late.missed.daysBefore, late.missed.text) : '';
 }
 
 /** @param {string} message @param {string} note from tooSoonNote */
@@ -342,10 +318,7 @@ export function markDiningOut(iso) {
 
 /** Days of `iso`'s week its meal can switch with: today onward, not finished, not `iso` itself. @param {string} iso */
 export function switchTargets(iso) {
-  return weekDates(weekStartOf(fromISO(iso))).filter(
-    // statusOf keeps a past night off as 'diningOut', so the date check is needed too.
-    (d) => d !== iso && d >= planner.today && ['planned', 'open', 'diningOut'].includes(statusOf(d)),
-  );
+  return targetsFor(iso, weekDates(weekStartOf(fromISO(iso))), planner.today, statusOf);
 }
 
 /** Two evenings trade places, with an Undo toast. @param {string} a @param {string} b */

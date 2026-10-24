@@ -21,8 +21,8 @@
   // Coloured by sync status rather than by being the current page.
   const TONE = {
     ok: 'bg-primary-fixed text-primary shadow-sm',
-    busy: 'bg-[#ffdead] text-tertiary shadow-sm',
-    warn: 'bg-[#ffdead] text-tertiary shadow-sm',
+    busy: 'bg-tertiary-fixed text-tertiary shadow-sm',
+    warn: 'bg-tertiary-fixed text-tertiary shadow-sm',
     bad: 'bg-secondary-fixed text-secondary shadow-sm',
     off: '',
   };

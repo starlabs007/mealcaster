@@ -16,6 +16,7 @@ npm install
 cp .env.example .env.local   # then fill in the Google values (see below)
 npm run dev        # http://localhost:5173 — with generated sample data
 npm run dev:empty  # same, but starts empty like production
+npm run dev:lan    # same as dev, also on your network (the printed Network address, for a phone; no Google sign-in there)
 ```
 
 Without `.env.local` the app still runs; Google sync is just unavailable.
@@ -196,7 +197,7 @@ for every recipe and the grocery list.
 - Ingredient **groups** are edited as sections (**Add Group**; a heading's ⋯ menu moves or deletes it, its rows joining
   the group above). A row is qty · unit · ingredient · ⋯ (note, prep and optional; move to another group; remove);
   Enter in the ingredient field adds the next row. One group shows no heading; it saves as "Main" when untitled. A
-  group keeps its sheet category when renamed. Sheet column names appear only under **Sheet Column Mapping**.
+  group keeps its sheet category when renamed.
 - A recipe line whose ingredient isn't in the tab shows as "Unknown ingredient" and keeps its id; sync doesn't stop.
 
 ## Grocery List (`#/grocery`)

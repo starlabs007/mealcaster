@@ -1,6 +1,7 @@
 // Recipe print options, remembered on this device (a preference, not recipe data).
 
 import { storageKey } from './env.js';
+import { DEFAULT_IMAGE_SCALE, IMAGE_SCALE, clampScale } from './printScale.js';
 
 const STORAGE_KEY = storageKey('printOptions.v1');
 
@@ -8,16 +9,12 @@ const STORAGE_KEY = storageKey('printOptions.v1');
 /** @typedef {{ image: boolean, imageScale: number, simple: boolean, textSize: TextSize }} PrintOptions */
 
 /** @type {PrintOptions} */
-const DEFAULTS = { image: true, imageScale: 75, simple: false, textSize: 'regular' };
+const DEFAULTS = { image: true, imageScale: DEFAULT_IMAGE_SCALE, simple: false, textSize: 'regular' };
 
-export const IMAGE_SCALE = { min: 10, max: 100, step: 5 };
+export { IMAGE_SCALE, clampScale };
 
 /** Points added to every font size: small is one size down, large three up. */
 export const TEXT_DELTA = { small: -1, regular: 0, large: 3 };
-
-/** @param {unknown} value */
-export const clampScale = (value) =>
-  Math.min(IMAGE_SCALE.max, Math.max(IMAGE_SCALE.min, Math.round(Number(value)) || DEFAULTS.imageScale));
 
 function load() {
   try {

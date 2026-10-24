@@ -3,27 +3,19 @@
   import ActionMenu from './ActionMenu.svelte';
   import { planner, weekSummary, weekOffset, autoFillRemaining, copyLastWeek, resetWeek, resetCount, RECENT_DAYS } from '../planner.svelte.js';
   import { text } from '../text.js';
-  import { addDays, formatLong, formatShort } from '../dates.js';
+  import { addDays, formatLong, weekLabel } from '../dates.js';
   import { MediaQuery } from 'svelte/reactivity';
   import { tick } from 'svelte';
 
   const summary = $derived(weekSummary());
   const offset = $derived(weekOffset());
-  const title = $derived(
-    offset === 0
-      ? text.planner.header.thisWeek
-      : offset === -1
-        ? text.planner.header.lastWeek
-        : offset === 1
-          ? text.planner.header.nextWeek
-          : text.planner.header.weekOf(formatShort(planner.weekStart)),
-  );
+  const title = $derived(weekLabel(offset, text.planner.header, planner.weekStart));
   // A week entirely in the past is read-only history.
   const editable = $derived(addDays(planner.weekStart, 6) >= planner.today);
 
-  // On phones the actions fit one row: Copy joins Reset Week in the ⋯ menu. From `md` Reset Week is a quiet text button
-  // beside Copy. It says how many evenings it clears and is left out when there are none; what it keeps is its title
-  // (and the phone menu's small print), since a visible line would cost the header height.
+  // Reset Week lives in the ⋯ menu at every width, with what it keeps as small print: one click wipes up to 7 evenings, so
+  // it isn't set 8 px from Copy. The menu says how many evenings it clears and is left out when there are none. On phones
+  // the actions fit one row: Copy joins it in the menu.
   const wide = new MediaQuery('min-width: 768px');
   const resettable = $derived(resetCount());
   // Copy takes the week before the viewed one; on next week that is this week.
@@ -31,7 +23,7 @@
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const more = $derived([
     ...(wide.current ? [] : [{ id: 'copy', label: copyLabel, icon: 'content_copy', onselect: copyLastWeek }]),
-    ...(resettable && !wide.current ? [{ id: 'reset', label: text.planner.header.resetWeek(resettable), icon: 'delete_sweep', note: text.planner.header.resetKeeps, divider: true, onselect: reset }] : []),
+    ...(resettable ? [{ id: 'reset', label: text.planner.header.resetWeek(resettable), icon: 'delete_sweep', note: text.planner.header.resetKeeps, divider: true, onselect: reset }] : []),
   ]);
 
   // When the button that ran the reset goes with it, focus moves to Auto-fill rather than dropping to the page.
@@ -88,20 +80,6 @@
           <button type="button" class="btn-outline min-h-11 fine:min-h-0" onclick={copyLastWeek}>
             <Icon name="content_copy" class="text-[16px]" /> {copyLabel}
           </button>
-          {#if resettable}
-            <!-- Quiet, below Auto-fill and Copy in weight; what it keeps is the title and the description. -->
-            <button
-              type="button"
-              class="btn min-h-11 text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface fine:min-h-0"
-              title={text.planner.header.resetKeeps}
-              aria-describedby="reset-keeps"
-              onclick={reset}
-            >
-              <Icon name="delete_sweep" class="text-[16px]" />
-              {text.planner.header.resetWeek(resettable)}
-            </button>
-            <span id="reset-keeps" class="sr-only">{text.planner.header.resetKeeps}</span>
-          {/if}
         {/if}
         {#if more.length}
           <ActionMenu items={more} label={text.planner.header.moreAria} class="border border-outline-variant bg-surface-container-lowest" />

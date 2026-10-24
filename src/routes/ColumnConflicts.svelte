@@ -6,13 +6,19 @@
   import { defaultAisle, status, tagColourName, tagColourSection, weekStartsOnRow, weekdays } from '../lib/sheetText.js';
   import {
     COLUMN_INFO,
+    analyzeRows,
+    appendSlots as slotsFor,
+    appendUndecided,
+    applyAutoAppend,
     columnLetter,
-    isConflict,
+    needsRepair,
     parsePastedRows,
+    pickColumn,
     repairedHeaderRow,
-    sameHeader,
-    statusOf,
-    suggestMapping,
+    resolutionAfterRepair,
+    resolutionFromSaved,
+    summarizeResolution,
+    toSavedCheck,
   } from '../lib/schemaCheck.js';
   import { goBack } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -69,17 +75,7 @@
   function fromSaved(key) {
     const saved = sheets.schemaCheck?.[key];
     if (!saved) return { headers: [], rows: [], resolution: null };
-    const resolution = Object.fromEntries(
-      SCHEMA[key].map((column) => {
-        const header = saved.map[column];
-        const index = header == null ? -1 : saved.headers.indexOf(header);
-        if (index >= 0) {
-          return [column, { index, match: sameHeader(header, column) ? 'exact' : 'confirmed', score: 1, action: null }];
-        }
-        const action = saved.append.includes(column) ? 'append' : saved.ignore.includes(column) ? 'ignore' : null;
-        return [column, { index: null, match: null, score: 0, action }];
-      }),
-    );
+    const resolution = resolutionFromSaved(key, saved);
     return { headers: [...saved.headers], rows: $state.snapshot(saved.sample), resolution };
   }
 
@@ -100,17 +96,7 @@
   /** Facts about one tab: statuses, conflicts and what was detected. @param {TabKey} key */
   function summarize(key) {
     const { headers, resolution } = checks[key];
-    if (!resolution) return null;
-    const statuses = Object.fromEntries(SCHEMA[key].map((c) => [c, statusOf(resolution[c])]));
-    const used = new Set(SCHEMA[key].map((c) => resolution[c].index).filter((i) => i !== null));
-    return {
-      statuses,
-      conflicts: Object.values(statuses).filter(isConflict).length,
-      missing: SCHEMA[key].filter((c) => resolution[c].index === null).length,
-      renamed: SCHEMA[key].filter((c) => resolution[c].index !== null && resolution[c].match !== 'exact').length,
-      extras: headers.map((h, i) => ({ header: h, index: i })).filter(({ header, index }) => header && !used.has(index)),
-      matched: used.size,
-    };
+    return resolution ? summarizeResolution(key, headers, resolution) : null;
   }
 
   const summaries = $derived(Object.fromEntries(tabKeys.map((k) => [k, summarize(k)])));
@@ -119,16 +105,8 @@
   const checkedTabs = $derived(tabKeys.filter((k) => summaries[k]));
   const totalConflicts = $derived(checkedTabs.reduce((n, k) => n + summaries[k].conflicts, 0));
   // Anything to rename or add in row 1 (ignored columns stay out).
-  const repairable = $derived(
-    summary != null &&
-      (summary.renamed > 0 || SCHEMA[active].some((c) => current.resolution[c].index === null && current.resolution[c].action !== 'ignore')),
-  );
-  /** Where appended columns land: right after the last named column. */
-  const appendSlots = $derived.by(() => {
-    if (!current.resolution) return {};
-    const appended = SCHEMA[active].filter((c) => current.resolution[c].index === null && current.resolution[c].action === 'append');
-    return Object.fromEntries(appended.map((c, i) => [c, columnLetter(current.headers.length + i)]));
-  });
+  const repairable = $derived(summary != null && needsRepair(active, current.resolution));
+  const appendSlots = $derived(current.resolution ? slotsFor(active, current.headers.length, current.resolution) : {});
 
   onMount(() => {
     dialog.focus();
@@ -141,21 +119,14 @@
   const close = () => goBack('/sheets-sync/sync');
 
   /**
-   * Checks a tab's first rows. Pasted rows must look like MealCaster's (to catch
-   * a copy that missed row 1); rows read from the sheet are taken as they are.
+   * Checks a tab's first rows and keeps the result.
    * @param {unknown[][]} rows @param {TabKey} key
    * @returns {string} problem with the rows, or ''
    */
   function analyze(rows, key = active, strict = true) {
-    const headers = (rows[0] ?? []).map((h) => String(h ?? '').trim());
-    while (headers.length && !headers.at(-1)) headers.pop();
-    if (!headers.length) return text.sheets.columns.errors.firstRowEmpty;
-    const resolution = suggestMapping(key, headers, { autoAppendOptional: autoAppend });
-    if (strict && !Object.values(resolution).some((r) => r.index !== null)) {
-      return text.sheets.columns.errors.notMealCaster;
-    }
-    const sample = rows.slice(1, 3).map((r) => headers.map((_, i) => String(r[i] ?? '')));
-    checks[key] = { headers, rows: sample, resolution };
+    const result = analyzeRows(key, rows, { autoAppendOptional: autoAppend, strict });
+    if (result.problem) return text.sheets.columns.errors[result.problem];
+    checks[key] = { headers: result.headers, rows: result.rows, resolution: result.resolution };
     return '';
   }
 
@@ -204,39 +175,19 @@
 
   /** Picks the sheet column for an expected column; a column feeds only one field. */
   function pick(column, value) {
-    if (value === '') {
-      update(column, { index: null, match: null, action: null });
-      return;
-    }
-    const index = Number(value);
-    for (const other of SCHEMA[active]) {
-      if (other !== column && current.resolution[other].index === index) {
-        update(other, { index: null, match: null, action: null });
-      }
-    }
-    update(column, { index, match: sameHeader(current.headers[index], column) ? 'exact' : 'confirmed', action: null });
+    current.resolution = pickColumn(active, current.headers, current.resolution, column, value);
   }
 
   function setAutoAppend(on) {
     autoAppend = on;
-    for (const key of checkedTabs) {
-      for (const column of SCHEMA[key]) {
-        const r = checks[key].resolution[column];
-        if (COLUMN_INFO[key][column].required || r.index !== null) continue;
-        if (on && r.action === null) r.action = 'append';
-        if (!on && r.action === 'append') r.action = null;
-      }
-    }
+    for (const key of checkedTabs) checks[key].resolution = applyAutoAppend(key, checks[key].resolution, on);
   }
 
   /** Accepts every suggestion, adds every missing column, and copies the fixed row 1. */
   async function repair() {
     const previous = $state.snapshot(current);
     const key = active;
-    for (const column of SCHEMA[key]) {
-      const r = current.resolution[column];
-      if (r.index === null && r.action === null) r.action = 'append';
-    }
+    current.resolution = appendUndecided(key, current.resolution);
     const row = repairedHeaderRow(key, current.headers, current.resolution);
     const tab = sheets.tabs[key];
     try {
@@ -248,9 +199,7 @@
       return;
     }
     // From here on the check describes the repaired sheet (once the row is pasted, when copied).
-    const ignored = SCHEMA[key].filter((c) => current.resolution[c].action === 'ignore');
-    const resolution = suggestMapping(key, row, { autoAppendOptional: autoAppend });
-    for (const column of ignored) resolution[column].action = 'ignore';
+    const resolution = resolutionAfterRepair(key, row, current.resolution, autoAppend);
     checks[key] = { headers: row, rows: current.rows.map((r) => [...r, ...Array(row.length - r.length).fill('')]), resolution };
     showToast(live ? text.sheets.columns.toasts.repairedLive(tab) : text.sheets.columns.toasts.repairedCopied(tab), {
       label: text.common.undo,
@@ -265,23 +214,7 @@
   function save() {
     if (totalConflicts || !checkedTabs.length) return;
     const now = new Date().toISOString();
-    const result = Object.fromEntries(
-      checkedTabs.map((key) => {
-        const { headers, rows, resolution } = $state.snapshot(checks[key]);
-        const columns = SCHEMA[key];
-        return [
-          key,
-          {
-            headers,
-            sample: rows.map((r) => r.map((v) => v.slice(0, 160))),
-            map: Object.fromEntries(columns.map((c) => [c, resolution[c].index === null ? null : headers[resolution[c].index]])),
-            append: columns.filter((c) => resolution[c].index === null && resolution[c].action === 'append'),
-            ignore: columns.filter((c) => resolution[c].index === null && resolution[c].action === 'ignore'),
-            checkedAt: now,
-          },
-        ];
-      }),
-    );
+    const result = Object.fromEntries(checkedTabs.map((key) => [key, toSavedCheck(key, $state.snapshot(checks[key]), now)]));
     saveSchemaCheck(result, autoAppend);
     showToast(live ? text.sheets.columns.toasts.savedLive : text.sheets.columns.toasts.savedPaste);
     close();
@@ -295,7 +228,7 @@
   const BADGE = {
     bound: { icon: 'verified', label: text.sheets.columns.badges.bound, class: 'bg-primary-fixed/60 text-primary' },
     mapped: { icon: 'link', label: text.sheets.columns.badges.mapped, class: 'bg-primary-fixed/60 text-primary' },
-    suggested: { icon: 'alt_route', label: text.sheets.columns.badges.suggested, class: 'bg-[#ffdead] text-tertiary' },
+    suggested: { icon: 'alt_route', label: text.sheets.columns.badges.suggested, class: 'bg-tertiary-fixed text-tertiary' },
     missing: { icon: 'error', label: text.sheets.columns.badges.missing, class: 'bg-secondary-fixed text-secondary' },
     append: { icon: 'add_column_right', label: text.sheets.columns.badges.append, class: 'bg-surface-container-high text-primary' },
     ignored: { icon: 'block', label: text.sheets.columns.badges.ignored, class: 'bg-surface-container-high text-on-surface-variant' },
@@ -328,7 +261,7 @@
     'missing'
       ? 'bg-secondary-fixed/25'
       : status === 'suggested'
-        ? 'bg-[#ffdead]/20'
+        ? 'bg-tertiary-fixed/20'
         : ''}"
   >
     <div class="flex flex-col gap-1">
@@ -427,9 +360,9 @@
     aria-labelledby="conflicts-title"
     aria-describedby="conflicts-subtitle"
     tabindex="-1"
-    class="relative my-4 flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-surface shadow-[0_24px_60px_-12px_rgba(28,28,24,0.25)] focus:outline-none"
+    class="relative my-4 flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-surface shadow-dialog focus:outline-none"
   >
-    <div class="h-1.5 w-full shrink-0 bg-gradient-to-r from-secondary via-secondary-container to-[#f6bd5e]"></div>
+    <div class="h-1.5 w-full shrink-0 bg-gradient-to-r from-secondary via-secondary-container to-tertiary-fixed"></div>
 
     <!-- Header -->
     <div class="flex items-start justify-between gap-3 px-4 pb-3 pt-4 sm:px-8 sm:pt-6">

@@ -3,7 +3,9 @@ import './app.css';
 import App from './App.svelte';
 import { startSync } from './lib/sync/sync.svelte.js';
 import { checkStorage } from './lib/storage.svelte.js';
+import { followTheme } from './lib/devicePrefs.svelte.js';
 
+followTheme();
 startSync();
 checkStorage();
 

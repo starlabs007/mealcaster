@@ -5,13 +5,10 @@
 
 import { SvelteMap } from 'svelte/reactivity';
 import { samples } from 'virtual:sample-data';
-import { migrateNotes } from './markdown.js';
-import { normalizeCategory, normalizeTags, retag } from './tags.js';
 import { aisles } from './data/aisles.js';
 import { recipeIdFor } from './ingredients.js';
-import { normalizeHeadsUps } from './headsUps.js';
+import { parseBox, startingRecipes, recipesToSave, recipeToStore, retagChanges, relinkChanges, classifySynced } from './recipeBox.js';
 import { restoreSampleIngredients } from './ingredients.svelte.js';
-import { cellText, recipeToRow } from './sync/codec.js';
 import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { text } from './text.js';
@@ -30,46 +27,12 @@ const builtIn = samples.recipes;
 const sampleById = new Map(builtIn.map((r) => [r.id, r]));
 export const isSample = (id) => sampleById.has(id);
 
-/** @param {SavedRecipe} r @returns {Recipe} */
-const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinutes });
-
-/** Brings a recipe saved by an earlier build up to date. @param {SavedRecipe} r */
-const migrate = (r) => {
-  // Mock-only sample fields, since removed (cook counts now come from the plan; `hero` was a second photo).
-  const { highlight, prep, stat, rating, ratings, cookCount, hero, ...rest } = migrateNotes(r);
-  return {
-    ...rest,
-    badge: { label: normalizeCategory(rest.badge?.label ?? 'Dinner') },
-    tags: normalizeTags(r.tags),
-    ingredients: (rest.ingredients ?? []).map((g) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
-    headsUps: normalizeHeadsUps(rest.headsUps),
-  };
-};
-
-/** @returns {{ saved: SavedRecipe[], deleted: string[] }} */
-function load() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const box = JSON.parse(raw);
-      return { ...box, saved: box.saved.map(migrate) };
-    }
-  } catch {
-    // Start from the samples.
-  }
-  return { saved: [], deleted: [] };
-}
-
-const box = load();
-const savedById = new Map(box.saved.map((r) => [r.id, r]));
+const box = parseBox(localStorage.getItem(STORAGE_KEY));
 /** Sample ids the user deleted. */
 const deleted = new Set(box.deleted);
 
 /** @type {Recipe[]} */
-export const recipes = $state([
-  ...builtIn.filter((r) => !deleted.has(r.id)).map((r) => (savedById.has(r.id) ? withMinutes(savedById.get(r.id)) : r)),
-  ...box.saved.filter((r) => !isSample(r.id)).map(withMinutes),
-]);
+export const recipes = $state(startingRecipes(builtIn, box));
 
 /** @type {Map<string, Recipe>} */
 export const recipeById = new SvelteMap(recipes.map((r) => [r.id, r]));
@@ -78,8 +41,7 @@ export const customRecipeCount = () => recipes.filter((r) => r.custom).length;
 
 /** @returns {boolean} whether the recipes fit on this device */
 function store() {
-  const saved = recipes.filter((r) => r.custom || r.edited).map(({ minutes, ...r }) => r);
-  return saveItem(STORAGE_KEY, JSON.stringify({ saved, deleted: [...deleted] }));
+  return saveItem(STORAGE_KEY, JSON.stringify({ saved: recipesToSave(recipes), deleted: [...deleted] }));
 }
 
 function persist() {
@@ -92,7 +54,7 @@ function persist() {
  * @param {SavedRecipe} recipe
  */
 export function saveRecipe(recipe) {
-  const next = withMinutes(isSample(recipe.id) ? { ...recipe, edited: true } : recipe);
+  const next = recipeToStore(recipe, isSample(recipe.id));
   const index = recipes.findIndex((r) => r.id === recipe.id);
   const previous = index >= 0 ? recipes[index] : undefined;
   if (index >= 0) recipes[index] = next;
@@ -150,21 +112,7 @@ export function restoreRecipe({ recipe, index }) {
  * @returns {Recipe[]} the recipes as they were, for `restoreTagged`
  */
 export function retagRecipes(from, to) {
-  const before = [];
-  for (const [i, r] of recipes.entries()) {
-    if (!r.tags.includes(from)) continue;
-    before.push($state.snapshot(r));
-    recipes[i] = { ...r, tags: retag(r.tags, from, to), ...(isSample(r.id) && { edited: true }) };
-    recipeById.set(r.id, recipes[i]);
-  }
-  try {
-    persist();
-  } catch (error) {
-    // Roll back so memory matches what's stored.
-    putBack(before);
-    throw error;
-  }
-  return before;
+  return applyChanges(retagChanges(recipes, from, to, isSample));
 }
 
 /**
@@ -174,14 +122,19 @@ export function retagRecipes(from, to) {
  * @returns {Recipe[]} the recipes as they were, for `restoreTagged`
  */
 export function relinkIngredient(from, to) {
+  return applyChanges(relinkChanges(recipes, from, to, isSample));
+}
+
+/**
+ * @param {{ index: number, recipe: Recipe }[]} changes
+ * @returns {Recipe[]} the recipes as they were
+ */
+function applyChanges(changes) {
   const before = [];
-  const uses = (r) => r.ingredients.some((g) => g.items.some((item) => item.id === from));
-  for (const [i, r] of recipes.entries()) {
-    if (!uses(r)) continue;
-    before.push($state.snapshot(r));
-    const ingredients = r.ingredients.map((g) => ({ ...g, items: g.items.map((item) => (item.id === from ? { ...item, id: to } : item)) }));
-    recipes[i] = { ...r, ingredients, ...(isSample(r.id) && { edited: true }) };
-    recipeById.set(r.id, recipes[i]);
+  for (const { index, recipe } of changes) {
+    before.push($state.snapshot(recipes[index]));
+    recipes[index] = recipe;
+    recipeById.set(recipe.id, recipes[index]);
   }
   try {
     persist();
@@ -209,30 +162,16 @@ export function restoreTagged(before) {
   persist();
 }
 
-/** Same content as far as the Google Sheet can tell (favorites aside). */
-function sameInSheet(a, b) {
-  const none = new Set();
-  const [ra, rb] = [recipeToRow(a, none), recipeToRow(b, none)];
-  return Object.keys(ra).every((col) => cellText(ra[col]) === cellText(rb[col]));
-}
-
 /**
  * Replaces the whole recipe list with the synced one. Sample recipes that match
  * the built-in version are stored as plain samples; changed ones as edits.
  * @param {Recipe[]} list
  */
 export function replaceRecipes(list) {
-  const ids = new Set(list.map((r) => r.id));
+  const synced = classifySynced(list, builtIn);
   deleted.clear();
-  for (const sample of builtIn) if (!ids.has(sample.id)) deleted.add(sample.id);
-  const next = list.map((r) => {
-    const sample = sampleById.get(r.id);
-    if (!sample) return { ...r, custom: true };
-    if (sameInSheet(r, sample)) return sample;
-    const { custom, ...rest } = r;
-    return { ...rest, edited: true };
-  });
-  recipes.splice(0, recipes.length, ...next);
+  for (const id of synced.deleted) deleted.add(id);
+  recipes.splice(0, recipes.length, ...synced.recipes);
   recipeById.clear();
   for (const r of recipes) recipeById.set(r.id, r);
   // A sync shows the sheet's recipes even when they don't fit; it holds back the sync base

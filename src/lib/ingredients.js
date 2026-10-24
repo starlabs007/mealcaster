@@ -3,6 +3,8 @@
 // codec and tests can use it; the store is ingredients.svelte.js.
 
 import { formatQty } from './format.js';
+import { aisles } from './data/aisles.js';
+import { defaultAisle } from './sheetText.js';
 
 /**
  * @typedef {{ id: string, name: string, plural: string, aisle: string, onHand: boolean }} Ingredient
@@ -34,6 +36,30 @@ export const nameKey = (name) =>
 
 /** Tidy name as stored: single spaces, trimmed, lowercase (the person's choice, for consistency). @param {unknown} name */
 export const tidyIngredientName = (name) => String(name ?? '').replace(/\s+/g, ' ').trim().toLowerCase();
+
+// ---- Stored ingredients ---------------------------------------------------------
+
+/** An aisle tag in the aisle list, else the default one. @param {unknown} tag */
+const validAisle = (tag) => (aisles.some((a) => a.tag === tag) ? String(tag) : defaultAisle);
+
+/** A stored or synced ingredient, tidied: trimmed lowercase names (the id spelled out if there is none), a known aisle. @param {any} i @returns {Ingredient} */
+export const cleanIngredient = (i) => ({
+  id: String(i.id),
+  name: tidyIngredientName(i.name) || String(i.id).replace(/-/g, ' '),
+  plural: tidyIngredientName(i.plural),
+  aisle: validAisle(i.aisle),
+  onHand: i.onHand === true,
+});
+
+/**
+ * Whether replacing `current` with `next` changes what is in stock: a flag flips, a new ingredient arrives in stock, or
+ * one in stock goes. (Past grocery weeks are frozen just before, so their lists stay as they were.)
+ * @param {Ingredient[]} current @param {Ingredient[]} next
+ */
+export function stockChanges(current, next) {
+  const stocked = new Map(current.map((i) => [i.id, i.onHand]));
+  return next.some((i) => (stocked.get(i.id) ?? false) !== i.onHand) || current.some((i) => i.onHand && !next.some((n) => n.id === i.id));
+}
 
 // ---- Ids ---------------------------------------------------------------------
 
@@ -264,3 +290,10 @@ export function similarIngredients(list, name, limit = 3) {
     .slice(0, limit)
     .map(([, s]) => s);
 }
+
+/**
+ * The aisle a name field shows: an existing ingredient brings its own, one the user has picked an aisle for keeps it,
+ * and a new one gets `guess` until it is picked (never a silent default).
+ * @param {{ existing?: { aisle: string }, picked: boolean, current: string, guess: string }} how
+ */
+export const aisleFor = ({ existing, picked, current, guess }) => (existing ? existing.aisle : picked ? current : guess);

@@ -48,3 +48,13 @@ test('the week start day is configurable', () => {
     setWeekStartDay(6);
   }
 });
+
+test('weekLabel names this, next and last week, else the week of its first day', async () => {
+  const { weekLabel } = await import('../src/lib/dates.js');
+  const words = { thisWeek: 'this week', nextWeek: 'next week', lastWeek: 'last week', weekOf: (d) => `the week of ${d}` };
+  assert.equal(weekLabel(0, words, '2026-10-17'), 'this week');
+  assert.equal(weekLabel(1, words, '2026-10-24'), 'next week');
+  assert.equal(weekLabel(-1, words, '2026-10-10'), 'last week');
+  assert.equal(weekLabel(2, words, '2026-10-31'), 'the week of Oct 31');
+  assert.equal(weekLabel(-5, words, '2026-09-12'), 'the week of Sep 12');
+});

@@ -1,22 +1,22 @@
 <script module>
+  import { placeKey } from '../lib/catalogQuery.js';
+
   /**
    * Where the catalog was left (batches shown, sort, favorites, scroll), for the same search coming back from a recipe.
    * @type {{ key: string, pages: number, sort: string, favoritesOnly: boolean, scrollY: number } | null}
    */
   let place = null;
 
-  /** The search as shown: the day is the one being planned, so `#/catalog` and its breadcrumb's `?day=` match. */
-  const placeKey = (q, day) => JSON.stringify([q.q ?? '', q.filter ?? '', q.category ?? '', day ?? '']);
 </script>
 
 <script>
   import { onDestroy, tick, untrack } from 'svelte';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
-  import { recipes, recipeById, tagChoices, tagIcon, normalizeTags, categoryChoices, normalizeCategory } from '../lib/recipes.svelte.js';
+  import { recipes, recipeById, tagIcon, normalizeTags, normalizeCategory } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
   import { ingredientOf } from '../lib/ingredients.svelte.js';
-  import { foldKey } from '../lib/ingredients.js';
+  import { SORT_IDS, activeFilterCount, categoryFilters, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
   import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate, left } from '../lib/router.svelte.js';
@@ -26,22 +26,14 @@
   import { formatLong, formatWeekday, weekStartOf, fromISO, weekDates } from '../lib/dates.js';
 
   const PAGE_SIZE = 9;
-  const byTitle = (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
-  const sorts = [
-    {
-      id: 'most-cooked',
-      label: text.catalog.sorts.mostCooked,
-      // From the plan history; ties go to the one made most recently, then A–Z.
-      compare: (a, b) =>
-        timesMade(b.id) - timesMade(a.id) ||
-        (lastMadeOn(b.id) ?? '').localeCompare(lastMadeOn(a.id) ?? '') ||
-        a.title.localeCompare(b.title),
-    },
-    { id: 'quickest', label: text.catalog.sorts.quickest, compare: (a, b) => (a.minutes || Infinity) - (b.minutes || Infinity) || 0 },
-    { id: 'name', label: text.catalog.sorts.nameAsc, compare: byTitle },
-    { id: 'name-desc', label: text.catalog.sorts.nameDesc, compare: (a, b) => byTitle(b, a) },
-    { id: 'recent', label: text.catalog.sorts.recent, compare: (a, b) => b.addedAt.localeCompare(a.addedAt) },
-  ];
+  const sortLabels = {
+    'most-cooked': text.catalog.sorts.mostCooked,
+    quickest: text.catalog.sorts.quickest,
+    name: text.catalog.sorts.nameAsc,
+    'name-desc': text.catalog.sorts.nameDesc,
+    recent: text.catalog.sorts.recent,
+  };
+  const sorts = SORT_IDS.map((id) => ({ id, label: sortLabels[id] }));
 
   let query = $state('');
   let sort = $state('most-cooked');
@@ -104,16 +96,10 @@
   }
 
   // One filter per tag in use (suggested tags first); an active tag stays listed even with no recipes.
-  const filters = $derived(
-    tagChoices([...recipes.flatMap((r) => r.tags), ...active]).filter((t) => active.includes(t) || recipes.some((r) => r.tags.includes(t))),
-  );
+  const filters = $derived(tagFilters(recipes, active));
 
   // Categories in use (suggested ones first); the active one stays listed even with no recipes.
-  const categories = $derived(
-    categoryChoices([...recipes.map((r) => r.badge.label), category]).filter(
-      (c) => c === category || recipes.some((r) => r.badge.label === c),
-    ),
-  );
+  const categories = $derived(categoryFilters(recipes, category));
 
   // A day passed in the URL moves the week stepper to that day's week.
   $effect(() => {
@@ -121,50 +107,23 @@
   });
 
   const plannable = $derived(weekDates(planner.weekStart).filter((iso) => iso >= planner.today));
-  const targetDay = $derived(
-    route.query.day && plannable.includes(route.query.day) ? route.query.day : firstOpenDay(),
-  );
+  const targetDay = $derived(dayToPlan(route.query.day, plannable, firstOpenDay()));
   const targetName = $derived(targetDay ? formatWeekday(targetDay) : undefined);
   const currentPick = $derived(targetDay ? planner.entries[targetDay]?.recipeId : undefined);
 
   // The week's dinners, except the target day's own — swapping it should still show the current pick.
-  const plannedIds = $derived(
-    new Set(
-      currentWeek()
-        .filter((d) => (d.status === 'planned' || d.status === 'completed') && d.recipe && d.iso !== targetDay)
-        .map((d) => d.recipe.id),
+  const plannedIds = $derived(plannedIdsOf(currentWeek(), targetDay));
+
+  const results = $derived(
+    searchRecipes(
+      recipes,
+      { query, sort, tags: active, category, favoritesOnly, favoriteIds: favorites.ids, hideRecent, hidePlanned, plannedIds },
+      { ingredientOf, madeRecently, timesMade, lastMadeOn },
     ),
   );
-
-  const results = $derived.by(() => {
-    // Accents and case don't matter: "bun cha" finds Bún chả.
-    const words = foldKey(query).split(' ').filter(Boolean);
-    return recipes
-      .filter((r) => !favoritesOnly || favorites.ids.includes(r.id))
-      .filter((r) => !hideRecent || !madeRecently(r.id))
-      .filter((r) => !hidePlanned || !plannedIds.has(r.id))
-      .filter((r) => !category || r.badge.label === category)
-      .filter((r) => active.every((t) => r.tags.includes(t)))
-      .filter((r) => {
-        if (!words.length) return true;
-        const haystack = [
-          r.title,
-          r.description,
-          r.badge.label,
-          ...r.tags,
-          ...r.ingredients.flatMap((g) => g.items.flatMap((i) => {
-            const ingredient = ingredientOf(i.id);
-            return ingredient ? [ingredient.name, ingredient.plural] : [];
-          })),
-        ];
-        const searchable = foldKey(haystack.join(' '));
-        return words.every((w) => searchable.includes(w));
-      })
-      .sort(sorts.find((s) => s.id === sort).compare);
-  });
   const visible = $derived(results.slice(0, pages * PAGE_SIZE));
   const remaining = $derived(results.length - visible.length);
-  const activeCount = $derived(active.length + (category ? 1 : 0) + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0) + (hidePlanned ? 1 : 0));
+  const activeCount = $derived(activeFilterCount({ tags: active, category, favoritesOnly, hideRecent, hidePlanned }));
 
   function toggleFilter(id) {
     active = active.includes(id) ? active.filter((x) => x !== id) : [...active, id];
@@ -407,7 +366,7 @@
       <button
         type="button"
         onclick={surprise}
-        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-label-md text-on-secondary shadow-md transition-all hover:bg-[#b34728] sm:w-auto"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-secondary px-6 py-3 text-label-md text-on-secondary shadow-md transition-all hover:bg-secondary-hover sm:w-auto"
       >
         <Icon name="casino" class="text-[18px]" /> {text.catalog.surprise.button}
       </button>

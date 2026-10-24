@@ -12,7 +12,8 @@
   import { settings, setReturnToPlanner, setWeekStartDay } from '../lib/settings.svelte.js';
   import { realignWeeks } from '../lib/weekStart.svelte.js';
   import { printOptions, setPrintOptions } from '../lib/printOptions.svelte.js';
-  import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
+  import { devicePrefs, setHideRecent, setHidePlanned, setTheme } from '../lib/devicePrefs.svelte.js';
+  import { THEME_CHOICES } from '../lib/theme.js';
   import { TONES, tagClass, toneClassOf, setTagTone, renameTag, deleteTag, resetTagColors } from '../lib/tagColors.svelte.js';
   import { RECENT_DAYS, planner } from '../lib/planner.svelte.js';
   import { weekStartOf } from '../lib/dates.js';
@@ -27,22 +28,24 @@
   import { dataWorkbook } from '../lib/sheetsTemplate.js';
   import { downloadBlob } from '../lib/xlsx.js';
   import { toISO } from '../lib/dates.js';
+  import { listWords, mergeTarget, sizeText, storageShare, tagUsage } from '../lib/profileView.js';
 
   const inputClass =
     'rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container';
 
   /** A group of related device options in This Device. */
   const deviceCard = 'flex flex-col rounded-xl border border-surface-container-high p-4';
+  const THEME_ICONS = { light: 'light_mode', dark: 'dark_mode', system: 'brightness_auto' };
 
   let confirmingWipe = $state(false);
   let editingIngredients = $state(false);
 
   // Export: everything on this device as a workbook with the tabs (and tab names) the sheet uses.
   const exportContents = $derived(
-    [text.profile.device.export.ingredients(ingredients.length), text.profile.device.export.recipes(recipes.length), text.profile.device.export.plannedDinners, sheets.syncProvisions && text.profile.device.export.groceryList, text.profile.device.export.settings]
-      .filter(Boolean)
-      .join(', ')
-      .replace(/, ([^,]*)$/, `${text.profile.device.export.and}$1`),
+    listWords(
+      [text.profile.device.export.ingredients(ingredients.length), text.profile.device.export.recipes(recipes.length), text.profile.device.export.plannedDinners, sheets.syncProvisions && text.profile.device.export.groceryList, text.profile.device.export.settings].filter(Boolean),
+      text.profile.device.export.and,
+    ),
   );
   function exportData() {
     downloadBlob(dataWorkbook($state.snapshot(sheets)), `MealCaster_Export_${toISO(new Date())}.xlsx`);
@@ -68,11 +71,10 @@
   // Storage on this device: localStorage holds everything, photos waiting for Drive included.
   const used = $derived((storageState.saves, storageUsed()));
   // Some browsers allow more than the usual 5 MB; past it, the estimate says nothing useful.
-  const overBudget = $derived(used > STORAGE_BUDGET);
-  const usedShare = $derived(Math.min(1, used / STORAGE_BUDGET));
+  const overBudget = $derived(storageShare(used, STORAGE_BUDGET).over);
+  const usedShare = $derived(storageShare(used, STORAGE_BUDGET).share);
   const pendingPhotos = $derived(recipes.filter((r) => isPhotoDataUrl(r.image)));
   const pendingPhotoSize = $derived(pendingPhotos.reduce((n, r) => n + r.image.length, 0));
-  const mb = (chars) => (chars < 1_000_000 ? `${Math.max(1, Math.round(chars / 1000))} KB` : `${(chars / 1_000_000).toFixed(1)} MB`);
 
   async function askToKeep() {
     await protectStorage({ ask: true });
@@ -86,11 +88,7 @@
   }
 
   // Recipe tags: every tag in use, built-in suggestions first. Only the person's own can change.
-  const tagRows = $derived(
-    tagChoices(recipes.flatMap((r) => r.tags))
-      .map((tag) => ({ tag, count: recipes.filter((r) => r.tags.includes(tag)).length }))
-      .filter((t) => t.count),
-  );
+  const tagRows = $derived(tagUsage(tagChoices(recipes.flatMap((r) => r.tags)), recipes));
   const samplesShown = $derived(recipes.some((r) => isSample(r.id)));
   const recipeCount = text.profile.tags.recipeCount;
   /** @type {{ from: string, text: string } | null} */
@@ -101,7 +99,7 @@
     if (!renaming) return;
     const { from, text: typed } = renaming;
     const count = recipes.filter((r) => r.tags.includes(from)).length;
-    const merging = tagRows.find((t) => t.tag !== from && t.tag === normalizeTag(typed));
+    const merging = mergeTarget(tagRows, from, typed);
     try {
       const undo = renameTag(from, typed);
       renaming = null;
@@ -315,6 +313,25 @@
 
     <!-- One card per group of related options. -->
     <div class="flex flex-col gap-3">
+      <div class="{deviceCard} gap-3">
+        {@render cardHeading('contrast', text.profile.device.appearance.title, text.profile.device.appearance.hint)}
+        <div class="inline-flex flex-wrap gap-1 self-start rounded-lg bg-surface-container-low p-1" role="group" aria-label={text.profile.device.appearance.title}>
+          {#each THEME_CHOICES as choice (choice)}
+            <button
+              type="button"
+              aria-pressed={devicePrefs.theme === choice}
+              class="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-1.5 text-label-md transition-colors md:fine:min-h-0 {devicePrefs.theme === choice
+                ? 'bg-primary-container text-on-primary shadow-sm'
+                : 'text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface'}"
+              onclick={() => setTheme(choice)}
+            >
+              <Icon name={THEME_ICONS[choice]} class="text-[16px]" />
+              {text.profile.device.appearance[choice]}
+            </button>
+          {/each}
+        </div>
+      </div>
+
       <div class="{deviceCard}">
         {@render cardHeading('print', text.profile.device.printing.title, text.profile.device.printing.hint)}
         <PrintOptionsFields bind:draft={print} rowClass="max-w-md" />
@@ -324,11 +341,11 @@
         {@render cardHeading('storage', text.profile.storage.title)}
         {#if overBudget}
           <p class="text-body-sm text-on-surface-variant">
-            {text.profile.storage.overBudget(mb(used), mb(STORAGE_BUDGET))}
+            {text.profile.storage.overBudget(sizeText(used), sizeText(STORAGE_BUDGET))}
           </p>
         {:else}
           <p class="text-body-sm text-on-surface-variant">
-            {text.profile.storage.used(mb(used), mb(STORAGE_BUDGET))}
+            {text.profile.storage.used(sizeText(used), sizeText(STORAGE_BUDGET))}
           </p>
           <div class="h-2 max-w-md overflow-hidden rounded-full bg-surface-container-high" role="meter" aria-label={text.profile.storage.meterAria} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(usedShare * 100)}>
             <div class="h-full rounded-full {storageState.unsaved || usedShare >= NEARLY_FULL ? 'bg-secondary' : 'bg-primary'}" style="width: {Math.max(2, usedShare * 100)}%"></div>
@@ -347,7 +364,7 @@
         {/if}
         {#if pendingPhotos.length}
           <p class="text-body-sm text-on-surface-variant">
-            {text.profile.storage.photosWaiting(pendingPhotos.length, mb(pendingPhotoSize))}
+            {text.profile.storage.photosWaiting(pendingPhotos.length, sizeText(pendingPhotoSize))}
             {synced ? text.profile.storage.photosUpload : text.profile.storage.photosConnect(pendingPhotos.length)}
           </p>
         {/if}
@@ -402,7 +419,7 @@
       <p class="max-w-xl text-body-sm text-on-surface-variant">
         {@html text.profile.danger.description}
       </p>
-      <button type="button" class="btn shrink-0 bg-secondary py-2.5 text-on-secondary hover:bg-[#b34728]" onclick={() => (confirmingWipe = true)}>
+      <button type="button" class="btn shrink-0 bg-secondary py-2.5 text-on-secondary hover:bg-secondary-hover" onclick={() => (confirmingWipe = true)}>
         <Icon name="delete_forever" class="text-[16px]" /> {text.profile.danger.button}
       </button>
     </div>

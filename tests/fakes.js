@@ -1,7 +1,8 @@
 // Test doubles for the sync tests: an in-memory Google Sheets API and a small
-// stand-in for the on-device stores (built on the real codec).
+// stand-in for the on-device stores (built on the real codec and the real device merge).
 
 import * as codec from '../src/lib/sync/codec.js';
+import * as merge from '../src/lib/sync/deviceMerge.js';
 
 /**
  * In-memory spreadsheet behind the same interface as google/api.js `sheetsApi`.
@@ -126,46 +127,20 @@ export function fakeDevice({ ingredients = [], recipes = [], plan = {}, favorite
   /** @type {import('../src/lib/sync/run.js').LocalAdapter} */
   d.adapter = {
     localRows(tab) {
-      if (tab === 'ingredients') return new Map(d.ingredients.map((i) => [i.id, codec.ingredientToRow(i)]));
-      if (tab === 'recipes') return new Map(d.recipes.map((r) => [r.id, codec.recipeToRow(r, d.favorites)]));
-      if (tab === 'weeklyPlan') {
-        return new Map(
-          Object.entries(d.plan)
-            .filter(([, e]) => codec.planEntryHasContent(e))
-            .map(([iso, e]) => [iso, codec.planToRow(iso, e)]),
-        );
-      }
+      if (tab === 'ingredients') return merge.ingredientRows(d.ingredients);
+      if (tab === 'recipes') return merge.recipeRows(d.recipes, d.favorites);
+      if (tab === 'weeklyPlan') return merge.planRows(d.plan);
       if (tab === 'settings') return codec.settingsToRows(d.settings);
       return new Map(d.provisions);
     },
     apply(tab, final, fromSheet, columns) {
-      if (tab === 'ingredients') {
-        const byId = new Map(d.ingredients.map((i) => [i.id, i]));
-        d.ingredients = [...final].flatMap(([id, row]) => {
-          if (!fromSheet.has(id)) return byId.has(id) ? [byId.get(id)] : [];
-          return [codec.ingredientFromRow(row, byId.get(id), columns)];
-        });
-      } else if (tab === 'recipes') {
-        const byId = new Map(d.recipes.map((r) => [r.id, r]));
-        const favs = new Set();
-        d.recipes = [...final].flatMap(([id, row]) => {
-          if (!fromSheet.has(id)) {
-            if (d.favorites.has(id)) favs.add(id);
-            return byId.has(id) ? [byId.get(id)] : [];
-          }
-          const { recipe: r, favorite } = codec.recipeFromRow(row, byId.get(id), { columns, favorites: d.favorites, today: '2026-09-30' });
-          if (favorite ?? d.favorites.has(id)) favs.add(id);
-          return [r];
-        });
-        d.favorites = favs;
-      } else if (tab === 'weeklyPlan') {
-        const next = {};
-        for (const [iso, row] of final) {
-          const entry = fromSheet.has(iso) ? codec.planFromRow(row, d.plan[iso], columns) : d.plan[iso];
-          if (entry) next[iso] = entry;
-        }
-        d.plan = next;
-      } else if (tab === 'settings') d.settings = codec.settingsFromRows([...final.values()]);
+      if (tab === 'ingredients') d.ingredients = merge.applyIngredients({ final, fromSheet, existing: d.ingredients, columns });
+      else if (tab === 'recipes') {
+        const next = merge.applyRecipes({ final, fromSheet, existing: d.recipes, favorites: [...d.favorites], columns, today: '2026-09-30' });
+        d.recipes = next.recipes;
+        d.favorites = new Set(next.favorites);
+      } else if (tab === 'weeklyPlan') d.plan = merge.applyPlan({ final, fromSheet, entries: d.plan, columns });
+      else if (tab === 'settings') d.settings = codec.settingsFromRows([...final.values()]);
       else d.provisions = new Map(final);
     },
   };

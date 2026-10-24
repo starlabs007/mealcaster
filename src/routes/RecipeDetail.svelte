@@ -1,5 +1,5 @@
 <script>
-  import { byLead } from '../lib/headsUps.js';
+  import { missingKeys, minutesText, nextStepIndex, resolveDay, timeStats, toggleAll as toggleAllIn, toggleIn, visibleHeadsUps } from '../lib/recipePage.js';
   import Icon from '../lib/components/Icon.svelte';
   import { renderMarkdown } from '../lib/markdown.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
@@ -81,11 +81,10 @@
     };
   });
 
-  const day = $derived(
-    recipe && dayParam && planner.entries[dayParam]?.recipeId === recipe.id ? dayParam : recipe && dayOfRecipe(recipe.id),
-  );
+  const resolved = $derived(recipe ? resolveDay(recipe.id, dayParam, planner.entries, dayOfRecipe) : { day: undefined, planningDay: undefined });
+  const day = $derived(resolved.day);
   // Opened from the catalog while planning a day this recipe isn't on: carry that day back to the catalog.
-  const planningDay = $derived(recipe && dayParam && planner.entries[dayParam]?.recipeId !== recipe.id ? dayParam : undefined);
+  const planningDay = $derived(resolved.planningDay);
   const editable = $derived(!!day && day >= planner.today);
   const next = $derived(day ? nextPlannedAfter(day) : undefined);
   const openDay = $derived(day ? undefined : firstOpenDay());
@@ -100,20 +99,20 @@
   const atHome = $derived(allKeys.filter(isOnHandKey));
   const onList = $derived(groceryKeys());
   // Only what's missing: not on the list yet and not at home.
-  const missing = $derived(allKeys.filter((k) => !onList.has(k) && !atHome.includes(k)));
+  const missing = $derived(missingKeys(allKeys, onList, atHome));
 
   function togglePrepped(key) {
-    setPrepped(recipe.id, prepped.includes(key) ? prepped.filter((k) => k !== key) : [...prepped, key]);
+    setPrepped(recipe.id, toggleIn(prepped, key));
   }
 
   function toggleAll() {
-    setPrepped(recipe.id, prepped.length === allKeys.length ? [] : allKeys);
+    setPrepped(recipe.id, toggleAllIn(prepped, allKeys));
   }
 
   // Method steps marked done (tap the number): today, on this device, like the prepped ticks.
   const stepsDone = $derived(recipe ? doneSteps(recipe.id) : []);
   // Cook view marks the first step not done yet, and offers Mark Done on tonight's dinner once all are.
-  const nextStep = $derived(recipe ? recipe.steps.findIndex((_, i) => !stepsDone.includes(i)) : -1);
+  const nextStep = $derived(recipe ? nextStepIndex(recipe.steps.length, stepsDone) : -1);
   const tonight = $derived(!!day && day === planner.today);
   const made = $derived(!!day && !!planner.entries[day]?.completed);
   /** @type {HTMLElement[]} */
@@ -131,7 +130,7 @@
 
   /** @param {number} i */
   function toggleStep(i) {
-    setDoneSteps(recipe.id, stepsDone.includes(i) ? stepsDone.filter((s) => s !== i) : [...stepsDone, i]);
+    setDoneSteps(recipe.id, toggleIn(stepsDone, i));
   }
 
   /** @type {HTMLElement | undefined} */
@@ -190,7 +189,7 @@
   });
 
   // Cook view shows only what's due on the day: earlier heads-ups were for the days before.
-  const headsUpsShown = $derived(recipe?.headsUps?.length ? byLead(recipe.headsUps).filter((h) => !cook || !h.daysBefore) : []);
+  const headsUpsShown = $derived(visibleHeadsUps(recipe?.headsUps, cook));
 
   const capFirst = (/** @type {string} */ s) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -238,22 +237,20 @@
 
   /** @param {import('../lib/data/recipes.js').Step} step @param {number} i */
   function stepTone(step, i) {
-    if (step.critical) return 'bg-secondary-fixed/50 text-secondary';
     if (i === recipe.steps.length - 1) return 'bg-primary-fixed/50 text-primary';
     return 'bg-surface-container-high text-on-surface-variant';
   }
 
   /** "15 mins", "1 min", "3.5 hrs" */
-  const mins = (m) => (m >= 60 ? formatMinutes(m) : text.recipe.minutes(m));
+  const mins = (m) => minutesText(m, { long: formatMinutes, short: text.recipe.minutes });
 
   // A time nobody entered (0) is left out rather than shown as "0 mins".
-  const stats = recipe
-    ? [
-        { icon: 'emoji_symbols', label: text.recipe.stats.prep, short: text.recipe.stats.prepShort, minutes: recipe.prepMinutes, value: mins(recipe.prepMinutes) },
-        { icon: 'skillet', label: text.recipe.stats.cook, short: text.recipe.stats.cookShort, minutes: recipe.cookMinutes, value: mins(recipe.cookMinutes) },
-        { icon: 'schedule', label: text.recipe.stats.total, short: text.recipe.stats.totalShort, minutes: recipe.minutes, value: mins(recipe.minutes) },
-      ].filter((stat) => stat.minutes > 0)
-    : [];
+  const statLook = {
+    prep: { icon: 'emoji_symbols', label: text.recipe.stats.prep, short: text.recipe.stats.prepShort },
+    cook: { icon: 'skillet', label: text.recipe.stats.cook, short: text.recipe.stats.cookShort },
+    total: { icon: 'schedule', label: text.recipe.stats.total, short: text.recipe.stats.totalShort },
+  };
+  const stats = recipe ? timeStats(recipe).map(({ kind, minutes }) => ({ ...statLook[kind], minutes, value: mins(minutes) })) : [];
 
   function askDelete() {
     confirmingDelete = true;

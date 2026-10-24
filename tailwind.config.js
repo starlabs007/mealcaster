@@ -1,54 +1,67 @@
-/** Warm Culinary Editorial design tokens (see stitch_mealcaster/warm_culinary_editorial/DESIGN.md). */
+/** Enamelware design tokens (see DESIGN.md; values live in src/theme.css). */
+
+/** A colour from src/theme.css, with Tailwind's opacity modifier. @param {string} name */
+const color = (name) => `rgb(var(--c-${name}) / <alpha-value>)`;
+
 export default {
+  // dark: variants follow the theme the app applies (lib/theme.js), not only the system setting.
+  darkMode: ['selector', '[data-theme="dark"]'],
   content: { relative: true, files: ['./index.html', './src/**/*.{svelte,js}'] },
   theme: {
     extend: {
+      // Every colour is a CSS variable from src/theme.css (light by default, dark under data-theme="dark").
       colors: {
-        background: '#fcf9f3',
-        surface: '#fcf9f3',
-        'surface-dim': '#dcdad4',
-        'surface-container-lowest': '#ffffff',
-        'surface-container-low': '#f6f3ed',
-        'surface-container': '#f0eee8',
-        'surface-container-high': '#ebe8e2',
-        'surface-container-highest': '#e5e2dc',
-        'surface-variant': '#e5e2dc',
-        'on-surface': '#1c1c18',
-        'on-surface-variant': '#424843',
-        outline: '#727973',
-        'outline-variant': '#c2c8c1',
-        primary: '#32533f',
-        'on-primary': '#ffffff',
-        'primary-container': '#4a6b56',
-        'primary-fixed': '#c6ebd1',
-        secondary: '#a23e18',
-        'on-secondary': '#ffffff',
-        'secondary-container': '#fe8357',
-        'secondary-fixed': '#ffdbcf',
-        // Errors only (a message and its field's border): paprika stays the brand and danger-action colour.
-        error: '#ba1a1a',
-        tertiary: '#674600',
-        'tertiary-fixed': '#ffdead',
-        // Soft pill colours (the dinner chips on a grocery line), the same as the recipe tags'.
-        'tone-sage': '#eaf0ec',
-        'on-tone-sage': '#2c4635',
-        'tone-saffron': '#faf3e5',
-        'on-tone-saffron': '#8c6517',
-        'tone-paprika': '#faece8',
-        'inverse-surface': '#31312d',
-        'inverse-on-surface': '#f3f0ea',
+        'background': color('background'),
+        'surface': color('surface'),
+        'surface-container-lowest': color('surface-container-lowest'),
+        'surface-container-low': color('surface-container-low'),
+        'surface-container': color('surface-container'),
+        'surface-container-high': color('surface-container-high'),
+        'surface-container-highest': color('surface-container-highest'),
+        'surface-variant': color('surface-variant'),
+        'surface-dim': color('surface-dim'),
+        'on-surface': color('on-surface'),
+        'on-surface-variant': color('on-surface-variant'),
+        'outline': color('outline'),
+        'outline-variant': color('outline-variant'),
+        'primary': color('primary'),
+        'on-primary': color('on-primary'),
+        'primary-container': color('primary-container'),
+        'primary-fixed': color('primary-fixed'),
+        'secondary': color('secondary'),
+        'on-secondary': color('on-secondary'),
+        'secondary-hover': color('secondary-hover'),
+        'secondary-container': color('secondary-container'),
+        'secondary-fixed': color('secondary-fixed'),
+        // Errors only (a message and its field's border): tomato stays the brand and danger-action colour.
+        'error': color('error'),
+        'tertiary': color('tertiary'),
+        'tertiary-fixed': color('tertiary-fixed'),
+        // Soft pill colours: recipe tags (lib/tagColors.svelte.js) and the dinner chips on a grocery line. The names are
+        // kept from the earlier palette (saffron = mustard, sage = green, paprika = tomato, slate = cobalt, plum = violet).
+        'tone-saffron': color('tone-saffron'),
+        'on-tone-saffron': color('on-tone-saffron'),
+        'tone-sage': color('tone-sage'),
+        'on-tone-sage': color('on-tone-sage'),
+        'tone-paprika': color('tone-paprika'),
+        'tone-slate': color('tone-slate'),
+        'on-tone-slate': color('on-tone-slate'),
+        'tone-plum': color('tone-plum'),
+        'on-tone-plum': color('on-tone-plum'),
+        'inverse-surface': color('inverse-surface'),
+        'inverse-on-surface': color('inverse-on-surface'),
       },
       fontFamily: {
-        display: ['"Playfair Display"', 'Georgia', 'serif'],
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        display: ['"Bricolage Grotesque"', 'system-ui', 'sans-serif'],
+        sans: ['"Instrument Sans"', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        'headline-xl': ['40px', { lineHeight: '48px', letterSpacing: '-0.02em', fontWeight: '600' }],
-        'headline-xl-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.01em', fontWeight: '600' }],
-        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.015em', fontWeight: '600' }],
-        'headline-lg-mobile': ['24px', { lineHeight: '32px', fontWeight: '600' }],
-        'headline-md': ['22px', { lineHeight: '28px', fontWeight: '600' }],
-        'headline-sm': ['18px', { lineHeight: '24px', fontWeight: '600' }],
+        'headline-xl': ['40px', { lineHeight: '48px', letterSpacing: '-0.02em', fontWeight: '700' }],
+        'headline-xl-mobile': ['30px', { lineHeight: '38px', letterSpacing: '-0.01em', fontWeight: '700' }],
+        'headline-lg': ['32px', { lineHeight: '40px', letterSpacing: '-0.015em', fontWeight: '700' }],
+        'headline-lg-mobile': ['24px', { lineHeight: '32px', fontWeight: '700' }],
+        'headline-md': ['22px', { lineHeight: '28px', fontWeight: '700' }],
+        'headline-sm': ['18px', { lineHeight: '24px', fontWeight: '700' }],
         // Cook view's ingredient lines and steps, read from across the counter.
         'body-xl': ['18px', { lineHeight: '28px' }],
         'body-lg': ['16px', { lineHeight: '24px' }],
@@ -56,7 +69,7 @@ export default {
         'body-sm': ['13px', { lineHeight: '18px' }],
         'label-md': ['13px', { lineHeight: '16px', letterSpacing: '0.01em', fontWeight: '600' }],
         'label-sm': ['11px', { lineHeight: '14px', letterSpacing: '0.04em', fontWeight: '700' }],
-        'label-caps': ['10px', { lineHeight: '12px', letterSpacing: '0.08em', fontWeight: '800' }],
+        'label-caps': ['10px', { lineHeight: '12px', letterSpacing: '0.08em', fontWeight: '700' }],
       },
       borderRadius: {
         DEFAULT: '0.25rem',
@@ -73,13 +86,20 @@ export default {
         page: '1440px',
       },
       boxShadow: {
-        card: '0 2px 8px -2px rgba(50, 40, 30, 0.04), 0 1px 3px 0 rgba(50, 40, 30, 0.02)',
-        lift: '0 12px 24px -6px rgba(45, 38, 30, 0.08), 0 4px 10px -2px rgba(45, 38, 30, 0.04)',
-        header: '0 1px 8px rgba(50, 40, 30, 0.05)',
+        card: 'var(--shadow-card)',
+        lift: 'var(--shadow-lift)',
+        header: 'var(--shadow-header)',
+        recipe: 'var(--shadow-recipe-rest)',
+        'recipe-hover': 'var(--shadow-recipe-hover)',
+        grocery: 'var(--shadow-grocery-glow)',
+        dialog: 'var(--shadow-dialog)',
       },
     },
   },
   plugins: [
+    // The display face (Bricolage Grotesque) carries the names of things at 700 unless a weight or a headline size says
+    // otherwise: set in the base layer, so font-semibold and the text-headline-* sizes still win.
+    ({ addBase }) => addBase({ '.font-display': { fontWeight: '700' } }),
     // `fine:` = a mouse or trackpad. Compact controls key off it (`md:fine:min-h-0`), so touch screens of any width
     // (an iPad held upright is 768 px) keep 44 px targets.
     ({ addVariant }) => addVariant('fine', '@media (pointer: fine)'),

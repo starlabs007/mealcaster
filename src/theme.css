@@ -1,0 +1,153 @@
+/* MealCaster colour and shadow tokens — Enamelware, light and dark.
+
+   Generated from the MealCaster design system's tokens.json; DESIGN.md describes what each one is for. Colours are
+   space-separated RGB channels so Tailwind's opacity modifiers keep working (bg-primary/30): tailwind.config.js maps
+   each colour name to rgb(var(--c-name) / <alpha-value>).
+
+   Light is the default. data-theme="dark" on <html> switches to dark: the inline script in index.html sets it before
+   the first paint from the saved choice (Light / Dark / System, Profile › This Device), and lib/theme.js keeps it in
+   step after that, following the system setting while the choice is System. */
+
+:root {
+  color-scheme: light;
+  --c-background: 244 244 239;
+  --c-surface: 244 244 239;
+  --c-surface-container-lowest: 255 255 255;
+  --c-surface-container-low: 233 234 228;
+  --c-surface-container: 228 230 236;
+  --c-surface-container-high: 225 226 220;
+  --c-surface-container-highest: 217 219 212;
+  --c-surface-variant: 217 219 212;
+  --c-surface-dim: 208 210 203;
+  --c-on-surface: 17 21 31;
+  --c-on-surface-variant: 61 68 82;
+  --c-outline: 107 114 128;
+  --c-outline-variant: 185 188 196;
+  --c-primary: 29 63 196;
+  --c-on-primary: 255 255 255;
+  --c-primary-container: 47 85 228;
+  --c-primary-fixed: 219 227 255;
+  --c-secondary: 196 47 24;
+  --c-on-secondary: 255 255 255;
+  --c-secondary-hover: 169 40 18;
+  --c-secondary-container: 255 138 117;
+  --c-secondary-fixed: 255 227 220;
+  --c-error: 179 38 30;
+  --c-tertiary: 122 82 0;
+  --c-tertiary-fixed: 255 232 163;
+  --c-tone-saffron: 255 241 199;
+  --c-on-tone-saffron: 122 82 0;
+  --c-tone-sage: 223 243 230;
+  --c-on-tone-sage: 23 87 58;
+  --c-tone-paprika: 255 227 220;
+  --c-tone-slate: 220 230 255;
+  --c-on-tone-slate: 26 54 168;
+  --c-tone-plum: 240 226 247;
+  --c-on-tone-plum: 106 42 135;
+  --c-inverse-surface: 17 21 31;
+  --c-inverse-on-surface: 241 243 248;
+  --shadow-card: 0 2px 8px -2px rgba(17, 21, 31, 0.05), 0 1px 3px 0 rgba(17, 21, 31, 0.03);
+  --shadow-recipe-rest: 0 2px 10px rgba(17, 21, 31, 0.05);
+  --shadow-recipe-hover: 0 16px 32px -6px rgba(17, 21, 31, 0.12);
+  --shadow-lift: 0 12px 24px -6px rgba(17, 21, 31, 0.1), 0 4px 10px -2px rgba(17, 21, 31, 0.05);
+  --shadow-header: 0 1px 8px rgba(17, 21, 31, 0.06);
+  --shadow-grocery-glow: 0 2px 8px -2px rgba(196, 47, 24, 0.35);
+  --shadow-dialog: 0 24px 60px -12px rgba(17, 21, 31, 0.25);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-background: 17 20 28;
+  --c-surface: 17 20 28;
+  --c-surface-container-lowest: 27 32 48;
+  --c-surface-container-low: 22 26 37;
+  --c-surface-container: 35 42 59;
+  --c-surface-container-high: 40 48 68;
+  --c-surface-container-highest: 47 56 80;
+  --c-surface-variant: 47 56 80;
+  --c-surface-dim: 56 66 92;
+  --c-on-surface: 241 243 248;
+  --c-on-surface-variant: 180 188 205;
+  --c-outline: 138 147 168;
+  --c-outline-variant: 70 80 104;
+  --c-primary: 125 151 255;
+  --c-on-primary: 10 18 56;
+  --c-primary-container: 162 180 255;
+  --c-primary-fixed: 31 42 85;
+  --c-secondary: 255 107 82;
+  --c-on-secondary: 36 7 3;
+  --c-secondary-hover: 255 133 112;
+  --c-secondary-container: 90 32 23;
+  --c-secondary-fixed: 36 7 3;
+  --c-error: 255 180 171;
+  --c-tertiary: 255 204 102;
+  --c-tertiary-fixed: 58 46 18;
+  --c-tone-saffron: 58 47 20;
+  --c-on-tone-saffron: 255 210 122;
+  --c-tone-sage: 29 51 38;
+  --c-on-tone-sage: 159 224 176;
+  --c-tone-paprika: 61 31 26;
+  --c-tone-slate: 28 39 71;
+  --c-on-tone-slate: 169 188 255;
+  --c-tone-plum: 51 33 58;
+  --c-on-tone-plum: 226 176 240;
+  --c-inverse-surface: 0 0 0;
+  --c-inverse-on-surface: 241 243 248;
+  --shadow-card: 0 2px 8px -2px rgba(0, 0, 0, 0.35), 0 1px 3px 0 rgba(0, 0, 0, 0.25);
+  --shadow-recipe-rest: 0 2px 10px rgba(0, 0, 0, 0.3);
+  --shadow-recipe-hover: 0 16px 32px -6px rgba(0, 0, 0, 0.5);
+  --shadow-lift: 0 12px 24px -6px rgba(0, 0, 0, 0.5), 0 4px 10px -2px rgba(0, 0, 0, 0.3);
+  --shadow-header: 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-grocery-glow: 0 2px 10px -2px rgba(255, 107, 82, 0.35);
+  --shadow-dialog: 0 24px 60px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Paper is white: print in the light theme whatever the screen shows. */
+@media print {
+  :root[data-theme='dark'] {
+    color-scheme: light;
+    --c-background: 244 244 239;
+    --c-surface: 244 244 239;
+    --c-surface-container-lowest: 255 255 255;
+    --c-surface-container-low: 233 234 228;
+    --c-surface-container: 228 230 236;
+    --c-surface-container-high: 225 226 220;
+    --c-surface-container-highest: 217 219 212;
+    --c-surface-variant: 217 219 212;
+    --c-surface-dim: 208 210 203;
+    --c-on-surface: 17 21 31;
+    --c-on-surface-variant: 61 68 82;
+    --c-outline: 107 114 128;
+    --c-outline-variant: 185 188 196;
+    --c-primary: 29 63 196;
+    --c-on-primary: 255 255 255;
+    --c-primary-container: 47 85 228;
+    --c-primary-fixed: 219 227 255;
+    --c-secondary: 196 47 24;
+    --c-on-secondary: 255 255 255;
+    --c-secondary-hover: 169 40 18;
+    --c-secondary-container: 255 138 117;
+    --c-secondary-fixed: 255 227 220;
+    --c-error: 179 38 30;
+    --c-tertiary: 122 82 0;
+    --c-tertiary-fixed: 255 232 163;
+    --c-tone-saffron: 255 241 199;
+    --c-on-tone-saffron: 122 82 0;
+    --c-tone-sage: 223 243 230;
+    --c-on-tone-sage: 23 87 58;
+    --c-tone-paprika: 255 227 220;
+    --c-tone-slate: 220 230 255;
+    --c-on-tone-slate: 26 54 168;
+    --c-tone-plum: 240 226 247;
+    --c-on-tone-plum: 106 42 135;
+    --c-inverse-surface: 17 21 31;
+    --c-inverse-on-surface: 241 243 248;
+    --shadow-card: 0 2px 8px -2px rgba(17, 21, 31, 0.05), 0 1px 3px 0 rgba(17, 21, 31, 0.03);
+    --shadow-recipe-rest: 0 2px 10px rgba(17, 21, 31, 0.05);
+    --shadow-recipe-hover: 0 16px 32px -6px rgba(17, 21, 31, 0.12);
+    --shadow-lift: 0 12px 24px -6px rgba(17, 21, 31, 0.1), 0 4px 10px -2px rgba(17, 21, 31, 0.05);
+    --shadow-header: 0 1px 8px rgba(17, 21, 31, 0.06);
+    --shadow-grocery-glow: 0 2px 8px -2px rgba(196, 47, 24, 0.35);
+    --shadow-dialog: 0 24px 60px -12px rgba(17, 21, 31, 0.25);
+  }
+}

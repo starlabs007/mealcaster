@@ -3,11 +3,9 @@
 // #/sheets-sync → #/sheets-sync/account | /sheet | /sync (connection steps, a modal over the previous page),
 // #/sheets-sync/columns (column conflicts modal)
 
-/** @returns {{ path: string, query: Record<string, string> }} */
-function parse() {
-  const [path, qs = ''] = (location.hash.slice(1) || '/').split('?');
-  return { path: path || '/', query: Object.fromEntries(new URLSearchParams(qs)) };
-}
+import { hrefFor, parseHash } from './routes.js';
+
+const parse = () => parseHash(location.hash);
 
 export const route = $state(parse());
 
@@ -42,13 +40,7 @@ export function goBack(fallback = '/') {
   }, 400);
 }
 
-/** @param {string} path @param {Record<string, string | undefined | null>} [query] */
-export function href(path, query = {}) {
-  const qs = new URLSearchParams(
-    Object.entries(query).filter(([, v]) => v != null && v !== ''),
-  ).toString();
-  return `#${path}${qs ? `?${qs}` : ''}`;
-}
+export const href = hrefFor;
 
 /** @param {string} path @param {Record<string, string | undefined | null>} [query] */
 export function navigate(path, query) {

@@ -7,8 +7,31 @@
 
 <script>
   import { onDestroy, tick } from 'svelte';
-  import { createDraftStore, flatForm, savedGroups, sectionsOf, signature } from '../lib/recipeDraft.js';
-  import { defaultAisle, defaultIngredientGroup, defaultStepTitle, groupCategory } from '../lib/sheetText.js';
+  import { createDraftStore, signature } from '../lib/recipeDraft.js';
+  import {
+    addBulkRows,
+    blankForm,
+    blankGroup,
+    blankIngredient,
+    blankStep,
+    checkForm,
+    deleteGroup as withoutGroup,
+    detailsSummary,
+    formFromRecipe,
+    formToRecipe,
+    isBlank,
+    loadDraft,
+    moveItem,
+    moveRow,
+    nextKey,
+    photoProblem,
+    photoSize,
+    problemList,
+    removeRow,
+    removeStep as withoutStep,
+    rowIngredient as ingredientNamedBy,
+    rowIngredientId,
+  } from '../lib/recipeEditor.js';
   import { text } from '../lib/text.js';
   import { SvelteSet } from 'svelte/reactivity';
   import Icon from '../lib/components/Icon.svelte';
@@ -23,22 +46,19 @@
     normalizeCategory,
     aisles,
     aisleLabel,
-    parseQty,
     matchAisle,
     parseIngredientLines,
     saveRecipe,
     revertSample,
     newRecipeId,
   } from '../lib/recipes.svelte.js';
-  import { SCHEMA, sheets, spreadsheetUrl } from '../lib/sheets.svelte.js';
+  import { sheets } from '../lib/sheets.svelte.js';
   import { addIngredient as createIngredient, findIngredient, ingredientOf, ingredients } from '../lib/ingredients.svelte.js';
-  import { UNIT_SUGGESTIONS, canonicalUnit, similarIngredients } from '../lib/ingredients.js';
+  import { UNIT_SUGGESTIONS, aisleFor, similarIngredients } from '../lib/ingredients.js';
   import { href, navigate } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
-  import { formatQty } from '../lib/format.js';
   import { renderMarkdown } from '../lib/markdown.js';
   import { toISO } from '../lib/dates.js';
-  import { normalizeTags } from '../lib/tags.js';
   import { tagClasses } from '../lib/tagColors.svelte.js';
   import Combobox from '../lib/components/Combobox.svelte';
   import ActionMenu from '../lib/components/ActionMenu.svelte';
@@ -54,130 +74,23 @@
   const missing = !!id && !editing;
 
   /**
-   * Rows carry `critical` through untouched so editing a sample doesn't lose them.
-   * An ingredient row's `text` is the ingredient's name: saving picks the ingredient with that name (or plural), or
-   * creates one in `aisle`. `id` keeps the ingredient of a line whose name wasn't touched (so an unknown id survives).
-   * A group is a section of rows; its `category` ("Protein"…) is the sheet's and survives a rename.
-   * @typedef {{ key: number, qty: string, unit: string, text: string, id?: string, note: string, prep: string, optional: boolean, aisle: string, aisleSet: boolean }} IngredientRow
-   * @typedef {{ key: number, title: string, category: string, rows: IngredientRow[] }} IngredientGroup
-   * @typedef {{ key: number, title: string, text: string, minutes: string, critical?: boolean }} StepRow
-   * @typedef {{
-   *   title: string, description: string, image: string, category: string,
-   *   serves: number, prepMinutes: number | '', cookMinutes: number | '', tags: string[],
-   *   groups: IngredientGroup[], steps: StepRow[], notes: string, headsUp: string, headsUpDays: number,
-   * }} Form   `headsUp` / `headsUpDays` edit the recipe's first heads-up; others (from the sheet) are kept as they are
+   * @typedef {import('../lib/recipeEditor.js').IngredientRow} IngredientRow
+   * @typedef {import('../lib/recipeEditor.js').IngredientGroup} IngredientGroup
    */
 
-  let lastKey = 0;
-  const nextKey = () => ++lastKey;
-  /** @returns {IngredientRow} */
-  const blankIngredient = () => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, aisle: '', aisleSet: false });
-  /** @returns {IngredientGroup} */
-  const blankGroup = (rows = 1, title = '', category = '') => ({ key: nextKey(), title, category, rows: Array.from({ length: rows }, blankIngredient) });
-  /** @returns {StepRow} */
-  const blankStep = () => ({ key: nextKey(), title: '', text: '', minutes: '' });
-
-  /** @returns {Form} */
-  function blankForm() {
-    return {
-      title: '',
-      description: '',
-      image: '',
-      category: '',
-      serves: 4,
-      prepMinutes: '',
-      cookMinutes: '',
-      tags: [],
-      groups: [blankGroup(1)],
-      steps: [blankStep()],
-      notes: '',
-      headsUp: '',
-      headsUpDays: 0,
-    };
-  }
-
-  /** @param {import('../lib/data/recipes.js').Recipe} r @returns {Form} */
-  function formFrom(r) {
-    return {
-      title: r.title,
-      description: r.description,
-      image: r.image ?? '',
-      category: r.badge.label,
-      serves: r.serves,
-      prepMinutes: r.prepMinutes,
-      cookMinutes: r.cookMinutes,
-      tags: [...r.tags],
-      groups: r.ingredients.length
-        ? r.ingredients.map((g) => ({
-            key: nextKey(),
-            title: g.title,
-            category: g.category,
-            rows: g.items.map((item) => {
-              const ingredient = ingredientOf(item.id);
-              return {
-                key: nextKey(),
-                qty: item.qty == null ? '' : formatQty(item.qty),
-                unit: item.unit ?? '',
-                text: ingredient?.name ?? item.id,
-                id: item.id,
-                note: item.note ?? '',
-                prep: item.prep ?? '',
-                optional: Boolean(item.optional),
-                aisle: ingredient?.aisle ?? defaultAisle,
-                aisleSet: true,
-              };
-            }),
-          }))
-        : [blankGroup(1)],
-      steps: r.steps.map((s) => ({
-        key: nextKey(),
-        title: s.title,
-        text: s.text,
-        minutes: s.minutes ? String(s.minutes) : '',
-        critical: s.critical,
-      })),
-      notes: r.notes ?? '',
-      headsUp: r.headsUps?.[0]?.text ?? '',
-      headsUpDays: r.headsUps?.[0]?.daysBefore ?? 0,
-    };
-  }
+  const lookup = { ingredientOf, findIngredient, createIngredient };
+  /** The existing ingredient a row names, if any. @param {IngredientRow} row */
+  const rowIngredient = (row) => ingredientNamedBy(row, lookup);
 
   const drafts = createDraftStore(localStorage, DRAFT_KEY, EDIT_DRAFTS_KEY);
   /** What the form looks like when nothing was changed: the recipe as saved, or a blank one. */
-  const opened = editing ? formFrom(editing) : blankForm();
+  const opened = editing ? formFromRecipe(editing, ingredientOf) : blankForm();
   const baseline = signature(opened);
 
-  /** The saved draft with fresh row keys, so they can't collide with rows added from here on. @returns {Form | null} */
-  function loadDraft() {
-    // Edit drafts kept before heads-ups (#209) were signed without the two heads-up fields (they come last).
-    const { headsUp, headsUpDays, ...beforeHeadsUps } = opened;
-    let draft =
-      drafts.read(editing?.id, baseline) ??
-      (editing ? drafts.read(editing.id, signature(beforeHeadsUps)) ?? drafts.read(editing.id, signature(flatForm(beforeHeadsUps))) : null);
-    if (!draft) return null;
-    draft = { headsUp, headsUpDays, ...draft };
-    if (!Array.isArray(draft.groups)) {
-      const { ingredients: rows = [], steps, notes, ...head } = draft;
-      const categoryOf = (title) => editing?.ingredients.find((g) => g.title.toLowerCase() === title.toLowerCase())?.category ?? '';
-      const groups = sectionsOf(rows, categoryOf);
-      draft = { ...head, groups: groups.length ? groups : [blankGroup(1)], steps, notes };
-    }
-    draft.groups = draft.groups.map((g) => ({
-      ...blankGroup(0),
-      ...g,
-      key: nextKey(),
-      rows: (g.rows ?? []).map((row) => ({ ...blankIngredient(), ...row, key: nextKey() })),
-    }));
-    draft.steps = draft.steps.map((step) => ({ ...step, key: nextKey() }));
-    draft.tags = normalizeTags(draft.tags);
-    draft.category = normalizeCategory(draft.category);
-    return draft;
-  }
-
-  const savedDraft = loadDraft();
+  const savedDraft = loadDraft(drafts, editing, opened, baseline);
   let notesPreview = $state(false);
   let stepPreview = $state(false);
-  let form = $state(savedDraft ?? (editing ? formFrom(editing) : blankForm()));
+  let form = $state(savedDraft ?? (editing ? formFromRecipe(editing, ingredientOf) : blankForm()));
 
   // ---- Unsaved changes -----------------------------------------------------------
   // Any change is kept as a draft shortly after the last keystroke, so leaving the editor by any route (Discard
@@ -281,52 +194,44 @@
 
   // ---- Validation ----------------------------------------------------------
 
-  const minutesOk = (m) => m == null || m === '' || (Number.isInteger(m) && m >= 0);
   const allRows = $derived(form.groups.flatMap((g) => g.rows));
   /** Each row's number, counted across groups, for labels that name a row. */
   const rowNumber = $derived(new Map(allRows.map((r, i) => [r.key, i + 1])));
-  const filledIngredients = $derived(allRows.filter((r) => r.text.trim()));
-  const qtyInvalid = $derived(new Set(allRows.filter((r) => Number.isNaN(parseQty(r.qty))).map((r) => r.key)));
-  // A new ingredient nothing in its name places gets no aisle until it's chosen: never a silent Pantry.
-  const aisleMissing = $derived(
-    new Set(filledIngredients.filter((r) => !r.aisle && !rowIngredient(r) && !(r.id && r.text.trim() === r.id)).map((r) => r.key)),
-  );
+  const check = $derived(checkForm(form, rowIngredient));
   const errors = $derived({
-    title: form.title.trim() ? '' : text.editor.errors.title,
-    serves: Number.isInteger(form.serves) && form.serves >= 1 && form.serves <= 50 ? '' : text.editor.errors.serves,
-    // Prep and cook may stay empty: no time is saved as 0, which every screen leaves out.
-    prepMinutes: minutesOk(form.prepMinutes) ? '' : text.editor.errors.minutes,
-    cookMinutes: minutesOk(form.cookMinutes) ? '' : text.editor.errors.minutes,
-    ingredients: filledIngredients.length ? '' : text.editor.errors.ingredients,
-    qty: qtyInvalid.size ? text.editor.errors.qty : '',
-    aisle: aisleMissing.size ? text.editor.errors.aisle : '',
+    title: check.title ? text.editor.errors.title : '',
+    serves: check.serves ? text.editor.errors.serves : '',
+    prepMinutes: check.prepMinutes ? text.editor.errors.minutes : '',
+    cookMinutes: check.cookMinutes ? text.editor.errors.minutes : '',
+    ingredients: check.ingredients ? text.editor.errors.ingredients : '',
+    qty: check.qty ? text.editor.errors.qty : '',
+    aisle: check.aisle ? text.editor.errors.aisle : '',
   });
-  const valid = $derived(Object.values(errors).every((e) => !e));
+  const valid = $derived(check.valid);
 
   /** What a failed Save lists, top to bottom: each one finds its field. @type {{ id: string, label: string, find: () => HTMLElement | null | undefined }[]} */
   const problems = $derived.by(() => {
-    const list = [];
     const byId = (id) => () => document.getElementById(id);
-    for (const key of ['title', 'serves', 'prepMinutes', 'cookMinutes']) {
-      if (errors[key]) list.push({ id: key, label: text.editor.problems[key], find: byId(`recipe-${key === 'title' ? 'title' : key}`) });
-    }
     const rowField = (key, selector) => () => document.querySelector(`#ingredients [data-row="${key}"] ${selector}`);
-    if (errors.ingredients) {
-      list.push({ id: 'ingredients', label: text.editor.problems.ingredients, find: () => document.querySelector('#ingredients [data-row]')?.querySelectorAll('[role=combobox]')[1] });
-    }
-    allRows.forEach((row, i) => {
-      if (qtyInvalid.has(row.key)) list.push({ id: `qty-${row.key}`, label: text.editor.problems.qty(i + 1), find: rowField(row.key, 'input[aria-invalid="true"]') });
-      if (aisleMissing.has(row.key)) list.push({ id: `aisle-${row.key}`, label: text.editor.problems.aisle(i + 1), find: rowField(row.key, 'select') });
+    return problemList(check, allRows).map((p) => {
+      if (p.field === 'ingredients') {
+        return { id: p.id, label: text.editor.problems.ingredients, find: () => document.querySelector('#ingredients [data-row]')?.querySelectorAll('[role=combobox]')[1] };
+      }
+      if (p.field === 'qty') return { id: p.id, label: text.editor.problems.qty(p.number), find: rowField(p.key, 'input[aria-invalid="true"]') };
+      if (p.field === 'aisle') return { id: p.id, label: text.editor.problems.aisle(p.number), find: rowField(p.key, 'select') };
+      return { id: p.id, label: text.editor.problems[p.field], find: byId(`recipe-${p.field}`) };
     });
-    return list;
   });
 
   // Focus scrolls keep clear of the sticky save bar (`scroll-padding-bottom` in app.css): its height (it grows when the
-  // problems row shows), plus its offset and room for a two-line error under a field.
+  // problems row shows), plus its offset and room for a two-line error under a field. Toasts sit just above it.
   /** @type {HTMLElement | undefined} */
   let saveBar = $state();
   function clearSaveBar() {
-    if (saveBar) document.documentElement.style.setProperty('--save-bar-clearance', `${saveBar.offsetHeight + 64}px`);
+    if (!saveBar) return;
+    const root = document.documentElement.style;
+    root.setProperty('--save-bar-clearance', `${saveBar.offsetHeight + 64}px`);
+    root.setProperty('--toast-clearance', `${saveBar.offsetHeight + 8}px`);
   }
   $effect(() => {
     clearSaveBar();
@@ -335,6 +240,7 @@
     return () => {
       observer.disconnect();
       document.documentElement.style.removeProperty('--save-bar-clearance');
+      document.documentElement.style.removeProperty('--toast-clearance');
     };
   });
 
@@ -367,16 +273,11 @@
       .sort((a, b) => a.label.localeCompare(b.label)),
   );
 
-  /** The existing ingredient a row names, if any. @param {IngredientRow} row */
-  const rowIngredient = (row) =>
-    (row.id && ingredientOf(row.id)?.name === row.text.trim() ? ingredientOf(row.id) : undefined) ?? findIngredient(row.text);
-
   // ---- Ingredients ---------------------------------------------------------
 
   const groupKeyOf = (rowKey) => form.groups.find((g) => g.rows.some((r) => r.key === rowKey))?.key;
   /** A group's name as menus show it: its title, else "Group 2". @param {IngredientGroup} group */
-  const groupName = (group) => group.title.trim() || text.editor.ingredients.untitledGroup(form.groups.indexOf(group) + 1);
-  const isBlank = (row) => !row.text.trim() && !row.qty.trim() && !row.unit.trim() && !row.note.trim() && !row.prep.trim();
+  const groupName = (group) => group.title.trim() || text.editor.ingredients.untitledGroup(form.groups.findIndex((g) => g.key === group.key) + 1);
 
   /** Focuses a row's quantity (or `selector` in it) once the list has re-rendered. @param {number} key */
   async function focusIngredient(key, selector = 'input') {
@@ -405,14 +306,12 @@
 
   /** @param {number} key */
   function removeIngredient(key) {
-    const group = form.groups.find((g) => g.key === groupKeyOf(key));
-    if (!group) return;
-    const index = group.rows.findIndex((r) => r.key === key);
-    const row = $state.snapshot(group.rows[index]);
-    group.rows.splice(index, 1);
-    if (!allRows.length) group.rows.push(blankIngredient());
+    const removed = removeRow(form.groups, key);
+    if (!removed) return;
+    const { group, index, next } = removed;
+    const row = $state.snapshot(removed.row);
+    form.groups = removed.groups;
     // Focus: the next row, else the one before, else the group's Add button.
-    const next = group.rows[index] ?? group.rows[index - 1];
     if (next) focusIngredient(next.key);
     else focusIn(`#ingredients [data-group="${group.key}"] [data-add-row]`);
     if (isBlank(row)) return;
@@ -429,12 +328,11 @@
 
   /** Moves a row to the end of another group. @param {number} key @param {IngredientGroup} target */
   function moveIngredient(key, target) {
-    const from = form.groups.find((g) => g.key === groupKeyOf(key));
-    if (!from || from === target) return;
-    const [row] = from.rows.splice(from.rows.findIndex((r) => r.key === key), 1);
-    target.rows.push(row);
+    const moved = moveRow(form.groups, key, target.key);
+    if (!moved) return;
+    form.groups = moved.groups;
     focusIngredient(key, '[aria-haspopup="menu"]');
-    showToast(text.editor.toasts.ingredientMoved(row.text.trim(), groupName(target)));
+    showToast(text.editor.toasts.ingredientMoved(moved.row.text.trim(), groupName(moved.target)));
   }
 
   /** Opens a row's note / prep / optional fields and puts the cursor in the note. @param {IngredientRow} row */
@@ -477,21 +375,17 @@
 
   /** @param {number} index @param {-1 | 1} delta */
   function moveGroup(index, delta) {
-    const groups = [...form.groups];
-    [groups[index], groups[index + delta]] = [groups[index + delta], groups[index]];
-    form.groups = groups;
-    focusIn(`#ingredients [data-group="${groups[index + delta].key}"] [data-group-title]`);
+    form.groups = moveItem(form.groups, index, delta);
+    focusIn(`#ingredients [data-group="${form.groups[index + delta].key}"] [data-group-title]`);
   }
 
   /** Deletes a group; its ingredients join the group above (the next one for the first). @param {number} index */
   function deleteGroup(index) {
-    const group = $state.snapshot(form.groups[index]);
-    const target = form.groups[index === 0 ? 1 : index - 1];
-    if (!target) return;
-    const moved = group.rows.filter((r) => !isBlank(r));
-    if (index === 0) target.rows.unshift(...moved);
-    else target.rows.push(...moved);
-    form.groups.splice(index, 1);
+    const deleted = withoutGroup(form.groups, index);
+    if (!deleted) return;
+    const { target, moved } = deleted;
+    const group = $state.snapshot(deleted.group);
+    form.groups = deleted.groups;
     if (form.groups.length > 1) focusIn(`#ingredients [data-group="${target.key}"] [data-group-title]`);
     else if (moved.length) focusIngredient(moved[0].key);
     else focusIngredient(target.rows[0]?.key ?? 0);
@@ -508,12 +402,6 @@
       },
     });
   }
-
-  /** "(flank or ribeye), sliced · optional" — the hidden details at a glance. @param {IngredientRow} row */
-  const detailsSummary = (row) =>
-    [[row.note.trim() && `(${row.note.trim()})`, row.prep.trim()].filter(Boolean).join(', '), row.optional && text.editor.ingredients.optionalWord]
-      .filter(Boolean)
-      .join(' · ');
 
   // Rows showing their note / prep / optional fields. All start closed: a row that uses them shows a one-line summary
   // under it, which opens them (as does the row's ⋯ menu).
@@ -532,32 +420,17 @@
 
   /** An existing ingredient brings its aisle; a new one gets a guess until you pick one. @param {IngredientRow} row */
   function onIngredientText(row) {
-    const existing = rowIngredient(row);
-    if (existing) row.aisle = existing.aisle;
-    else if (!row.aisleSet) row.aisle = matchAisle(row.text);
+    row.aisle = aisleFor({ existing: rowIngredient(row), picked: row.aisleSet, current: row.aisle, guess: matchAisle(row.text) });
   }
 
   /** Pasted lines fill the groups: a line under "Sauce:" joins the Sauce group (made if there is none), the rest the last group. */
   function addBulk() {
-    const last = form.groups.at(-1);
-    const parsed = parseIngredientLines(bulkText, last.title);
+    const parsed = parseIngredientLines(bulkText, form.groups.at(-1).title);
     if (!parsed.length) {
       showToast(text.editor.toasts.noIngredientsFound);
       return;
     }
-    for (const g of form.groups) g.rows = g.rows.filter((r) => r.text.trim() || r.qty.trim() || r.unit.trim());
-    const added = [];
-    for (const { group: title, ...parsedRow } of parsed) {
-      const existing = findIngredient(parsedRow.text);
-      const row = { ...blankIngredient(), ...parsedRow, aisle: existing?.aisle ?? parsedRow.aisle, key: nextKey() };
-      let group = title === last.title ? last : form.groups.find((g) => g.title.trim().toLowerCase() === title.trim().toLowerCase());
-      if (!group) form.groups.push((group = blankGroup(0, title.trim())));
-      group.rows.push(row);
-      added.push(row);
-    }
-    // An untitled group the paste emptied (the blank rows of a new recipe) goes.
-    const kept = form.groups.filter((g) => g.rows.length || g.title.trim());
-    form.groups = kept.length ? kept : [blankGroup(1)];
+    form.groups = addBulkRows(form.groups, parsed, findIngredient);
     showToast(text.editor.toasts.addedIngredients(parsed.length));
     bulkText = '';
     bulkOpen = false;
@@ -604,17 +477,14 @@
 
   /** @param {number} index @param {-1 | 1} delta */
   function moveStep(index, delta) {
-    const steps = [...form.steps];
-    [steps[index], steps[index + delta]] = [steps[index + delta], steps[index]];
-    form.steps = steps;
+    form.steps = moveItem(form.steps, index, delta);
   }
 
   /** @param {number} key */
   function removeStep(key) {
     const index = form.steps.findIndex((s) => s.key === key);
     const step = $state.snapshot(form.steps[index]);
-    form.steps = form.steps.filter((s) => s.key !== key);
-    if (!form.steps.length) form.steps.push(blankStep());
+    form.steps = withoutStep(form.steps, key);
     focusRow('#step-rows', Math.min(index, form.steps.length - 1));
     if (!step.title.trim() && !step.text.trim() && !step.minutes.trim()) return;
     showToast(text.editor.toasts.stepRemoved(index + 1), {
@@ -634,21 +504,14 @@
   async function usePhoto(file) {
     photoError = '';
     if (!file) return;
-    if (!/^image\/(jpeg|png|webp|gif|avif)$/.test(file.type)) {
-      photoError = text.editor.photo.wrongType;
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      photoError = text.editor.photo.tooBig;
+    const problem = photoProblem(file);
+    if (problem) {
+      photoError = text.editor.photo[problem];
       return;
     }
     try {
       const bitmap = await createImageBitmap(file);
-      const scale = Math.min(1, 900 / Math.max(bitmap.width, bitmap.height));
-      const canvas = Object.assign(document.createElement('canvas'), {
-        width: Math.round(bitmap.width * scale),
-        height: Math.round(bitmap.height * scale),
-      });
+      const canvas = Object.assign(document.createElement('canvas'), photoSize(bitmap.width, bitmap.height));
       canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       bitmap.close();
       form.image = canvas.toDataURL('image/jpeg', 0.8);
@@ -667,82 +530,16 @@
 
   // ---- Save / draft ------------------------------------------------------------
 
-  /**
-   * The ingredient id for a row: the line's own unknown id while its text wasn't changed, an existing
-   * ingredient with that name, or a new ingredient in the row's aisle.
-   * @param {IngredientRow} row
-   */
-  function rowIngredientId(row) {
-    if (row.id && !ingredientOf(row.id) && row.text.trim() === row.id) return row.id;
-    return (rowIngredient(row) ?? createIngredient({ name: row.text, aisle: row.aisle })).id;
-  }
-
   /** The recipe as saved; ingredients that don't exist yet are added. */
-  function toRecipe() {
-    // Group categories ("Protein", "Aromatics"…) travel with their section, so a renamed group keeps its own.
-    const originalCategory = new Map(editing?.ingredients.map((g) => [g.title.toLowerCase(), g.category]) ?? []);
-    const groups = savedGroups(form.groups, {
-      fallbackTitle: defaultIngredientGroup,
-      category: (g) => originalCategory.get(g.title.toLowerCase()) || groupCategory(g.items.length),
-      item: (row) => {
-        const qty = parseQty(row.qty);
-        const unit = canonicalUnit(row.unit);
-        return {
-          id: rowIngredientId(row),
-          ...(qty !== undefined && { qty }),
-          ...(unit && { unit }),
-          ...(row.note.trim() && { note: row.note.trim() }),
-          ...(row.prep.trim() && { prep: row.prep.trim() }),
-          ...(row.optional && { optional: true }),
-        };
-      },
-    });
-
-    const title = form.title.trim();
-    const image = form.image.trim();
-    const notes = form.notes.trim();
-
-    // Start from the existing recipe so fields the form doesn't show (
-    // cook count, sheet row…) are kept; new recipes start blank.
-    const { minutes, ...base } = editing
-      ? $state.snapshot(editing)
-      : { minutes: 0, addedAt: toISO(new Date()), custom: true };
-    const recipe = {
-      ...base,
-      id: editing?.id ?? newRecipeId(title),
-      title,
-      shortTitle: editing && title === editing.title ? editing.shortTitle : title,
-      description: form.description.trim(),
-      image: image || undefined,
-      prepMinutes: form.prepMinutes || 0,
-      cookMinutes: form.cookMinutes || 0,
-      serves: form.serves,
-      badge: { label: chosenCategory() },
+  const toRecipe = () =>
+    formToRecipe(form, {
+      editing: editing && $state.snapshot(editing),
       tags: withNewTag(),
-      notes,
-      ingredients: groups,
-      steps: form.steps
-        .filter((s) => s.text.trim())
-        .map((s, i) => ({
-          title: s.title.trim() || defaultStepTitle(i + 1),
-          minutes: Number(s.minutes) || 0,
-          text: s.text.trim(),
-          ...(s.critical && { critical: true }),
-        })),
-      headsUps: savedHeadsUps(base.headsUps),
-    };
-    if (!recipe.image) delete recipe.image;
-    // A sheet cell that didn't parse is replaced once the recipe has a heads-up of its own.
-    if (recipe.headsUps.length) delete recipe.headsUpsRaw;
-    return recipe;
-  }
-
-  /** The form's heads-up as the first one, in place of the one it was opened with; keys it doesn't show are kept. */
-  function savedHeadsUps(previous = []) {
-    const [first, ...others] = previous;
-    const headsUpText = form.headsUp.trim();
-    return headsUpText ? [{ ...first, text: headsUpText, daysBefore: form.headsUpDays }, ...others] : others;
-  }
+      category: chosenCategory(),
+      ingredientId: (row) => rowIngredientId(row, lookup),
+      newId: newRecipeId,
+      today: toISO(new Date()),
+    });
 
   function save() {
     submitted = true;
@@ -804,9 +601,6 @@
       },
     });
   }
-
-  let showMapping = $state(false);
-  const columnLetter = (i) => String.fromCharCode(65 + i);
 
   // On touch every field is 44 px tall with 16 px text (iOS Safari zooms into anything smaller); `fine:` keeps the
   // compact desktop sizes.
@@ -1141,55 +935,6 @@
             <p class="mt-1 text-body-sm text-on-surface-variant">{text.editor.tags.hint(TAG_MAX)}</p>
           </div>
         </section>
-
-        <section class="rounded-2xl bg-surface-container-low p-5">
-          <div class="flex items-center justify-between gap-2">
-            <h2 class="flex items-center gap-2 font-display text-headline-sm text-on-surface">
-              <Icon name="view_column" class="text-[20px] text-primary" /> {text.editor.mapping.title}
-            </h2>
-            <div class="flex items-center gap-3">
-              <span class="rounded-full bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">
-                {text.editor.mapping.tab(sheets.tabs.recipes)}
-              </span>
-              <button
-                type="button"
-                aria-expanded={showMapping}
-                aria-controls="column-mapping"
-                onclick={() => (showMapping = !showMapping)}
-                class="inline-flex items-center gap-0.5 text-label-md text-on-surface-variant hover:text-on-surface"
-              >
-                {showMapping ? text.editor.mapping.hide : text.editor.mapping.show} <Icon name={showMapping ? 'expand_less' : 'expand_more'} class="text-[18px]" />
-              </button>
-            </div>
-          </div>
-          {#if showMapping}
-            <div id="column-mapping" class="mt-2">
-              {#if sheets.spreadsheet}<p class="mb-1 text-body-sm text-on-surface-variant">{text.editor.mapping.savingWrites}</p>{/if}
-              <p class="mb-3 text-body-sm text-on-surface-variant">{text.editor.mapping.intro}</p>
-              <dl class="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                {#each SCHEMA.recipes as column, i (column)}
-                  <div class="flex items-center justify-between gap-2 rounded-lg bg-surface-container-lowest px-3 py-2">
-                    <dt class="flex min-w-0 items-center gap-2">
-                      <span class="text-label-sm text-on-surface-variant">{columnLetter(i)}</span>
-                      <span class="truncate font-mono text-[12px] text-on-surface">{column}</span>
-                    </dt>
-                    <dd class="shrink-0 text-body-sm text-on-surface-variant">{text.editor.mapping.source[column]}</dd>
-                  </div>
-                {/each}
-              </dl>
-              <div class="mt-3 flex flex-wrap gap-2">
-                <a href={href('/sheets-sync')} class="btn focus-ring min-h-11 text-on-surface-variant hover:bg-surface-container-high fine:min-h-0">
-                  <Icon name="settings" class="text-[16px]" /> {text.editor.mapping.sheetsSettings}
-                </a>
-                {#if sheets.spreadsheet}
-                  <a href={spreadsheetUrl(sheets.spreadsheet)} target="_blank" rel="noopener noreferrer" class="btn focus-ring min-h-11 text-on-surface-variant hover:bg-surface-container-high fine:min-h-0">
-                    {text.editor.mapping.viewSheet} <Icon name="open_in_new" class="text-[16px]" />
-                  </a>
-                {/if}
-              </div>
-            </div>
-          {/if}
-        </section>
       </div>
 
       <!-- Right column -->
@@ -1267,8 +1012,8 @@
               <ul class="flex flex-col gap-1.5">
                 {#each group.rows as row, ri (row.key)}
                   {@const n = rowNumber.get(row.key) ?? 0}
-                  {@const badQty = submitted && qtyInvalid.has(row.key)}
-                  {@const badAisle = submitted && aisleMissing.has(row.key)}
+                  {@const badQty = submitted && check.qtyRows.has(row.key)}
+                  {@const badAisle = submitted && check.aisleRows.has(row.key)}
                   {@const known = rowIngredient(row)}
                   {@const summary = detailsSummary(row)}
                   {@const isNew = Boolean(row.text.trim()) && !known && !(row.id && row.text.trim() === row.id)}

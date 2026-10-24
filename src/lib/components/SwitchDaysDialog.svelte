@@ -23,9 +23,18 @@
   let dialog = $state();
   $effect(() => /** @type {HTMLElement | null | undefined} */ (dialog?.querySelector('li button'))?.focus());
 
-  /** Escape closes; Tab and Shift+Tab wrap around inside the dialog. @param {KeyboardEvent} e */
+  /** Escape closes; ↑/↓ move between the evenings; Tab and Shift+Tab wrap around inside the dialog. @param {KeyboardEvent} e */
   function onkeydown(e) {
     if (e.key === 'Escape') return close();
+    if ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && dialog) {
+      const options = /** @type {HTMLElement[]} */ ([...dialog.querySelectorAll('li button')]);
+      const at = options.indexOf(/** @type {HTMLElement} */ (document.activeElement));
+      if (!options.length) return;
+      e.preventDefault();
+      const step = e.key === 'ArrowDown' ? 1 : -1;
+      options[at < 0 ? 0 : (at + step + options.length) % options.length].focus();
+      return;
+    }
     if (e.key !== 'Tab' || !dialog) return;
     const items = /** @type {HTMLElement[]} */ ([...dialog.querySelectorAll('button:not(:disabled), [href]')]);
     const first = items[0];
@@ -113,15 +122,16 @@
               <span class="w-24 flex-shrink-0">
                 <span class="block text-sm font-semibold uppercase tracking-wide text-on-surface-variant">{formatWeekday(d)}</span>
                 <span class="block text-xs text-on-surface-variant">{formatShort(d)}</span>
+                {#if d === planner.today}<span class="mt-0.5 block text-[11px] font-semibold uppercase tracking-wide text-primary">{text.planner.switchDialog.tonight}</span>{/if}
               </span>
               {#if recipe}
                 <RecipeImage src={recipe.image} alt="" class="h-12 w-12 flex-shrink-0 rounded-lg" />
-                <span class="min-w-0 flex-1 truncate text-body-md text-on-surface">{recipe.title}</span>
+                <span class="min-w-0 flex-1 break-words text-body-md text-on-surface">{recipe.title}<span class="sr-only">{text.planner.switchDialog.swaps(formatWeekday(iso))}</span></span>
               {:else}
                 <span class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-highest text-outline">
                   <Icon name={icon} class="text-2xl" />
                 </span>
-                <span class="min-w-0 flex-1 truncate text-body-md text-on-surface-variant">{label}</span>
+                <span class="min-w-0 flex-1 break-words text-body-md text-on-surface-variant">{label}{#if statusOf(d) !== 'open'}<span class="sr-only">{text.planner.switchDialog.swaps(formatWeekday(iso))}</span>{/if}</span>
               {/if}
             </button>
           </li>

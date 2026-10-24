@@ -12,7 +12,7 @@
 </script>
 
 <p
-  class="flex items-center gap-1 {recent ? 'text-secondary' : 'text-[#2e7445]'} {className}"
+  class="flex items-center gap-1 {recent ? 'text-secondary' : 'text-on-tone-sage'} {className}"
   title={madeOn ? formatLong(madeOn) : undefined}
 >
   <Icon name="history" class="text-[1.15em]" />

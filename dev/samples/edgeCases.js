@@ -98,7 +98,7 @@ export const EDGE_CASES = [
     ],
     steps: [
       ['Season the Night Before', 20, 'Rub the lamb all over with salt, poke the garlic and rosemary into the cuts, and refrigerate uncovered overnight.'],
-      ['Slow Roast', 240, 'Roast at **300°F** on a bed of the remaining garlic, covered with foil for the first 3 hours, then uncovered until the meat pulls away from the bone.', true],
+      ['Slow Roast', 240, 'Roast at **300°F** on a bed of the remaining garlic, covered with foil for the first 3 hours, then uncovered until the meat pulls away from the bone.'],
       ['Crisp the Potatoes', 45, 'Smash the boiled potatoes flat on an oiled tray and roast at 450°F while the lamb rests, until shattering at the edges. Char the green onions in a hot pan.'],
       ['Salsa Verde', 15, 'Stir the parsley, anchovy, capers, vinegar and lemon zest together, then loosen with olive oil. Season boldly.'],
       ['Pan Sauce & Serve', 10, 'Pour off the fat, deglaze the roasting tin with the wine and broth, reduce by half and whisk in the butter. Pull the lamb into chunks and serve with everything.'],
@@ -144,7 +144,7 @@ export const EDGE_CASES = [
     ],
     steps: [
       ['Char', 10, 'Char the onion and ginger over a gas flame or under the broiler until blackened in spots.'],
-      ['Simmer the Broth', 45, 'Toast the star anise and cinnamon in a dry pot, then add the broth, mushrooms, onion and ginger. Simmer gently for 45 minutes and season with soy sauce and sugar.', true],
+      ['Simmer the Broth', 45, 'Toast the star anise and cinnamon in a dry pot, then add the broth, mushrooms, onion and ginger. Simmer gently for 45 minutes and season with soy sauce and sugar.'],
       ['Fry the Đậu Phụ', 10, 'Pan-fry the tofu slabs in a little oil until golden on both sides.'],
       ['Assemble', 5, 'Soak the noodles, divide between bowls, top with tofu and mushrooms, and ladle over the boiling broth. Serve with the herb plate.'],
     ],
@@ -174,7 +174,7 @@ export const EDGE_CASES = [
       ]],
     ],
     steps: [
-      ['Jammy Eggs', 7, 'Lower the eggs into boiling water for exactly 6½ minutes, then into ice water.', true],
+      ['Jammy Eggs', 7, 'Lower the eggs into boiling water for exactly 6½ minutes, then into ice water.'],
       ['Toast & Top', 3, 'Toast the bread, spread thickly with crème fraîche, and top with halved eggs, radish, chives, salt and pepper.'],
     ],
     notes: '',
@@ -230,7 +230,7 @@ export const EDGE_CASES = [
     ],
     steps: [
       ['Marinate & Prep', 15, 'Mix the chicken with the marinade. Toss the carrot and daikon with the vinegar and a pinch of sugar. Stir the nước chấm with 1/2 cup water. Arrange the herbs, lettuce and cucumber on a platter.'],
-      ['Sear the Chicken', 10, 'Sear the chicken in a very hot pan in two batches until **caramelized at the edges**.', true],
+      ['Sear the Chicken', 10, 'Sear the chicken in a very hot pan in two batches until **caramelized at the edges**.'],
       ['Set the Table', 2, 'Bring out a bowl of warm water for dipping the rice paper and let everyone build their own.'],
     ],
     notes:
@@ -264,7 +264,7 @@ export const EDGE_CASES = [
     steps: [
       ['Heat the Stone', 45, 'Heat the oven to its highest setting with a pizza stone on the top rack for at least 45 minutes.'],
       ['Stretch', 5, 'Stretch the dough by hand on a floured board, leaving a puffy rim. Spread thinly with tomato and scatter with mozzarella.'],
-      ['Bake', 8, 'Slide onto the stone and bake until the crust is **leopard-spotted**, then switch to the broiler for the last minute.', true],
+      ['Bake', 8, 'Slide onto the stone and bake until the crust is **leopard-spotted**, then switch to the broiler for the last minute.'],
       ['Finish', 2, 'Tear over the basil, drizzle with oil and sprinkle with flaky salt.'],
     ],
     notes:
@@ -301,7 +301,7 @@ export const EDGE_CASES = [
     ],
     steps: [
       ['Glaze the Fish', 10, 'Beat the miso, butter, mirin, sake and soy sauce together and spread over the cod.'],
-      ['Broil', 12, 'Broil 6 inches from the element until the glaze is browned in spots and the fish flakes.', true],
+      ['Broil', 12, 'Broil 6 inches from the element until the glaze is browned in spots and the fish flakes.'],
       ['Noodles & Greens', 10, 'Cook the soba, and steam the bok choy with the ginger.'],
       ['Serve', 3, 'Serve the cod over soba and bok choy, scattered with green onion and sesame.'],
     ],
