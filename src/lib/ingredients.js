@@ -290,3 +290,10 @@ export function similarIngredients(list, name, limit = 3) {
     .slice(0, limit)
     .map(([, s]) => s);
 }
+
+/**
+ * The aisle a name field shows: an existing ingredient brings its own, one the user has picked an aisle for keeps it,
+ * and a new one gets `guess` until it is picked (never a silent default).
+ * @param {{ existing?: { aisle: string }, picked: boolean, current: string, guess: string }} how
+ */
+export const aisleFor = ({ existing, picked, current, guess }) => (existing ? existing.aisle : picked ? current : guess);
