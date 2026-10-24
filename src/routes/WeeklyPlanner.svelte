@@ -7,6 +7,7 @@
   import { MediaQuery } from 'svelte/reactivity';
   import { currentWeek, forgetLastChange, planner, spotlight, statusOf, switchDays, switchTargets, undoLastChange } from '../lib/planner.svelte.js';
   import { createPointerDrag } from '../lib/pointerDrag.js';
+  import { columnTemplate, dropState, gridPlan } from '../lib/plannerLayout.js';
   import { text } from '../lib/text.js';
   import { devicePrefs } from '../lib/devicePrefs.svelte.js';
   import { formatWeekday } from '../lib/dates.js';
@@ -19,15 +20,11 @@
   // From `md` up the week is a grid in calendar order, then from `xl` one row of seven with tonight's column wider.
   // Phones, and Minimal view on any screen, use the list of day cards.
   const wide = new MediaQuery('min-width: 768px');
-  // Past days beside a live week are narrow tiles (a fully past or future week keeps full cards).
-  const compact = (/** @type {{ isPast: boolean }} */ d) => d.isPast && days.some((x) => !x.isPast);
-  const columns = $derived(days.map((d) => (d.isToday ? '1.6fr' : compact(d) ? '0.55fr' : '1fr')).join(' '));
-  // Below `xl`, 8 tracks: a narrow tile takes 1, an evening 2, so tonight always lands in the first row. After an
-  // odd number of past days tonight takes 3, which fills that row and makes it wider, as from `xl`.
-  const pastTiles = $derived(days.filter(compact).length);
-  const wideTonight = (/** @type {{ isToday: boolean }} */ d) => d.isToday && pastTiles % 2 === 1;
-  const span = (/** @type {{ isToday: boolean, isPast: boolean }} */ d) =>
-    compact(d) ? 'md:col-span-1' : wideTonight(d) ? 'md:col-span-3' : 'md:col-span-2';
+  // The grid: narrow past tiles, tonight wider (see gridPlan).
+  const plan = $derived(gridPlan(days));
+  const columns = $derived(columnTemplate(plan));
+  // Tailwind needs the whole class names.
+  const spanClass = { 1: 'md:col-span-1', 2: 'md:col-span-2', 3: 'md:col-span-3' };
 
   // Dragging a planned meal onto another evening does what Switch Days… does.
   let drag = $state({ from: '', over: '', targets: /** @type {string[]} */ ([]) });
@@ -50,14 +47,6 @@
   });
   const listMover = dragger('y');
   const gridMover = dragger();
-
-  /** @param {string} iso @returns {'' | 'source' | 'over' | 'target' | 'off'} */
-  function dropState(iso) {
-    if (!drag.from) return '';
-    if (iso === drag.from) return 'source';
-    if (iso === drag.over) return 'over';
-    return drag.targets.includes(iso) ? 'target' : 'off';
-  }
 
   // Cmd/Ctrl+Z takes back the last planner change, also after its toast has gone; leaving the planner forgets it.
   // If the focused control goes with the change, focus moves to its day card's main control.
@@ -123,16 +112,16 @@
     </label>
     {#if wide.current && !devicePrefs.plannerMinimal}
       <div class="grid gap-3 md:grid-cols-8 xl:[grid-template-columns:var(--week-columns)]" style="--week-columns: {columns}">
-        {#each days as day (day.iso)}
-          <div class="flex min-w-0 {span(day)} xl:col-span-1">
+        {#each days as day, i (day.iso)}
+          <div class="flex min-w-0 {spanClass[plan[i].tracks]} xl:col-span-1">
             <DayGridCard
               {day}
               lead={day.isToday}
-              compact={compact(day)}
-              wide={wideTonight(day)}
+              compact={plan[i].compact}
+              wide={plan[i].wideTonight}
               onswitch={(iso) => (switching = iso)}
               draghandle={gridMover.handle}
-              drop={dropState(day.iso)}
+              drop={dropState(drag, day.iso)}
             />
           </div>
         {/each}
@@ -144,7 +133,7 @@
           minimal={devicePrefs.plannerMinimal}
           onswitch={(iso) => (switching = iso)}
           draghandle={listMover.handle}
-          drop={dropState(day.iso)}
+          drop={dropState(drag, day.iso)}
         />
       {/each}
     {/if}
