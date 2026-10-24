@@ -99,3 +99,13 @@ export function isoWeek(iso) {
   const jan4 = new Date(d.getFullYear(), 0, 4);
   return 1 + Math.round(((d - jan4) / 86_400_000 - 3 + ((jan4.getDay() + 6) % 7)) / 7);
 }
+
+/**
+ * How a viewed week is named: this / next / last week by its distance from this one, else "the week of <date>". The
+ * wording is the screen's own (the planner header and the grocery list each have theirs).
+ * @param {number} offset weeks from this one
+ * @param {{ thisWeek: string, nextWeek: string, lastWeek: string, weekOf: (date: string) => string }} words
+ * @param {string} weekStart the viewed week's first day
+ */
+export const weekLabel = (offset, words, weekStart) =>
+  offset === 0 ? words.thisWeek : offset === 1 ? words.nextWeek : offset === -1 ? words.lastWeek : words.weekOf(formatShort(weekStart));

@@ -3,21 +3,13 @@
   import ActionMenu from './ActionMenu.svelte';
   import { planner, weekSummary, weekOffset, autoFillRemaining, copyLastWeek, resetWeek, resetCount, RECENT_DAYS } from '../planner.svelte.js';
   import { text } from '../text.js';
-  import { addDays, formatLong, formatShort } from '../dates.js';
+  import { addDays, formatLong, weekLabel } from '../dates.js';
   import { MediaQuery } from 'svelte/reactivity';
   import { tick } from 'svelte';
 
   const summary = $derived(weekSummary());
   const offset = $derived(weekOffset());
-  const title = $derived(
-    offset === 0
-      ? text.planner.header.thisWeek
-      : offset === -1
-        ? text.planner.header.lastWeek
-        : offset === 1
-          ? text.planner.header.nextWeek
-          : text.planner.header.weekOf(formatShort(planner.weekStart)),
-  );
+  const title = $derived(weekLabel(offset, text.planner.header, planner.weekStart));
   // A week entirely in the past is read-only history.
   const editable = $derived(addDays(planner.weekStart, 6) >= planner.today);
 
