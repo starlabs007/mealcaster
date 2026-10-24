@@ -63,7 +63,16 @@
         {tab.label}
       </a>
     {/each}
-    <SheetsButton />
+    <a
+      href={href('/grocery')}
+      aria-current={active === 'grocery' ? 'page' : undefined}
+      class="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-label-md text-on-secondary shadow-grocery transition-all hover:bg-secondary-hover sm:px-4 {active === 'grocery' ? 'ring-2 ring-secondary/30 ring-offset-2 ring-offset-surface' : ''}"
+      aria-label={pastWeek ? text.header.grocery.label : text.header.grocery.aria(groceries)}
+    >
+      <Icon name="shopping_basket" class="text-[16px]" />
+      <span class="hidden whitespace-nowrap sm:inline">{text.header.grocery.label}</span>
+      {#if !pastWeek}<span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">{groceries}</span>{/if}
+    </a>
   </nav>
 {/snippet}
 
@@ -116,16 +125,7 @@
         </button>
       </div>
 
-      <a
-        href={href('/grocery')}
-        aria-current={active === 'grocery' ? 'page' : undefined}
-        class="inline-flex items-center gap-1.5 rounded-lg bg-secondary px-3 py-2 text-label-md text-on-secondary shadow-grocery transition-all hover:bg-secondary-hover sm:px-4 {active === 'grocery' ? 'ring-2 ring-secondary/30 ring-offset-2 ring-offset-surface' : ''}"
-        aria-label={pastWeek ? text.header.grocery.label : text.header.grocery.aria(groceries)}
-      >
-        <Icon name="shopping_basket" class="text-[16px]" />
-        <span class="hidden whitespace-nowrap sm:inline">{text.header.grocery.label}</span>
-        {#if !pastWeek}<span class="rounded-full bg-surface-container-lowest px-1.5 py-0.5 text-label-caps text-secondary">{groceries}</span>{/if}
-      </a>
+      <SheetsButton />
 
       <!-- From 360 px; narrower phones keep the link in the footer. 44 px target on touch, the 32 px circle inside. -->
       <a
