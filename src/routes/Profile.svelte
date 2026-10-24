@@ -27,6 +27,7 @@
   import { dataWorkbook } from '../lib/sheetsTemplate.js';
   import { downloadBlob } from '../lib/xlsx.js';
   import { toISO } from '../lib/dates.js';
+  import { listWords, mergeTarget, sizeText, storageShare, tagUsage } from '../lib/profileView.js';
 
   const inputClass =
     'rounded-lg border border-outline-variant bg-surface-container-lowest px-3 py-2 text-body-md text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container';
@@ -39,10 +40,10 @@
 
   // Export: everything on this device as a workbook with the tabs (and tab names) the sheet uses.
   const exportContents = $derived(
-    [text.profile.device.export.ingredients(ingredients.length), text.profile.device.export.recipes(recipes.length), text.profile.device.export.plannedDinners, sheets.syncProvisions && text.profile.device.export.groceryList, text.profile.device.export.settings]
-      .filter(Boolean)
-      .join(', ')
-      .replace(/, ([^,]*)$/, `${text.profile.device.export.and}$1`),
+    listWords(
+      [text.profile.device.export.ingredients(ingredients.length), text.profile.device.export.recipes(recipes.length), text.profile.device.export.plannedDinners, sheets.syncProvisions && text.profile.device.export.groceryList, text.profile.device.export.settings].filter(Boolean),
+      text.profile.device.export.and,
+    ),
   );
   function exportData() {
     downloadBlob(dataWorkbook($state.snapshot(sheets)), `MealCaster_Export_${toISO(new Date())}.xlsx`);
@@ -68,11 +69,10 @@
   // Storage on this device: localStorage holds everything, photos waiting for Drive included.
   const used = $derived((storageState.saves, storageUsed()));
   // Some browsers allow more than the usual 5 MB; past it, the estimate says nothing useful.
-  const overBudget = $derived(used > STORAGE_BUDGET);
-  const usedShare = $derived(Math.min(1, used / STORAGE_BUDGET));
+  const overBudget = $derived(storageShare(used, STORAGE_BUDGET).over);
+  const usedShare = $derived(storageShare(used, STORAGE_BUDGET).share);
   const pendingPhotos = $derived(recipes.filter((r) => isPhotoDataUrl(r.image)));
   const pendingPhotoSize = $derived(pendingPhotos.reduce((n, r) => n + r.image.length, 0));
-  const mb = (chars) => (chars < 1_000_000 ? `${Math.max(1, Math.round(chars / 1000))} KB` : `${(chars / 1_000_000).toFixed(1)} MB`);
 
   async function askToKeep() {
     await protectStorage({ ask: true });
@@ -86,11 +86,7 @@
   }
 
   // Recipe tags: every tag in use, built-in suggestions first. Only the person's own can change.
-  const tagRows = $derived(
-    tagChoices(recipes.flatMap((r) => r.tags))
-      .map((tag) => ({ tag, count: recipes.filter((r) => r.tags.includes(tag)).length }))
-      .filter((t) => t.count),
-  );
+  const tagRows = $derived(tagUsage(tagChoices(recipes.flatMap((r) => r.tags)), recipes));
   const samplesShown = $derived(recipes.some((r) => isSample(r.id)));
   const recipeCount = text.profile.tags.recipeCount;
   /** @type {{ from: string, text: string } | null} */
@@ -101,7 +97,7 @@
     if (!renaming) return;
     const { from, text: typed } = renaming;
     const count = recipes.filter((r) => r.tags.includes(from)).length;
-    const merging = tagRows.find((t) => t.tag !== from && t.tag === normalizeTag(typed));
+    const merging = mergeTarget(tagRows, from, typed);
     try {
       const undo = renameTag(from, typed);
       renaming = null;
@@ -324,11 +320,11 @@
         {@render cardHeading('storage', text.profile.storage.title)}
         {#if overBudget}
           <p class="text-body-sm text-on-surface-variant">
-            {text.profile.storage.overBudget(mb(used), mb(STORAGE_BUDGET))}
+            {text.profile.storage.overBudget(sizeText(used), sizeText(STORAGE_BUDGET))}
           </p>
         {:else}
           <p class="text-body-sm text-on-surface-variant">
-            {text.profile.storage.used(mb(used), mb(STORAGE_BUDGET))}
+            {text.profile.storage.used(sizeText(used), sizeText(STORAGE_BUDGET))}
           </p>
           <div class="h-2 max-w-md overflow-hidden rounded-full bg-surface-container-high" role="meter" aria-label={text.profile.storage.meterAria} aria-valuemin="0" aria-valuemax="100" aria-valuenow={Math.round(usedShare * 100)}>
             <div class="h-full rounded-full {storageState.unsaved || usedShare >= NEARLY_FULL ? 'bg-secondary' : 'bg-primary'}" style="width: {Math.max(2, usedShare * 100)}%"></div>
@@ -347,7 +343,7 @@
         {/if}
         {#if pendingPhotos.length}
           <p class="text-body-sm text-on-surface-variant">
-            {text.profile.storage.photosWaiting(pendingPhotos.length, mb(pendingPhotoSize))}
+            {text.profile.storage.photosWaiting(pendingPhotos.length, sizeText(pendingPhotoSize))}
             {synced ? text.profile.storage.photosUpload : text.profile.storage.photosConnect(pendingPhotos.length)}
           </p>
         {/if}
