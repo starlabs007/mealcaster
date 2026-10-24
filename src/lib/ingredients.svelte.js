@@ -4,11 +4,10 @@
 
 import { SvelteMap } from 'svelte/reactivity';
 import { samples } from 'virtual:sample-data';
-import { aisles } from './data/aisles.js';
 import { defaultAisle } from './sheetText.js';
 import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
-import { findByName, ingredientIdFor, tidyIngredientName } from './ingredients.js';
+import { cleanIngredient, findByName, ingredientIdFor, stockChanges } from './ingredients.js';
 
 /** @typedef {import('./ingredients.js').Ingredient} Ingredient */
 
@@ -16,17 +15,6 @@ const STORAGE_KEY = storageKey('ingredients.v1');
 
 /** @type {Ingredient[]} */
 const builtIn = samples.ingredients;
-
-const validAisle = (tag) => (aisles.some((a) => a.tag === tag) ? tag : defaultAisle);
-
-/** A stored or synced ingredient, tidied. @param {any} i @returns {Ingredient} */
-export const cleanIngredient = (i) => ({
-  id: String(i.id),
-  name: tidyIngredientName(i.name) || String(i.id).replace(/-/g, ' '),
-  plural: tidyIngredientName(i.plural),
-  aisle: validAisle(i.aisle),
-  onHand: i.onHand === true,
-});
 
 /** @returns {Ingredient[]} */
 function load() {
@@ -120,9 +108,7 @@ export function restoreSampleIngredients(ids) {
 /** Replaces the whole list with the synced one. @param {Ingredient[]} list */
 export function replaceIngredients(list) {
   const next = list.map(cleanIngredient);
-  if (next.some((i) => (byId.get(i.id)?.onHand ?? false) !== i.onHand) || ingredients.some((i) => i.onHand && !next.some((n) => n.id === i.id))) {
-    beforeStockChange();
-  }
+  if (stockChanges(ingredients, next)) beforeStockChange();
   ingredients.splice(0, ingredients.length, ...next);
   reindex();
 }

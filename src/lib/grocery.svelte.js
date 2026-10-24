@@ -21,7 +21,8 @@ import { samples } from 'virtual:sample-data';
 import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { rekeyGroceryWeeks } from './sync/codec.js';
-import { buildWeekList, emptyWeek, everyWeekShows } from './groceryList.js';
+import { buildWeekList, emptyWeek } from './groceryList.js';
+import { addByHand, freezePast, lineKeysOf, listedLineKeys, parseLineKey, pushLines, relink, removeAdded as removeAddedFrom, setStatus } from './groceryOps.js';
 
 export { deptOfTag } from './groceryList.js';
 
@@ -76,24 +77,18 @@ $effect.root(() => {
 /** Start of the week today is in. */
 export const thisWeekStart = () => weekStartOf(fromISO(planner.today));
 
-/** The viewed week's list, created on first write. */
-function weekList() {
-  return (grocery.weeks[planner.weekStart] ??= emptyWeek());
-}
-
 /** @param {string} key a recipe line key, `${recipeId}:${groupIndex}:${itemIndex}` */
 function lookup(key) {
-  const [recipeId, g, i] = key.split(':');
+  const { recipeId, group, item: index } = parseLineKey(key);
   const recipe = recipeById.get(recipeId);
-  const item = recipe?.ingredients[+g]?.items[+i];
+  const item = recipe?.ingredients[group]?.items[index];
   return item ? { recipe, item } : undefined;
 }
 
 /** All ingredient line keys of a recipe (`recipeId:group:item`). */
 export function ingredientKeys(recipeId) {
   const recipe = recipeById.get(recipeId);
-  if (!recipe) return [];
-  return recipe.ingredients.flatMap((group, g) => group.items.map((_, i) => `${recipeId}:${g}:${i}`));
+  return recipe ? lineKeysOf(recipe) : [];
 }
 
 /**
@@ -129,16 +124,7 @@ export function isOnHandKey(key) {
 }
 
 /** Recipe line keys already on the viewed week's list (to buy or bought), through their recipe and ingredient. */
-export function groceryKeys() {
-  const on = new Set();
-  for (const line of groceryLines()) for (const s of line.sources) if (s.recipeId) on.add(`${s.recipeId}:${line.ingredientId}`);
-  const keys = new Set();
-  for (const pair of on) {
-    const recipeId = pair.slice(0, pair.indexOf(':'));
-    for (const key of ingredientKeys(recipeId)) if (`${recipeId}:${lookup(key)?.item.id}` === pair) keys.add(key);
-  }
-  return keys;
-}
+export const groceryKeys = () => listedLineKeys(groceryLines(), ingredientKeys, (key) => lookup(key)?.item.id);
 
 /** Items still to buy — drives the header badge. */
 export const groceryCount = () => groceryLines().filter((l) => l.status === 'need').length;
@@ -149,32 +135,16 @@ export const groceryCount = () => groceryLines().filter((l) => l.status === 'nee
  * @returns {number} how many ingredients were newly added
  */
 export function addToGrocery(keys) {
-  const onList = groceryKeys();
-  const week = weekList();
-  const fresh = new Set();
-  for (const key of keys) {
+  const lines = keys.flatMap((key) => {
     const found = lookup(key);
-    if (!found || onList.has(key)) continue;
-    const pair = `${found.recipe.id}:${found.item.id}`;
-    if (week.pushed.includes(pair)) continue;
-    week.pushed.push(pair);
-    week.status[found.item.id] = 'need';
-    fresh.add(found.item.id);
-  }
-  return fresh.size;
+    return found ? [{ key, recipeId: found.recipe.id, ingredientId: found.item.id }] : [];
+  });
+  return pushLines(grocery, planner.weekStart, lines, groceryKeys());
 }
 
 /** Marks an ingredient's line on the viewed week bought or to buy (and its every-week item with it). @param {string} ingredientId @param {LineStatus} status */
 export function setLineStatus(ingredientId, status) {
-  const week = planner.weekStart;
-  weekList().status[ingredientId] = status;
-  // A skip is for the viewed week only: an every-week item stays to buy and shows again next week.
-  if (status === 'skipped') return;
-  for (const item of grocery.every) {
-    if (item.ingredientId !== ingredientId || !everyWeekShows(item, week, thisWeekStart())) continue;
-    item.status = status;
-    item.doneWeek = status === 'need' ? '' : week;
-  }
+  setStatus(grocery, planner.weekStart, thisWeekStart(), ingredientId, status);
 }
 
 /**
@@ -183,14 +153,7 @@ export function setLineStatus(ingredientId, status) {
  */
 export function addItem(ingredientId, note, everyWeek) {
   setOnHand(ingredientId, false);
-  if (everyWeek) {
-    const existing = grocery.every.find((i) => i.ingredientId === ingredientId);
-    if (existing) Object.assign(existing, { note, status: 'need', doneWeek: '' });
-    else grocery.every.push({ ingredientId, note, status: 'need', doneWeek: '' });
-  } else {
-    weekList().added[ingredientId] = note;
-  }
-  weekList().status[ingredientId] = 'need';
+  addByHand(grocery, planner.weekStart, ingredientId, note, everyWeek);
 }
 
 /**
@@ -198,36 +161,20 @@ export function addItem(ingredientId, note, everyWeek) {
  * @param {string} ingredientId
  * @returns {() => void} undo
  */
-export function removeAdded(ingredientId) {
-  const week = grocery.weeks[planner.weekStart];
-  const weekKey = planner.weekStart;
-  const hadNote = week && ingredientId in week.added;
-  const note = hadNote ? week.added[ingredientId] : undefined;
-  const everyBefore = grocery.every;
-  if (week) delete week.added[ingredientId];
-  grocery.every = grocery.every.filter((i) => i.ingredientId !== ingredientId);
-  return () => {
-    if (hadNote) (grocery.weeks[weekKey] ??= emptyWeek()).added[ingredientId] = note;
-    grocery.every = everyBefore;
-  };
-}
+export const removeAdded = (ingredientId) => removeAddedFrom(grocery, planner.weekStart, ingredientId);
 
 /**
  * Saves, for each past week without one yet, what it leaves off as in stock — called just before stock changes,
  * so a past week's list stays as it was.
  */
 export function freezePastWeeks() {
-  const thisWeek = thisWeekStart();
-  const weeks = new Set([
-    ...Object.keys(grocery.weeks),
-    ...Object.keys(planner.entries).map((iso) => weekStartOf(fromISO(iso))),
-  ]);
-  for (const week of weeks) {
-    if (week >= thisWeek || grocery.weeks[week]?.stock) continue;
-    if (!weekDinners(week).length && !grocery.weeks[week]) continue;
-    const ids = buildWeek(week).hidden.map((l) => l.ingredientId);
-    (grocery.weeks[week] ??= emptyWeek()).stock = ids;
-  }
+  freezePast(
+    grocery,
+    thisWeekStart(),
+    Object.keys(planner.entries).map((iso) => weekStartOf(fromISO(iso))),
+    (week) => weekDinners(week).length > 0,
+    (week) => buildWeek(week).hidden.map((l) => l.ingredientId),
+  );
 }
 onBeforeStockChange(freezePastWeeks);
 
@@ -236,27 +183,7 @@ onBeforeStockChange(freezePastWeeks);
  * (an ingredient deleted). Where both have one, what's still to buy wins and notes are joined.
  * @param {string} from @param {string} to
  */
-export function relinkGrocery(from, to) {
-  const swap = (id) => (id === from ? to : id);
-  for (const list of Object.values(grocery.weeks)) {
-    list.pushed = [...new Set(list.pushed.map((pair) => {
-      const [recipeId, id] = pair.split(':');
-      return id === from ? (to ? `${recipeId}:${to}` : '') : pair;
-    }).filter(Boolean))];
-    if (from in list.status) {
-      if (to) list.status[to] = [list.status[to], list.status[from]].includes('need') ? 'need' : [list.status[to], list.status[from]].includes('bought') ? 'bought' : 'skipped';
-      delete list.status[from];
-    }
-    if (from in list.added) {
-      if (to) list.added[to] = [list.added[to], list.added[from]].filter(Boolean).join(', ');
-      delete list.added[from];
-    }
-    if (list.stock) list.stock = [...new Set(list.stock.map(swap).filter(Boolean))];
-  }
-  const kept = grocery.every.find((i) => i.ingredientId === to);
-  grocery.every = grocery.every.filter((i) => i.ingredientId !== from || (to && !kept));
-  for (const item of grocery.every) if (item.ingredientId === from) item.ingredientId = to;
-}
+export const relinkGrocery = (from, to) => relink(grocery, from, to);
 
 /** Replaces every week's list (used by Google Sheets sync). @param {Record<string, WeekList>} weeks @param {EveryWeekItem[]} [every] */
 export function replaceGrocery(weeks, every = grocery.every) {
