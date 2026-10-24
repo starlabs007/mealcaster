@@ -7,7 +7,8 @@
   import { aisleLabel } from '../recipes.svelte.js';
   import { addIngredient, findIngredient, ingredientOf, ingredients, setOnHand, updateIngredient } from '../ingredients.svelte.js';
   import { deleteIngredient, ingredientUses, mergeIngredient } from '../ingredientActions.svelte.js';
-  import { foldKey, suggest, tidyIngredientName } from '../ingredients.js';
+  import { suggest, tidyIngredientName } from '../ingredients.js';
+  import { canSave, filterCounts, filterIngredients, mergeOptions, sortedByName, takenBy } from '../ingredientAdmin.js';
   import { guessAisle } from '../ingredientText.js';
   import { showToast } from '../toast.svelte.js';
   import { text } from '../text.js';
@@ -35,19 +36,9 @@
   let editing = $state(null);
 
   const uses = $derived(ingredientUses());
-  const all = $derived([...ingredients].sort((a, b) => a.name.localeCompare(b.name)));
-  const counts = $derived({
-    stock: all.filter((i) => i.onHand).length,
-    unused: all.filter((i) => !uses.has(i.id)).length,
-  });
-  const shown = $derived.by(() => {
-    const q = foldKey(query);
-    return all.filter(
-      (i) =>
-        (filter === 'all' || (filter === 'stock' ? i.onHand : !uses.has(i.id))) &&
-        (!q || foldKey(i.name).includes(q) || foldKey(i.plural).includes(q)),
-    );
-  });
+  const all = $derived(sortedByName(ingredients));
+  const counts = $derived(filterCounts(all, uses));
+  const shown = $derived(filterIngredients(all, uses, filter, query));
 
   const recipeCount = text.ingredientsDialog.recipeCount;
 
@@ -77,28 +68,19 @@
     editing = { id: i.id, name: i.name, plural: i.plural, aisle: i.aisle, merging: false, into: '', confirmDelete: false };
   }
 
-  /** Another ingredient already called `word` (name or plural), if any. */
-  const takenBy = (word, id) => {
-    const other = word.trim() ? findIngredient(word) : undefined;
-    return other && other.id !== id ? other : undefined;
-  };
-  const nameClash = $derived(editing && !editing.merging ? takenBy(editing.name, editing.id) : undefined);
-  const pluralClash = $derived(editing && !editing.merging ? takenBy(editing.plural, editing.id) : undefined);
+  const nameClash = $derived(editing && !editing.merging ? takenBy(ingredients, editing.name, editing.id) : undefined);
+  const pluralClash = $derived(editing && !editing.merging ? takenBy(ingredients, editing.plural, editing.id) : undefined);
 
   function save(event) {
     event.preventDefault();
-    if (!editing || nameClash || pluralClash || !tidyIngredientName(editing.name)) return;
+    if (!editing || !canSave(editing, nameClash, pluralClash)) return;
     updateIngredient(editing.id, { name: editing.name, plural: editing.plural, aisle: editing.aisle });
     showToast(text.ingredientsDialog.toasts.saved(ingredientOf(editing.id)?.name));
     editing = null;
   }
 
-  const mergeTargets = $derived(
-    editing
-      ? all.filter((i) => i.id !== editing.id).map((i) => ({ value: i.name, label: i.name, hint: aisleLabel(i.aisle), keys: i.plural ? [i.plural] : [] }))
-      : [],
-  );
-  const mergeInto = $derived(editing?.merging && editing.into.trim() ? takenBy(editing.into, editing.id) : undefined);
+  const mergeTargets = $derived(editing ? mergeOptions(all, editing.id, aisleLabel) : []);
+  const mergeInto = $derived(editing?.merging && editing.into.trim() ? takenBy(ingredients, editing.into, editing.id) : undefined);
 
   /** @param {string} from @param {import('../ingredients.js').Ingredient | undefined} into */
   function merge(from, into) {
