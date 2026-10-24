@@ -7,64 +7,30 @@ import { ingredients } from './ingredients.svelte.js';
 import { planner } from './planner.svelte.js';
 import { favorites } from './favorites.svelte.js';
 import { groceryLines, stockHiddenLines } from './grocery.svelte.js';
-import { formatWeekday } from './dates.js';
 import { SCHEMA } from './sheets.svelte.js';
 import { settings as profile } from './settings.svelte.js';
-import { ingredientToRow, provisionToRow, settingsToRows } from './sync/codec.js';
 import { buildXlsx } from './xlsx.js';
-import { diningOutNote } from './sheetText.js';
+import { exportSheets } from './sheetsExport.js';
 
 /** @param {import('./sheets.svelte.js').SheetsSettings} settings */
 export function dataWorkbook(settings) {
-  const recipeRows = recipes.map((r) => [
-    r.id,
-    r.title,
-    r.description,
-    JSON.stringify(r.ingredients),
-    r.steps.map((s, i) => `${i + 1}. ${s.title}: ${s.text}`).join('\n'),
-    // Uploaded photos are data: URLs that only live on this device.
-    r.image?.startsWith('data:') ? '' : (r.image ?? ''),
-    r.tags.join(', '),
-    favorites.ids.includes(r.id),
-    r.badge.label,
-    r.serves,
-    r.prepMinutes,
-    r.cookMinutes,
-    r.notes ?? '',
-  ]);
-
-  const planRows = Object.entries(planner.entries)
-    .filter(([, e]) => e.recipeId || e.diningOut)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([iso, e]) => [
-      iso,
-      formatWeekday(iso),
-      e.recipeId ?? '',
-      Boolean(e.completed),
-      e.diningOut ? diningOutNote : '',
-    ]);
-
-  const provisionRows = [
-    ...groceryLines().map((l) => provisionToRow(planner.weekStart, l)),
-    ...stockHiddenLines().map((l) => provisionToRow(planner.weekStart, l, true)),
-  ].map((row) => SCHEMA.provisions.map((c) => row[c]));
-
-  const ingredientRows = ingredients.map((i) => {
-    const row = ingredientToRow(i);
-    return SCHEMA.ingredients.map((c) => row[c]);
-  });
-
-  const sheets = [
-    { name: settings.tabs.ingredients.trim(), rows: [SCHEMA.ingredients, ...ingredientRows] },
-    { name: settings.tabs.weeklyPlan.trim(), rows: [SCHEMA.weeklyPlan, ...planRows] },
-    { name: settings.tabs.recipes.trim(), rows: [SCHEMA.recipes, ...recipeRows] },
-  ];
-  if (settings.syncProvisions) {
-    sheets.push({ name: settings.tabs.provisions.trim(), rows: [SCHEMA.provisions, ...provisionRows] });
-  }
-  const settingRows = [...settingsToRows(profile).values()].map((r) => SCHEMA.settings.map((c) => r[c]));
-  sheets.push({ name: settings.tabs.settings.trim(), rows: [SCHEMA.settings, ...settingRows] });
-  return buildXlsx(sheets);
+  return buildXlsx(
+    exportSheets(
+      {
+        recipes: recipes,
+        favorites: favorites.ids,
+        ingredients: ingredients,
+        plan: planner.entries,
+        // The viewed week's list, as before.
+        provisions: [
+          ...groceryLines().map((line) => ({ week: planner.weekStart, line })),
+          ...stockHiddenLines().map((line) => ({ week: planner.weekStart, line, inStock: true })),
+        ],
+        settings: profile,
+      },
+      settings,
+    ),
+  );
 }
 
 /**
