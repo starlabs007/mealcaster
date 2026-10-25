@@ -302,7 +302,7 @@ export const text = {
     pickDay: 'Pick a day…',
     dayOpen: 'open',
     dayDiningOut: 'night off',
-    addCustom: 'Add Custom Recipe',
+    addCustom: 'Add a Recipe',
     searchAria: 'Search recipes and ingredients',
     searchPlaceholder: 'Search recipes, ingredients (e.g. salmon, pasta, lemon, tofu)...',
     sortBy: 'Sort by:',
@@ -387,8 +387,8 @@ export const text = {
     },
     badges: {
       scheduled: (/** @type {string} */ date) => `Scheduled: ${date}`,
-      customInSheet: (/** @type {string} */ tab) => `Custom recipe · in [${tab}] sheet`,
-      customOnDevice: 'Custom recipe · saved on this device',
+      customInSheet: (/** @type {string} */ tab) => `Recipe · in [${tab}] sheet`,
+      customOnDevice: 'Recipe · saved on this device',
       edited: 'Edited on this device',
     },
     tagsAria: 'Tags',
@@ -489,7 +489,7 @@ export const text = {
     notFound: {
       title: 'Recipe not found',
       body: 'It may have been removed from the household recipe box.',
-      addCustom: 'Add a Custom Recipe',
+      addCustom: 'Add a Recipe',
       browse: 'Browse the Recipe Catalog',
     },
     optional: '(optional)',
