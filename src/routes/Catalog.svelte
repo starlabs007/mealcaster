@@ -16,7 +16,7 @@
   import { recipes, recipeById, tagIcon, normalizeTags, normalizeMeals } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
   import { ingredientOf } from '../lib/ingredients.svelte.js';
-  import { SORT_IDS, activeFilterCount, mealOptions, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
+  import { DEFAULT_SORT, SORT_IDS, activeFilterCount, mealOptions, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
   import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate, left } from '../lib/router.svelte.js';
@@ -36,7 +36,7 @@
   const sorts = SORT_IDS.map((id) => ({ id, label: sortLabels[id] }));
 
   let query = $state('');
-  let sort = $state('most-cooked');
+  let sort = $state(DEFAULT_SORT);
   let favoritesOnly = $state(false);
   // On by default and remembered on this device: don't offer meals the viewed week already has (planned or completed).
   const hidePlanned = $derived(devicePrefs.hidePlanned);
