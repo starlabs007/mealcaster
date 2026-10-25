@@ -118,8 +118,8 @@ export const text = {
     profile: 'Profile & Settings',
 
     footer: {
-      tagline: '— Mindful kitchen choreography & nourishment',
-      copyright: (/** @type {number} */ year) => `© ${year} MealCaster. Culinary Mise en Place.`,
+      tagline: '— Weekly dinner planning for the home cook.',
+      copyright: (/** @type {number} */ year) => `© ${year} MealCaster: Plan It. Cook It. Eat It.`,
     },
 
     // The Google Sheets button. Its aria-label / title are the only text it has on mobile (icon-only).
