@@ -2,7 +2,9 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildWeekList, emptyWeek, everyWeekShows, mergeAmounts } from '../src/lib/groceryList.js';
+import { aisles } from '../src/lib/data/aisles.js';
+import { departments } from '../src/lib/data/departments.js';
+import { buildWeekList, deptOfTag, emptyWeek, everyWeekShows, mergeAmounts } from '../src/lib/groceryList.js';
 
 const ING = {
   beef: { id: 'beef', name: 'beef', plural: '', aisle: 'Fresh', onHand: false },
@@ -37,6 +39,15 @@ const build = (input = {}) =>
     ...input,
   });
 const byId = (lines) => Object.fromEntries(lines.map((l) => [l.ingredientId, l]));
+
+describe('deptOfTag', () => {
+  it('files every aisle under a department', () => {
+    for (const a of aisles) assert.ok(departments.some((d) => d.id === deptOfTag(a.tag)), a.tag);
+    assert.equal(deptOfTag('Refrigerated'), 'dairy');
+    assert.equal(deptOfTag('Noodles'), 'pantry');
+    assert.equal(deptOfTag('Sauces'), 'pantry');
+  });
+});
 
 describe('mergeAmounts', () => {
   it('adds up amounts in the same unit and lists the rest', () => {

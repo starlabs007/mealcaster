@@ -46,7 +46,7 @@ describe('pasted lines', () => {
   it('group lines under "Name:" headings and guess a new ingredient’s aisle', () => {
     const rows = parseIngredientLines('Sauce:\n- 2 tbsp fish sauce\n\n1. 3 cloves garlic, minced', 'Main');
     assert.deepEqual(rows.map((r) => [r.group, r.qty, r.unit, r.text, r.prep, r.aisle]), [
-      ['Sauce', '2', 'tbsp', 'fish sauce', '', 'Pantry'],
+      ['Sauce', '2', 'tbsp', 'fish sauce', '', 'Sauces'],
       ['Sauce', '3', 'clove', 'garlic', 'minced', 'Produce'],
     ]);
     assert.equal(parseIngredientLines('1 pineapple, cubed')[0].aisle, '', 'a pasted line with no match waits for a choice');
@@ -59,5 +59,14 @@ describe('pasted lines', () => {
     assert.equal(guessAisle('tomato paste'), 'Pantry');
     assert.equal(guessAisle('garlic powder'), 'Spices');
     assert.equal(guessAisle('salmon fillet'), 'Fresh');
+    assert.equal(guessAisle('ham'), 'Refrigerated');
+    assert.equal(guessAisle('chả lụa'), 'Refrigerated');
+    assert.equal(guessAisle('italian sausage'), 'Refrigerated');
+    assert.equal(guessAisle('wonton skins'), 'Refrigerated');
+    assert.equal(guessAisle('silken tofu'), 'Refrigerated');
+    assert.equal(guessAisle('egg noodles'), 'Noodles', 'noodles beat the egg in Dairy');
+    assert.equal(guessAisle('jasmine rice'), 'Noodles');
+    assert.equal(guessAisle('rice vinegar'), 'Sauces');
+    assert.equal(guessAisle('rice wine'), 'Pantry');
   });
 });
