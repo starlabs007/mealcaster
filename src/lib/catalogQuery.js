@@ -10,6 +10,9 @@ import { hasAnyMeal, mealFilters } from './meals.js';
 /** The catalog's sort orders, in the order they are offered. */
 export const SORT_IDS = ['most-cooked', 'quickest', 'name', 'name-desc', 'recent'];
 
+/** The order the catalog opens in. */
+export const DEFAULT_SORT = 'name';
+
 const byTitle = (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' });
 
 /**

@@ -4,6 +4,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  DEFAULT_SORT,
   SORT_IDS,
   activeFilterCount,
   mealOptions,
@@ -33,6 +34,8 @@ describe('sort orders', () => {
 
   it('knows its five orders', () => {
     assert.deepEqual(SORT_IDS, ['most-cooked', 'quickest', 'name', 'name-desc', 'recent']);
+    assert.equal(DEFAULT_SORT, 'name');
+    assert.ok(SORT_IDS.includes(DEFAULT_SORT));
     assert.throws(() => sortCompare('nope', history()), /Unknown sort/);
   });
 
