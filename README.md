@@ -101,7 +101,7 @@ npm run preview    # http://localhost:4173
   finds Bún chả; the header search lands here too).
 - Filters (combined with AND): Favorites, **Unplanned this week** (on by default, remembered on the device; hides meals the
   viewed week already has planned or completed, except the day being swapped), **Not made recently** (nothing made in the last 7 days; remembered on the device) and one per
-  recipe tag in use, plus any of the meals (Filter by Category: a recipe shows if it has **any** chosen meal; tags still need every one; `?meals=Lunch,Dinner`, an older `?category=` link still works). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
+  recipe tag in use, plus any of the meals (Filter by Category: a recipe shows if it has **any** chosen meal; tags still need every one; `?meals=Lunch,Dinner`, an older `?category=` link still works). Opens A–Z. Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
   Name (A–Z or Z–A), Recently Added to Box.
 - Infinite scroll: 9 recipes at first, 9 more as you near the bottom; a new search, filter or sort starts over at 9.
 - Going back to the catalog from a recipe (back button, breadcrumb or header tab) with the same search returns to where
