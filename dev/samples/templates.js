@@ -195,7 +195,7 @@ export const TEMPLATES = [
       'Smoky, savoury fried rice with {main} and {veg}, done in fifteen minutes.',
     ],
     groups: [
-      ['Fried Rice', 'Main', ['jasmine rice|3 cup|cooked and chilled overnight', '@main', 'egg|2-3|beaten', 'vegetable oil|3 tbsp']],
+      ['Fried Rice', 'Main', ['jasmine rice|3 cup|cooked and chilled overnight', '@main', 'egg|2-3|beaten', 'ham|4 oz|diced', 'vegetable oil|3 tbsp']],
       ['Flavour', 'Sauce', ['@aromatics', '@flavor', 'soy sauce|2 tbsp', 'white pepper|1/4 tsp']],
       ['Vegetables', 'Produce', ['@veg:1-2', 'frozen peas|1/2 cup', '@herbs:1-1']],
     ],

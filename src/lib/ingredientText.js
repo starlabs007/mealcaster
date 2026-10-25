@@ -33,11 +33,14 @@ export function parseQty(text) {
 // First match wins: bottled things and powders first, so "fish sauce", "tomato paste" and "garlic powder" aren't
 // fish or produce.
 const AISLE_WORDS = [
-  ['Pantry', /\b(sauce|paste|vinegar|oil|seasoning|bouillon)\b/],
+  ['Sauces', /\b(sauce|vinegar|ketchup|mustard|mayo|mayonnaise)\b/],
+  ['Pantry', /\b(paste|oil|seasoning|bouillon)\b/],
   ['Spices', /\bpowder\b/],
+  ['Refrigerated', /\b(tofu|ham|sausage|bacon|pancetta|prosciutto|salami|chorizo|pepperoni|lap cheong|chả lụa|cha lua|wonton (skins?|wrappers?)|dumpling (skins?|wrappers?)|kimchi)\b/],
+  ['Noodles', /\b(noodles?|vermicelli|spaghetti|pasta|rice(?! (wine|flour|vinegar)))\b/],
   ['Herbs', /\b(basil|parsley|cilantro|coriander leaves|thyme|rosemary|dill|mint|sage|chives|tarragon|oregano leaves)\b/],
   ['Spices', /\b(salt|peppercorns?|black pepper|cumin|paprika|turmeric|cinnamon|chili flakes|chilli flakes|red pepper flakes|nutmeg|spice|garam masala|curry powder|oregano|bay lea(f|ves))\b/],
-  ['Fresh', /\b(chicken|beef|pork|lamb|turkey|sausage|bacon|pancetta|prosciutto|salmon|cod|tuna|shrimp|prawns?|fish|scallops?|mussels|clams|steak|mince|ground (beef|pork|turkey)|short ribs?|thighs?|fillets?)\b/],
+  ['Fresh', /\b(chicken|beef|pork|lamb|turkey|salmon|cod|tuna|shrimp|prawns?|fish|scallops?|mussels|clams|steak|mince|ground (beef|pork|turkey)|short ribs?|thighs?|fillets?)\b/],
   ['Dairy', /\b(milk|cheese|butter|cream|yogh?urt|eggs?|ricotta|mozzarella|parmesan|feta|cheddar|mascarpone|crème fraîche|creme fraiche|ghee)\b/],
   ['Bakery', /\b(bread|baguette|buns?|tortillas?|pita|naan|sourdough|rolls?)\b/],
   ['Frozen', /\bfrozen\b/],
