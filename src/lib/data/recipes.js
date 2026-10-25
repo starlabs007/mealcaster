@@ -16,7 +16,7 @@
  *   cookMinutes: number,
  *   minutes: number,
  *   serves: number,
- *   badge: { label: string }, // category; '' = none
+ *   meals: string[], // Breakfast, Lunch…, in meals.js order; [] = none
  *   addedAt: string,
  *   tags: string[],
  *   notes: string,

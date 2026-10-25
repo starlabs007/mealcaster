@@ -3,7 +3,8 @@
 // device, bulk tag / ingredient edits, and how a synced list is classified against the samples.
 
 import { migrateNotes } from './markdown.js';
-import { normalizeCategory, normalizeTags, retag } from './tags.js';
+import { normalizeTags, retag } from './tags.js';
+import { parseMeals } from './meals.js';
 import { normalizeHeadsUps } from './headsUps.js';
 import { cellText, recipeToRow } from './sync/codec.js';
 
@@ -16,11 +17,13 @@ export const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinute
 /** Brings a recipe saved by an earlier build up to date. @param {SavedRecipe} r */
 export function migrate(r) {
   // Mock-only sample fields, since removed (cook counts now come from the plan; `hero` was a second photo).
-  const { highlight, prep, stat, rating, ratings, cookCount, hero, ...rest } = migrateNotes(r);
+  const { highlight, prep, stat, rating, ratings, cookCount, hero, badge, ...rest } = migrateNotes(r);
+  // `badge.label` was one free-text category: its meal becomes `meals`, any other word joins the tags.
+  const { meals, extra } = parseMeals(rest.meals ?? badge?.label ?? 'Dinner');
   return {
     ...rest,
-    badge: { label: normalizeCategory(rest.badge?.label ?? 'Dinner') },
-    tags: normalizeTags(r.tags),
+    meals,
+    tags: normalizeTags([...(r.tags ?? []), ...extra]),
     ingredients: (rest.ingredients ?? []).map((g) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
     headsUps: normalizeHeadsUps(rest.headsUps),
   };

@@ -56,6 +56,8 @@ export const text = {
     done: 'Done',
     /** Opens a recipe in cook view (recipe page, tonight's planner card on phones). */
     cook: 'Cook',
+    /** A recipe's meals on cards and the recipe page: "Lunch · Dinner". */
+    mealList: (/** @type {string[]} */ meals) => meals.join(' · '),
     /** The browser tab / history title: "MealCaster · <page>". */
     pageTitle: (/** @type {string} */ page) => `MealCaster · ${page}`,
     pages: {
@@ -118,8 +120,8 @@ export const text = {
     profile: 'Profile & Settings',
 
     footer: {
-      tagline: '— Mindful kitchen choreography & nourishment',
-      copyright: (/** @type {number} */ year) => `© ${year} MealCaster. Culinary Mise en Place.`,
+      tagline: '— Weekly dinner planning for the home cook.',
+      copyright: (/** @type {number} */ year) => `© ${year} MealCaster: Plan It. Cook It. Eat It.`,
     },
 
     // The Google Sheets button. Its aria-label / title are the only text it has on mobile (icon-only).
@@ -302,7 +304,7 @@ export const text = {
     pickDay: 'Pick a day…',
     dayOpen: 'open',
     dayDiningOut: 'night off',
-    addCustom: 'Add Custom Recipe',
+    addCustom: 'Add a Recipe',
     searchAria: 'Search recipes and ingredients',
     searchPlaceholder: 'Search recipes, ingredients (e.g. salmon, pasta, lemon, tofu)...',
     sortBy: 'Sort by:',
@@ -323,7 +325,6 @@ export const text = {
       unplanned: 'Unplanned this week',
       notMadeRecently: 'Not made recently',
       categoryHeading: 'Filter by Category',
-      anyCategory: 'Any category',
     },
     empty: {
       title: 'Your recipe catalog is empty',
@@ -387,8 +388,8 @@ export const text = {
     },
     badges: {
       scheduled: (/** @type {string} */ date) => `Scheduled: ${date}`,
-      customInSheet: (/** @type {string} */ tab) => `Custom recipe · in [${tab}] sheet`,
-      customOnDevice: 'Custom recipe · saved on this device',
+      customInSheet: (/** @type {string} */ tab) => `Recipe · in [${tab}] sheet`,
+      customOnDevice: 'Recipe · saved on this device',
       edited: 'Edited on this device',
     },
     tagsAria: 'Tags',
@@ -489,7 +490,7 @@ export const text = {
     notFound: {
       title: 'Recipe not found',
       body: 'It may have been removed from the household recipe box.',
-      addCustom: 'Add a Custom Recipe',
+      addCustom: 'Add a Recipe',
       browse: 'Browse the Recipe Catalog',
     },
     optional: '(optional)',
@@ -542,9 +543,7 @@ export const text = {
     },
     category: {
       label: 'Category',
-      placeholder: 'Pick or type one, e.g. Breakfast',
-      clearAria: (/** @type {string} */ category) => `Clear category ${category}`,
-      hint: 'One per recipe: pick one you use or type your own.',
+      hint: 'Pick any that fit. Dinner (or none) puts it in the planner’s dinner picks.',
     },
     tags: {
       label: 'Tags',
@@ -1269,7 +1268,7 @@ export const text = {
           Image_URL: 'Link to a photo of the dish.',
           Tags: 'Comma-separated recipe tags (e.g. Vegetarian, Gluten-Free).',
           Favorite_Flag: 'TRUE for starred recipes.',
-          Category: 'Optional category such as Dinner, Lunch or Dessert.',
+          Category: 'Optional, comma-separated meals: Breakfast, Lunch, Dinner, Side, Snack, Dessert. Anything else becomes a tag.',
           Servings: 'How many people the recipe feeds.',
           Prep_Minutes: 'Hands-on prep time in minutes.',
           Cook_Minutes: 'Cooking time in minutes.',

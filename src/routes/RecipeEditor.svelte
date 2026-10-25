@@ -42,8 +42,7 @@
     tagChoices,
     normalizeTag,
     TAG_MAX,
-    categoryChoices,
-    normalizeCategory,
+    MEALS,
     aisles,
     aisleLabel,
     matchAisle,
@@ -143,10 +142,10 @@
   });
 
   // ---- Category ------------------------------------------------------------------
-  // One field: pick a category the recipe box uses, or type a new one.
-  const categoryOptions = $derived(categoryChoices(recipes.map((r) => r.badge.label)).map((c) => ({ value: c, label: c })));
-
-  const chosenCategory = () => normalizeCategory(form.category);
+  // Toggle chips: none, one or several of the fixed meals.
+  const toggleMeal = (/** @type {string} */ meal) => {
+    form.meals = MEALS.filter((m) => (m === meal ? !form.meals.includes(m) : form.meals.includes(m)));
+  };
 
   // ---- Tags ----------------------------------------------------------------------
   let newTag = $state('');
@@ -535,7 +534,6 @@
     formToRecipe(form, {
       editing: editing && $state.snapshot(editing),
       tags: withNewTag(),
-      category: chosenCategory(),
       ingredientId: (row) => rowIngredientId(row, lookup),
       newId: newRecipeId,
       today: toISO(new Date()),
@@ -861,36 +859,22 @@
             {@render numberField('cookMinutes', text.editor.essentials.cook, 'skillet', text.editor.essentials.minutesUnit, false)}
           </div>
 
-          <div>
-            {@render fieldLabel(text.editor.category.label, 'recipe-category')}
-            <div class="flex items-center gap-2">
-              <Combobox
-                id="recipe-category"
-                label={text.editor.category.label}
-                placeholder={text.editor.category.placeholder}
-                suggestions={categoryOptions}
-                limit={categoryOptions.length}
-                openOnFocus
-                bind:value={form.category}
-                onkey={(e) => {
-                  if (e.key === 'Enter') e.preventDefault();
-                }}
-                class="min-w-0 flex-1"
-                inputClass="{field} {border(false)}"
-              />
-              {#if form.category.trim()}
+          <div role="group" aria-labelledby="recipe-category-label">
+            <span id="recipe-category-label" class="mb-1 block text-label-md text-on-surface">{text.editor.category.label}<span class="text-on-surface-variant">&nbsp;{text.editor.optional}</span></span>
+            <div class="flex flex-wrap gap-2">
+              {#each MEALS as meal (meal)}
                 <button
                   type="button"
-                  aria-label={text.editor.category.clearAria(form.category.trim())}
-                  class="focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-md text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface fine:h-9 fine:w-9"
-                  onclick={() => {
-                    form.category = '';
-                    document.getElementById('recipe-category')?.focus();
-                  }}
+                  aria-pressed={form.meals.includes(meal)}
+                  class="focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-full border px-4 text-label-md transition-colors fine:min-h-8 fine:px-3 {form.meals.includes(meal)
+                    ? 'border-primary bg-primary text-on-primary'
+                    : 'border-outline-variant bg-surface-container-lowest text-on-surface fine:hover:bg-surface-container-low'}"
+                  onclick={() => toggleMeal(meal)}
                 >
-                  <Icon name="close" class="text-[18px]" />
+                  {#if form.meals.includes(meal)}<Icon name="check" class="text-[16px]" />{/if}
+                  {meal}
                 </button>
-              {/if}
+              {/each}
             </div>
             <p class="mt-1 text-body-sm text-on-surface-variant">{text.editor.category.hint}</p>
           </div>

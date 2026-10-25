@@ -2,7 +2,8 @@
 // orders, the filter and search pipeline, the filter lists, how many filters are on, and which day is being planned.
 
 import { foldKey } from './ingredients.js';
-import { categoryChoices, tagChoices } from './tags.js';
+import { tagChoices } from './tags.js';
+import { hasAnyMeal, mealFilters } from './meals.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 
@@ -41,7 +42,7 @@ export function sortCompare(id, { timesMade, lastMadeOn }) {
  * "bun cha" finds Bún chả.
  * @param {Recipe[]} recipes
  * @param {{
- *   query: string, sort: string, tags: string[], category: string,
+ *   query: string, sort: string, tags: string[], meals: string[],
  *   favoritesOnly: boolean, favoriteIds: string[],
  *   hideRecent: boolean, hidePlanned: boolean, plannedIds: Set<string>,
  * }} filters
@@ -52,20 +53,20 @@ export function sortCompare(id, { timesMade, lastMadeOn }) {
  * }} lookup
  */
 export function searchRecipes(recipes, filters, lookup) {
-  const { query, sort, tags, category, favoritesOnly, favoriteIds, hideRecent, hidePlanned, plannedIds } = filters;
+  const { query, sort, tags, meals, favoritesOnly, favoriteIds, hideRecent, hidePlanned, plannedIds } = filters;
   const words = foldKey(query).split(' ').filter(Boolean);
   return recipes
     .filter((r) => !favoritesOnly || favoriteIds.includes(r.id))
     .filter((r) => !hideRecent || !lookup.madeRecently(r.id))
     .filter((r) => !hidePlanned || !plannedIds.has(r.id))
-    .filter((r) => !category || r.badge.label === category)
+    .filter((r) => hasAnyMeal(r.meals, meals))
     .filter((r) => tags.every((t) => r.tags.includes(t)))
     .filter((r) => {
       if (!words.length) return true;
       const haystack = [
         r.title,
         r.description,
-        r.badge.label,
+        ...r.meals,
         ...r.tags,
         ...r.ingredients.flatMap((g) =>
           g.items.flatMap((i) => {
@@ -84,13 +85,12 @@ export function searchRecipes(recipes, filters, lookup) {
 export const tagFilters = (recipes, active) =>
   tagChoices([...recipes.flatMap((r) => r.tags), ...active]).filter((t) => active.includes(t) || recipes.some((r) => r.tags.includes(t)));
 
-/** Categories in use (suggested ones first); the active one stays listed even with no recipes. @param {Recipe[]} recipes @param {string} active */
-export const categoryFilters = (recipes, active) =>
-  categoryChoices([...recipes.map((r) => r.badge.label), active]).filter((c) => c === active || recipes.some((r) => r.badge.label === c));
+/** Meals in use (in list order); an active one stays listed even with no recipes. @param {Recipe[]} recipes @param {string[]} active */
+export const mealOptions = (recipes, active) => mealFilters(recipes.map((r) => r.meals), active);
 
-/** How many filters are on (each tag, the category, favourites, hide recent, hide planned). @param {{ tags: string[], category: string, favoritesOnly: boolean, hideRecent: boolean, hidePlanned: boolean }} f */
-export const activeFilterCount = ({ tags, category, favoritesOnly, hideRecent, hidePlanned }) =>
-  tags.length + (category ? 1 : 0) + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0) + (hidePlanned ? 1 : 0);
+/** How many filters are on (each tag, each meal, favourites, hide recent, hide planned). @param {{ tags: string[], meals: string[], favoritesOnly: boolean, hideRecent: boolean, hidePlanned: boolean }} f */
+export const activeFilterCount = ({ tags, meals, favoritesOnly, hideRecent, hidePlanned }) =>
+  tags.length + meals.length + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0) + (hidePlanned ? 1 : 0);
 
 /**
  * The day being planned: the one in the URL while it can still be planned, else the first open day.
@@ -106,5 +106,5 @@ export const targetDay = (queryDay, plannable, firstOpen) => (queryDay && planna
 export const plannedIdsOf = (days, target) =>
   new Set(days.filter((d) => (d.status === 'planned' || d.status === 'completed') && d.recipe && d.iso !== target).map((d) => d.recipe.id));
 
-/** The search as shown, to tell whether the catalog comes back to the same one. @param {{ q?: string, filter?: string, category?: string }} query @param {string | undefined} day */
-export const placeKey = (query, day) => JSON.stringify([query.q ?? '', query.filter ?? '', query.category ?? '', day ?? '']);
+/** The search as shown, to tell whether the catalog comes back to the same one. @param {{ q?: string, filter?: string, meals?: string, category?: string }} query @param {string | undefined} day */
+export const placeKey = (query, day) => JSON.stringify([query.q ?? '', query.filter ?? '', query.meals ?? query.category ?? '', day ?? '']);

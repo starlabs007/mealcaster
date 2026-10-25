@@ -17,7 +17,7 @@ import { EDGE_CASES } from './edgeCases.js';
 import { DESC_EXTRA, GENERAL_TIPS, NOTE_HEADINGS } from './phrases.js';
 
 /** Bump whenever the output for a given seed and count changes (it is part of the dev data key). */
-export const GENERATOR_VERSION = 3;
+export const GENERATOR_VERSION = 4;
 
 /**
  * The day `addedAt` dates count back from, as a UTC timestamp: `today` ("YYYY-MM-DD"), else the SAMPLE_DATE
@@ -42,6 +42,18 @@ const CATEGORY_WEIGHTS = [
   ['Breakfast', 0.1],
   ['Dessert', 0.14],
 ];
+
+/**
+ * A template's category as the recipe's meals. Every second Lunch is a Dinner too, and every fifth Dinner a Lunch
+ * (by position, so the output stays the same for a seed and the random stream is untouched).
+ * @param {string} category @param {number} n how many recipes come before this one
+ */
+function mealsOf(category, n) {
+  if (!category) return [];
+  if (category === 'Lunch' && n % 2) return ['Lunch', 'Dinner'];
+  if (category === 'Dinner' && n % 5 === 0) return ['Lunch', 'Dinner'];
+  return [category];
+}
 
 /** Image URL on TheMealDB that doesn't exist, so the placeholder tile stays tested. */
 const missingPhoto = (n) => `https://www.themealdb.com/images/media/meals/mealcaster-missing-${n}.jpg`;
@@ -453,7 +465,7 @@ function photoPicker(images) {
  * @param {Recipe[]} recipes @param {ReturnType<typeof random>} rng @returns {SamplePlanEntry[]}
  */
 function makePlan(recipes, rng) {
-  const dinners = recipes.filter((r) => r.badge.label === 'Dinner');
+  const dinners = recipes.filter((r) => r.meals.includes('Dinner'));
   const pool = dinners.length ? dinners : recipes;
   const regulars = rng.sample(pool, Math.min(3, pool.length));
   const out = { weekOffset: rng.int(-4, -1), day: rng.int(4, 6) };
@@ -544,7 +556,7 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
       cookMinutes: draft.cookMinutes,
       minutes: draft.prepMinutes + draft.cookMinutes,
       serves: draft.serves,
-      badge: { label: draft.category },
+      meals: mealsOf(draft.category, recipes.length),
       addedAt: addedDate(day, rng.int(0, 364)),
       tags,
       notes: draft.notes,

@@ -119,7 +119,7 @@ describe('validation', () => {
 });
 
 describe('the recipe a form saves as', () => {
-  const how = (extra = {}) => ({ tags: ['Soup'], category: 'Dinner', ingredientId: (r) => `id-${r.text}`, newId: (t) => `custom-${t}`, today: '2026-10-23', ...extra });
+  const how = (extra = {}) => ({ tags: ['Soup'], ingredientId: (r) => `id-${r.text}`, newId: (t) => `custom-${t}`, today: '2026-10-23', ...extra });
 
   it('makes a new recipe: trimmed text, empty minutes as 0, steps without text dropped, default step titles', () => {
     const form = valid();
@@ -129,6 +129,7 @@ describe('the recipe a form saves as', () => {
     form.groups[0].rows[0] = row('rice', { qty: '1 1/2', unit: 'Cups', note: ' fine ', prep: ' rinsed ', optional: true });
     form.steps = [{ ...blankStep(), text: ' Boil ' }, { ...blankStep(), title: 'Skip', text: '  ' }, { ...blankStep(), title: ' Eat ', text: 'Serve', minutes: '5' }];
     form.image = ' ';
+    form.meals = ['Dinner', 'Lunch'];
     const r = formToRecipe(form, how());
     assert.equal(r.id, 'custom-Pho');
     assert.equal(r.title, 'Pho');
@@ -138,7 +139,7 @@ describe('the recipe a form saves as', () => {
     assert.equal('image' in r, false);
     assert.equal(r.addedAt, '2026-10-23');
     assert.equal(r.custom, true);
-    assert.deepEqual(r.badge, { label: 'Dinner' });
+    assert.deepEqual(r.meals, ['Lunch', 'Dinner'], 'saved in list order');
     assert.deepEqual(r.steps, [
       { title: 'Step 1', minutes: 0, text: 'Boil' },
       { title: 'Eat', minutes: 5, text: 'Serve' },
@@ -247,15 +248,15 @@ describe('kept drafts', () => {
     assert.equal(loadDraft(drafts, undefined, opened, baseline), null);
   });
 
-  it('restores a draft with fresh row keys and tidied tags and category', () => {
+  it('restores a draft with fresh row keys and tidied tags and meals', () => {
     const drafts = createDraftStore(memory(), 'new', 'edits');
     const { opened, baseline } = open(undefined);
-    const kept = { ...opened, title: 'Half done', tags: ['soup', 'Soup'], category: '  dinner ' };
+    const kept = { ...opened, title: 'Half done', tags: ['soup', 'Soup'], meals: ['Dinner', 'lunch', 'Dinner'] };
     drafts.write(undefined, kept, baseline);
     const draft = loadDraft(drafts, undefined, opened, baseline);
     assert.equal(draft.title, 'Half done');
     assert.deepEqual(draft.tags, ['Soup']);
-    assert.equal(draft.category, 'Dinner');
+    assert.deepEqual(draft.meals, ['Lunch', 'Dinner']);
     assert.notEqual(draft.groups[0].key, kept.groups[0].key);
     assert.notEqual(draft.groups[0].rows[0].key, kept.groups[0].rows[0].key);
     assert.equal(signature(draft.groups), signature(kept.groups));

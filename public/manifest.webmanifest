@@ -1,7 +1,7 @@
 {
   "name": "MealCaster",
   "short_name": "MealCaster",
-  "description": "Mindful weekly dinner planning.",
+  "description": "Weekly dinner planning for the home cook.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

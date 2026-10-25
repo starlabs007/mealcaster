@@ -73,7 +73,6 @@ Rituals and facts of use:
   `stitch_mealcaster/mealcaster_logo/`).
 - The current look (Warm Culinary Editorial, `stitch_mealcaster/warm_culinary_editorial/DESIGN.md`) is **evidence,
   not a commitment**: it may be refined or replaced.
-- Footer tagline in use: "Mindful kitchen choreography & nourishment" (`text.js`), not confirmed as binding.
 
 ## Evidence on Hand
 

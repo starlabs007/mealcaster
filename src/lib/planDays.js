@@ -2,7 +2,7 @@
 // Surprise Me pick from first. Plain JS so node tests can load it; planner.svelte.js passes in its state.
 
 import { addDays } from './dates.js';
-import { foldKey } from './ingredients.js';
+import { isDinner } from './meals.js';
 import { missedHeadsUps } from './headsUps.js';
 
 /**
@@ -65,12 +65,12 @@ export function restoreDays(entries, saved) {
 
 /**
  * What Auto-fill and Surprise Me draw from: dinners and uncategorised recipes; every recipe when there are none.
- * @template {{ badge: { label: string } }} R
+ * @template {{ meals?: string[] }} R
  * @param {R[]} recipes
  * @returns {R[]}
  */
 export function dinnerPool(recipes) {
-  const dinners = recipes.filter((r) => ['', 'dinner'].includes(foldKey(r.badge?.label)));
+  const dinners = recipes.filter((r) => isDinner(r.meals));
   return dinners.length ? dinners : recipes;
 }
 
