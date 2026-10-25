@@ -101,7 +101,7 @@ npm run preview    # http://localhost:4173
   finds Bún chả; the header search lands here too).
 - Filters (combined with AND): Favorites, **Unplanned this week** (on by default, remembered on the device; hides meals the
   viewed week already has planned or completed, except the day being swapped), **Not made recently** (nothing made in the last 7 days; remembered on the device) and one per
-  recipe tag in use, plus one category at a time (Filter by Category). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
+  recipe tag in use, plus any of the meals (Filter by Category: a recipe shows if it has **any** chosen meal; tags still need every one; `?meals=Lunch,Dinner`, an older `?category=` link still works). Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
   Name (A–Z or Z–A), Recently Added to Box.
 - Infinite scroll: 9 recipes at first, 9 more as you near the bottom; a new search, filter or sort starts over at 9.
 - Going back to the catalog from a recipe (back button, breadcrumb or header tab) with the same search returns to where
@@ -167,9 +167,11 @@ Each tag gets the least-used of five colours the first time it appears and keeps
 built-ins) can be recoloured, renamed or deleted under Profile & Settings → Recipe Tags.
 The `Tags` column holds them as comma-separated text.
 
-A recipe has at most one **category** (optional; shown on the cards, the detail hero and the planner day card).
-The editor's one Category field offers Dinner, Lunch, Dessert and every category in use, and takes a custom one (tidied like a tag).
-The `Category` column holds it; blank means none.
+A recipe has any number of **meals** from a fixed list (Breakfast, Lunch, Dinner, Side, Snack, Dessert; shown on the cards
+and the detail hero as "Lunch · Dinner"). The editor's Category field is a row of toggle chips. The `Category` column holds
+them comma-separated ("Lunch, Dinner", always in list order); an older single value reads as a one-item list, blank means
+none, and a value outside the list ("Brunch") is moved into the recipe's Tags when read. Auto-fill and Surprise Me pick
+recipes whose meals include Dinner or are empty (every recipe if none qualify).
 
 ## Ingredients
 
@@ -413,7 +415,8 @@ src/
     ingredients.svelte.js    ingredient store (synced), stock changes
     ingredientActions.svelte.js  merge / delete an ingredient across recipes and grocery lists, with Undo
     ingredientText.js        paste parser, quantity parsing, aisle guess for new ingredients
-    tags.js                  tag & category normalizing, suggestions, colour rotation
+    tags.js                  tag normalizing, suggestions, colour rotation
+    meals.js                 the fixed meal list: parsing, filtering, dinner check
     tagColors.svelte.js      tag colours (synced) and renaming / deleting tags
     grocery.svelte.js        grocery list state (per week, every-week items, stock snapshots)
     groceryList.js           one line per ingredient: merging, amounts, visibility (plain, tested)
@@ -452,6 +455,4 @@ The build job runs in the `production` environment to read the three `GOOGLE_*` 
 
 ## To do
 
-- **Dinner picks ignore the category.** Auto-fill and Surprise Me choose from every recipe, so a Lunch or
-  Dessert recipe can land on a dinner day. Limit both to recipes in the
-  Dinner category or with no category.
+Nothing open.

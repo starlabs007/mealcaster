@@ -14,7 +14,8 @@ import { saveItem } from './storage.svelte.js';
 import { text } from './text.js';
 
 export { formatMinutes } from './data/recipes.js';
-export { suggestedTags, isSuggestedTag, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX, normalizeCategory, categoryChoices } from './tags.js';
+export { suggestedTags, isSuggestedTag, tagIcon, normalizeTag, normalizeTags, tagChoices, TAG_MAX } from './tags.js';
+export { MEALS, normalizeMeals } from './meals.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */

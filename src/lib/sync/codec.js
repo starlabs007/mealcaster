@@ -10,7 +10,8 @@
 
 import { departments } from '../data/departments.js';
 import { DEFAULT_WEEK_START_DAY, formatWeekday, fromISO, weekStartOf } from '../dates.js';
-import { TONES, normalizeAisle, normalizeCategory, normalizeTag, normalizeTags } from '../tags.js';
+import { TONES, normalizeAisle, normalizeTag, normalizeTags } from '../tags.js';
+import { formatMeals, parseMeals } from '../meals.js';
 import { aisles } from '../data/aisles.js';
 import { canonicalUnit, ingredientIdFor, recipeIdFor, tidyIngredientName } from '../ingredients.js';
 import { SCHEMA_VERSION } from '../schema.js';
@@ -191,7 +192,15 @@ const RECIPE_COLUMNS = {
     set: (r, v) => (r.tags = normalizeTags(str(v).split(','))),
   },
   Favorite_Flag: { get: (r, ctx) => ctx.favorites.has(r.id), set: (r, v, ctx) => (ctx.favorite = bool(v)) },
-  Category: { get: (r) => r.badge.label, set: (r, v) => (r.badge = { label: normalizeCategory(str(v)) }) },
+  // Comma-separated meals; other words go to the tags once the row is read (see recipeFromRow).
+  Category: {
+    get: (r) => formatMeals(r.meals),
+    set: (r, v, ctx) => {
+      const { meals, extra } = parseMeals(str(v));
+      r.meals = meals;
+      ctx.extraTags = extra;
+    },
+  },
   Servings: {
     get: (r) => r.serves,
     set: (r, v) => (r.serves = num(v) || 2),
@@ -231,7 +240,7 @@ function blankRecipe(id, today) {
     cookMinutes: 0,
     minutes: 0,
     serves: 2,
-    badge: { label: '' },
+    meals: [],
     addedAt: today,
     tags: [],
     notes: '',
@@ -252,13 +261,14 @@ export function recipeFromRow(row, existing, { columns, favorites, today }) {
   const id = str(row.Recipe_ID);
   const recipe = existing ? structuredClone(existing) : blankRecipe(id, today);
   const written = existing ? recipeToRow(existing, favorites) : null;
-  /** @type {{ favorite?: boolean }} */
+  /** @type {{ favorite?: boolean, extraTags?: string[] }} */
   const ctx = {};
   for (const col of columns) {
     const c = RECIPE_COLUMNS[col];
     if (!c || (written && cellText(written[col]) === cellText(row[col]))) continue;
     c.set(recipe, row[col], ctx);
   }
+  if (ctx.extraTags?.length) recipe.tags = normalizeTags([...recipe.tags, ...ctx.extraTags]);
   if (!recipe.title) recipe.title = recipe.shortTitle = sheetText.untitledRecipe;
   recipe.minutes = recipe.prepMinutes + recipe.cookMinutes;
   return { recipe, favorite: ctx.favorite };

@@ -81,10 +81,11 @@ test('Undo puts the exact previous week back after Copy and after Reset', () => 
   assert.deepEqual(entries, before);
 });
 
-test('dinner pool: Dinner (any case) and uncategorised recipes, or everything when there are none', () => {
-  const r = (id, label) => ({ id, badge: { label } });
-  const mixed = [r('a', 'Dinner'), r('b', 'DINNER'), r('c', ''), r('d', 'Breakfast'), r('e', 'Dessert'), r('f', 'Lunch')];
+test('dinner pool: recipes with Dinner among their meals and ones with no meals, or everything when there are none', () => {
+  const r = (id, ...meals) => ({ id, meals });
+  const mixed = [r('a', 'Dinner'), r('b', 'Lunch', 'Dinner'), r('c'), r('d', 'Breakfast'), r('e', 'Dessert'), r('f', 'Lunch')];
   assert.deepEqual(dinnerPool(mixed).map((x) => x.id), ['a', 'b', 'c']);
+  assert.deepEqual(dinnerPool([{ id: 'g' }]).map((x) => x.id), ['g'], 'a recipe saved without meals counts as having none');
   const noDinners = [r('d', 'Breakfast'), r('e', 'Dessert')];
   assert.deepEqual(dinnerPool(noDinners), noDinners);
   assert.deepEqual(dinnerPool([]), []);
@@ -107,7 +108,7 @@ test('a single-day snapshot takes back Mark Done, a new pick and a cleared eveni
 });
 
 // Auto-fill and Surprise Me: which recipes they pick from for an evening.
-const meal = (id, daysBefore) => ({ id, badge: { label: 'Dinner' }, ...(daysBefore !== undefined && { headsUps: [{ text: `Prep ${id}`, daysBefore }] }) });
+const meal = (id, daysBefore) => ({ id, meals: ['Dinner'], ...(daysBefore !== undefined && { headsUps: [{ text: `Prep ${id}`, daysBefore }] }) });
 const ids = (tier) => tier.map((r) => r.id);
 const history = ({ used = [], recent = [] } = {}) => ({ used: new Set(used), madeRecently: (id) => recent.includes(id) });
 

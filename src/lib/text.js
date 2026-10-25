@@ -56,6 +56,8 @@ export const text = {
     done: 'Done',
     /** Opens a recipe in cook view (recipe page, tonight's planner card on phones). */
     cook: 'Cook',
+    /** A recipe's meals on cards and the recipe page: "Lunch · Dinner". */
+    mealList: (/** @type {string[]} */ meals) => meals.join(' · '),
     /** The browser tab / history title: "MealCaster · <page>". */
     pageTitle: (/** @type {string} */ page) => `MealCaster · ${page}`,
     pages: {
@@ -323,7 +325,6 @@ export const text = {
       unplanned: 'Unplanned this week',
       notMadeRecently: 'Not made recently',
       categoryHeading: 'Filter by Category',
-      anyCategory: 'Any category',
     },
     empty: {
       title: 'Your recipe catalog is empty',
@@ -542,9 +543,7 @@ export const text = {
     },
     category: {
       label: 'Category',
-      placeholder: 'Pick or type one, e.g. Breakfast',
-      clearAria: (/** @type {string} */ category) => `Clear category ${category}`,
-      hint: 'One per recipe: pick one you use or type your own.',
+      hint: 'Pick any that fit. Dinner (or none) puts it in the planner’s dinner picks.',
     },
     tags: {
       label: 'Tags',
@@ -1269,7 +1268,7 @@ export const text = {
           Image_URL: 'Link to a photo of the dish.',
           Tags: 'Comma-separated recipe tags (e.g. Vegetarian, Gluten-Free).',
           Favorite_Flag: 'TRUE for starred recipes.',
-          Category: 'Optional category such as Dinner, Lunch or Dessert.',
+          Category: 'Optional, comma-separated meals: Breakfast, Lunch, Dinner, Side, Snack, Dessert. Anything else becomes a tag.',
           Servings: 'How many people the recipe feeds.',
           Prep_Minutes: 'Hands-on prep time in minutes.',
           Cook_Minutes: 'Cooking time in minutes.',

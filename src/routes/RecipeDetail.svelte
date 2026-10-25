@@ -500,9 +500,9 @@
               <span class="inline-flex items-center gap-1 rounded-full bg-surface-container-lowest/90 px-2.5 py-1 text-label-sm text-on-surface shadow-sm backdrop-blur-md max-md:invisible">
                 <Icon name="restaurant_menu" class="text-[13px]" /> {text.recipe.photoMeta(recipe.minutes ? formatMinutes(recipe.minutes) : '', recipe.serves)}
               </span>
-              {#if recipe.badge.label}
+              {#if recipe.meals.length}
                 <span class="rounded-full bg-primary-container/90 px-2.5 py-1 text-label-sm text-on-primary shadow-sm backdrop-blur-md">
-                  {recipe.badge.label}
+                  {text.common.mealList(recipe.meals)}
                 </span>
               {/if}
             </div>

@@ -54,9 +54,9 @@
             <Icon name="alarm" class="text-[13px]" /> {text.common.headsUps.ahead(lead)}
           </span>
         {/if}
-        {#if recipe.badge.label}
+        {#if recipe.meals.length}
           <span class="rounded-full bg-surface-container-lowest/90 px-2 py-1 text-label-caps text-on-surface-variant shadow-sm backdrop-blur-md">
-            {recipe.badge.label}
+            {text.common.mealList(recipe.meals)}
           </span>
         {/if}
       </div>

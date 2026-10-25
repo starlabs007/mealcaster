@@ -3,7 +3,8 @@
 // saves as, restoring a kept draft, edits to the ingredient groups and steps, and the photo limits.
 // Everything that needs the ingredient list is handed in, so none of this reads a store.
 
-import { normalizeCategory, normalizeTags } from './tags.js';
+import { normalizeTags } from './tags.js';
+import { normalizeMeals } from './meals.js';
 import { defaultAisle, defaultIngredientGroup, defaultStepTitle, groupCategory } from './sheetText.js';
 import { formatQty } from './format.js';
 import { parseQty } from './ingredientText.js';
@@ -19,7 +20,7 @@ import { text } from './text.js';
  * @typedef {{ key: number, title: string, category: string, rows: IngredientRow[] }} IngredientGroup
  * @typedef {{ key: number, title: string, text: string, minutes: string }} StepRow
  * @typedef {{
- *   title: string, description: string, image: string, category: string,
+ *   title: string, description: string, image: string, meals: string[],
  *   serves: number, prepMinutes: number | '', cookMinutes: number | '', tags: string[],
  *   groups: IngredientGroup[], steps: StepRow[], notes: string, headsUp: string, headsUpDays: number,
  * }} Form   `headsUp` / `headsUpDays` edit the recipe's first heads-up; others (from the sheet) are kept as they are
@@ -44,7 +45,7 @@ export function blankForm() {
     title: '',
     description: '',
     image: '',
-    category: '',
+    meals: [],
     serves: 4,
     prepMinutes: '',
     cookMinutes: '',
@@ -68,7 +69,7 @@ export function formFromRecipe(r, ingredientOf) {
     title: r.title,
     description: r.description,
     image: r.image ?? '',
-    category: r.badge.label,
+    meals: [...r.meals],
     serves: r.serves,
     prepMinutes: r.prepMinutes,
     cookMinutes: r.cookMinutes,
@@ -138,7 +139,7 @@ export function loadDraft(drafts, editing, opened, baseline) {
   }));
   draft.steps = draft.steps.map((step) => ({ ...step, key: nextKey() }));
   draft.tags = normalizeTags(draft.tags);
-  draft.category = normalizeCategory(draft.category);
+  draft.meals = normalizeMeals(draft.meals);
   return draft;
 }
 
@@ -238,13 +239,13 @@ export function savedHeadsUps(previous = [], form) {
  * @param {Form} form
  * @param {{
  *   editing?: import('./data/recipes.js').Recipe,
- *   tags: string[], category: string,
+ *   tags: string[],
  *   ingredientId: (row: IngredientRow) => string,
  *   newId: (title: string) => string,
  *   today: string,
- * }} how `tags` / `category` are the form's with what is typed in their boxes; `editing` is a plain copy
+ * }} how `tags` is the form's with what is typed in its box; `editing` is a plain copy
  */
-export function formToRecipe(form, { editing, tags, category, ingredientId, newId, today }) {
+export function formToRecipe(form, { editing, tags, ingredientId, newId, today }) {
   // Group categories ("Protein", "Aromatics"…) travel with their section, so a renamed group keeps its own.
   const originalCategory = new Map(editing?.ingredients.map((g) => [g.title.toLowerCase(), g.category]) ?? []);
   const groups = savedGroups(form.groups, {
@@ -278,7 +279,7 @@ export function formToRecipe(form, { editing, tags, category, ingredientId, newI
     prepMinutes: form.prepMinutes || 0,
     cookMinutes: form.cookMinutes || 0,
     serves: form.serves,
-    badge: { label: category },
+    meals: normalizeMeals(form.meals),
     tags,
     notes: form.notes.trim(),
     ingredients: groups,

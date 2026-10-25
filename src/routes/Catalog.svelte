@@ -13,10 +13,10 @@
   import { onDestroy, tick, untrack } from 'svelte';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
-  import { recipes, recipeById, tagIcon, normalizeTags, normalizeCategory } from '../lib/recipes.svelte.js';
+  import { recipes, recipeById, tagIcon, normalizeTags, normalizeMeals } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
   import { ingredientOf } from '../lib/ingredients.svelte.js';
-  import { SORT_IDS, activeFilterCount, categoryFilters, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
+  import { SORT_IDS, activeFilterCount, mealOptions, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
   import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate, left } from '../lib/router.svelte.js';
@@ -51,8 +51,8 @@
   }
   /** @type {string[]} */
   let active = $state([]);
-  /** One category at a time ('' = any) — a recipe has at most one. */
-  let category = $state('');
+  /** Chosen meals: a recipe needs any one of them ([] = any). */
+  let meals = $state([]);
   let pages = $state(1);
 
   // Back from a recipe to the same search: pick up where the catalog was left (first run of the effect below only).
@@ -60,11 +60,12 @@
   let key = '';
 
   // Keep search / filter in sync with the URL (header search, "Browse Recipes" links).
-  // `filter` is a comma-separated list of tags (tags never contain commas).
+  // `filter` is a comma-separated list of tags (tags never contain commas), `meals` one of meals; an older
+  // link carries `category`.
   $effect(() => {
     query = route.query.q ?? '';
     active = normalizeTags(route.query.filter?.split(','));
-    category = normalizeCategory(route.query.category);
+    meals = normalizeMeals(route.query.meals ?? route.query.category);
     const back = restore?.key === placeKey(route.query, untrack(() => targetDay)) ? restore : null;
     restore = null;
     pages = back?.pages ?? 1;
@@ -98,8 +99,8 @@
   // One filter per tag in use (suggested tags first); an active tag stays listed even with no recipes.
   const filters = $derived(tagFilters(recipes, active));
 
-  // Categories in use (suggested ones first); the active one stays listed even with no recipes.
-  const categories = $derived(categoryFilters(recipes, category));
+  // Meals in use; an active one stays listed even with no recipes.
+  const mealChoices = $derived(mealOptions(recipes, meals));
 
   // A day passed in the URL moves the week stepper to that day's week.
   $effect(() => {
@@ -117,13 +118,13 @@
   const results = $derived(
     searchRecipes(
       recipes,
-      { query, sort, tags: active, category, favoritesOnly, favoriteIds: favorites.ids, hideRecent, hidePlanned, plannedIds },
+      { query, sort, tags: active, meals, favoritesOnly, favoriteIds: favorites.ids, hideRecent, hidePlanned, plannedIds },
       { ingredientOf, madeRecently, timesMade, lastMadeOn },
     ),
   );
   const visible = $derived(results.slice(0, pages * PAGE_SIZE));
   const remaining = $derived(results.length - visible.length);
-  const activeCount = $derived(activeFilterCount({ tags: active, category, favoritesOnly, hideRecent, hidePlanned }));
+  const activeCount = $derived(activeFilterCount({ tags: active, meals, favoritesOnly, hideRecent, hidePlanned }));
 
   function toggleFilter(id) {
     active = active.includes(id) ? active.filter((x) => x !== id) : [...active, id];
@@ -132,14 +133,14 @@
 
   function clearFilters() {
     active = [];
-    category = '';
+    meals = [];
     favoritesOnly = false;
     setHidePlanned(false);
     setHideRecent(false);
   }
 
   function chooseDay(event) {
-    navigate('/catalog', { q: query, filter: active.join(','), category, day: event.currentTarget.value });
+    navigate('/catalog', { q: query, filter: active.join(','), meals: meals.join(','), day: event.currentTarget.value });
   }
 
   /** @param {import('../lib/data/recipes.js').Recipe} recipe */
@@ -290,22 +291,15 @@
         {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
       {/each}
     </div>
-    {#if categories.length > 1 || category}
-      <label class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2">
+    {#if mealChoices.length > 1 || meals.length}
+      <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2" role="group" aria-label={text.catalog.filters.categoryHeading}>
         <span class="text-label-caps uppercase text-on-surface-variant">{text.catalog.filters.categoryHeading}</span>
-        <select
-          bind:value={category}
-          onchange={() => (pages = 1)}
-          class="min-w-0 max-w-full truncate rounded-lg border py-2 pl-3 pr-8 text-body-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-container {category
-            ? 'border-primary bg-primary-container/30 text-on-surface'
-            : 'border-outline-variant bg-surface-container-lowest text-on-surface'}"
-        >
-          <option value="">{text.catalog.filters.anyCategory}</option>
-          {#each categories as c (c)}
-            <option value={c}>{c}</option>
+        <div class="flex flex-wrap gap-2">
+          {#each mealChoices as meal (meal)}
+            {@render pill(meals.includes(meal), meal, undefined, () => ((meals = meals.includes(meal) ? meals.filter((m) => m !== meal) : normalizeMeals([...meals, meal])), (pages = 1)))}
           {/each}
-        </select>
-      </label>
+        </div>
+      </div>
     {/if}
   </div>
 

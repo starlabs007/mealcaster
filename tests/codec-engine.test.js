@@ -141,16 +141,20 @@ describe('codec', () => {
     }
   });
 
-  it('reads an optional, tidied category from the sheet', () => {
-    const read = (category) =>
-      codec.recipeFromRow({ ...codec.recipeToRow(recipe('r1', 'Pasta'), new Set()), Category: category }, undefined, {
+  it('reads comma-separated meals from the sheet, moving other words into the tags', () => {
+    const read = (category, tags) =>
+      codec.recipeFromRow({ ...codec.recipeToRow(recipe('r1', 'Pasta'), new Set()), Category: category, ...(tags && { Tags: tags }) }, undefined, {
         columns: SCHEMA.recipes,
         favorites: new Set(),
         today: '2026-09-30',
-      }).recipe.badge.label;
-    assert.equal(read(''), '', 'blank means no category');
-    assert.equal(read('  sunday brunch '), 'Sunday Brunch');
-    assert.equal(read('Dessert'), 'Dessert');
+      }).recipe;
+    assert.deepEqual(read('').meals, [], 'blank means none');
+    assert.deepEqual(read('Dessert').meals, ['Dessert'], 'an older single value is a one-item list');
+    assert.deepEqual(read('dinner,  Lunch').meals, ['Lunch', 'Dinner'], 'kept in the list order');
+    const brunch = read('  sunday brunch , Lunch', 'Soup');
+    assert.deepEqual(brunch.meals, ['Lunch']);
+    assert.deepEqual(brunch.tags, ['Soup', 'Sunday Brunch'], 'a value outside the list becomes a tag');
+    assert.equal(codec.recipeToRow({ ...brunch, meals: ['Lunch', 'Dinner'] }, new Set()).Category, 'Lunch, Dinner');
   });
 
   it('round-trips plan entries, dining out and notes', () => {
