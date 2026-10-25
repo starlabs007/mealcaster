@@ -20,7 +20,7 @@ const samples = [sample('pho'), sample('bun')];
 const isSample = (id) => samples.some((s) => s.id === id);
 
 describe('reading a saved recipe box', () => {
-  it('drops mock-only fields, fixes the category and tags, and keeps only lines with an ingredient', () => {
+  it('drops mock-only fields, turns the category into meals, fixes the tags, and keeps only lines with an ingredient', () => {
     const old = {
       ...recipe('old', 'Old', { tags: ['Quick (<30m)', 'Quick (<30m)'], badge: { label: '  dinner ' } }),
       highlight: 'x',
@@ -32,6 +32,8 @@ describe('reading a saved recipe box', () => {
     const r = migrate(old);
     for (const gone of ['highlight', 'rating', 'cookCount', 'hero']) assert.equal(gone in r, false);
     assert.deepEqual(r.tags, ['Quick (<30m)']);
+    assert.deepEqual(r.meals, ['Dinner']);
+    assert.equal('badge' in r, false);
     assert.deepEqual(r.ingredients[0].items, [{ id: 'pasta', qty: 1 }]);
     assert.deepEqual(r.headsUps, []);
   });

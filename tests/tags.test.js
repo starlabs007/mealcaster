@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeTag, normalizeTags, tagChoices, assignTones, retag, isSuggestedTag, TONES, TAG_MAX, categoryChoices, normalizeCategory, normalizeAisle } from '../src/lib/tags.js';
+import { normalizeTag, normalizeTags, tagChoices, assignTones, retag, isSuggestedTag, TONES, TAG_MAX, normalizeAisle } from '../src/lib/tags.js';
 
 test('normalizeTag capitalizes each word and tidies spacing', () => {
   assert.equal(normalizeTag('  date   night '), 'Date Night');
@@ -56,12 +56,6 @@ test('retag renames a tag, merges into one already there, or removes it', () => 
 test('isSuggestedTag is true only for the built-in tags', () => {
   assert.equal(isSuggestedTag('Vegetarian'), true);
   assert.equal(isSuggestedTag('Date Night'), false);
-});
-
-test('categoryChoices lists Dinner, Lunch, Dessert first, then others alphabetically, skipping blanks', () => {
-  assert.deepEqual(categoryChoices(['Snack', '', 'Dinner', 'Breakfast', 'Snack']), ['Dinner', 'Lunch', 'Dessert', 'Breakfast', 'Snack']);
-  assert.equal(normalizeCategory('  sunday   brunch '), 'Sunday Brunch');
-  assert.equal(normalizeCategory(undefined), '');
 });
 
 test('normalizeAisle maps retired aisles and keeps the rest', () => {

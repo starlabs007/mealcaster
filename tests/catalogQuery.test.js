@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {
   SORT_IDS,
   activeFilterCount,
-  categoryFilters,
+  mealOptions,
   placeKey,
   plannedIdsOf,
   searchRecipes,
@@ -23,7 +23,7 @@ const history = (made = {}) => ({
 });
 const ingredients = { rice: { name: 'rice', plural: 'rices' }, scallion: { name: 'scallion', plural: 'scallions' } };
 const base = {
-  query: '', sort: 'name', tags: [], category: '', favoritesOnly: false, favoriteIds: [], hideRecent: false, hidePlanned: false, plannedIds: new Set(),
+  query: '', sort: 'name', tags: [], meals: [], favoritesOnly: false, favoriteIds: [], hideRecent: false, hidePlanned: false, plannedIds: new Set(),
 };
 const lookup = (made = {}, recent = []) => ({ ingredientOf: (id) => ingredients[id], madeRecently: (id) => recent.includes(id), ...history(made) });
 const ids = (list) => list.map((x) => x.id);
@@ -58,9 +58,9 @@ describe('sort orders', () => {
 
 describe('filters', () => {
   const list = [
-    r('pho', 'Phở', { tags: ['Soup', 'Vegetarian'], badge: { label: 'Dinner' } }),
-    r('cake', 'Cake', { tags: ['Sweet'], badge: { label: 'Dessert' } }),
-    r('stew', 'Stew', { tags: ['Soup'], badge: { label: 'Dinner' } }),
+    r('pho', 'Phở', { tags: ['Soup', 'Vegetarian'], meals: ['Dinner'] }),
+    r('cake', 'Cake', { tags: ['Sweet'], meals: ['Dessert'] }),
+    r('stew', 'Stew', { tags: ['Soup'], meals: ['Dinner'] }),
   ];
   const run = (filters, l = lookup()) => ids(searchRecipes(list, { ...base, ...filters }, l));
 
@@ -68,11 +68,13 @@ describe('filters', () => {
     assert.deepEqual(run({}), ['cake', 'pho', 'stew']);
   });
 
-  it('needs every chosen tag, and the one category', () => {
+  it('needs every chosen tag, and any one of the chosen meals', () => {
     assert.deepEqual(run({ tags: ['Soup'] }), ['pho', 'stew']);
     assert.deepEqual(run({ tags: ['Soup', 'Vegetarian'] }), ['pho']);
-    assert.deepEqual(run({ category: 'Dessert' }), ['cake']);
-    assert.deepEqual(run({ tags: ['Soup'], category: 'Dessert' }), []);
+    assert.deepEqual(run({ meals: ['Dessert'] }), ['cake']);
+    assert.deepEqual(run({ meals: ['Dessert', 'Dinner'] }), ['cake', 'pho', 'stew']);
+    assert.deepEqual(run({ tags: ['Soup'], meals: ['Dessert'] }), []);
+    assert.deepEqual(run({ tags: ['Soup', 'Vegetarian'], meals: ['Dessert', 'Dinner'] }), ['pho']);
   });
 
   it('keeps favourites only', () => {
@@ -99,8 +101,8 @@ describe('filters', () => {
 
 describe('search', () => {
   const list = [
-    r('bun', 'Bún chả', { description: 'Grilled pork', tags: ['Vietnamese'], badge: { label: 'Dinner' }, ingredients: [{ title: 'Main', category: '', items: [{ id: 'scallion' }] }] }),
-    r('fried', 'Fried rice', { description: 'Leftovers', badge: { label: 'Lunch' }, ingredients: [{ title: 'Main', category: '', items: [{ id: 'rice' }] }] }),
+    r('bun', 'Bún chả', { description: 'Grilled pork', tags: ['Vietnamese'], meals: ['Dinner'], ingredients: [{ title: 'Main', category: '', items: [{ id: 'scallion' }] }] }),
+    r('fried', 'Fried rice', { description: 'Leftovers', meals: ['Lunch'], ingredients: [{ title: 'Main', category: '', items: [{ id: 'rice' }] }] }),
   ];
   const find = (query) => ids(searchRecipes(list, { ...base, query }, lookup()));
 
@@ -114,7 +116,7 @@ describe('search', () => {
     assert.deepEqual(find('pork rice'), []);
   });
 
-  it('searches the description, the category, the tags and the ingredient names and plurals', () => {
+  it('searches the description, the meals, the tags and the ingredient names and plurals', () => {
     assert.deepEqual(find('leftovers'), ['fried']);
     assert.deepEqual(find('lunch'), ['fried']);
     assert.deepEqual(find('vietnamese'), ['bun']);
@@ -130,7 +132,7 @@ describe('search', () => {
 });
 
 describe('filter lists', () => {
-  const list = [r('a', 'A', { tags: ['Soup'], badge: { label: 'Dinner' } }), r('b', 'B', { tags: ['Sweet'], badge: { label: 'Dessert' } })];
+  const list = [r('a', 'A', { tags: ['Soup'], meals: ['Dinner'] }), r('b', 'B', { tags: ['Sweet'], meals: ['Dessert'] })];
 
   it('lists the tags in use, and keeps an active one that no recipe has', () => {
     assert.deepEqual(tagFilters(list, []).sort(), ['Soup', 'Sweet']);
@@ -138,16 +140,16 @@ describe('filter lists', () => {
     assert.equal(tagFilters(list, []).includes('Spicy'), false);
   });
 
-  it('lists the categories in use, and keeps the active one that no recipe has', () => {
-    assert.deepEqual(categoryFilters(list, '').sort(), ['Dessert', 'Dinner']);
-    assert.ok(categoryFilters(list, 'Brunch').includes('Brunch'));
-    assert.equal(categoryFilters(list, '').includes('Lunch'), false);
+  it('lists the meals in use in list order, and keeps an active one that no recipe has', () => {
+    assert.deepEqual(mealOptions(list, []), ['Dinner', 'Dessert']);
+    assert.deepEqual(mealOptions(list, ['Lunch']), ['Lunch', 'Dinner', 'Dessert']);
+    assert.equal(mealOptions(list, []).includes('Lunch'), false);
   });
 
   it('counts the filters that are on', () => {
-    const off = { tags: [], category: '', favoritesOnly: false, hideRecent: false, hidePlanned: false };
+    const off = { tags: [], meals: [], favoritesOnly: false, hideRecent: false, hidePlanned: false };
     assert.equal(activeFilterCount(off), 0);
-    assert.equal(activeFilterCount({ tags: ['a', 'b'], category: 'Dinner', favoritesOnly: true, hideRecent: true, hidePlanned: true }), 6);
+    assert.equal(activeFilterCount({ tags: ['a', 'b'], meals: ['Dinner', 'Lunch'], favoritesOnly: true, hideRecent: true, hidePlanned: true }), 7);
     assert.equal(activeFilterCount({ ...off, hidePlanned: true }), 1);
   });
 });
@@ -182,9 +184,10 @@ describe('the day being planned', () => {
   });
 
   it('keys the search by its text, filters and day', () => {
-    assert.equal(placeKey({ q: 'a' }, '2026-10-23'), placeKey({ q: 'a', filter: '', category: '' }, '2026-10-23'));
+    assert.equal(placeKey({ q: 'a' }, '2026-10-23'), placeKey({ q: 'a', filter: '', meals: '' }, '2026-10-23'));
     assert.notEqual(placeKey({ q: 'a' }, '2026-10-23'), placeKey({ q: 'a' }, '2026-10-24'));
     assert.notEqual(placeKey({ q: 'a' }, undefined), placeKey({ q: 'b' }, undefined));
-    assert.notEqual(placeKey({ filter: 'x' }, undefined), placeKey({ category: 'x' }, undefined));
+    assert.notEqual(placeKey({ filter: 'x' }, undefined), placeKey({ meals: 'x' }, undefined));
+    assert.equal(placeKey({ category: 'Dinner' }, undefined), placeKey({ meals: 'Dinner' }, undefined), 'an older link keeps its place');
   });
 });

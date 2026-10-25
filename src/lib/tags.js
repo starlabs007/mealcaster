@@ -102,22 +102,3 @@ export function assignTones(tones, tags) {
  * @param {string[]} tags @param {string} from @param {string} to
  */
 export const retag = (tags, from, to) => normalizeTags(tags.flatMap((t) => (t === from ? (to ? [to] : []) : [t])));
-
-// ---- Categories ------------------------------------------------------------------
-// One optional category per recipe (stored as `badge.label`, '' = none). Free text like
-// tags, tidied the same way, so it round-trips through the sheet's Category column.
-
-/** Offered in the editor and listed first among the catalog's category filters. */
-export const suggestedCategories = ['Dinner', 'Lunch', 'Dessert'];
-
-/** @param {unknown} text */
-export const normalizeCategory = (text) => normalizeTag(String(text ?? ''));
-
-/**
- * Categories to offer: the suggestions first, then every other category in use, alphabetically.
- * @param {Iterable<string>} inUse
- */
-export function categoryChoices(inUse) {
-  const extra = [...new Set(inUse)].filter((c) => c && !suggestedCategories.includes(c));
-  return [...suggestedCategories, ...extra.sort((a, b) => a.localeCompare(b))];
-}

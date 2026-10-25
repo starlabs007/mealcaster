@@ -101,7 +101,7 @@ export const recipe = (id, title, extra = {}) => ({
   cookMinutes: 20,
   minutes: 30,
   serves: 2,
-  badge: { label: 'Dinner' },
+  meals: ['Dinner'],
   addedAt: '2026-01-01',
   tags: ['quick'],
   notes: '',

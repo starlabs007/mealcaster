@@ -1,5 +1,5 @@
 // Minimal hash router — hash URLs work on GitHub Pages without server rewrites.
-// Routes: #/ (weekly menu), #/catalog?day=&q=&filter=&category=, #/recipe/:id?day=, #/recipe/new, #/recipe/:id/edit, #/grocery, #/profile,
+// Routes: #/ (weekly menu), #/catalog?day=&q=&filter=&meals=, #/recipe/:id?day=, #/recipe/new, #/recipe/:id/edit, #/grocery, #/profile,
 // #/sheets-sync → #/sheets-sync/account | /sheet | /sync (connection steps, a modal over the previous page),
 // #/sheets-sync/columns (column conflicts modal)
 

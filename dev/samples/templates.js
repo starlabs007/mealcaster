@@ -3,7 +3,7 @@
 // combinations read as real dishes (no tacos on a phở broth).
 //
 // Template fields:
-//   category: Dinner, Lunch, Breakfast or Dessert (the recipe's badge)
+//   category: Dinner, Lunch, Breakfast or Dessert (the recipe's meal; generate.js adds a second to some)
 //   style: which cut of the main it takes (cuisines.js MAINS[…].cuts); omitted = no main
 //   mealdb: TheMealDB category for its photo when it isn't the main's (Dessert, Breakfast, Pasta, Side, Starter)
 //   titles / short / desc: patterns; {Main} {main} {Veg} {veg} {Flavor} {flavor} {herbs} {aromatics} {starch} {cuisine}

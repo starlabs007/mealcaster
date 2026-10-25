@@ -129,7 +129,7 @@ describe('generateSamples', () => {
   });
 
   it('mixes categories and cuisines, Chinese and Vietnamese included', () => {
-    const count = (label) => s.recipes.filter((r) => r.badge.label === label).length;
+    const count = (label) => s.recipes.filter((r) => r.meals.includes(label)).length;
     assert.ok(count('Dinner') > 30);
     for (const label of ['Lunch', 'Breakfast', 'Dessert']) assert.ok(count(label) >= 3, label);
     const tags = new Set(s.recipes.flatMap((r) => r.tags));
@@ -206,7 +206,7 @@ describe('generateSamples', () => {
   it('includes every edge case', () => {
     assert.ok(EDGE_CASES.length <= 60);
     const r = s.recipes;
-    assert.ok(r.some((x) => x.steps.length === 0 && x.badge.label === ''), 'no method, no category');
+    assert.ok(r.some((x) => x.steps.length === 0 && x.meals.length === 0), 'no method, no category');
     assert.ok(r.some((x) => x.title.length > 120), 'very long title');
     assert.ok(r.some((x) => x.title.includes('Phở')), 'phở');
     for (const name of ['crème fraîche', 'jalapeño', 'đậu phụ']) {
@@ -257,7 +257,7 @@ describe('generateSamples', () => {
         favorites,
         today: '2026-10-20',
       });
-      for (const key of ['title', 'description', 'image', 'prepMinutes', 'cookMinutes', 'minutes', 'serves', 'badge', 'tags', 'notes', 'ingredients', 'steps']) {
+      for (const key of ['title', 'description', 'image', 'prepMinutes', 'cookMinutes', 'minutes', 'serves', 'meals', 'tags', 'notes', 'ingredients', 'steps']) {
         assert.deepEqual(recipe[key], r[key], `${r.id}: ${key}`);
       }
       assert.equal(favorite, favorites.has(r.id));
