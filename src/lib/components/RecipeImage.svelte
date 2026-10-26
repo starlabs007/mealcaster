@@ -1,9 +1,9 @@
 <script>
   import Icon from './Icon.svelte';
 
-  /** @type {{ src?: string, alt: string, class?: string }} */
-  let { src, alt, class: className = '' } = $props();
-  let failed = $state(false);
+  // `failed` is bindable so a card can swap in its own fallback when the photo doesn't load.
+  /** @type {{ src?: string, alt: string, class?: string, failed?: boolean }} */
+  let { src, alt, class: className = '', failed = $bindable(false) } = $props();
 </script>
 
 {#if src && !failed}

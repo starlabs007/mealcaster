@@ -2,7 +2,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { dayActionGroups, hasMeal, isMovable } from '../src/lib/dayCard.js';
+import { dayActionGroups, dayMarkers, hasMeal, isMovable } from '../src/lib/dayCard.js';
 import { groupedActions } from '../src/lib/menuGroups.js';
 
 const STATUSES = ['open', 'planned', 'completed', 'missed', 'diningOut'];
@@ -52,5 +52,15 @@ describe('Minimal view', () => {
 
   it('is off by default, so the grid card never hides its menu', () => {
     assert.deepEqual(menu({ status: 'planned', isToday: false }), ['swap', 'surprise', '|switch', '|nightOff', 'clear']);
+  });
+});
+
+describe('markers beside the date', () => {
+  it('keeps Tonight on today after Mark Done and adds Completed', () => {
+    assert.deepEqual(dayMarkers({ status: 'planned', isToday: true, isPast: false }), { tonight: true, completed: false });
+    assert.deepEqual(dayMarkers({ status: 'completed', isToday: true, isPast: false }), { tonight: true, completed: true });
+  });
+  it('gives a finished past evening no chip', () => {
+    assert.deepEqual(dayMarkers({ status: 'completed', isToday: false, isPast: true }), { tonight: false, completed: false });
   });
 });
