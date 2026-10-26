@@ -12,6 +12,7 @@
   const title = $derived(weekLabel(offset, text.planner.header, planner.weekStart));
   // A week entirely in the past is read-only history.
   const editable = $derived(addDays(planner.weekStart, 6) >= planner.today);
+  const allSet = $derived(editable && !summary.open);
 
   // Reset Week lives in the ⋯ menu at every width, with what it keeps as small print: one click wipes up to 7 evenings, so
   // it isn't set 8 px from Copy. The menu says how many evenings it clears and is left out when there are none. On phones
@@ -50,14 +51,19 @@
 
   <div class="flex flex-col gap-1.5 lg:items-end">
     <div class="flex flex-nowrap items-center gap-2 md:flex-wrap lg:justify-end">
-      <div class="inline-flex min-w-0 items-center gap-2 rounded-full bg-surface-container-high px-3 py-1.5 text-xs">
-        <span class="h-2 w-2 rounded-full bg-primary"></span>
-        <span class="whitespace-nowrap font-semibold text-on-surface">
-          <span class="sm:hidden">{text.planner.header.countsShort(summary.planned, summary.off)}</span><span class="hidden sm:inline">{text.planner.header.counts(summary.planned, summary.off)}</span>
+      <!-- Every evening settled: the pill turns cobalt-tint with a check and says so, instead of a count in small print. -->
+      <div class="inline-flex min-w-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs {allSet ? 'bg-primary-fixed' : 'bg-surface-container-high'}">
+        {#if allSet}
+          <Icon name="check_circle" class="text-[14px] text-primary" />
+        {:else}
+          <span class="h-2 w-2 rounded-full bg-primary"></span>
+        {/if}
+        <span class="whitespace-nowrap font-semibold {allSet ? 'text-primary' : 'text-on-surface'}">
+          <span class="sm:hidden">{text.planner.header.countsShort(summary.planned, summary.off)}</span><span class="hidden sm:inline">{text.planner.header.counts(summary.planned, summary.off)}</span>{#if allSet}<span class="font-bold">{` · ${text.planner.header.allSet}`}</span>{/if}
         </span>
-        {#if editable}
+        {#if editable && summary.open}
           <span class="whitespace-nowrap text-[11px] text-on-surface-variant">
-            (<span class="sm:hidden">{summary.open ? text.planner.header.toPlanShort(summary.open) : text.planner.header.allSet}</span><span class="hidden sm:inline">{summary.open ? text.planner.header.toPlan(summary.open) : text.planner.header.allSet}</span>)
+            (<span class="sm:hidden">{text.planner.header.toPlanShort(summary.open)}</span><span class="hidden sm:inline">{text.planner.header.toPlan(summary.open)}</span>)
           </span>
         {/if}
       </div>

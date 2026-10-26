@@ -6,11 +6,13 @@
   // (tonight across three tracks, below `xl`) gets a flatter photo so Mark Done stays in the first screen.
   import Icon from './Icon.svelte';
   import RecipeImage from './RecipeImage.svelte';
+  import TonightPanel from './TonightPanel.svelte';
+  import TonightRail from './TonightRail.svelte';
   import ActionMenu from './ActionMenu.svelte';
   import { surpriseMe, markDiningOut, clearDay, clearEvening, setDone, spotlight, switchTargets } from '../planner.svelte.js';
   import { focusDay } from '../focusDay.js';
   import { groupedActions } from '../menuGroups.js';
-  import { dayActionGroups, hasMeal as dayHasMeal, isMovable } from '../dayCard.js';
+  import { dayActionGroups, dayMarkers, hasMeal as dayHasMeal, isMovable } from '../dayCard.js';
   import { text } from '../text.js';
   import { formatShort, formatWeekday, formatWeekdayShort } from '../dates.js';
   import { href } from '../router.svelte.js';
@@ -28,6 +30,20 @@
   const hasMeal = $derived(dayHasMeal(day.status));
   const movable = $derived(isMovable(day.status, switchTargets(day.iso).length));
   const handle = $derived(movable && !!onswitch && !!draghandle);
+  const markers = $derived(dayMarkers(day));
+
+  // Tonight's lead card shows a title panel where the photo would be when there is none (unset, or it failed to load).
+  let failedSrc = $state('');
+  const imageFailed = $derived(!!failedSrc && failedSrc === day.recipe?.image);
+  const panel = $derived(lead && !!day.recipe && (!day.recipe.image || imageFailed));
+
+  // The rail's fill and the check's pop play when Mark Done is pressed, not when a done card loads.
+  let celebrate = $state(false);
+  function toggleDone() {
+    const done = day.status !== 'completed';
+    celebrate = done;
+    setDone(day.iso, done);
+  }
 
   /** @type {import('./ActionMenu.svelte').MenuAction[]} */
   const actions = $derived.by(() => {
@@ -76,7 +92,7 @@
     : ''} {dropClass[drop]}"
 >
   {#if day.isToday}
-    <div class="absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
+    <TonightRail done={day.status === 'completed'} {celebrate} />
   {/if}
 
   <!-- On touch the ⋯ and ⠿ keep 44 px targets but reach into the card's padding and the gap, so the weekday keeps its
@@ -91,12 +107,15 @@
         <span class="font-display text-on-surface {lead ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
         {#if compact}
           <!-- Narrow tile: the tint and the line below say how the evening went. -->
-        {:else if day.status === 'completed' && !day.isPast}
-          <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
-            <Icon name="check_circle" class="text-[13px]" /> {text.planner.card.completed}
-          </span>
-        {:else if day.isToday}
-          <span class="rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">{text.planner.card.tonight}</span>
+        {:else if markers.tonight || markers.completed}
+          {#if markers.tonight}
+            <span class="rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">{text.planner.card.tonight}</span>
+          {/if}
+          {#if markers.completed}
+            <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed/50 px-2 py-0.5 text-label-sm text-primary">
+              <Icon name="check_circle" class="text-[13px] {celebrate ? 'done-pop' : ''}" /> {text.planner.card.completed}
+            </span>
+          {/if}
         {:else if day.status === 'diningOut'}
           <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
         {:else if day.status === 'missed'}
@@ -137,17 +156,24 @@
         <span class="line-clamp-3 hyphens-auto break-words font-display text-sm leading-snug text-on-surface" title={recipe.title}>{recipe.title}</span>
       </a>
     {:else}
+    {#if panel}
+      <TonightPanel {recipe} class="aspect-[4/3] w-full flex-shrink-0 {wide ? 'md:aspect-[16/10] xl:aspect-[4/3]' : ''}" titleClass={wide ? 'text-headline-md lg:text-headline-lg xl:text-headline-md' : 'text-headline-md'} />
+    {:else}
     <RecipeImage
+      bind:failed={() => imageFailed, (failed) => (failedSrc = failed ? (day.recipe?.image ?? '') : '')}
       src={recipe.image}
       alt={recipe.title}
       class="aspect-[4/3] w-full flex-shrink-0 rounded-lg {day.status === 'completed' ? 'saturate-50' : ''} {lead ? 'shadow-sm' : 'xl:aspect-[4/5]'} {wide ? 'md:aspect-[16/10] xl:aspect-[4/3]' : ''}"
     />
+    {/if}
     <div class="flex min-w-0 flex-1 flex-col gap-2">
+      {#if !panel}
       <h3 class="font-display text-on-surface {lead ? 'line-clamp-3 text-headline-md' : 'line-clamp-2 text-base leading-snug'}" title={recipe.title}>{recipe.title}</h3>
       {#if lead}
         <p class="text-xs text-on-surface-variant">{text.planner.card.meta(recipe.prepMinutes + recipe.cookMinutes, recipe.serves)}</p>
       {/if}
-      {#if recipe.tags.length}
+      {/if}
+      {#if recipe.tags.length && !panel}
         <!-- Up to five lines of tags (18 px each + 6 px gaps) in a narrow column; the rest wrap out of sight (no half tags). -->
         <div class="flex flex-wrap gap-1.5 {lead ? '' : 'max-h-[114px] overflow-hidden'}">
           {#each recipe.tags as tag (tag)}
@@ -177,7 +203,7 @@
             class="focus-ring inline-flex min-h-11 items-center gap-1 rounded-md px-3 py-1.5 text-xs font-semibold transition-all fine:min-h-0 {day.status === 'completed'
               ? 'bg-primary-fixed/50 text-primary hover:bg-primary-fixed'
               : 'bg-primary-container text-on-primary shadow-sm hover:bg-primary'}"
-            onclick={() => setDone(day.iso, day.status !== 'completed')}
+            onclick={toggleDone}
           >
             <Icon name="check_circle" class="text-[14px]" /> {day.status === 'completed' ? text.common.done : text.common.markDone}
           </button>

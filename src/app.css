@@ -47,6 +47,28 @@
       text-label-md font-semibold text-on-secondary shadow-lift;
   }
 
+  /* Mark Done on tonight's card: the rail fills tomato and the check pops once. Reduced motion keeps the end state only. */
+  .rail-fill {
+    transform-origin: top;
+    animation: rail-fill 600ms ease-out;
+  }
+  .done-pop {
+    animation: done-pop 400ms ease-out 200ms backwards;
+  }
+  @keyframes rail-fill {
+    from { transform: scaleY(0); }
+  }
+  @keyframes done-pop {
+    0% { transform: scale(0.4); }
+    60% { transform: scale(1.3); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .rail-fill,
+    .done-pop {
+      animation: none;
+    }
+  }
+
   /* The system keyboard focus ring (sage, 5.9:1 on white). */
   .focus-ring {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-container focus-visible:ring-offset-1;
