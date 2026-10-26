@@ -96,6 +96,9 @@ export default {
       },
     },
   },
+  // `hover:` (and `group-hover:`, `peer-hover:`) apply only where the primary input can hover: iOS Safari and some Android
+  // browsers keep `:hover` on an element after a tap until the next tap elsewhere. Same rule as `fine:` (mouse, trackpad).
+  future: { hoverOnlyWhenSupported: true },
   plugins: [
     // The display face (Bricolage Grotesque) carries the names of things at 700 unless a weight or a headline size says
     // otherwise: set in the base layer, so font-semibold and the text-headline-* sizes still win.
