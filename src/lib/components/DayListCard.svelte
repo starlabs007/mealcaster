@@ -236,7 +236,8 @@
             </div>
           </div>
         {/if}
-        <DayHeadsUps {day} named />
+        <!-- Other evenings: lined up with the title column, right of the 64 px thumbnail and its 12 px gap. -->
+        <DayHeadsUps {day} named class="items-start {day.isToday ? '' : 'ml-[4.75rem]'}" />
         <div class="flex items-center gap-2">
           <a
             href={recipeHref}
@@ -292,7 +293,7 @@
         {/if}
       </div>
 
-      {#if !minimal}<DayHeadsUps {day} named />{/if}
+      {#if !minimal}<DayHeadsUps {day} named class="items-start" />{/if}
       {#if minimal}
         <!-- Minimal view: just Choose on open evenings. -->
       {:else if day.status === 'open'}
@@ -314,7 +315,7 @@
     {/if}
     {#if minimal}
       <!-- Under the row, lined up with the thumbnails (from `sm`: after the 9 rem label column and its gap). -->
-      <DayHeadsUps {day} named minimal class="sm:basis-full sm:pl-[9.75rem]" />
+      <DayHeadsUps {day} named minimal class="sm:basis-full sm:items-start sm:pl-[9.75rem]" />
     {/if}
   </article>
 {/if}
