@@ -5,7 +5,8 @@
   import SwitchDaysDialog from '../lib/components/SwitchDaysDialog.svelte';
   import { onDestroy, onMount, tick, untrack } from 'svelte';
   import { MediaQuery } from 'svelte/reactivity';
-  import { currentWeek, forgetLastChange, planner, spotlight, statusOf, switchDays, switchTargets, undoLastChange } from '../lib/planner.svelte.js';
+  import Icon from '../lib/components/Icon.svelte';
+  import { acceptSuggestions, currentWeek, discardSuggestions, forgetLastChange, planner, spotlight, statusOf, switchDays, switchTargets, undoLastChange, weekSuggestions } from '../lib/planner.svelte.js';
   import { createPointerDrag } from '../lib/pointerDrag.js';
   import { columnTemplate, dropState, gridPlan } from '../lib/plannerLayout.js';
   import { text } from '../lib/text.js';
@@ -15,6 +16,41 @@
   import { focusDay } from '../lib/focusDay.js';
 
   const days = $derived(currentWeek());
+  // Auto-fill's suggestions for this week wait in a bar under it: Accept All plans them, Discard drops them.
+  const suggestedDays = $derived(weekSuggestions());
+
+  // Toasts sit just above the bar while it shows (like the recipe editor's save bar). A short week doesn't scroll, so
+  // the bar can sit higher than its sticky spot: measure from its top edge, not its height.
+  /** @param {HTMLElement} bar */
+  function clearBar(bar) {
+    const root = document.documentElement.style;
+    // The toast region already keeps 1 rem from the bottom.
+    const fit = () => root.setProperty('--toast-clearance', `${Math.max(0, window.innerHeight - bar.getBoundingClientRect().top + 8 - 16)}px`);
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(bar);
+    observer.observe(document.body);
+    window.addEventListener('scroll', fit, { passive: true });
+    window.addEventListener('resize', fit);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('scroll', fit);
+      window.removeEventListener('resize', fit);
+      root.removeProperty('--toast-clearance');
+    };
+  }
+
+  // The bar goes with the suggestions: focus moves to the first evening rather than dropping to the page.
+  function accept() {
+    const first = suggestedDays[0];
+    acceptSuggestions();
+    focusDay(first);
+  }
+  function discard() {
+    const first = suggestedDays[0];
+    discardSuggestions();
+    focusDay(first);
+  }
   let switching = $state('');
 
   // From `md` up the week is a grid in calendar order, then from `xl` one row of seven with tonight's column wider.
@@ -138,6 +174,27 @@
       {/each}
     {/if}
   </section>
+
+  {#if suggestedDays.length}
+    <div
+      {@attach clearBar}
+      role="region"
+      aria-label={text.planner.suggestions.barAria}
+      class="sticky bottom-[max(0.5rem,env(safe-area-inset-bottom))] z-10 flex items-center gap-3 rounded-2xl bg-surface-container-lowest/95 px-3 py-2 shadow-lift backdrop-blur sm:bottom-4 sm:px-6 sm:py-3"
+    >
+      <Icon name="auto_fix_high" class="hidden text-[20px] text-primary sm:block" />
+      <p class="min-w-0 flex-1 leading-tight">
+        <span class="block text-body-md font-semibold text-on-surface">{text.planner.suggestions.count(suggestedDays.length)}</span>
+        <span class="block text-xs text-on-surface-variant">{text.planner.suggestions.notYet}</span>
+      </p>
+      <button type="button" class="btn-outline min-h-11 flex-shrink-0 px-4 text-body-md text-on-surface fine:min-h-0 fine:py-2" onclick={discard}>
+        {text.planner.suggestions.discard}
+      </button>
+      <button type="button" class="btn-primary min-h-11 flex-shrink-0 px-4 text-body-md fine:min-h-0 fine:py-2" onclick={accept}>
+        <Icon name="check" class="text-[18px]" /> {text.planner.suggestions.accept}
+      </button>
+    </div>
+  {/if}
 </div>
 
 {#if switching}

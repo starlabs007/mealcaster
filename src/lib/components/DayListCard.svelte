@@ -16,6 +16,8 @@
   import { href } from '../router.svelte.js';
   import { tagClass } from '../tagColors.svelte.js';
   import DayHeadsUps from './DayHeadsUps.svelte';
+  import DaySuggestion from './DaySuggestion.svelte';
+  import SuggestedChip from './SuggestedChip.svelte';
   import { MediaQuery } from 'svelte/reactivity';
 
   /**
@@ -34,6 +36,8 @@
   const movable = $derived(isMovable(day.status, switchTargets(day.iso).length));
   const handle = $derived(movable && !!onswitch && !!draghandle);
   const markers = $derived(dayMarkers(day));
+  // Auto-fill's suggestion, not planned yet: no ⋯ menu, its own actions (DaySuggestion).
+  const suggestion = $derived(!!day.suggestion);
 
   // Tonight shows a title panel where the photo would be when there is none (unset, or it failed to load).
   let failedSrc = $state('');
@@ -58,7 +62,7 @@
       clear: { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } },
     };
     return groupedActions(
-      dayActionGroups({ status: day.status, isToday: day.isToday, minimal, movable, canSwitch: !!onswitch }).map((group) => group.map((id) => available[id])),
+      suggestion ? [] : dayActionGroups({ status: day.status, isToday: day.isToday, minimal, movable, canSwitch: !!onswitch }).map((group) => group.map((id) => available[id])),
     );
   });
 
@@ -76,7 +80,9 @@
   const tall = 'min-h-11 md:fine:min-h-0';
 
   const cardClass = $derived(
-    day.isToday
+    suggestion
+      ? `border-2 border-dashed border-primary/50 bg-surface-container-lowest shadow-sm ${day.isToday ? 'relative overflow-hidden' : ''}`
+      : day.isToday
       ? 'relative overflow-hidden border-2 border-primary/30 bg-surface-container-lowest shadow-sm'
       : day.status === 'planned'
         ? 'border border-surface-container-high bg-surface-container-lowest shadow-sm'
@@ -120,7 +126,7 @@
     data-drag-source
     tabindex="-1"
     data-drop-id={day.iso}
-    aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday)}
+    aria-label={text.planner.card.aria(weekdayName, formatShort(day.iso), day.isToday) + (day.suggestion ? text.planner.card.suggestedAria(day.suggestion.title) : '')}
     class="focus-ring relative flex flex-col rounded-xl transition-all {minimal ? 'gap-2 p-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-3' : 'gap-3 p-4'} {cardClass} {spotlightClass} {dropClass[drop]}"
   >
     {#if day.isToday}
@@ -139,10 +145,16 @@
             <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.tonight}
           </span>
         {/if}
+        {#if minimal && day.suggestion}
+          <span class="mt-0.5 block text-label-sm uppercase text-primary">{text.planner.card.suggested}</span>
+        {/if}
         {#if !minimal}
           <div class="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
             <span class="font-display text-on-surface {day.isToday ? 'text-lg' : 'text-base'}">{formatShort(day.iso)}</span>
-            {#if markers.tonight || markers.completed}
+            {#if markers.tonight || markers.completed || suggestion}
+              {#if suggestion}
+                <span class="order-last"><SuggestedChip /></span>
+              {/if}
               {#if markers.tonight}
                 <span class="inline-flex items-center gap-1.5 rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary shadow-sm">
                   <span class="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true"></span>{text.planner.card.tonight}
@@ -268,6 +280,8 @@
           {/if}
         </div>
       {/if}
+    {:else if day.suggestion}
+      <DaySuggestion {day} size={minimal ? 'minimal' : day.isToday ? 'tonight' : 'row'} />
     {:else}
       <div class="flex flex-1 items-center gap-3">
         <div class="flex flex-shrink-0 items-center justify-center bg-surface-container-highest text-outline {minimal ? 'h-8 w-8 rounded-md' : 'h-12 w-12 rounded-lg'}">
