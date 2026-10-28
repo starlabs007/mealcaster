@@ -333,8 +333,8 @@ export const text = {
     dayDiningOut: 'night off',
     addCustom: 'Add a Recipe',
     searchAria: 'Search recipes and ingredients',
-    searchPlaceholder: 'Search recipes, ingredients (e.g. salmon, pasta, lemon, tofu)...',
-    sortBy: 'Sort by:',
+    searchPlaceholder: 'Recipe or ingredient',
+    sortBy: 'Sort by',
     sorts: {
       mostCooked: 'Most Cooked in Household',
       quickest: 'Quickest Prep Time',
@@ -342,16 +342,20 @@ export const text = {
       nameDesc: 'Name (Z–A)',
       recent: 'Recently Added to Box',
     },
-    /** Rendered with {@html}: only numbers are inserted. */
-    displaying: (/** @type {number} */ shown, /** @type {number} */ total) =>
-      `Displaying <strong class="text-on-surface">${shown}</strong> of ${total} meals`,
+    count: (/** @type {number} */ shown, /** @type {number} */ total) =>
+      shown === total ? `${total} ${plural(total, 'recipe')}` : `${shown} of ${total} ${plural(total, 'recipe')}`,
     filters: {
-      heading: 'Filter by Culinary Attributes',
-      clearAll: (/** @type {number} */ n) => `Clear all filters (${n} active)`,
+      button: 'Filters',
+      buttonAria: (/** @type {number} */ n) => (n ? `Filters, ${n} on` : 'Filters'),
+      clearAll: 'Clear all',
+      done: (/** @type {number} */ n) => `Matches ${n} ${plural(n, 'recipe')}`,
+      removeAria: (/** @type {string} */ label) => `Remove filter: ${label}`,
+      show: 'Show',
       favorites: 'Favorites',
       unplanned: 'Unplanned this week',
       notMadeRecently: 'Not made recently',
-      categoryHeading: 'Filter by Category',
+      meals: 'Meal',
+      tags: 'Tags',
     },
     empty: {
       title: 'Your recipe catalog is empty',

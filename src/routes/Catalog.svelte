@@ -16,7 +16,7 @@
   import { recipes, recipeById, tagIcon, normalizeTags, normalizeMeals } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
   import { ingredientOf } from '../lib/ingredients.svelte.js';
-  import { DEFAULT_SORT, SORT_IDS, activeFilterCount, mealOptions, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
+  import { DEFAULT_SORT, SORT_IDS, activeFilterCount, activeFilters, mealOptions, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
   import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate, left } from '../lib/router.svelte.js';
@@ -131,6 +131,42 @@
     pages = 1;
   }
 
+  /** @param {string} meal */
+  function toggleMeal(meal) {
+    meals = meals.includes(meal) ? meals.filter((m) => m !== meal) : normalizeMeals([...meals, meal]);
+    pages = 1;
+  }
+
+  let filtersOpen = $state(false);
+  /** @type {HTMLButtonElement | undefined} */
+  let filtersButton = $state();
+
+  function closeFilters() {
+    filtersOpen = false;
+    filtersButton?.focus();
+  }
+
+  // The filters that are on, as chips under the search.
+  const on = $derived(activeFilters({ tags: active, meals, favoritesOnly, hideRecent, hidePlanned }));
+
+  /** @param {{ kind: string, value?: string }} f */
+  function chipLabel(f) {
+    if (f.kind === 'favorites') return text.catalog.filters.favorites;
+    if (f.kind === 'unplanned') return text.catalog.filters.unplanned;
+    if (f.kind === 'recent') return text.catalog.filters.notMadeRecently;
+    return f.value ?? '';
+  }
+
+  /** @param {{ kind: string, value?: string }} f */
+  function removeFilter(f) {
+    if (f.kind === 'favorites') favoritesOnly = false;
+    else if (f.kind === 'unplanned') setHidePlanned(false);
+    else if (f.kind === 'recent') setHideRecent(false);
+    else if (f.kind === 'meal') meals = meals.filter((m) => m !== f.value);
+    else active = active.filter((t) => t !== f.value);
+    pages = 1;
+  }
+
   function clearFilters() {
     active = [];
     meals = [];
@@ -227,82 +263,150 @@
     </div>
   </div>
 
-  <!-- Search & sort toolbar -->
-  <div class="flex flex-col gap-4 rounded-2xl bg-surface-container-lowest p-4 shadow-card lg:flex-row lg:items-center">
-    <div class="relative flex-1">
-      <Icon name="search" class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[20px] text-outline" />
-      <input
-        type="search"
-        bind:value={query}
-        oninput={() => (pages = 1)}
-        aria-label={text.catalog.searchAria}
-        placeholder={text.catalog.searchPlaceholder}
-        class="w-full rounded-xl border border-outline bg-surface-container-low py-3 pl-11 pr-4 text-body-md text-on-surface placeholder:text-on-surface-variant focus:bg-surface-container-lowest focus:outline-none focus:ring-2 focus:ring-primary-container"
-      />
-    </div>
-    <div class="flex flex-wrap items-center gap-4">
-      <label class="flex items-center gap-2 text-label-sm text-on-surface-variant">
-        {text.catalog.sortBy}
-        <select
-          bind:value={sort}
-          class="rounded-lg border border-outline-variant bg-surface-container-lowest py-2 pl-3 pr-8 text-body-sm font-medium text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container"
-        >
-          {#each sorts as s (s.id)}
-            <option value={s.id}>{s.label}</option>
-          {/each}
-        </select>
-      </label>
-      <span class="flex items-center gap-2 text-body-sm text-on-surface-variant" aria-live="polite">
-        <span class="h-1.5 w-1.5 rounded-full bg-on-surface-variant"></span>
-        {@html text.catalog.displaying(visible.length, results.length)}
-      </span>
-    </div>
-  </div>
-
-  <!-- Filter pills -->
+  <!-- Search, sort and filters on one row. The filters open in a panel; the ones that are on show as chips under it. -->
   <div class="flex flex-col gap-3">
-    <div class="flex items-center justify-between">
-      <span class="text-label-caps uppercase text-on-surface-variant">{text.catalog.filters.heading}</span>
-      {#if activeCount}
-        <button type="button" class="text-label-sm text-secondary underline underline-offset-4 hover:text-on-surface" onclick={clearFilters}>
-          {text.catalog.filters.clearAll(activeCount)}
-        </button>
-      {/if}
-    </div>
-    {#snippet pill(on, label, icon, onclick)}
+    <div class="flex items-center gap-2">
+      <div class="relative min-w-0 flex-1">
+        <Icon name="search" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-on-surface-variant" />
+        <input
+          type="search"
+          bind:value={query}
+          oninput={() => (pages = 1)}
+          aria-label={text.catalog.searchAria}
+          placeholder={text.catalog.searchPlaceholder}
+          class="min-h-11 w-full rounded-lg border border-outline-variant bg-surface-container-lowest py-2 pl-10 pr-3 text-[16px] text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:ring-2 focus:ring-primary-container fine:min-h-0 fine:text-body-md"
+        />
+      </div>
+      <label class="hidden shrink-0 sm:block">
+        <span class="sr-only">{text.catalog.sortBy}</span>
+        {@render sortSelect('')}
+      </label>
       <button
         type="button"
-        aria-pressed={on}
-        {onclick}
-        class="inline-flex items-center gap-1.5 rounded-full border px-4 py-1.5 text-label-md transition-all {on
-          ? 'border-primary bg-primary text-on-primary shadow-sm'
-          : 'border-surface-container-high bg-surface-container-lowest text-on-surface hover:border-outline-variant hover:bg-surface-container-low'}"
+        bind:this={filtersButton}
+        aria-expanded={filtersOpen}
+        aria-controls="catalog-filters"
+        aria-label={text.catalog.filters.buttonAria(activeCount)}
+        onclick={() => (filtersOpen = !filtersOpen)}
+        class="focus-ring inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-label-md transition-colors fine:min-h-0 fine:py-2 {filtersOpen
+          ? 'border-primary bg-primary-fixed text-primary'
+          : 'border-outline-variant bg-surface-container-lowest text-on-surface hover:bg-surface-container-high'}"
       >
-        {#if icon}<Icon name={icon} class="text-[16px] {icon === 'favorite' && !on ? 'text-secondary' : ''} {icon === 'favorite' && on ? 'icon-filled' : ''}" />{/if}
-        <span class="max-w-[16rem] truncate">{label}</span>
-        {#if on && icon !== 'favorite'}<Icon name="close" class="ml-0.5 text-[14px]" />{/if}
+        <Icon name="tune" class="text-[18px]" />
+        {text.catalog.filters.button}
+        {#if activeCount}
+          <span class="min-w-5 rounded-full bg-primary px-1.5 text-center text-label-sm leading-5 text-on-primary">{activeCount}</span>
+        {/if}
+      </button>
+    </div>
+
+    {#snippet sortSelect(/** @type {string} */ extra)}
+      <select
+        bind:value={sort}
+        onchange={() => (pages = 1)}
+        class="min-h-11 rounded-lg border border-outline-variant bg-surface-container-lowest py-2 pl-3 pr-8 text-[16px] text-on-surface focus:outline-none focus:ring-2 focus:ring-primary-container fine:min-h-0 fine:text-body-sm {extra}"
+      >
+        {#each sorts as s (s.id)}
+          <option value={s.id}>{s.label}</option>
+        {/each}
+      </select>
+    {/snippet}
+
+    <!-- A full 44 px target on touch around a smaller pill. -->
+    {#snippet pill(on, label, icon, onclick)}
+      <button type="button" aria-pressed={on} {onclick} class="group/pill inline-flex min-h-11 items-center rounded-full focus-ring fine:min-h-0">
+        <span
+          class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-label-md transition-colors {on
+            ? 'border-primary bg-primary text-on-primary'
+            : 'border-surface-container-high bg-surface-container-lowest text-on-surface group-hover/pill:border-outline-variant group-hover/pill:bg-surface-container-low'}"
+        >
+          {#if icon}<Icon name={icon} class="text-[16px] {icon === 'favorite' && !on ? 'text-secondary' : ''} {icon === 'favorite' && on ? 'icon-filled' : ''}" />{/if}
+          <span class="max-w-[16rem] truncate">{label}</span>
+        </span>
       </button>
     {/snippet}
-    <div class="flex flex-wrap gap-2">
-      {@render pill(favoritesOnly, text.catalog.filters.favorites, 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
-      {@render pill(hidePlanned, text.catalog.filters.unplanned, 'event_busy', () => (setHidePlanned(!hidePlanned), (pages = 1)))}
-      {@render pill(hideRecent, text.catalog.filters.notMadeRecently, 'history', () => toggleHideRecent(!hideRecent))}
-      {#each filters as tag (tag)}
-        {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
-      {/each}
-    </div>
-    {#if mealChoices.length > 1 || meals.length}
-      <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-2" role="group" aria-label={text.catalog.filters.categoryHeading}>
-        <span class="text-label-caps uppercase text-on-surface-variant">{text.catalog.filters.categoryHeading}</span>
-        <div class="flex flex-wrap gap-2">
-          {#each mealChoices as meal (meal)}
-            {@render pill(meals.includes(meal), meal, undefined, () => ((meals = meals.includes(meal) ? meals.filter((m) => m !== meal) : normalizeMeals([...meals, meal])), (pages = 1)))}
-          {/each}
+
+    {#snippet group(/** @type {string} */ label, /** @type {import('svelte').Snippet} */ pills)}
+      <div role="group" aria-label={label} class="flex flex-col gap-1 fine:gap-2">
+        <span class="text-label-sm text-on-surface-variant">{label}</span>
+        <div class="flex flex-wrap gap-x-2 fine:gap-y-2">{@render pills()}</div>
+      </div>
+    {/snippet}
+
+    {#if filtersOpen}
+      <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+      <div
+        id="catalog-filters"
+        role="region"
+        aria-label={text.catalog.filters.button}
+        onkeydown={(e) => e.key === 'Escape' && closeFilters()}
+        class="flex flex-col gap-4 rounded-xl border border-outline-variant bg-surface-container-lowest p-4"
+      >
+        <label class="flex flex-col gap-1 sm:hidden">
+          <span class="text-label-sm text-on-surface-variant">{text.catalog.sortBy}</span>
+          {@render sortSelect('w-full')}
+        </label>
+        {#snippet switches()}
+          {@render pill(favoritesOnly, text.catalog.filters.favorites, 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
+          {@render pill(hidePlanned, text.catalog.filters.unplanned, 'event_busy', () => (setHidePlanned(!hidePlanned), (pages = 1)))}
+          {@render pill(hideRecent, text.catalog.filters.notMadeRecently, 'history', () => toggleHideRecent(!hideRecent))}
+        {/snippet}
+        {@render group(text.catalog.filters.show, switches)}
+        {#if mealChoices.length > 1 || meals.length}
+          {#snippet mealPills()}
+            {#each mealChoices as meal (meal)}
+              {@render pill(meals.includes(meal), meal, undefined, () => toggleMeal(meal))}
+            {/each}
+          {/snippet}
+          {@render group(text.catalog.filters.meals, mealPills)}
+        {/if}
+        {#if filters.length}
+          {#snippet tagPills()}
+            {#each filters as tag (tag)}
+              {@render pill(active.includes(tag), tag, tagIcon(tag), () => toggleFilter(tag))}
+            {/each}
+          {/snippet}
+          {@render group(text.catalog.filters.tags, tagPills)}
+        {/if}
+        <div class="flex items-center justify-between gap-3 border-t border-surface-container-high pt-3">
+          {#if activeCount}
+            <button type="button" class="min-h-11 text-label-md text-secondary underline underline-offset-4 hover:text-on-surface fine:min-h-0" onclick={clearFilters}>
+              {text.catalog.filters.clearAll}
+            </button>
+          {:else}
+            <span></span>
+          {/if}
+          <button type="button" class="btn-primary min-h-11 px-4 text-label-md fine:min-h-0 fine:py-2" onclick={closeFilters}>
+            {text.catalog.filters.done(results.length)}
+          </button>
         </div>
       </div>
     {/if}
-  </div>
 
+    <div class="-mx-gutter flex items-center gap-x-2 overflow-x-auto px-gutter [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
+      <span class="shrink-0 py-1 text-body-sm text-on-surface-variant" aria-live="polite">{text.catalog.count(results.length, recipes.length)}</span>
+      {#if !filtersOpen}
+        {#each on as f (f.kind + (f.value ?? ''))}
+          <button
+            type="button"
+            aria-label={text.catalog.filters.removeAria(chipLabel(f))}
+            onclick={() => removeFilter(f)}
+            class="group/chip inline-flex min-h-11 shrink-0 items-center rounded-full focus-ring fine:min-h-0"
+          >
+            <span class="inline-flex items-center gap-1 rounded-full bg-primary-fixed py-1 pl-3 pr-2 text-label-md text-primary group-hover/chip:bg-primary-fixed/70">
+              <span class="max-w-[12rem] truncate">{chipLabel(f)}</span>
+              <Icon name="close" class="text-[14px]" />
+            </span>
+          </button>
+        {/each}
+        {#if on.length > 1}
+          <button type="button" class="min-h-11 shrink-0 px-1 text-label-md text-secondary underline underline-offset-4 hover:text-on-surface fine:min-h-0" onclick={clearFilters}>
+            {text.catalog.filters.clearAll}
+          </button>
+        {/if}
+      {/if}
+    </div>
+  </div>
 
   {#if visible.length}
     <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">

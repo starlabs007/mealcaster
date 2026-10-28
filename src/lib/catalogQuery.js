@@ -1,5 +1,5 @@
 // What the Recipe Catalog shows, on plain data (routes/Catalog.svelte holds the state, paging and scroll): the sort
-// orders, the filter and search pipeline, the filter lists, how many filters are on, and which day is being planned.
+// orders, the filter and search pipeline, the filter lists, which filters are on, and which day is being planned.
 
 import { foldKey } from './ingredients.js';
 import { tagChoices } from './tags.js';
@@ -94,6 +94,20 @@ export const mealOptions = (recipes, active) => mealFilters(recipes.map((r) => r
 /** How many filters are on (each tag, each meal, favourites, hide recent, hide planned). @param {{ tags: string[], meals: string[], favoritesOnly: boolean, hideRecent: boolean, hidePlanned: boolean }} f */
 export const activeFilterCount = ({ tags, meals, favoritesOnly, hideRecent, hidePlanned }) =>
   tags.length + meals.length + (favoritesOnly ? 1 : 0) + (hideRecent ? 1 : 0) + (hidePlanned ? 1 : 0);
+
+/**
+ * The filters that are on, in the order the panel lists them (the switches, then meals, then tags), for the chips
+ * under the search. `value` is the meal or tag.
+ * @param {{ tags: string[], meals: string[], favoritesOnly: boolean, hideRecent: boolean, hidePlanned: boolean }} f
+ * @returns {{ kind: 'favorites' | 'unplanned' | 'recent' | 'meal' | 'tag', value?: string }[]}
+ */
+export const activeFilters = ({ tags, meals, favoritesOnly, hideRecent, hidePlanned }) => [
+  ...(favoritesOnly ? [{ kind: /** @type {const} */ ('favorites') }] : []),
+  ...(hidePlanned ? [{ kind: /** @type {const} */ ('unplanned') }] : []),
+  ...(hideRecent ? [{ kind: /** @type {const} */ ('recent') }] : []),
+  ...meals.map((value) => ({ kind: /** @type {const} */ ('meal'), value })),
+  ...tags.map((value) => ({ kind: /** @type {const} */ ('tag'), value })),
+];
 
 /**
  * The day being planned: the one in the URL while it can still be planned, else the first open day.
