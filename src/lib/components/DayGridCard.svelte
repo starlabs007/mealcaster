@@ -190,7 +190,7 @@
           {/each}
         </div>
       {/if}
-      <DayHeadsUps {day} named={lead} />
+      <DayHeadsUps {day} />
       <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
         <a
           href={recipeHref}
@@ -225,7 +225,7 @@
   {:else if compact}
     <p class="text-sm text-on-surface-variant">{day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.noPlan}</p>
   {:else}
-    <DayHeadsUps {day} named={lead} />
+    <DayHeadsUps {day} />
     <!-- Empty evenings (open, night off, not logged) sit centred in their card, like the photo placeholder. -->
     <div class="flex flex-1 flex-col items-center justify-center gap-3 pb-8 text-center">
       <!-- Stacked: side by side, the text wraps word by word in the narrow seven-column cells. -->

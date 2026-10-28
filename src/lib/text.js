@@ -88,9 +88,8 @@ export const text = {
       today: 'Today',
       /** A reminder on an earlier card: "For tomorrow", "For Monday". */
       forDay: (/** @type {number} */ days, /** @type {string} */ weekday) => (days === 1 ? 'For tomorrow' : `For ${weekday}`),
-      /** The same with the dinner, where there's room: "For tomorrow · Hummus". */
-      forDinner: (/** @type {number} */ days, /** @type {string} */ weekday, /** @type {string} */ title) =>
-        `${days === 1 ? 'For tomorrow' : `For ${weekday}`} · ${title}`,
+      /** Minimal view's one-line reminder adds the dinner: "For tomorrow · Hummus". */
+      forDinner: (/** @type {string} */ forDay, /** @type {string} */ title) => `${forDay} · ${title}`,
       calloutAria: 'Heads-up',
       /** Toast when a dinner lands on a day too soon for its heads-up. */
       tooSoon: (/** @type {string} */ title, /** @type {number} */ n, /** @type {string} */ what) =>

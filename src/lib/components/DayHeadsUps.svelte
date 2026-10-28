@@ -1,7 +1,7 @@
 <script>
   // A day card's heads-ups (headsUps.js): the "N days ahead" pill for its own dinner (that prep was due on an earlier
   // card), its own heads-ups due on the day, then reminders for the next dinners ("For tomorrow: soak the chickpeas").
-  // Nothing on past days. A reminder links to its recipe for that evening. Used by DayGridCard and DayListCard;
+  // Nothing on past days. A reminder names its dinner and links to its recipe for that evening. Used by DayGridCard and DayListCard;
   // `minimal` = one line per note (Minimal view).
   import Icon from './Icon.svelte';
   import { leadDays } from '../headsUps.js';
@@ -10,29 +10,23 @@
   import { href } from '../router.svelte.js';
 
   /**
-   * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], named?: boolean,
-   *   minimal?: boolean, class?: string }}
-   * `named`: reminder labels add the dinner's name ("For tomorrow · Hummus"), where the card is wide enough.
+   * @type {{ day: ReturnType<typeof import('../planner.svelte.js').currentWeek>[number], minimal?: boolean,
+   *   class?: string }}
    */
-  let { day, named = false, minimal = false, class: extra = '' } = $props();
+  let { day, minimal = false, class: extra = '' } = $props();
 
   const own = $derived(!day.isPast && day.status === 'planned' ? (day.recipe?.headsUps ?? []) : []);
   const lead = $derived(leadDays({ headsUps: own }));
-  const label = (r) =>
-    named
-      ? text.common.headsUps.forDinner(r.days, formatWeekday(r.dinner), r.recipe.shortTitle || r.recipe.title)
-      : text.common.headsUps.forDay(r.days, formatWeekday(r.dinner));
   const notes = $derived([
     ...own
       .filter((h) => h.daysBefore === 0)
-      .map((h) => ({ icon: 'alarm', label: day.isToday ? text.common.headsUps.today : text.common.headsUps.lead(0), text: h.text, link: '', hidden: '' })),
+      .map((h) => ({ icon: 'alarm', label: day.isToday ? text.common.headsUps.today : text.common.headsUps.lead(0), dinner: '', text: h.text, link: '' })),
     ...(day.isPast ? [] : day.reminders).map((r) => ({
       icon: 'event_upcoming',
-      label: label(r),
+      label: text.common.headsUps.forDay(r.days, formatWeekday(r.dinner)),
+      dinner: r.recipe.shortTitle || r.recipe.title,
       text: r.headsUp.text,
       link: href(`/recipe/${r.recipe.id}`, { day: r.dinner }),
-      // The narrow grid leaves the dinner's name out of the label; a screen reader still hears where the link goes.
-      hidden: named ? '' : r.recipe.shortTitle || r.recipe.title,
     })),
   ]);
 </script>
@@ -65,14 +59,18 @@
   </div>
 {/if}
 
-{#snippet content(/** @type {{ icon: string, label: string, text: string, link: string, hidden: string }} */ note)}
+{#snippet content(/** @type {{ icon: string, label: string, dinner: string, text: string, link: string }} */ note)}
   {#if minimal}
     <Icon name={note.icon} class="flex-shrink-0 text-[15px] text-secondary" />
-    <span class="min-w-0 truncate" title={note.text}><span class="font-semibold text-secondary">{note.label}:</span> {note.text}</span>
+    <span class="min-w-0 truncate" title={note.text}>
+      <span class="font-semibold text-secondary">{note.dinner ? text.common.headsUps.forDinner(note.label, note.dinner) : note.label}:</span> {note.text}
+    </span>
   {:else}
     <Icon name={note.icon} class="mt-px flex-shrink-0 text-[16px] text-secondary" />
     <span class="block min-w-0">
-      <span class="block truncate text-label-sm uppercase text-secondary" title={note.label}>{note.label}{#if note.hidden}<span class="sr-only"> · {note.hidden}</span>{/if}</span>
+      <span class="block truncate text-label-sm uppercase text-secondary" title={note.label}>{note.label}</span>
+      <!-- The dinner it's for, in its own case on its own line: fits the narrow grid, and an all-caps name reads badly. -->
+      {#if note.dinner}<span class="mt-0.5 block truncate text-body-sm font-semibold text-on-surface" title={note.dinner}>{note.dinner}</span>{/if}
       <span class="line-clamp-3 break-words text-body-sm text-on-surface" title={note.text}>{note.text}</span>
     </span>
   {/if}
