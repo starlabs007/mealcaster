@@ -7,6 +7,7 @@ import {
   DEFAULT_SORT,
   SORT_IDS,
   activeFilterCount,
+  activeFilters,
   mealOptions,
   placeKey,
   plannedIdsOf,
@@ -154,6 +155,20 @@ describe('filter lists', () => {
     assert.equal(activeFilterCount(off), 0);
     assert.equal(activeFilterCount({ tags: ['a', 'b'], meals: ['Dinner', 'Lunch'], favoritesOnly: true, hideRecent: true, hidePlanned: true }), 7);
     assert.equal(activeFilterCount({ ...off, hidePlanned: true }), 1);
+  });
+
+  it('lists the filters that are on: switches, then meals, then tags', () => {
+    assert.deepEqual(activeFilters({ tags: [], meals: [], favoritesOnly: false, hideRecent: false, hidePlanned: false }), []);
+    assert.deepEqual(activeFilters({ tags: ['Spicy', 'Thai'], meals: ['Lunch'], favoritesOnly: true, hideRecent: true, hidePlanned: true }), [
+      { kind: 'favorites' },
+      { kind: 'unplanned' },
+      { kind: 'recent' },
+      { kind: 'meal', value: 'Lunch' },
+      { kind: 'tag', value: 'Spicy' },
+      { kind: 'tag', value: 'Thai' },
+    ]);
+    const on = { tags: ['a'], meals: ['Dinner'], favoritesOnly: true, hideRecent: false, hidePlanned: true };
+    assert.equal(activeFilters(on).length, activeFilterCount(on));
   });
 });
 
