@@ -51,8 +51,8 @@
     {/if}
     {#each notes as note, i (i)}
       {@const box = minimal
-        ? 'flex min-w-0 items-center gap-1.5 rounded-md bg-tone-paprika px-2 py-1 text-body-sm text-on-surface'
-        : 'flex min-w-0 gap-1.5 rounded-lg bg-tone-paprika px-2.5 py-2'}
+        ? 'flex min-w-0 max-w-full items-center gap-1.5 rounded-md bg-tone-paprika px-2 py-1 text-body-sm text-on-surface'
+        : 'flex min-w-0 max-w-full gap-1.5 rounded-lg bg-tone-paprika px-2.5 py-2'}
       <!-- A reminder is a link (a darker tone on hover); the card's own heads-up isn't (View Recipe is right there). -->
       {#if note.link}
         <a href={note.link} class="focus-ring {box} transition-colors hover:bg-secondary-fixed/60 {minimal ? 'min-h-11 md:fine:min-h-0' : ''}">

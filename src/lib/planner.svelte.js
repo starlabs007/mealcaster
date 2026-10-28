@@ -8,6 +8,7 @@ import { addDays, daysBetween, formatLong, formatWeekday, formatWeekdayShort, fr
 import { switchedEntries } from './switchDays.js';
 import { remindersOn } from './headsUps.js';
 import { copiedEntries, dayStatus, dinnerPool, pickTier, resetDays, restoreDays, snapshotDays } from './planDays.js';
+import { acceptedEntries, liveSuggestions, rerollDay, suggestDays, suggestableDays, suggestionsIn } from './suggestions.js';
 import { createUndoSlot, firstTooSoon, madeIndex as buildMadeIndex, nextPlannedAfter as nextWithRecipe, rollToday, summarize, switchTargets as targetsFor, weekOffset as offsetBetween } from './plannerState.js';
 import { dismissToast, showToast, toast } from './toast.svelte.js';
 import { text } from './text.js';
@@ -54,10 +55,22 @@ export const planner = $state({
   entries: load(),
 });
 
+/**
+ * Auto-fill's suggestions (#91), ISO date → recipe id. In memory only, like Minimal view: never saved or synced, gone
+ * on reload. Kept across weeks and screens; acceptSuggestions puts them in the plan.
+ */
+export const suggested = $state({ /** @type {import('./suggestions.js').Suggestions} */ days: {} });
+
 $effect.root(() => {
   $effect(() => {
     // Quota / private-mode errors leave the plan working in memory (storage.svelte.js notes it).
     saveItem(STORAGE_KEY, JSON.stringify(planner.entries));
+  });
+  $effect(() => {
+    // Whatever fills a suggested evening (a drag, the catalog, Surprise Me, Night Off, a sync) wins over its suggestion;
+    // so does the date passing.
+    const live = liveSuggestions(suggested.days, planner.today, statusOf, (id) => recipeById.has(id));
+    if (live !== suggested.days) suggested.days = live;
   });
 });
 
@@ -122,13 +135,15 @@ const dinnerOn = (iso) => recipeById.get(planner.entries[iso]?.recipeId ?? '');
 export function currentWeek(weekStart = planner.weekStart) {
   return weekDates(weekStart).map((iso, weekday) => {
     const recipeId = planner.entries[iso]?.recipeId;
+    const status = statusOf(iso);
     return {
       iso,
       weekday,
       isToday: iso === planner.today,
       isPast: iso < planner.today,
-      status: statusOf(iso),
+      status,
       recipe: recipeId ? recipeById.get(recipeId) : undefined,
+      suggestion: status === 'open' ? recipeById.get(suggested.days[iso] ?? '') : undefined,
       reminders: remindersOn(iso, planner.today, dinnerOn),
     };
   });
@@ -138,6 +153,9 @@ export function currentWeek(weekStart = planner.weekStart) {
 export function weekSummary() {
   return summarize(weekDates(planner.weekStart).map(statusOf));
 }
+
+/** The viewed week's suggested evenings, in date order. */
+export const weekSuggestions = () => suggestionsIn(suggested.days, weekDates(planner.weekStart));
 
 /** First plannable open slot in the viewed week (today onward), if any. */
 export function firstOpenDay() {
@@ -353,16 +371,73 @@ export function clearEvening(iso) {
 /** Title of the meal planned on a day. @param {string} iso */
 const titleOn = (iso) => recipeById.get(planner.entries[iso]?.recipeId ?? '')?.title ?? '';
 
+/** Recipes planned in the viewed week, which suggestions keep clear of. */
+const plannedThisWeek = () => weekDates(planner.weekStart).map((d) => planner.entries[d]?.recipeId);
+
+/**
+ * Auto-fill suggests a dinner for every open evening from today on; nothing is planned until acceptSuggestions. Pressed
+ * again while the week has suggestions (Shuffle All), every evening gets something other than what it had.
+ */
 export function autoFillRemaining() {
-  const open = editableDays().filter((iso) => statusOf(iso) === 'open');
+  const open = suggestableDays(weekDates(planner.weekStart), planner.today, statusOf);
   if (!open.length) return showWeekToast(text.planner.toasts.allPlanned);
   if (!recipes.length) return showWeekToast(NO_RECIPES);
-  const undo = snapshotWeek();
-  for (const iso of open) planner.entries[iso] = { recipeId: pickRecipe(iso).id };
+  const shuffling = weekSuggestions().length > 0;
+  const picked = suggestDays(open, dinnerPool(recipes), planner.today, {
+    planned: plannedThisWeek(),
+    madeRecently,
+    previous: shuffling ? suggested.days : {},
+  });
+  suggested.days = { ...suggested.days, ...picked };
   spotlightDay(open);
-  const message =
-    open.length === 1 ? text.planner.toasts.filledOne(formatWeekday(open[0]), titleOn(open[0])) : text.planner.toasts.filled(open.map(formatWeekdayShort));
-  showWeekToast(withNote(message, tooSoonNote(...open)), { label: text.common.undo, run: undo }, BULK_UNDO_MS);
+  showWeekToast(shuffling ? text.planner.toasts.shuffled(open.length) : text.planner.toasts.suggested(open.map(formatWeekdayShort)));
+}
+
+/**
+ * Another suggestion for one evening. @param {string} iso
+ * @returns {import('./data/recipes.js').Recipe | undefined}
+ */
+export function rerollSuggestion(iso) {
+  const id = rerollDay(suggested.days, iso, dinnerPool(recipes), planner.today, { planned: plannedThisWeek(), madeRecently });
+  if (id) suggested.days[iso] = id;
+  return recipeById.get(id ?? '');
+}
+
+/** The evening goes back to open, with an Undo toast. @param {string} iso */
+export function removeSuggestion(iso) {
+  const id = suggested.days[iso];
+  if (!id) return;
+  delete suggested.days[iso];
+  showWeekToast(text.planner.toasts.removedSuggestion(formatWeekday(iso)), { label: text.common.undo, run: () => (suggested.days[iso] = id) });
+}
+
+/** The viewed week's suggestions as they are, for Undo. */
+function snapshotSuggestions() {
+  const saved = Object.fromEntries(weekSuggestions().map((iso) => [iso, suggested.days[iso]]));
+  return () => (suggested.days = { ...suggested.days, ...saved });
+}
+
+/** Plans every suggested evening of the viewed week in one change, with one Undo (which brings the suggestions back). */
+export function acceptSuggestions() {
+  const days = weekSuggestions();
+  if (!days.length) return;
+  const undoPlan = snapshotWeek();
+  const undoSuggestions = snapshotSuggestions();
+  Object.assign(planner.entries, acceptedEntries(suggested.days, days, planner.entries));
+  for (const iso of days) delete suggested.days[iso];
+  spotlightDay(days);
+  const message = days.length === 1 ? text.planner.toasts.filledOne(formatWeekday(days[0]), titleOn(days[0])) : text.planner.toasts.filled(days.map(formatWeekdayShort));
+  const undo = () => (undoPlan(), undoSuggestions());
+  showWeekToast(withNote(message, tooSoonNote(...days)), { label: text.common.undo, run: undo }, BULK_UNDO_MS);
+}
+
+/** Drops the viewed week's suggestions; the plan is unchanged. Undo brings them back. */
+export function discardSuggestions() {
+  const days = weekSuggestions();
+  if (!days.length) return;
+  const undo = snapshotSuggestions();
+  for (const iso of days) delete suggested.days[iso];
+  showWeekToast(text.planner.toasts.discarded(days.length), { label: text.common.undo, run: undo }, BULK_UNDO_MS);
 }
 
 /** Fills open upcoming evenings from last week; planned and finished ones stay as they are. */

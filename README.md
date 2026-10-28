@@ -68,6 +68,12 @@ npm run preview    # http://localhost:4173
 - **Auto-fill Remaining**, **Copy Previous Week** (**Copy This Week** on next week), **Clear n Upcoming Evenings** — each with an Undo toast.
   Past days are kept as history and never overwritten. Auto-fill also prefers meals not already on the week's
   plan and not made in the last 7 days, and meals whose heads-up is still in time (see Heads-ups).
+- **Auto-fill suggests, it doesn't plan.** Each open evening from today on gets a **Suggested** meal; **Another** picks a
+  different one (avoiding the week's meals and the other suggestions) and **Remove** leaves the evening open. A bar under
+  the week says how many there are: **Accept All** plans them in one change (one Undo), **Discard** drops them (Undo
+  brings them back). Pressing Auto-fill again (**Shuffle All**) picks them all again. Suggestions stay in memory only:
+  never saved or synced, kept across weeks and screens, gone on reload. Anything that fills a suggested evening
+  (the catalog, a drag, a sync) replaces its suggestion.
 - Each day card offers actions for its state:
   - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Night Off**.
   - **Planned meal** (including today): **View Recipe**, **Choose a Different Meal** (opens the catalog), **Surprise Me**,
@@ -99,9 +105,11 @@ npm run preview    # http://localhost:4173
 
 - Keyword search across titles, descriptions, categories, tags and ingredient names, ignoring accents ("bun cha"
   finds Bún chả; the header search lands here too).
+- Search, sort and a **Filters** button share one row; the filters open in a panel (Show, Meal, Tags; sort moves in there on
+  phones), and the ones that are on show as removable chips beside the recipe count.
 - Filters (combined with AND): Favorites, **Unplanned this week** (on by default, remembered on the device; hides meals the
   viewed week already has planned or completed, except the day being swapped), **Not made recently** (nothing made in the last 7 days; remembered on the device) and one per
-  recipe tag in use, plus any of the meals (Filter by Category: a recipe shows if it has **any** chosen meal; tags still need every one; `?meals=Lunch,Dinner`, an older `?category=` link still works). Opens A–Z. Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
+  recipe tag in use, plus any of the meals (Meal: a recipe shows if it has **any** chosen meal; tags still need every one; `?meals=Lunch,Dinner`, an older `?category=` link still works). Opens A–Z. Sorts: Most Cooked in Household (from the plan history), Quickest Prep Time,
   Name (A–Z or Z–A), Recently Added to Box.
 - Infinite scroll: 9 recipes at first, 9 more as you near the bottom; a new search, filter or sort starts over at 9.
 - Going back to the catalog from a recipe (back button, breadcrumb or header tab) with the same search returns to where

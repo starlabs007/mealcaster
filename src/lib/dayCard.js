@@ -5,6 +5,13 @@
 export const hasMeal = (status) => status === 'planned' || status === 'completed';
 
 /**
+ * Which markers sit beside the date: Tonight stays on today's card after Mark Done, with Completed added; a finished
+ * evening before today carries no chip (its tint says so).
+ * @param {{ status: string, isToday: boolean, isPast: boolean }} day
+ */
+export const dayMarkers = ({ status, isToday, isPast }) => ({ tonight: isToday, completed: status === 'completed' && !isPast });
+
+/**
  * Whether a planned meal can be moved: some other evening of the week can take it (Switch Days… or dragging).
  * @param {string} status @param {number} targetCount how many evenings could take it
  */

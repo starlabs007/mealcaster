@@ -1,7 +1,7 @@
 <script>
   import Icon from './Icon.svelte';
   import ActionMenu from './ActionMenu.svelte';
-  import { planner, weekSummary, weekOffset, autoFillRemaining, copyLastWeek, resetWeek, resetCount, RECENT_DAYS } from '../planner.svelte.js';
+  import { planner, weekSummary, weekOffset, weekSuggestions, autoFillRemaining, copyLastWeek, resetWeek, resetCount, RECENT_DAYS } from '../planner.svelte.js';
   import { text } from '../text.js';
   import { addDays, formatLong, weekLabel } from '../dates.js';
   import { MediaQuery } from 'svelte/reactivity';
@@ -12,6 +12,9 @@
   const title = $derived(weekLabel(offset, text.planner.header, planner.weekStart));
   // A week entirely in the past is read-only history.
   const editable = $derived(addDays(planner.weekStart, 6) >= planner.today);
+  const allSet = $derived(editable && !summary.open);
+  // Auto-fill's suggestions waiting in the bar under the week: pressing it again picks them all again.
+  const suggestedCount = $derived(weekSuggestions().length);
 
   // Reset Week lives in the ⋯ menu at every width, with what it keeps as small print: one click wipes up to 7 evenings, so
   // it isn't set 8 px from Copy. The menu says how many evenings it clears and is left out when there are none. On phones
@@ -50,14 +53,19 @@
 
   <div class="flex flex-col gap-1.5 lg:items-end">
     <div class="flex flex-nowrap items-center gap-2 md:flex-wrap lg:justify-end">
-      <div class="inline-flex min-w-0 items-center gap-2 rounded-full bg-surface-container-high px-3 py-1.5 text-xs">
-        <span class="h-2 w-2 rounded-full bg-primary"></span>
-        <span class="whitespace-nowrap font-semibold text-on-surface">
-          <span class="sm:hidden">{text.planner.header.countsShort(summary.planned, summary.off)}</span><span class="hidden sm:inline">{text.planner.header.counts(summary.planned, summary.off)}</span>
+      <!-- Every evening settled: the pill turns cobalt-tint with a check and says so, instead of a count in small print. -->
+      <div class="inline-flex min-w-0 items-center gap-2 rounded-full px-3 py-1.5 text-xs {allSet ? 'bg-primary-fixed' : 'bg-surface-container-high'}">
+        {#if allSet}
+          <Icon name="check_circle" class="text-[14px] text-primary" />
+        {:else}
+          <span class="h-2 w-2 rounded-full bg-primary"></span>
+        {/if}
+        <span class="whitespace-nowrap font-semibold {allSet ? 'text-primary' : 'text-on-surface'}">
+          <span class="sm:hidden">{text.planner.header.countsShort(summary.planned, summary.off)}</span><span class="hidden sm:inline">{text.planner.header.counts(summary.planned, summary.off)}</span>{#if allSet}<span class="font-bold">{` · ${text.planner.header.allSet}`}</span>{/if}
         </span>
-        {#if editable}
+        {#if editable && summary.open}
           <span class="whitespace-nowrap text-[11px] text-on-surface-variant">
-            (<span class="sm:hidden">{summary.open ? text.planner.header.toPlanShort(summary.open) : text.planner.header.allSet}</span><span class="hidden sm:inline">{summary.open ? text.planner.header.toPlan(summary.open) : text.planner.header.allSet}</span>)
+            (<span class="sm:hidden">{text.planner.header.toPlanShort(summary.open)}</span><span class="hidden sm:inline">{text.planner.header.toPlan(summary.open)}</span>{#if suggestedCount}<span class="hidden sm:inline">{` · ${text.planner.header.suggested(suggestedCount)}`}</span>{/if})
           </span>
         {/if}
       </div>
@@ -67,14 +75,21 @@
         <button
           bind:this={autoFillButton}
           type="button"
-          class="ml-auto min-h-11 flex-shrink-0 md:ml-0 md:fine:min-h-0 {summary.open
+          class="ml-auto min-h-11 flex-shrink-0 md:ml-0 md:fine:min-h-0 {suggestedCount
+            ? 'btn-outline text-on-surface'
+            : summary.open
             ? 'btn-primary'
             : 'btn-outline cursor-not-allowed border-dashed bg-transparent text-outline hover:bg-transparent hover:text-outline'}"
           aria-disabled={!summary.open}
           onclick={autoFillRemaining}
         >
-          <Icon name="auto_fix_high" class="text-[16px]" />
-          <span class="sm:hidden">{text.planner.header.autoFillShort}</span><span class="hidden sm:inline">{text.planner.header.autoFill}</span>
+          {#if suggestedCount}
+            <Icon name="shuffle" class="text-[16px]" />
+            <span class="sm:hidden">{text.planner.header.shuffleShort}</span><span class="hidden sm:inline">{text.planner.header.shuffleAll}</span>
+          {:else}
+            <Icon name="auto_fix_high" class="text-[16px]" />
+            <span class="sm:hidden">{text.planner.header.autoFillShort}</span><span class="hidden sm:inline">{text.planner.header.autoFill}</span>
+          {/if}
         </button>
         {#if wide.current}
           <button type="button" class="btn-outline min-h-11 fine:min-h-0" onclick={copyLastWeek}>
