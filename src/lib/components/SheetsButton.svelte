@@ -23,7 +23,7 @@
     ok: 'bg-primary-fixed text-primary shadow-sm',
     busy: 'bg-tertiary-fixed text-tertiary shadow-sm',
     warn: 'bg-tertiary-fixed text-tertiary shadow-sm',
-    bad: 'bg-secondary-fixed text-secondary shadow-sm',
+    bad: 'bg-error/10 text-error shadow-sm',
     off: '',
   };
   const groupClass = $derived(
