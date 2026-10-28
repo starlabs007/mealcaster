@@ -47,7 +47,7 @@
       text-label-md font-semibold text-on-secondary shadow-lift;
   }
 
-  /* Mark Done on tonight's card: the rail fills tomato and the check pops once. Reduced motion keeps the end state only. */
+  /* Mark Done on tonight's card: the rail fills persimmon and the check pops once. Reduced motion keeps the end state only. */
   .rail-fill {
     transform-origin: top;
     animation: rail-fill 600ms ease-out;

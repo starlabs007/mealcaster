@@ -98,7 +98,7 @@
   {/if}
 
   {#if syncState.error}
-    <p class="text-body-sm text-secondary">{syncState.error}</p>
+    <p class="flex items-start gap-1 text-body-sm text-error"><Icon name="error" class="mt-px shrink-0 text-[16px]" /><span>{syncState.error}</span></p>
   {/if}
 
   <div class="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">

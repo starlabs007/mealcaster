@@ -27,19 +27,19 @@
   --c-on-primary: 255 255 255;
   --c-primary-container: 47 85 228;
   --c-primary-fixed: 219 227 255;
-  --c-secondary: 196 47 24;
+  --c-secondary: 194 65 12;
   --c-on-secondary: 255 255 255;
-  --c-secondary-hover: 169 40 18;
-  --c-secondary-container: 255 138 117;
-  --c-secondary-fixed: 255 227 220;
-  --c-error: 179 38 30;
+  --c-secondary-hover: 163 54 10;
+  --c-secondary-container: 255 165 119;
+  --c-secondary-fixed: 255 241 232;
+  --c-error: 143 29 20;
   --c-tertiary: 122 82 0;
   --c-tertiary-fixed: 255 232 163;
   --c-tone-saffron: 255 241 199;
   --c-on-tone-saffron: 122 82 0;
   --c-tone-sage: 223 243 230;
   --c-on-tone-sage: 23 87 58;
-  --c-tone-paprika: 255 227 220;
+  --c-tone-paprika: 255 241 232;
   --c-tone-slate: 220 230 255;
   --c-on-tone-slate: 26 54 168;
   --c-tone-plum: 240 226 247;
@@ -51,7 +51,7 @@
   --shadow-recipe-hover: 0 16px 32px -6px rgba(17, 21, 31, 0.12);
   --shadow-lift: 0 12px 24px -6px rgba(17, 21, 31, 0.1), 0 4px 10px -2px rgba(17, 21, 31, 0.05);
   --shadow-header: 0 1px 8px rgba(17, 21, 31, 0.06);
-  --shadow-grocery-glow: 0 2px 8px -2px rgba(196, 47, 24, 0.35);
+  --shadow-grocery-glow: 0 2px 8px -2px rgba(194, 65, 12, 0.35);
   --shadow-dialog: 0 24px 60px -12px rgba(17, 21, 31, 0.25);
 }
 
@@ -74,19 +74,19 @@
   --c-on-primary: 10 18 56;
   --c-primary-container: 162 180 255;
   --c-primary-fixed: 31 42 85;
-  --c-secondary: 255 107 82;
+  --c-secondary: 255 138 76;
   --c-on-secondary: 36 7 3;
-  --c-secondary-hover: 255 133 112;
-  --c-secondary-container: 90 32 23;
+  --c-secondary-hover: 255 160 110;
+  --c-secondary-container: 90 42 18;
   --c-secondary-fixed: 36 7 3;
-  --c-error: 255 180 171;
+  --c-error: 255 196 192;
   --c-tertiary: 255 204 102;
   --c-tertiary-fixed: 58 46 18;
   --c-tone-saffron: 58 47 20;
   --c-on-tone-saffron: 255 210 122;
   --c-tone-sage: 29 51 38;
   --c-on-tone-sage: 159 224 176;
-  --c-tone-paprika: 61 31 26;
+  --c-tone-paprika: 61 36 24;
   --c-tone-slate: 28 39 71;
   --c-on-tone-slate: 169 188 255;
   --c-tone-plum: 51 33 58;
@@ -98,7 +98,7 @@
   --shadow-recipe-hover: 0 16px 32px -6px rgba(0, 0, 0, 0.5);
   --shadow-lift: 0 12px 24px -6px rgba(0, 0, 0, 0.5), 0 4px 10px -2px rgba(0, 0, 0, 0.3);
   --shadow-header: 0 1px 0 rgba(255, 255, 255, 0.06);
-  --shadow-grocery-glow: 0 2px 10px -2px rgba(255, 107, 82, 0.35);
+  --shadow-grocery-glow: 0 2px 10px -2px rgba(255, 138, 76, 0.35);
   --shadow-dialog: 0 24px 60px -12px rgba(0, 0, 0, 0.6);
 }
 
@@ -123,19 +123,19 @@
     --c-on-primary: 255 255 255;
     --c-primary-container: 47 85 228;
     --c-primary-fixed: 219 227 255;
-    --c-secondary: 196 47 24;
+    --c-secondary: 194 65 12;
     --c-on-secondary: 255 255 255;
-    --c-secondary-hover: 169 40 18;
-    --c-secondary-container: 255 138 117;
-    --c-secondary-fixed: 255 227 220;
-    --c-error: 179 38 30;
+    --c-secondary-hover: 163 54 10;
+    --c-secondary-container: 255 165 119;
+    --c-secondary-fixed: 255 241 232;
+    --c-error: 143 29 20;
     --c-tertiary: 122 82 0;
     --c-tertiary-fixed: 255 232 163;
     --c-tone-saffron: 255 241 199;
     --c-on-tone-saffron: 122 82 0;
     --c-tone-sage: 223 243 230;
     --c-on-tone-sage: 23 87 58;
-    --c-tone-paprika: 255 227 220;
+    --c-tone-paprika: 255 241 232;
     --c-tone-slate: 220 230 255;
     --c-on-tone-slate: 26 54 168;
     --c-tone-plum: 240 226 247;
@@ -147,7 +147,7 @@
     --shadow-recipe-hover: 0 16px 32px -6px rgba(17, 21, 31, 0.12);
     --shadow-lift: 0 12px 24px -6px rgba(17, 21, 31, 0.1), 0 4px 10px -2px rgba(17, 21, 31, 0.05);
     --shadow-header: 0 1px 8px rgba(17, 21, 31, 0.06);
-    --shadow-grocery-glow: 0 2px 8px -2px rgba(196, 47, 24, 0.35);
+    --shadow-grocery-glow: 0 2px 8px -2px rgba(194, 65, 12, 0.35);
     --shadow-dialog: 0 24px 60px -12px rgba(17, 21, 31, 0.25);
   }
 }

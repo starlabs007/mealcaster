@@ -124,9 +124,9 @@
       aria-label={text.sheets.sheet.tabNameAria(tab.label)}
       aria-invalid={tabErrors[tab.key] ? 'true' : undefined}
       title={text.sheets.sheet.tabTitle(SCHEMA[tab.key].length, SCHEMA[tab.key].join(', '))}
-      class="{inputClass} {tabErrors[tab.key] ? 'border-secondary' : 'border-outline-variant'}"
+      class="{inputClass} {tabErrors[tab.key] ? 'border-error' : 'border-outline-variant'}"
     />
-    {#if tabErrors[tab.key]}<span class="text-body-sm text-secondary">{tabErrors[tab.key]}</span>{/if}
+    {#if tabErrors[tab.key]}<span class="flex items-start gap-1 text-body-sm text-error"><Icon name="error" class="mt-px shrink-0 text-[16px]" /><span>{tabErrors[tab.key]}</span></span>{/if}
   </div>
 {/snippet}
 

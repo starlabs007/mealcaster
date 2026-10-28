@@ -17,11 +17,11 @@ colors:
   cobalt-bright: "#2f55e4"
   cobalt-tint: "#dbe3ff"
   on-primary: "#ffffff"
-  tomato: "#c42f18"
-  tomato-hover: "#a92812"
-  tomato-blush: "#ffe3dc"
-  on-tomato: "#ffffff"
-  error-red: "#b3261e"
+  persimmon: "#c2410c"
+  persimmon-hover: "#a3360a"
+  persimmon-blush: "#fff1e8"
+  on-persimmon: "#ffffff"
+  oxblood: "#8f1d14"
   mustard: "#7a5200"
   mustard-cream: "#ffe8a3"
   inverse-surface: "#11151f"
@@ -29,7 +29,7 @@ colors:
   tag-mustard-text: "#7a5200"
   tag-green-bg: "#dff3e6"
   tag-green-text: "#17573a"
-  tag-tomato-bg: "#ffe3dc"
+  tag-persimmon-bg: "#fff1e8"
   tag-cobalt-bg: "#dce6ff"
   tag-cobalt-text: "#1a36a8"
   tag-violet-bg: "#f0e2f7"
@@ -51,11 +51,11 @@ colors-dark:
   cobalt-bright: "#a2b4ff"
   cobalt-tint: "#1f2a55"
   on-primary: "#0a1238"
-  tomato: "#ff6b52"
-  tomato-hover: "#ff8570"
-  tomato-blush: "#240703"
-  on-tomato: "#240703"
-  error-red: "#ffb4ab"
+  persimmon: "#ff8a4c"
+  persimmon-hover: "#ffa06e"
+  persimmon-blush: "#240703"
+  on-persimmon: "#240703"
+  oxblood: "#ffc4c0"
   mustard: "#ffcc66"
   mustard-cream: "#3a2e12"
   inverse-surface: "#000000"
@@ -63,7 +63,7 @@ colors-dark:
   tag-mustard-text: "#ffd27a"
   tag-green-bg: "#1d3326"
   tag-green-text: "#9fe0b0"
-  tag-tomato-bg: "#3d1f1a"
+  tag-persimmon-bg: "#3d2418"
   tag-cobalt-bg: "#1c2747"
   tag-cobalt-text: "#a9bcff"
   tag-violet-bg: "#33213a"
@@ -158,13 +158,13 @@ components:
     backgroundColor: "{colors.surface-container-high}"
     textColor: "{colors.ink}"
   button-grocery:
-    backgroundColor: "{colors.tomato}"
-    textColor: "{colors.on-tomato}"
+    backgroundColor: "{colors.persimmon}"
+    textColor: "{colors.on-persimmon}"
     typography: "{typography.label-md}"
     rounded: "{rounded.lg}"
     padding: "8px 16px"
   button-grocery-hover:
-    backgroundColor: "{colors.tomato-hover}"
+    backgroundColor: "{colors.persimmon-hover}"
   button-card-cta:
     backgroundColor: "{colors.cobalt}"
     textColor: "{colors.on-primary}"
@@ -215,8 +215,8 @@ components:
     padding: "20px"
     width: "448px"
   toast:
-    backgroundColor: "{colors.tomato}"
-    textColor: "{colors.on-tomato}"
+    backgroundColor: "{colors.persimmon}"
+    textColor: "{colors.on-persimmon}"
     typography: "{typography.body-sm}"
     rounded: "{rounded.xl}"
     padding: "12px 16px"
@@ -228,7 +228,7 @@ components:
 
 **Creative North Star: "Enamelware"**
 
-MealCaster is a bright, graphic kitchen tool, closer to enamel cookware and diner signage than to a food magazine. The page is enamel white (night in dark mode); the work sits on it as white cards, sunken grey slots and soft tonal panels. Cobalt does the work and Tomato marks the moments that matter (the grocery run, tonight, a fresh toast). Bricolage Grotesque names every recipe and page with a confident, slightly quirky grotesk; everything else (dates, quantities, actions, settings) is set in Instrument Sans and stays quiet so the plan reads at a glance.
+MealCaster is a bright, graphic kitchen tool, closer to enamel cookware and diner signage than to a food magazine. The page is enamel white (night in dark mode); the work sits on it as white cards, sunken grey slots and soft tonal panels. Cobalt does the work and Persimmon marks the moments that matter (the grocery run, tonight, a fresh toast). Bricolage Grotesque names every recipe and page with a confident, slightly quirky grotesk; everything else (dates, quantities, actions, settings) is set in Instrument Sans and stays quiet so the plan reads at a glance.
 
 Density follows the device. On the computer the workbench is roomy and planning-deep; on the phone, in the kitchen or the store, the same tokens stack into single-column, thumb-sized controls and dialogs become bottom sheets. Interaction feels soft and tactile: rounded corners from 8px to 16px, cool shadows that stay faint at rest and grow when something is lifted, and short transitions rather than choreography.
 
@@ -238,14 +238,14 @@ This document captures the system as it ships in this repo: colour and shadow va
 
 **Key Characteristics:**
 - Enamel white canvas (`canvas`) with white cards and tonal containers instead of borders everywhere; night canvas and raised cards in dark.
-- One action colour (Cobalt); Tomato as the warm second voice; Mustard only for sync caution.
+- One action colour (Cobalt); Persimmon as the warm second voice; Mustard only for sync caution.
 - A grotesk display face for names and titles, a crisp sans for everything operational, tracked micro caps for metadata.
 - Cool, low-opacity shadows tinted with ink (`rgba(17, 21, 31, …)`), deeper in dark.
 - Material Symbols Outlined icons, outline at rest and filled for an "on" state.
 
 ## Colors
 
-An enamel palette: white and grey neutrals, one cobalt, one tomato, mustard held in reserve. Every colour has a light and a dark value (`colors` and `colors-dark` above; `src/theme.css` in code). Components use the Tailwind names, never a hex, so both themes follow.
+An enamel palette: white and grey neutrals, one cobalt, one persimmon, mustard held in reserve. Every colour has a light and a dark value (`colors` and `colors-dark` above; `src/theme.css` in code). Components use the Tailwind names, never a hex, so both themes follow.
 
 ### Primary
 - **Cobalt** (`cobalt`, Tailwind `primary`): the action colour. Primary buttons, the "Select for {day}" card CTA, active links, today's left rail and Tonight pill, the logo and wordmark, recipe titles on Recipe Detail and the editor. White on it reaches 8.2:1; in dark it brightens to periwinkle with deep-navy text.
@@ -253,9 +253,9 @@ An enamel palette: white and grey neutrals, one cobalt, one tomato, mustard held
 - **Cobalt Tint** (`cobalt-tint`, `primary-fixed`): soft selection: "Planned" / "Completed" chips (usually at 50%), the "Planned for {day}" state on recipe cards, the profile avatar ground. Text on it is `primary`.
 
 ### Secondary
-- **Tomato** (`tomato`, `secondary`): the warm voice. The Grocery List button in the header, toasts, today's weekday label, drag-and-drop drop labels and target rings, favourite hearts, the delete confirm, hover colour for quiet text actions on the day card. Hover deepens to `tomato-hover` (`secondary-hover`). Text on it is `on-secondary` (white in light, deep ink in dark).
-- **Tomato Blush** (`tomato-blush`, `secondary-fixed`): the action link inside a toast (Undo) and, at 60%, the ground of tomato badges.
-- **Error Red** (`error`, `error-red`): validation messages and the border of the field they belong to, always with an error icon. It sits close to Tomato in hue, so the icon and message carry the meaning; an error is never `secondary`.
+- **Persimmon** (`persimmon`, `secondary`): the warm voice. The Grocery List button in the header, toasts, today's weekday label, drag-and-drop drop labels and target rings, favourite hearts, the delete confirm, hover colour for quiet text actions on the day card. Hover deepens to `persimmon-hover` (`secondary-hover`). Text on it is `on-secondary` (white in light, deep ink in dark).
+- **Persimmon Blush** (`persimmon-blush`, `secondary-fixed`): the action link inside a toast (Undo) and, at 60%, the ground of persimmon badges.
+- **Oxblood** (`oxblood`, Tailwind `error`): validation messages and the border of the field they belong to, always with an error icon. Error (Oxblood) is kept apart from persimmon by both hue and lightness: redder and much darker in light, paler and pinker in dark. An error is never `secondary`, and persimmon is never used to signal a problem.
 
 ### Tertiary
 - **Mustard** (`mustard`, `tertiary`) on **Mustard Cream** (`mustard-cream`, `tertiary-fixed`): sync busy and warning states (Sheets button, Sync Status badge), warning icons in the Sheets connection flow, and "New" ingredient markers. Nothing decorative.
@@ -273,10 +273,10 @@ An enamel palette: white and grey neutrals, one cobalt, one tomato, mustard held
 - **Inverse Surface** (`inverse-surface`): dialog scrim at 40% (60% in dark) with a medium backdrop blur.
 
 ### Tag tones
-Household tags take one of five pastel tones, assigned least-used-first and synced to the sheet's Settings tab (`src/lib/tagColors.svelte.js`): mustard, green, tomato, cobalt and violet. Each is a pale ground with a dark same-hue text in light, and a deep ground with a light text in dark (Tailwind `tone-*` / `on-tone-*`; tomato uses `secondary` for its text). The Tailwind and sheet names are kept from the earlier palette (`saffron` = mustard, `sage` = green, `tomato` = tomato, `slate` = cobalt, `plum` = violet) so saved tag colours carry over. Untoned tags fall back to `surface-container-high` with `on-surface-variant`. Grocery department icons use the same set (`src/lib/data/departments.js`).
+Household tags take one of five pastel tones, assigned least-used-first and synced to the sheet's Settings tab (`src/lib/tagColors.svelte.js`): mustard, green, persimmon, cobalt and violet. Each is a pale ground with a dark same-hue text in light, and a deep ground with a light text in dark (Tailwind `tone-*` / `on-tone-*`; persimmon uses `secondary` for its text). The Tailwind and sheet names are kept from the earlier palette (`saffron` = mustard, `sage` = green, `paprika` = persimmon, `slate` = cobalt, `plum` = violet) so saved tag colours carry over. Untoned tags fall back to `surface-container-high` with `on-surface-variant`. Grocery department icons use the same set (`src/lib/data/departments.js`).
 
 ### Named Rules
-**The One Action Rule.** Cobalt is the only fill for "do this" buttons. Tomato fills are reserved for the grocery run, toasts, drag feedback and the delete confirm; a second tomato button on a screen dilutes the one that matters.
+**The One Action Rule.** Cobalt is the only fill for "do this" buttons. Persimmon fills are reserved for the grocery run, toasts, drag feedback and the delete confirm; a second persimmon button on a screen dilutes the one that matters.
 
 **The Mustard Means Sync Rule.** Mustard signals the sheet connection needs attention. Don't borrow it for ratings, highlights or decoration.
 
@@ -327,12 +327,12 @@ Depth is layered: tonal layers do most of the work, and cool, ink-tinted shadows
 - **Recipe hover** (`shadow-recipe-hover`; light `0 16px 32px -6px rgba(17, 21, 31, 0.12)`): catalog cards on hover, paired with a 4px rise.
 - **Lift** (`shadow-lift`; light `0 12px 24px -6px rgba(17, 21, 31, 0.1), 0 4px 10px -2px rgba(17, 21, 31, 0.05)`): toasts, dialogs, drop labels, the spotlighted day card.
 - **Header** (`shadow-header`; light `0 1px 8px rgba(17, 21, 31, 0.06)`, dark a 1px light hairline): the fixed header over a `backdrop-blur-xl` glass of canvas at 90%.
-- **Grocery glow** (`shadow-grocery`; light `0 2px 8px -2px rgba(196, 47, 24, 0.35)`): the tomato Grocery List button only.
+- **Grocery glow** (`shadow-grocery`; light `0 2px 8px -2px rgba(194, 65, 12, 0.35)`, dark `0 2px 10px -2px rgba(255, 138, 76, 0.35)`): the persimmon Grocery List button only.
 - **Dialog** (`shadow-dialog`; light `0 24px 60px -12px rgba(17, 21, 31, 0.25)`): the large Sheets connection and column dialogs.
 - **Small** (Tailwind `shadow-sm`): primary buttons, today's day card, the logo mark, overlay pills on photos.
 
 ### Named Rules
-**The Cool Shadow Rule.** Every shadow is ink-tinted (`rgba(17, 21, 31, …)` in light, black in dark) and stays under 0.12 opacity in light, except the tomato glow and the large dialogs.
+**The Cool Shadow Rule.** Every shadow is ink-tinted (`rgba(17, 21, 31, …)` in light, black in dark) and stays under 0.12 opacity in light, except the persimmon glow and the large dialogs.
 
 **The Sunken Slot Rule.** Empty things recede instead of rising: open evenings are dashed `outline-variant` borders on a 70% `surface-container-low` ground, with no shadow.
 
@@ -347,8 +347,8 @@ Soft and tactile: compact, rounded, quick colour change on hover.
 - **Shape:** gently rounded (8px); card CTAs 12px.
 - **Primary** (`.btn-primary`): Cobalt fill, white 12px semibold text, 6px 12px padding (8px tall in day cards), small shadow, hover to Cobalt Bright. Icon (15-17px) leads the label with a 6px gap.
 - **Outline** (`.btn-outline`): Card with a 1px Outline Variant border, Ink Muted text, hover to Surface Container High with Ink text.
-- **Grocery:** Tomato fill with the tomato glow, a white pill counter in tomato Label Caps; when on the Grocery page it carries a 2px tomato ring with offset.
-- **Quiet text actions:** on the day card, Choose a Different Meal / Surprise Me / Night Off / Move to Another Day are icon + 12px semibold text in Ink Muted that turn tomato on hover.
+- **Grocery:** Persimmon fill with the persimmon glow, a white pill counter in persimmon Label Caps; when on the Grocery page it carries a 2px persimmon ring with offset.
+- **Quiet text actions:** on the day card, Choose a Different Meal / Surprise Me / Night Off / Move to Another Day are icon + 12px semibold text in Ink Muted that turn persimmon on hover.
 - **Focus / Disabled:** 2px Cobalt Bright ring with 1px offset on `:focus-visible`; disabled drops to 50% opacity with a not-allowed cursor.
 
 ### Chips
@@ -371,7 +371,7 @@ Soft and tactile: compact, rounded, quick colour change on hover.
 - **Mobile:** the wordmark hides below sm, the tabs move to their own horizontally scrolling row under the header, and the week range compacts.
 
 ### Toast
-Tomato card, 12px corners, Lift shadow, Body SM `on-secondary` text, an optional Tomato Blush action (Undo) and a close button. From `md` it sits at the top centre and flies in 16px from above; on phones it sits at the bottom, within thumb reach, and flies in from below (200ms); it sits above dialogs. In the grocery store mode it docks over the sticky store bar instead, so it never covers a line; the floating region then only announces it.
+Persimmon card, 12px corners, Lift shadow, Body SM `on-secondary` text, an optional Persimmon Blush action (Undo) and a close button. From `md` it sits at the top centre and flies in 16px from above; on phones it sits at the bottom, within thumb reach, and flies in from below (200ms); it sits above dialogs. In the grocery store mode it docks over the sticky store bar instead, so it never covers a line; the floating region then only announces it.
 
 ### Dialogs
 Scrim of Inverse Surface at 40% with a medium blur; Canvas surface with Lift shadow; Headline SM display title with a Cobalt icon; close button top right. Bottom sheet on phones, centred card from sm.
@@ -380,7 +380,7 @@ Scrim of Inverse Surface at 40% with a medium blur; Canvas surface with Lift sha
 
 ### Do:
 - **Do** set the page on Canvas and put work on Card; reach for a tonal container (`surface-container-low` / `-high`) before adding a border.
-- **Do** use Cobalt for the one primary action in a region, and Tomato only for the grocery run, toasts, today, drag feedback and the delete confirm.
+- **Do** use Cobalt for the one primary action in a region, and Persimmon only for the grocery run, toasts, today, drag feedback and the delete confirm.
 - **Do** name recipes, pages and dialogs in Bricolage Grotesque; keep every control, number and label in Instrument Sans on the named scale.
 - **Do** use the shadow tokens and keep them faint at rest (Card, Recipe rest); grow to Lift or Recipe hover only for lifted, dragged or floating things.
 - **Do** keep corners on the 4 / 6 / 8 / 12 / 16px ladder, pills for tags and counters.
@@ -390,8 +390,8 @@ Scrim of Inverse Surface at 40% with a medium blur; Canvas surface with Lift sha
 
 ### Don't:
 - **Don't** write a hex, `white` or `black` in a component where a token exists: it won't change with the theme. Photo overlays are the one exception.
-- **Don't** use a shadow above 0.12 opacity in light outside the tomato glow and the large dialogs.
-- **Don't** add a second filled tomato button to a screen, or use Mustard for anything but sync caution.
+- **Don't** use a shadow above 0.12 opacity in light outside the persimmon glow and the large dialogs.
+- **Don't** add a second filled persimmon button to a screen, or use Mustard for anything but sync caution.
 - **Don't** set prices, quantities, buttons or form labels in the display face.
 - **Don't** add new raw Tailwind font sizes (`text-xs`, `text-sm`, `text-lg`) or one-off hex colours where a token exists.
 - **Don't** set small body copy in Outline.
