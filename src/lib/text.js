@@ -205,6 +205,10 @@ export const text = {
       allSet: 'All planned',
       autoFill: 'Auto-fill Remaining',
       autoFillShort: 'Auto-fill',
+      // Auto-fill again while the week has suggestions: every suggestion is picked again.
+      shuffleAll: 'Shuffle All',
+      shuffleShort: 'Shuffle',
+      suggested: (/** @type {number} */ n) => `${n} suggested`,
       // The source is the week before the viewed one, so next week's button says "This Week".
       copyPrevious: 'Copy Previous Week',
       copyThisWeek: 'Copy This Week',
@@ -243,6 +247,22 @@ export const text = {
       chooseAria: (/** @type {string} */ weekday) => `Choose a meal for ${weekday}`,
       planEvening: 'Plan This Evening',
       clearEvening: 'Clear Evening',
+      // Auto-fill's suggestion on an open evening, not planned until Accept All.
+      suggested: 'Suggested',
+      suggestedAria: (/** @type {string} */ title) => `, suggested: ${title}`,
+      another: 'Another',
+      anotherAria: (/** @type {string} */ weekday) => `Suggest another for ${weekday}`,
+      removeSuggestion: 'Remove',
+      removeSuggestionAria: (/** @type {string} */ weekday) => `Remove ${weekday}’s suggestion`,
+    },
+
+    // The bar under the week while it has suggestions.
+    suggestions: {
+      count: (/** @type {number} */ n) => `${n} ${plural(n, 'suggestion')}`,
+      notYet: 'Not planned until you accept',
+      discard: 'Discard',
+      accept: 'Accept All',
+      barAria: 'Suggested dinners',
     },
 
     drop: {
@@ -275,6 +295,13 @@ export const text = {
       filledOne: (/** @type {string} */ weekday, /** @type {string} */ title) => `Planned ${weekday}: ${title}`,
       filled: (/** @type {string[]} */ days) =>
         days.length <= 4 ? `Planned ${joinList(days)}.` : `Planned ${days.length} evenings, starting ${days[0]}.`,
+      // Auto-fill's suggestions: nothing is planned until Accept All.
+      suggested: (/** @type {string[]} */ days) =>
+        days.length <= 4 ? `Suggested ${joinList(days)}. Nothing is planned yet.` : `Suggested ${days.length} evenings. Nothing is planned yet.`,
+      shuffled: (/** @type {number} */ n) => `New suggestions for ${n} ${plural(n, 'evening')}.`,
+      rerolled: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title}`,
+      removedSuggestion: (/** @type {string} */ weekday) => `Removed ${weekday}’s suggestion.`,
+      discarded: (/** @type {number} */ n) => `Discarded ${n} ${plural(n, 'suggestion')}.`,
       noLastWeek: 'The previous week had nothing planned for this week’s open evenings.',
       copiedOne: (/** @type {string} */ weekday, /** @type {string} */ title) => `Copied ${weekday}: ${title}`,
       copied: (/** @type {string[]} */ days) =>

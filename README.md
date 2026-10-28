@@ -68,6 +68,12 @@ npm run preview    # http://localhost:4173
 - **Auto-fill Remaining**, **Copy Previous Week** (**Copy This Week** on next week), **Clear n Upcoming Evenings** — each with an Undo toast.
   Past days are kept as history and never overwritten. Auto-fill also prefers meals not already on the week's
   plan and not made in the last 7 days, and meals whose heads-up is still in time (see Heads-ups).
+- **Auto-fill suggests, it doesn't plan.** Each open evening from today on gets a **Suggested** meal; **Another** picks a
+  different one (avoiding the week's meals and the other suggestions) and **Remove** leaves the evening open. A bar under
+  the week says how many there are: **Accept All** plans them in one change (one Undo), **Discard** drops them (Undo
+  brings them back). Pressing Auto-fill again (**Shuffle All**) picks them all again. Suggestions stay in memory only:
+  never saved or synced, kept across weeks and screens, gone on reload. Anything that fills a suggested evening
+  (the catalog, a drag, a sync) replaces its suggestion.
 - Each day card offers actions for its state:
   - **Open day:** **Choose a Meal** (opens the catalog for that day), **Surprise Me** and **Night Off**.
   - **Planned meal** (including today): **View Recipe**, **Choose a Different Meal** (opens the catalog), **Surprise Me**,
