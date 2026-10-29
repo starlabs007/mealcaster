@@ -272,7 +272,7 @@ export function goToThisWeek() {
  */
 export function tooSoonNote(...days) {
   const late = firstTooSoon(days, (iso) => recipeById.get(planner.entries[iso]?.recipeId ?? ''), planner.today);
-  return late ? text.common.headsUps.tooSoon(late.recipe.shortTitle || late.recipe.title, late.missed.daysBefore, late.missed.text) : '';
+  return late ? text.common.headsUps.tooSoon(late.recipe.title, late.missed.daysBefore, late.missed.text) : '';
 }
 
 /** @param {string} message @param {string} note from tooSoonNote */

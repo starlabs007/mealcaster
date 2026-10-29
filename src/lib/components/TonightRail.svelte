@@ -1,5 +1,5 @@
 <script>
-  // Tonight's left rail. Cobalt while dinner is still to cook; once it is marked done a tomato fill runs down it (only
+  // Tonight's left rail. Cobalt while dinner is still to cook; once it is marked done a persimmon fill runs down it (only
   // when it was just pressed: a card that loads already done shows the end state without the motion).
   let { done = false, celebrate = false } = $props();
 </script>

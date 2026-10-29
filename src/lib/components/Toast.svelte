@@ -1,6 +1,7 @@
 <script>
   import ToastCard from './ToastCard.svelte';
   import { toast, toastFocus } from '../toast.svelte.js';
+  import { toastPlain } from '../toastText.js';
 
   // Pressing Undo removes the toast and the button with it; focus goes back to where the keyboard came from, if
   // that control is still there, rather than dropping to <body>.
@@ -23,7 +24,7 @@
   aria-live="polite"
 >
   {#if toast.docked}
-    {#key toast.id}<span class="sr-only">{toast.message}</span>{/key}
+    {#key toast.id}<span class="sr-only">{toastPlain(toast.message)}</span>{/key}
   {:else}
     <ToastCard class="max-w-lg" />
   {/if}

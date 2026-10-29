@@ -95,11 +95,6 @@ describe('sheetText', () => {
 
   it('defaults written to the sheet', () => {
     assert.equal(t.defaultGroupTitle, 'Ingredients', HINT);
-    assert.equal(t.groupCategory(1), '1 item', HINT);
-    assert.equal(t.groupCategory(0), '0 items', HINT);
-    assert.equal(t.groupCategory(5), '5 items', HINT);
-    assert.equal(t.flatGroupCategory(1), '1 items', HINT);
-    assert.equal(t.flatGroupCategory(5), '5 items', HINT);
     assert.equal(t.sourceAddedByYou, 'Added by you', HINT);
     assert.equal(t.sourceEveryWeek, 'Every week', HINT);
     assert.equal(t.sourceDinner('Mon', 'Pasta'), 'Mon: Pasta', HINT);
@@ -107,7 +102,8 @@ describe('sheetText', () => {
     assert.equal(t.untitledRecipe, 'Untitled recipe', HINT);
     assert.equal(t.diningOutNote, 'Dining out', HINT);
     assert.equal(t.defaultIngredientGroup, 'Main', HINT);
-    assert.equal(t.defaultStepTitle(3), 'Step 3', HINT);
+    assert.ok(t.isOldStepTitle('Step 3') && t.isOldStepTitle('Step 12'), HINT);
+    assert.ok(!t.isOldStepTitle('Step two') && !t.isOldStepTitle('Steps 3') && !t.isOldStepTitle(''), HINT);
     assert.equal(t.defaultAisle, 'Pantry', HINT);
     assert.equal(t.defaultDepartmentShort, 'Pantry', HINT);
   });

@@ -229,7 +229,7 @@
     bound: { icon: 'verified', label: text.sheets.columns.badges.bound, class: 'bg-primary-fixed/60 text-primary' },
     mapped: { icon: 'link', label: text.sheets.columns.badges.mapped, class: 'bg-primary-fixed/60 text-primary' },
     suggested: { icon: 'alt_route', label: text.sheets.columns.badges.suggested, class: 'bg-tertiary-fixed text-tertiary' },
-    missing: { icon: 'error', label: text.sheets.columns.badges.missing, class: 'bg-secondary-fixed text-secondary' },
+    missing: { icon: 'error', label: text.sheets.columns.badges.missing, class: 'bg-error/10 text-error' },
     append: { icon: 'add_column_right', label: text.sheets.columns.badges.append, class: 'bg-surface-container-high text-primary' },
     ignored: { icon: 'block', label: text.sheets.columns.badges.ignored, class: 'bg-surface-container-high text-on-surface-variant' },
   };
@@ -259,7 +259,7 @@
   <li
     class="grid gap-3 px-4 py-4 transition-colors md:grid-cols-[minmax(0,1.25fr)_minmax(0,0.8fr)_minmax(0,1.1fr)_minmax(0,1.4fr)_minmax(0,1fr)] md:items-start md:gap-4 md:px-5 {status ===
     'missing'
-      ? 'bg-secondary-fixed/25'
+      ? 'bg-error/5'
       : status === 'suggested'
         ? 'bg-tertiary-fixed/20'
         : ''}"
@@ -380,8 +380,8 @@
                 <span class="h-1.5 w-1.5 rounded-full bg-outline"></span> {text.sheets.columns.notChecked}
               </span>
             {:else if totalConflicts}
-              <span class="inline-flex items-center gap-1.5 rounded-full bg-secondary-fixed px-2 py-0.5 text-label-caps uppercase text-secondary">
-                <span class="h-1.5 w-1.5 rounded-full bg-secondary"></span>
+              <span class="inline-flex items-center gap-1.5 rounded-full bg-error/10 px-2 py-0.5 text-label-caps uppercase text-error">
+                <span class="h-1.5 w-1.5 rounded-full bg-error"></span>
                 {text.sheets.columns.conflicts(totalConflicts)}
               </span>
             {:else}
@@ -482,7 +482,7 @@
             {#if !s}
               <span class="rounded-full bg-surface-container-high px-1.5 text-label-sm text-outline">–</span>
             {:else if s.conflicts}
-              <span class="rounded-full bg-secondary-fixed px-1.5 text-label-sm text-secondary">{s.conflicts}</span>
+              <span class="rounded-full bg-error/10 px-1.5 text-label-sm text-error">{s.conflicts}</span>
             {:else}
               <Icon name="check_circle" class="icon-filled text-[16px] text-primary-container" />
             {/if}
@@ -495,13 +495,13 @@
         <div class="flex items-start gap-3 rounded-xl bg-surface-container-lowest p-5 shadow-card">
           <Icon
             name={loading ? 'progress_activity' : readError ? 'error' : 'add_notes'}
-            class="mt-0.5 text-[22px] {loading ? 'animate-spin text-outline' : readError ? 'text-secondary' : 'text-primary'}"
+            class="mt-0.5 text-[22px] {loading ? 'animate-spin text-outline' : readError ? 'text-error' : 'text-primary'}"
           />
           <div class="flex flex-col gap-1">
             {#if loading}
               <span class="text-label-md text-on-surface">{text.sheets.columns.readingSheet}</span>
             {:else if readError}
-              <span class="text-label-md text-secondary">{readError}</span>
+              <span class="text-label-md text-error">{readError}</span>
               <button type="button" class="btn w-fit px-0 text-body-sm text-primary hover:underline" onclick={readSheet}>{text.sheets.columns.tryAgain}</button>
             {:else}
               <span class="text-label-md text-on-surface">
@@ -542,10 +542,10 @@
               aria-invalid={pasteError ? 'true' : undefined}
               aria-describedby={pasteError ? 'paste-error' : undefined}
               class="w-full resize-y rounded-lg border bg-surface-container-low px-3 py-2 font-mono text-[12px] leading-5 text-on-surface placeholder:text-outline/70 focus:outline-none focus:ring-2 focus:ring-primary-container {pasteError
-                ? 'border-secondary'
+                ? 'border-error'
                 : 'border-outline-variant'}"
             ></textarea>
-            {#if pasteError}<span id="paste-error" class="text-body-sm text-secondary">{pasteError}</span>{/if}
+            {#if pasteError}<span id="paste-error" class="flex items-start gap-1 text-body-sm text-error"><Icon name="error" class="mt-px shrink-0 text-[16px]" /><span>{pasteError}</span></span>{/if}
             <div class="flex flex-wrap items-center justify-between gap-2">
               <button type="button" class="btn px-0 text-body-sm text-primary hover:underline" onclick={useExample}>
                 <Icon name="science" class="text-[16px]" /> {text.sheets.columns.tryExample}

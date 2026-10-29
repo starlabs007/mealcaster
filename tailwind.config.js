@@ -33,12 +33,12 @@ export default {
         'secondary-hover': color('secondary-hover'),
         'secondary-container': color('secondary-container'),
         'secondary-fixed': color('secondary-fixed'),
-        // Errors only (a message and its field's border): tomato stays the brand and danger-action colour.
+        // Errors only (a message and its field's border): persimmon stays the brand and danger-action colour.
         'error': color('error'),
         'tertiary': color('tertiary'),
         'tertiary-fixed': color('tertiary-fixed'),
         // Soft pill colours: recipe tags (lib/tagColors.svelte.js) and the dinner chips on a grocery line. The names are
-        // kept from the earlier palette (saffron = mustard, sage = green, paprika = tomato, slate = cobalt, plum = violet).
+        // kept from the earlier palette (saffron = mustard, sage = green, paprika = persimmon, slate = cobalt, plum = violet).
         'tone-saffron': color('tone-saffron'),
         'on-tone-saffron': color('on-tone-saffron'),
         'tone-sage': color('tone-sage'),

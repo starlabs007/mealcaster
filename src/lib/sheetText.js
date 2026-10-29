@@ -108,12 +108,6 @@ export const departmentText = {
 /** Title of the single ingredient group a flat ingredient list is wrapped in, and of a group with no title. */
 export const defaultGroupTitle = 'Ingredients';
 
-/** Category text of an ingredient group: "1 item", "5 items". */
-export const groupCategory = (n) => `${n} ${n === 1 ? 'item' : 'items'}`;
-
-/** Category text of a wrapped flat list. Always plural, as it has always been written ("1 items"). */
-export const flatGroupCategory = (n) => `${n} items`;
-
 /** Title given to a recipe whose Title cell is empty. */
 export const untitledRecipe = 'Untitled recipe';
 
@@ -123,8 +117,11 @@ export const diningOutNote = 'Dining out';
 /** Title of the ingredient group for a line with no group name. */
 export const defaultIngredientGroup = 'Main';
 
-/** Title given to a method step with no title: "Step 1". @param {number} n 1-based */
-export const defaultStepTitle = (n) => `Step ${n}`;
+/**
+ * Older builds saved a method step with no title as "Step 1", "Step 2"…; a title like that is read as no title.
+ * @param {string} title
+ */
+export const isOldStepTitle = (title) => /^Step \d+$/.test(title);
 
 // ---- Written for reading only: the Provisions tab's Source and Detail columns ---------------------------------------
 // The codec writes these but never parses them back (Line_Key and Added carry the data), so changing one cannot lose

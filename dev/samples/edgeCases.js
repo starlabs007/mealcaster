@@ -6,7 +6,7 @@
 //   - one ingredient group; servings 1                 → creme-fraiche-toast
 //   - six ingredient groups; ten tags                  → lemongrass-chicken-feast
 //   - nested Markdown lists and headings in notes      → margherita
-//   - no tags at all                                   → miso-cod
+//   - no tags at all; untitled steps (one with ": ")   → miso-cod
 //   - every unit in UNITS at least once                → all of them together
 // Lines are 'name|amount|prep|note' as in cuisines.js. Built-in tags are worked out from the ingredients like any
 // other sample's; `tags` here are only the custom ones.
@@ -15,7 +15,6 @@
  * @typedef {{
  *   key: string,
  *   title: string,
- *   short: string,
  *   desc: string,
  *   category: string,
  *   cuisine: string,
@@ -23,7 +22,7 @@
  *   serves: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
- *   groups: [string, string, string[]][],
+ *   groups: [string, string[]][],
  *   steps: [string, number, string, boolean?][],
  *   notes: string,
  *   tags: string[],
@@ -35,7 +34,6 @@ export const EDGE_CASES = [
   {
     key: 'pickled-onions',
     title: 'Quick-Pickled Red Onions',
-    short: 'Pickled Red Onions',
     desc: 'Bright pink, tangy onions for tacos, bowls and sandwiches. Just pour, shake and wait.',
     category: '',
     cuisine: 'Mexican',
@@ -44,7 +42,7 @@ export const EDGE_CASES = [
     prepMinutes: 10,
     cookMinutes: 0,
     groups: [
-      ['Pickle', 'Pantry', [
+      ['Pickle', [
         'red onion|2 medium|thinly sliced into rings',
         'apple cider vinegar|250 ml',
         'sugar|1 tbsp',
@@ -60,7 +58,6 @@ export const EDGE_CASES = [
     key: 'lamb-feast',
     title:
       'Slow-Roasted Garlic & Rosemary Lamb Shoulder with Crispy Smashed Potatoes, Charred Spring Onions, Anchovy Salsa Verde and a Red Wine Pan Sauce for the Whole Family',
-    short: 'Slow-Roasted Lamb Shoulder',
     desc: 'A centerpiece for a long Sunday lunch: lamb roasted for hours until it pulls apart, with crispy potatoes and a sharp, herby salsa verde to cut the richness.',
     category: 'Dinner',
     cuisine: 'Mediterranean',
@@ -69,7 +66,7 @@ export const EDGE_CASES = [
     prepMinutes: 40,
     cookMinutes: 270,
     groups: [
-      ['The Lamb', 'Protein', [
+      ['The Lamb', [
         'lamb shoulder|3 kg|scored in a crosshatch|bone-in',
         'garlic|2 head|cloves separated and smashed',
         'rosemary|6 sprig',
@@ -77,12 +74,12 @@ export const EDGE_CASES = [
         'kosher salt|2 tbsp',
         'kitchen twine|1 roll||for tying',
       ]],
-      ['Potatoes & Onions', 'Produce', [
+      ['Potatoes & Onions', [
         'yukon gold potato|2 kg|boiled until tender',
         'green onion|2 bunch|trimmed',
         'olive oil|1/3 cup',
       ]],
-      ['Salsa Verde', 'Sauce', [
+      ['Salsa Verde', [
         'flat-leaf parsley|2 bunch|finely chopped',
         'anchovy fillet|6 fillet|minced',
         'capers|1 jar|drained and chopped|small',
@@ -90,7 +87,7 @@ export const EDGE_CASES = [
         'lemon|1|zested',
         'extra virgin olive oil|3/4 cup',
       ]],
-      ['Pan Sauce', 'Sauce', [
+      ['Pan Sauce', [
         'dry red wine|1/2 bottle',
         'beef broth|2 cup',
         'unsalted butter|2 tbsp|cold',
@@ -110,7 +107,6 @@ export const EDGE_CASES = [
   {
     key: 'pho-chay',
     title: 'Phở Chay with Đậu Phụ and Shiitake',
-    short: 'Phở Chay',
     desc: 'A vegetarian phở with a deep, charred-onion and star-anise broth, golden đậu phụ and a big plate of herbs, chili and lime.',
     category: 'Dinner',
     cuisine: 'Vietnamese',
@@ -119,7 +115,7 @@ export const EDGE_CASES = [
     prepMinutes: 20,
     cookMinutes: 60,
     groups: [
-      ['Broth', 'Broth', [
+      ['Broth', [
         'vegetable broth|2 l',
         'shiitake mushroom|1 bag|soaked and sliced|dried, about 1 oz',
         'onion|1 large|halved and charred',
@@ -129,11 +125,11 @@ export const EDGE_CASES = [
         'light soy sauce|3 tbsp',
         'sugar|1 tbsp',
       ]],
-      ['Bowls', 'Noodles & Tofu', [
+      ['Bowls', [
         'banh pho noodles|1 package||14 oz',
         'đậu phụ|400 g|cut into slabs and pan-fried',
       ]],
-      ['The Herb Plate', 'Garnish', [
+      ['The Herb Plate', [
         'bean sprouts|1 bag',
         'thai basil|1 bunch',
         'lime|2|cut into wedges',
@@ -154,7 +150,6 @@ export const EDGE_CASES = [
   {
     key: 'creme-fraiche-toast',
     title: 'Jammy Egg Toast with Crème Fraîche and Radish',
-    short: 'Crème Fraîche Toast',
     desc: 'Breakfast for one: thick sourdough, a swoosh of crème fraîche, jammy eggs, crisp radish and chives.',
     category: 'Breakfast',
     cuisine: 'American',
@@ -163,7 +158,7 @@ export const EDGE_CASES = [
     prepMinutes: 5,
     cookMinutes: 7,
     groups: [
-      ['Toast', 'Toast', [
+      ['Toast', [
         'sourdough bread|1 slice|thick-cut',
         'crème fraîche|2 tbsp',
         'egg|2',
@@ -183,7 +178,6 @@ export const EDGE_CASES = [
   {
     key: 'lemongrass-chicken-feast',
     title: 'Lemongrass Chicken Rice-Paper Wrap Party',
-    short: 'Lemongrass Chicken Wraps',
     desc: 'Put everything on the table and let everyone roll their own: sizzling lemongrass chicken, herbs, pickles, noodles and nước chấm.',
     category: 'Dinner',
     cuisine: 'Vietnamese',
@@ -192,29 +186,29 @@ export const EDGE_CASES = [
     prepMinutes: 15,
     cookMinutes: 12,
     groups: [
-      ['Lemongrass Chicken', 'Protein', [
+      ['Lemongrass Chicken', [
         'chicken thigh|2 lb|thinly sliced|boneless, skinless',
         'vegetable oil|2 tbsp',
       ]],
-      ['Marinade', 'Marinade', [
+      ['Marinade', [
         'lemongrass|3 stalk|tender core minced',
         'garlic|4 clove|minced',
         'shallot|2|minced',
         'fish sauce|2 tbsp',
         'sugar|1 tbsp',
       ]],
-      ['Nước Chấm', 'Sauce', [
+      ['Nước Chấm', [
         'fish sauce|3 tbsp',
         'lime|2|juiced',
         'sugar|3 tbsp',
         'red chili|1|thinly sliced',
       ]],
-      ['Quick Pickles', 'Pickles', [
+      ['Quick Pickles', [
         'carrot|1|julienned',
         'daikon|1 piece|julienned|4-inch',
         'rice vinegar|1/3 cup',
       ]],
-      ['The Herb Plate', 'Herbs', [
+      ['The Herb Plate', [
         'mint|1 bunch',
         'cilantro|1 bunch',
         'perilla leaf|10 leaf',
@@ -222,7 +216,7 @@ export const EDGE_CASES = [
         'butter lettuce|1 head|leaves separated',
         'cucumber|1|cut into spears',
       ]],
-      ['Wrappers & Noodles', 'Wrappers', [
+      ['Wrappers & Noodles', [
         'rice paper|1 package',
         'rice vermicelli|8 oz|cooked and rinsed',
         'roasted peanuts|1/3 cup|crushed',
@@ -240,7 +234,6 @@ export const EDGE_CASES = [
   {
     key: 'margherita',
     title: 'Margherita Pizza on a Home Oven Stone',
-    short: 'Margherita Pizza',
     desc: 'A blistered, chewy crust with bright San Marzano sauce, milky mozzarella and basil — as close to Naples as a home oven gets.',
     category: 'Dinner',
     cuisine: 'Italian',
@@ -249,11 +242,11 @@ export const EDGE_CASES = [
     prepMinutes: 50,
     cookMinutes: 10,
     groups: [
-      ['Dough', 'Base', [
+      ['Dough', [
         'pizza dough|1 ball||room temperature',
         'all-purpose flour|1/4 cup||for dusting',
       ]],
-      ['Toppings', 'Toppings', [
+      ['Toppings', [
         'san marzano tomatoes|1 can|crushed by hand|14 oz',
         'fresh mozzarella|1 ball|torn and drained',
         'basil|1 handful',
@@ -274,7 +267,6 @@ export const EDGE_CASES = [
   {
     key: 'miso-cod',
     title: 'Miso-Butter Cod with Soba and Bok Choy',
-    short: 'Miso-Butter Cod',
     desc: 'Flaky cod under a glossy, savoury miso-butter glaze, with soba noodles and tender baby bok choy.',
     category: 'Dinner',
     cuisine: 'Japanese',
@@ -283,14 +275,14 @@ export const EDGE_CASES = [
     prepMinutes: 15,
     cookMinutes: 25,
     groups: [
-      ['Miso Glaze', 'Sauce', [
+      ['Miso Glaze', [
         'white miso|3 tbsp',
         'unsalted butter|1/2 stick|softened',
         'mirin|2 tbsp',
         'sake|1 tbsp',
         'soy sauce|1 tsp',
       ]],
-      ['Fish & Noodles', 'Main', [
+      ['Fish & Noodles', [
         'cod fillet|4||6 oz each',
         'soba noodles|8 oz',
         'baby bok choy|4 head|halved',
@@ -302,8 +294,8 @@ export const EDGE_CASES = [
     steps: [
       ['Glaze the Fish', 10, 'Beat the miso, butter, mirin, sake and soy sauce together and spread over the cod.'],
       ['Broil', 12, 'Broil 6 inches from the element until the glaze is browned in spots and the fish flakes.'],
-      ['Noodles & Greens', 10, 'Cook the soba, and steam the bok choy with the ginger.'],
-      ['Serve', 3, 'Serve the cod over soba and bok choy, scattered with green onion and sesame.'],
+      ['', 10, 'Cook the soba, and steam the bok choy with the ginger.'],
+      ['', 0, 'To serve: lay the cod over the soba and bok choy, scattered with green onion and sesame.'],
     ],
     notes: 'Spread the glaze thickly; it protects the fish as it broils.',
     tags: [],

@@ -64,24 +64,51 @@ export function isoDate(v) {
   return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
 }
 
+/**
+ * Date_Added cell → "YYYY-MM-DD": a Sheets date value or text written as YYYY-MM-DD. Anything else, an impossible
+ * date ("2026-02-30") included, is '' — the earlier date wins, so a misread cell must never count as a date.
+ * @returns {string}
+ */
+export function addedDate(v) {
+  if (typeof v === 'number') return v > 0 ? isoDate(Math.floor(v)) : '';
+  const m = str(v).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!m) return '';
+  const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return date.getUTCMonth() === Number(m[2]) - 1 && date.getUTCDate() === Number(m[3]) ? date.toISOString().slice(0, 10) : '';
+}
+
 /** Whether a row has anything in it. @param {Row} row */
 export const isBlankRow = (row) => Object.values(row).every((v) => str(v) === '');
 
 // ---- Recipes ----------------------------------------------------------------
 
-/** "1. Sear the salmon (8 min): Pat the fillets dry…" per line. */
+/** A step's title as stored: trimmed, with an old "Step N" default read as no title. @param {string} title */
+export function stepTitle(title) {
+  const t = str(title).trim();
+  return sheetText.isOldStepTitle(t) ? '' : t;
+}
+
+/**
+ * "1. Sear the salmon (8 min): Pat the fillets dry…" per line. An untitled step leaves the title out ("2. (5 min): …",
+ * "3. Stir."); when its first line has a ": " of its own, a leading ": " marks the missing title ("4. : Tip: …") so
+ * the text isn't read back as a title.
+ */
 export function formatSteps(steps) {
   return steps
     .map((s, i) => {
       // Continuation lines are indented so Markdown lists inside a step aren't read as new steps.
-      return `${i + 1}. ${s.title}${s.minutes ? ` (${s.minutes} min)` : ''}: ${s.text.replace(/\n/g, '\n    ')}`;
+      const text = s.text.replace(/\n/g, '\n    ');
+      const head = `${s.title}${s.minutes ? `${s.title ? ' ' : ''}(${s.minutes} min)` : ''}`;
+      if (head) return `${i + 1}. ${head}: ${text}`;
+      return `${i + 1}. ${s.text.split('\n')[0].includes(': ') ? ': ' : ''}${text}`;
     })
     .join('\n');
 }
 
 /**
- * Tolerant reverse of formatSteps; plain numbered lines work too. "critical" in the brackets is an old flag that
- * is still recognised (so "(8 min, critical)" parses as 8 minutes) but ignored; the next write drops it.
+ * Tolerant reverse of formatSteps; plain numbered lines work too and are untitled. "critical" in the brackets is an
+ * old flag that is still recognised (so "(8 min, critical)" parses as 8 minutes) but ignored; the next write drops it.
+ * The "Step N" titles older builds wrote for untitled steps read as untitled.
  */
 export function parseSteps(text) {
   const steps = [];
@@ -94,15 +121,15 @@ export function parseSteps(text) {
     const body = (start ? start[2] : line).trim();
     if (!body) continue;
     const split = body.indexOf(': ');
-    let head = split > 0 ? body.slice(0, split) : '';
-    const rest = split > 0 ? body.slice(split + 2).trim() : body;
+    let head = split >= 0 ? body.slice(0, split) : '';
+    const rest = split >= 0 ? body.slice(split + 2).trim() : body;
     let minutes = 0;
     const flags = head.match(/\s*\(([^)]*)\)\s*$/);
     if (flags && /\bmin\b|\bcritical\b/i.test(flags[1])) {
       minutes = Number(flags[1].match(/(\d+)\s*min/i)?.[1] ?? 0);
       head = head.slice(0, flags.index);
     }
-    steps.push({ title: head.trim() || `Step ${steps.length + 1}`, minutes, text: rest });
+    steps.push({ title: stepTitle(head), minutes, text: rest });
   }
   for (const s of steps) s.text = s.text.trim();
   return steps;
@@ -146,13 +173,12 @@ export function parseIngredients(value) {
       const kept = items(g.items);
       return {
         title: str(g.title) || sheetText.defaultGroupTitle,
-        category: str(g.category) || sheetText.groupCategory(kept.length),
         items: kept,
       };
     });
   }
   const flat = items(data);
-  return flat.length ? [{ title: sheetText.defaultGroupTitle, category: sheetText.flatGroupCategory(flat.length), items: flat }] : [];
+  return flat.length ? [{ title: sheetText.defaultGroupTitle, items: flat }] : [];
 }
 
 /**
@@ -164,10 +190,7 @@ const RECIPE_COLUMNS = {
   Recipe_ID: { get: (r) => r.id, set: () => {} },
   Title: {
     get: (r) => r.title,
-    set: (r, v) => {
-      r.title = str(v) || sheetText.untitledRecipe;
-      r.shortTitle = r.title;
-    },
+    set: (r, v) => (r.title = str(v) || sheetText.untitledRecipe),
   },
   Description: { get: (r) => r.description, set: (r, v) => (r.description = str(v)) },
   Ingredients_JSON: {
@@ -221,6 +244,14 @@ const RECIPE_COLUMNS = {
       else delete r.headsUpsRaw;
     },
   },
+  // The earlier date wins; an empty cell or one that isn't a date keeps the device's (sync writes it back, see run.js).
+  Date_Added: {
+    get: (r) => r.addedAt,
+    set: (r, v) => {
+      const date = addedDate(v);
+      if (date && !(r.addedAt <= date)) r.addedAt = date;
+    },
+  },
 };
 
 /** @param {Recipe} recipe @param {Set<string>} favorites @returns {Row} */
@@ -234,7 +265,6 @@ function blankRecipe(id, today) {
   return {
     id,
     title: '',
-    shortTitle: '',
     description: '',
     prepMinutes: 0,
     cookMinutes: 0,
@@ -269,7 +299,7 @@ export function recipeFromRow(row, existing, { columns, favorites, today }) {
     c.set(recipe, row[col], ctx);
   }
   if (ctx.extraTags?.length) recipe.tags = normalizeTags([...recipe.tags, ...ctx.extraTags]);
-  if (!recipe.title) recipe.title = recipe.shortTitle = sheetText.untitledRecipe;
+  if (!recipe.title) recipe.title = sheetText.untitledRecipe;
   recipe.minutes = recipe.prepMinutes + recipe.cookMinutes;
   return { recipe, favorite: ctx.favorite };
 }

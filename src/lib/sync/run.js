@@ -1,8 +1,8 @@
 // One sync pass against the connected spreadsheet. The Google API and the
 // on-device stores are passed in, so this runs (and is tested) without either.
 
-import { a1, fingerprint, readTable, reconcile, resolveColumns, rowCells } from './engine.js';
-import { isOldIngredientsJSON, isoDate, settingsFromRows } from './codec.js';
+import { a1, fingerprint, readTable, reconcile, resolveColumns, rowCells, settleCells } from './engine.js';
+import { addedDate, isOldIngredientsJSON, isoDate, settingsFromRows } from './codec.js';
 import { SCHEMA_VERSION } from '../schema.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
@@ -35,6 +35,9 @@ import { SCHEMA_VERSION } from '../schema.js';
  * `version`: the spreadsheet is in another layout (`Schema | Version`, or old-style recipe lines when
  * it has no version row); nothing was read into the device or written.
  */
+
+/** Per tab, cells the device settles after reading the sheet and writes back (see `settleCells`). */
+const SETTLED = { recipes: { Date_Added: addedDate } };
 
 export const emptyBase = (spreadsheetId) => ({ spreadsheetId, initialized: false, tabs: {} });
 
@@ -120,6 +123,7 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
       strategy,
     });
     local.apply(key, result.final, result.fromSheet, plan.columns);
+    if (SETTLED[key]) settleCells({ sheet: tables[key], result, device: local.localRows(key), cells: SETTLED[key], columns: plan.columns });
     results[key] = result;
     pulled += result.fromSheet.size;
   }

@@ -103,8 +103,8 @@ describe('the week\'s neighbours', () => {
 });
 
 describe('a meal planned too late for its heads-up', () => {
-  const hummus = { shortTitle: 'Hummus', headsUps: [{ text: 'Soak the chickpeas', daysBefore: 1 }] };
-  const stew = { shortTitle: 'Stew', headsUps: [{ text: 'Thaw', daysBefore: 2 }, { text: 'Marinate', daysBefore: 1 }] };
+  const hummus = { title: 'Hummus', headsUps: [{ text: 'Soak the chickpeas', daysBefore: 1 }] };
+  const stew = { title: 'Stew', headsUps: [{ text: 'Thaw', daysBefore: 2 }, { text: 'Marinate', daysBefore: 1 }] };
   const on = (map) => (iso) => map[iso];
 
   it('finds none when there is time, or no heads-ups', () => {

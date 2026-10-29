@@ -6,7 +6,7 @@
 // Plain JS (no runes, no network), runnable under Node. It lives outside src/ so it is never bundled.
 
 import { formatMinutes } from '../../src/lib/data/recipes.js';
-import { UNITS, ingredientIdFor, slugify, tidyIngredientName } from '../../src/lib/ingredients.js';
+import { UNITS, foldKey, ingredientIdFor, tidyIngredientName } from '../../src/lib/ingredients.js';
 import { aisles } from '../../src/lib/data/aisles.js';
 import { normalizeTag } from '../../src/lib/tags.js';
 import { random, mixSeed } from './random.js';
@@ -17,7 +17,7 @@ import { EDGE_CASES } from './edgeCases.js';
 import { DESC_EXTRA, GENERAL_TIPS, NOTE_HEADINGS } from './phrases.js';
 
 /** Bump whenever the output for a given seed and count changes (it is part of the dev data key). */
-export const GENERATOR_VERSION = 5;
+export const GENERATOR_VERSION = 8;
 
 /**
  * The day `addedAt` dates count back from, as a UTC timestamp: `today` ("YYYY-MM-DD"), else the SAMPLE_DATE
@@ -170,6 +170,17 @@ const titleCase = (text) => text.replace(/(^|[\s-])(\p{L})/gu, (_, sep, ch) => s
 /** Name used in running text: the plural when there is one. @param {string} name */
 const textName = (name) => entry(name).plural || name;
 
+/** Recipe id from the title: slugify's words, as many whole ones as fit in its 40 characters. @param {string} title */
+const recipeSlug = (title) => {
+  const [first = '', ...rest] = foldKey(title).split(/[^a-z0-9]+/).filter(Boolean);
+  let slug = first.slice(0, 40);
+  for (const word of rest) {
+    if (slug.length + 1 + word.length > 40) break;
+    slug += `-${word}`;
+  }
+  return slug;
+};
+
 /** Fills {placeholders}. @param {string} pattern @param {Record<string, string>} words */
 const fill = (pattern, words) => pattern.replace(/\{(\w+)\}/g, (_, key) => words[key] ?? '');
 
@@ -191,7 +202,6 @@ const pickPattern = (rng, patterns, words) => {
  *   template?: string,
  *   key: string,
  *   title: string,
- *   shortTitle: string,
  *   description: string,
  *   category: string,
  *   cuisine: string,
@@ -199,7 +209,7 @@ const pickPattern = (rng, patterns, words) => {
  *   serves: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
- *   groups: { title: string, category: string, lines: ReturnType<typeof parseLine>[] }[],
+ *   groups: { title: string, lines: ReturnType<typeof parseLine>[] }[],
  *   steps: { title: string, minutes: number, text: string }[],
  *   notes: string,
  *   headsUps: { text: string, daysBefore: number }[],
@@ -238,11 +248,10 @@ const swapNames = (text, swaps) => [...swaps].reduce((t, [from, to]) => t.replac
 
 /** @param {import('./edgeCases.js').EdgeCase} edge @param {ReturnType<typeof random>} rng @returns {Draft} */
 function edgeDraft(edge, rng) {
-  const groups = edge.groups.map(([title, category, lines]) => ({ title, category, lines: lines.map((l) => parseLine(l, rng)) }));
+  const groups = edge.groups.map(([title, lines]) => ({ title, lines: lines.map((l) => parseLine(l, rng)) }));
   return {
     key: edge.key,
     title: edge.title,
-    shortTitle: edge.short,
     description: edge.desc,
     category: edge.category,
     cuisine: edge.cuisine,
@@ -286,7 +295,7 @@ function templateDraft(rng) {
   const mainKey = mainKeys.length ? rng.pick(mainKeys) : '';
   const main = mainKey ? MAINS[mainKey] : undefined;
   const flavor = rng.pick(cuisine.flavors);
-  const usesFlavor = t.groups.some(([, , lines]) => lines.includes('@flavor'));
+  const usesFlavor = t.groups.some(([, lines]) => lines.includes('@flavor'));
 
   /** Names picked for the slots, for the text. */
   const picked = { veg: [], herbs: [], aromatics: [], starch: [] };
@@ -331,10 +340,10 @@ function templateDraft(rng) {
     }
   };
 
-  const groups = t.groups.map(([title, category, tokens]) => {
+  const groups = t.groups.map(([title, tokens]) => {
     const lines = tokens.flatMap(expand).map((spec) => parseLine(spec, rng));
     for (const l of lines) inRecipe.add(l.name);
-    return { title, category, lines };
+    return { title, lines };
   });
   const vegetarian = main?.kind === 'veg';
   const { groups: adjusted, swaps } = adjustLines(groups, { vegetarian, prefer: cuisine.prefer });
@@ -372,7 +381,6 @@ function templateDraft(rng) {
     template: t.id,
     key: `${t.id}|${cuisine.name}|${mainKey}|${usesFlavor ? flavor.word : ''}`,
     title: fill(pickPattern(rng, t.titles, words), words).replace(/\s+/g, ' ').trim(),
-    shortTitle: fill(t.short, words).trim(),
     description: text(pickPattern(rng, t.desc, words)) + extra,
     category: t.category,
     cuisine: cuisine.name,
@@ -539,7 +547,7 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
     }
     keys.add(draft.key);
     titles.add(draft.title);
-    const slug = slugify(draft.shortTitle) || 'recipe';
+    const slug = recipeSlug(draft.title) || 'recipe';
     let id = slug;
     for (let n = 2; ids.has(id); n++) id = `${slug}-${n}`;
     ids.add(id);
@@ -549,7 +557,6 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
     recipes.push({
       id,
       title: draft.title,
-      shortTitle: draft.shortTitle,
       description: draft.description,
       ...(image && { image }),
       prepMinutes: draft.prepMinutes,
@@ -560,7 +567,7 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
       addedAt: addedDate(day, rng.int(0, 364)),
       tags,
       notes: draft.notes,
-      ingredients: draft.groups.map((g) => ({ title: g.title, category: g.category, items: g.lines.map(toLine) })),
+      ingredients: draft.groups.map((g) => ({ title: g.title, items: g.lines.map(toLine) })),
       steps: draft.steps,
       headsUps: draft.headsUps,
     });

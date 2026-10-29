@@ -6,7 +6,7 @@ import { migrateNotes } from './markdown.js';
 import { normalizeTags, retag } from './tags.js';
 import { parseMeals } from './meals.js';
 import { normalizeHeadsUps } from './headsUps.js';
-import { cellText, recipeToRow } from './sync/codec.js';
+import { cellText, recipeToRow, stepTitle } from './sync/codec.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */
@@ -16,16 +16,20 @@ export const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinute
 
 /** Brings a recipe saved by an earlier build up to date. @param {SavedRecipe} r */
 export function migrate(r) {
-  // Mock-only sample fields, since removed (cook counts now come from the plan; `hero` was a second photo).
-  const { highlight, prep, stat, rating, ratings, cookCount, hero, badge, ...rest } = migrateNotes(r);
+  // Mock-only sample fields, since removed (cook counts now come from the plan; `hero` was a second photo; every
+  // screen now shows `title`, so `shortTitle` went too).
+  const { highlight, prep, stat, rating, ratings, cookCount, hero, badge, shortTitle, ...rest } = migrateNotes(r);
   // `badge.label` was one free-text category: its meal becomes `meals`, any other word joins the tags.
   const { meals, extra } = parseMeals(rest.meals ?? badge?.label ?? 'Dinner');
   return {
     ...rest,
     meals,
     tags: normalizeTags([...(r.tags ?? []), ...extra]),
-    ingredients: (rest.ingredients ?? []).map((g) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
+    // Groups had a `category` until #271; it's dropped.
+    ingredients: (rest.ingredients ?? []).map(({ category, ...g }) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
     headsUps: normalizeHeadsUps(rest.headsUps),
+    // Untitled steps were saved as "Step N" until #272; they're blank now.
+    steps: (rest.steps ?? []).map((s) => ({ ...s, title: stepTitle(s.title) })),
   };
 }
 

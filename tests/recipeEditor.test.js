@@ -121,7 +121,7 @@ describe('validation', () => {
 describe('the recipe a form saves as', () => {
   const how = (extra = {}) => ({ tags: ['Soup'], ingredientId: (r) => `id-${r.text}`, newId: (t) => `custom-${t}`, today: '2026-10-23', ...extra });
 
-  it('makes a new recipe: trimmed text, empty minutes as 0, steps without text dropped, default step titles', () => {
+  it('makes a new recipe: trimmed text, empty minutes as 0, steps without text dropped, blank step titles kept blank', () => {
     const form = valid();
     form.title = '  Pho ';
     form.description = ' broth ';
@@ -133,7 +133,7 @@ describe('the recipe a form saves as', () => {
     const r = formToRecipe(form, how());
     assert.equal(r.id, 'custom-Pho');
     assert.equal(r.title, 'Pho');
-    assert.equal(r.shortTitle, 'Pho');
+    assert.equal('shortTitle' in r, false);
     assert.equal(r.prepMinutes, 0);
     assert.equal(r.cookMinutes, 0);
     assert.equal('image' in r, false);
@@ -141,32 +141,30 @@ describe('the recipe a form saves as', () => {
     assert.equal(r.custom, true);
     assert.deepEqual(r.meals, ['Lunch', 'Dinner'], 'saved in list order');
     assert.deepEqual(r.steps, [
-      { title: 'Step 1', minutes: 0, text: 'Boil' },
+      { title: '', minutes: 0, text: 'Boil' },
       { title: 'Eat', minutes: 5, text: 'Serve' },
     ]);
     assert.deepEqual(r.ingredients, [
-      { title: 'Main', category: '1 item', items: [{ id: 'id-rice', qty: 1.5, unit: 'cup', note: 'fine', prep: 'rinsed', optional: true }] },
+      { title: 'Main', items: [{ id: 'id-rice', qty: 1.5, unit: 'cup', note: 'fine', prep: 'rinsed', optional: true }] },
     ]);
   });
 
-  it('keeps the short title unless the title changed, and fields the form does not show', () => {
-    const editing = recipe('pho', 'Pho', { shortTitle: 'Phở', sheetRow: 7, headsUpsRaw: 'bad' });
+  it('keeps a blank step title blank through reopening and reordering', () => {
+    const editing = recipe('pho', 'Pho', { steps: [{ title: '', minutes: 0, text: 'Boil' }, { title: 'Eat', minutes: 5, text: 'Serve' }] });
     const form = formFromRecipe(editing, lookup.ingredientOf);
-    assert.equal(formToRecipe(form, how({ editing })).shortTitle, 'Phở');
-    assert.equal(formToRecipe(form, how({ editing })).sheetRow, 7);
-    assert.equal(formToRecipe({ ...form, title: 'Pho 2' }, how({ editing })).shortTitle, 'Pho 2');
-    assert.equal(formToRecipe(form, how({ editing })).id, 'pho');
+    assert.deepEqual(form.steps.map((s) => s.title), ['', 'Eat']);
+    form.steps = moveItem(form.steps, 0, 1);
+    assert.deepEqual(formToRecipe(form, how({ editing })).steps, [
+      { title: 'Eat', minutes: 5, text: 'Serve' },
+      { title: '', minutes: 0, text: 'Boil' },
+    ]);
   });
 
-  it('keeps a renamed group its own category, else counts its items', () => {
-    const editing = recipe('pho', 'Pho', { ingredients: [{ title: 'Broth', category: 'Protein', items: [{ id: 'rice', qty: 1 }] }] });
+  it('keeps fields the form does not show', () => {
+    const editing = recipe('pho', 'Pho', { sheetRow: 7, headsUpsRaw: 'bad' });
     const form = formFromRecipe(editing, lookup.ingredientOf);
-    assert.equal(formToRecipe(form, how({ editing })).ingredients[0].category, 'Protein');
-    form.groups[0].category = '';
-    assert.equal(formToRecipe(form, how({ editing })).ingredients[0].category, 'Protein');
-    form.groups[0].title = 'Stock';
-    form.groups[0].category = '';
-    assert.equal(formToRecipe(form, how({ editing })).ingredients[0].category, '1 item');
+    assert.equal(formToRecipe(form, how({ editing })).sheetRow, 7);
+    assert.equal(formToRecipe(form, how({ editing })).id, 'pho');
   });
 
   it('replaces the first heads-up, keeps the others, and clearing leaves the rest', () => {
@@ -192,21 +190,21 @@ describe('the recipe a form saves as', () => {
       tags: ['Soup'],
       headsUps: [{ text: 'soak', daysBefore: 1 }],
       ingredients: [
-        { title: 'Broth', category: 'Protein', items: [{ id: 'rice', qty: 1.5, unit: 'cup', note: 'fine', prep: 'rinsed', optional: true }] },
-        { title: 'Main', category: '1 item', items: [{ id: 'rice' }] },
+        { title: 'Broth', items: [{ id: 'rice', qty: 1.5, unit: 'cup', note: 'fine', prep: 'rinsed', optional: true }] },
+        { title: 'Main', items: [{ id: 'rice' }] },
       ],
       steps: [{ title: 'Boil', minutes: 10, text: 'Boil it.' }],
     });
     const { minutes, ...stored } = editing;
     const form = formFromRecipe(editing, lookup.ingredientOf);
-    const again = formToRecipe(form, how({ editing, tags: form.tags, category: form.category, ingredientId: (r) => lookup.findIngredient(r.text).id }));
+    const again = formToRecipe(form, how({ editing, tags: form.tags, ingredientId: (r) => lookup.findIngredient(r.text).id }));
     assert.deepEqual(again, stored);
   });
 });
 
 describe('forms', () => {
   it('opens a saved recipe with an unknown ingredient showing its id, and a recipe without groups as one blank group', () => {
-    const r = recipe('pho', 'Pho', { ingredients: [{ title: 'Main', category: '', items: [{ id: 'ghost', qty: 2 }] }] });
+    const r = recipe('pho', 'Pho', { ingredients: [{ title: 'Main', items: [{ id: 'ghost', qty: 2 }] }] });
     const f = formFromRecipe(r, lookup.ingredientOf);
     assert.equal(f.groups[0].rows[0].text, 'ghost');
     assert.equal(f.groups[0].rows[0].aisle, 'Pantry');
@@ -273,7 +271,7 @@ describe('kept drafts', () => {
   });
 
   it('opens an edit draft kept before heads-ups, and one kept as a flat list before groups', () => {
-    const editing = recipe('pho', 'Pho', { headsUps: [{ text: 'soak', daysBefore: 1 }], ingredients: [{ title: 'Broth', category: 'Protein', items: [{ id: 'rice', qty: 1 }] }] });
+    const editing = recipe('pho', 'Pho', { headsUps: [{ text: 'soak', daysBefore: 1 }], ingredients: [{ title: 'Broth', items: [{ id: 'rice', qty: 1 }] }] });
     const { opened } = open(editing);
     const { headsUp, headsUpDays, ...old } = opened;
 
@@ -297,7 +295,26 @@ describe('kept drafts', () => {
     const drafts = createDraftStore(store, 'new', 'edits');
     drafts.write('pho', flat, signature(flatForm(old)));
     const b = loadDraft(drafts, editing, opened, signature(opened));
-    assert.deepEqual(b.groups.map((g) => [g.title, g.category, g.rows.length]), [['broth', 'Protein', 1], ['Sauce', '', 1]]);
+    assert.deepEqual(b.groups.map((g) => [g.title, g.rows.length]), [['broth', 1], ['Sauce', 1]]);
+  });
+
+  it('opens drafts kept while groups had a category, and drops it', () => {
+    const editing = recipe('pho', 'Pho', { ingredients: [{ title: 'Broth', items: [{ id: 'rice', qty: 1 }] }] });
+    const { opened, baseline } = open(editing);
+    // As the editor kept it before #271: every group with a `category` between its title and rows.
+    const withCategory = (form) => ({ ...form, groups: form.groups.map(({ key, title, rows }) => ({ key, title, category: 'Protein', rows })) });
+    const drafts = createDraftStore(memory(), 'new', 'edits');
+    drafts.write('pho', { ...withCategory(opened), title: 'Old draft' }, signature(withCategory(opened)));
+    const edit = loadDraft(drafts, editing, opened, baseline);
+    assert.equal(edit.title, 'Old draft');
+    assert.equal('category' in edit.groups[0], false);
+    assert.equal(edit.groups[0].rows[0].id, 'rice');
+
+    const blank = open(undefined);
+    drafts.write(undefined, { ...withCategory(blank.opened), title: 'New draft' }, blank.baseline);
+    const fresh = loadDraft(drafts, undefined, blank.opened, blank.baseline);
+    assert.equal(fresh.title, 'New draft');
+    assert.equal('category' in fresh.groups[0], false);
   });
 });
 

@@ -1,7 +1,7 @@
 <script>
   import { missingKeys, minutesText, nextStepIndex, resolveDay, timeStats, toggleAll as toggleAllIn, toggleIn, visibleHeadsUps } from '../lib/recipePage.js';
   import Icon from '../lib/components/Icon.svelte';
-  import { renderMarkdown } from '../lib/markdown.js';
+  import { firstLineText, renderMarkdown } from '../lib/markdown.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
   import PrintOptionsDialog from '../lib/components/PrintOptionsDialog.svelte';
   import DeleteRecipeDialog from '../lib/components/DeleteRecipeDialog.svelte';
@@ -208,7 +208,7 @@
   function planOn(iso) {
     assignRecipe(iso, recipe.id);
     const note = tooSoonNote(iso);
-    const planned = text.recipe.toasts.planned(recipe.shortTitle, formatLong(iso));
+    const planned = text.recipe.toasts.planned(recipe.title, formatLong(iso));
     showToast(note ? `${planned} ${note}` : planned);
   }
 
@@ -220,7 +220,7 @@
     confirmingDelete = false;
     const removed = deleteRecipe(recipe.id);
     navigate('/catalog');
-    showToast(text.recipe.toasts.deleted(recipe.shortTitle), { label: text.common.undo, run: () => restoreRecipe(removed) }, 10000);
+    showToast(text.recipe.toasts.deleted(recipe.title), { label: text.common.undo, run: () => restoreRecipe(removed) }, 10000);
   }
 
   let choosingPrint = $state(false);
@@ -314,7 +314,7 @@
     <div bind:this={cookTopBar} class="sticky top-0 z-30 border-b border-surface-container-high bg-background max-md:hidden print:hidden">
       <div class="mx-auto flex max-w-page items-center gap-2 px-gutter-desktop py-1.5">
         <div class="-ml-3">{@render exitButton()}</div>
-        <span class="min-w-0 flex-1 truncate font-display text-headline-sm text-on-surface">{recipe.shortTitle}</span>
+        <span class="min-w-0 flex-1 truncate font-display text-headline-sm text-on-surface">{recipe.title}</span>
         <span class="text-label-md text-on-surface-variant">{text.recipe.stats.servings}</span>
         {@render stepper()}
         {#if nextStep >= 0}{@render nextButton('bg-primary-fixed/60 text-primary hover:bg-primary-fixed')}{/if}
@@ -342,7 +342,7 @@
           <a href={href('/catalog', { day: planningDay })} class="shrink-0 font-semibold text-on-surface hover:text-primary">{text.recipe.catalog}</a>
         {/if}
         <span class="text-outline">/</span>
-        <span class="truncate text-on-surface" aria-current="page">{recipe.shortTitle}</span>
+        <span class="truncate text-on-surface" aria-current="page">{recipe.title}</span>
       </nav>
 
       <div class="flex flex-wrap items-center gap-2">
@@ -635,7 +635,7 @@
             <button
               type="button"
               disabled={!missing.length}
-              onclick={() => push(missing, (n) => text.recipe.toasts.addedFromRecipe(n, recipe.shortTitle))}
+              onclick={() => push(missing, (n) => text.recipe.toasts.addedFromRecipe(n, recipe.title))}
               class="min-h-11 shrink-0 justify-center py-2 fine:min-h-0 {missing.length
                 ? 'btn-primary'
                 : 'btn-outline disabled:opacity-100 disabled:hover:bg-surface-container-lowest disabled:hover:text-on-surface-variant'}"
@@ -700,8 +700,14 @@
                   </span>
                 </button>
                 <div class={cook ? 'contents' : 'flex-1'}>
-                  <div class={cook ? 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5' : 'mb-1.5 flex items-start justify-between gap-3'}>
-                    <h3 class="font-display print:text-on-surface {cook && !folded ? 'text-headline-md' : 'text-headline-sm'} {done ? 'text-on-surface-variant' : 'text-on-surface'}">{step.title}</h3>
+                  <!-- An untitled step shows just its number; folded in the cook view, its text stands in for the title. -->
+                  {#if cook || step.title || isNext || step.minutes}
+                  <div class={cook ? 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5' : `mb-1.5 flex items-start gap-3 ${step.title ? 'justify-between' : ''}`}>
+                    {#if step.title}
+                      <h3 class="font-display print:text-on-surface {cook && !folded ? 'text-headline-md' : 'text-headline-sm'} {done ? 'text-on-surface-variant' : 'text-on-surface'}">{step.title}</h3>
+                    {:else if folded}
+                      <p class="min-w-0 flex-1 truncate text-body-lg text-on-surface-variant">{firstLineText(step.text)}</p>
+                    {/if}
                     {#if isNext}
                       <span class="shrink-0 rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary">{text.recipe.cook.nextBadge}</span>
                     {/if}
@@ -711,6 +717,7 @@
                       </span>
                     {/if}
                   </div>
+                  {/if}
                   {#if !folded}
                     <div class="notes-md text-on-surface-variant {cook ? 'col-span-2 text-body-xl' : 'text-body-lg'}">{@html renderMarkdown(step.text)}</div>
                   {/if}
@@ -760,7 +767,7 @@
         {/if}
         {#if next}
           <a href={href(`/recipe/${next.recipe.id}`, { day: next.iso })} class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0">
-            {text.recipe.buttons.next(formatWeekday(next.iso), next.recipe.shortTitle)} <Icon name="arrow_forward" class="text-[16px]" />
+            {text.recipe.buttons.next(formatWeekday(next.iso), next.recipe.title)} <Icon name="arrow_forward" class="text-[16px]" />
           </a>
         {:else}
           <a href={href('/')} class="btn-outline min-h-11 py-2 text-on-surface fine:min-h-0">

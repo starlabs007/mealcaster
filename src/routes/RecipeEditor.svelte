@@ -847,7 +847,7 @@
               />
             </div>
             {#if photoError}
-              <p class="mt-1 text-body-sm text-secondary">{photoError}</p>
+              <p class="mt-1 flex items-start gap-1 text-body-sm text-error"><Icon name="error" class="mt-px shrink-0 text-[16px]" /><span>{photoError}</span></p>
             {:else if uploaded}
               <p class="mt-1 text-body-sm text-on-surface-variant">{sheets.spreadsheet ? text.editor.photo.uploadedConnected : text.editor.photo.uploadedLocal}</p>
             {/if}

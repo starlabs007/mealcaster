@@ -6,8 +6,8 @@
 //   category: Dinner, Lunch, Breakfast or Dessert (the recipe's meal; generate.js adds a second to some)
 //   style: which cut of the main it takes (cuisines.js MAINS[…].cuts); omitted = no main
 //   mealdb: TheMealDB category for its photo when it isn't the main's (Dessert, Breakfast, Pasta, Side, Starter)
-//   titles / short / desc: patterns; {Main} {main} {Veg} {veg} {Flavor} {flavor} {herbs} {aromatics} {starch} {cuisine}
-//   groups: [title, category, lines]. A line is 'name|amount|prep|note' (see cuisines.js) or a slot:
+//   titles / desc: patterns; {Main} {main} {Veg} {veg} {Flavor} {flavor} {herbs} {aromatics} {starch} {cuisine}
+//   groups: [title, lines]. A line is 'name|amount|prep|note' (see cuisines.js) or a slot:
 //     @main, @flavor, @aromatics, @sauce, @starch, @veg:min-max, @herbs:min-max, @broth:amount
 //   steps: [title, 'min-max flags', text]; flag: p = prep time (the rest counts as cook time)
 //   tips: Cook's Secrets lines for this dish
@@ -24,9 +24,8 @@
  *   mealdb?: string,
  *   serves: [number, number],
  *   titles: string[],
- *   short: string,
  *   desc: string[],
- *   groups: [string, string, string[]][],
+ *   groups: [string, string[]][],
  *   steps: [string, string, string][],
  *   tips: string[],
  *   headsUps?: [string, number][],
@@ -57,16 +56,15 @@ export const TEMPLATES = [
     style: 'stirfry',
     serves: [2, 4],
     titles: ['{Flavor} {Main} Stir-Fry with {Veg}', '{Main} & {Veg} Stir-Fry with {Flavor} Sauce', 'Weeknight {Flavor} {Main} Stir-Fry'],
-    short: '{Main} Stir-Fry',
     desc: [
       'Tender {main} and crisp {veg} tossed in a glossy {flavor} sauce, on the table faster than takeout.',
       'A hot-wok weeknight staple: {main}, {veg} and a punchy {flavor} sauce over {starch}.',
     ],
     groups: [
-      ['The {Main}', 'Protein', ['@main', 'cornstarch|2 tsp', 'soy sauce|1 tsp', 'vegetable oil|2 tbsp']],
-      ['Stir-Fry Sauce', 'Sauce', ['@sauce', '@flavor']],
-      ['Wok Vegetables', 'Produce', ['@aromatics', '@veg:2-3']],
-      ['To Serve', 'Serve', ['@starch', '@herbs:1-1']],
+      ['The {Main}', ['@main', 'cornstarch|2 tsp', 'soy sauce|1 tsp', 'vegetable oil|2 tbsp']],
+      ['Stir-Fry Sauce', ['@sauce', '@flavor']],
+      ['Wok Vegetables', ['@aromatics', '@veg:2-3']],
+      ['To Serve', ['@starch', '@herbs:1-1']],
     ],
     steps: [
       ['Velvet the {Main}', '10-15 p', 'Toss the {main} with the cornstarch and soy sauce and let it sit while you prep everything else.\n\n- Whisk the sauce ingredients in a small bowl.\n- Line the vegetables up next to the stove — this moves fast.'],
@@ -90,16 +88,15 @@ export const TEMPLATES = [
     style: 'braise',
     serves: [4, 6],
     titles: ['{Flavor} Braised {Main} with {Veg}', 'Slow-Braised {Flavor} {Main}', 'Sunday {Main} Braise with {Flavor} and {Veg}'],
-    short: 'Braised {Main}',
     desc: [
       'Low and slow {main} in a deep {flavor} braise until it falls apart at a nudge. Even better the next day.',
       'A one-pot braise of {main} and {veg} that perfumes the house all afternoon.',
     ],
     groups: [
-      ['The Braise', 'Protein', ['@main', 'kosher salt|2 tsp', 'vegetable oil|2 tbsp']],
-      ['Aromatics & Liquid', 'Braising Liquid', ['@aromatics', '@flavor', '@broth:3 cup', 'tomato paste|1 tbsp']],
-      ['Vegetables', 'Produce', ['@veg:1-2', '@herbs:1-1']],
-      ['To Serve', 'Serve', ['@starch']],
+      ['The Braise', ['@main', 'kosher salt|2 tsp', 'vegetable oil|2 tbsp']],
+      ['Aromatics & Liquid', ['@aromatics', '@flavor', '@broth:3 cup', 'tomato paste|1 tbsp']],
+      ['Vegetables', ['@veg:1-2', '@herbs:1-1']],
+      ['To Serve', ['@starch']],
     ],
     steps: [
       ['Season Ahead', '10-15 p', 'Season the {main} all over with the salt. If you have time, leave it uncovered in the fridge for a few hours or overnight.'],
@@ -124,15 +121,14 @@ export const TEMPLATES = [
     style: 'roast',
     serves: [2, 4],
     titles: ['Sheet-Pan {Flavor} {Main} with {Veg}', 'One-Pan {Flavor} {Main} & {Veg}', 'Crispy Sheet-Pan {Main} with {Flavor} {Veg}'],
-    short: 'Sheet-Pan {Main}',
     desc: [
       'Everything roasts together on one pan: {flavor}-rubbed {main} and caramelized {veg}, with almost no washing up.',
       'A hands-off weeknight roast of {main} and {veg}, finished with a bright squeeze of citrus.',
     ],
     groups: [
-      ['The Sheet Pan', 'Protein & Produce', ['@main', '@veg:2-3', 'olive oil|3 tbsp', 'kosher salt|1 1/2 tsp', 'black pepper|1/2 tsp']],
-      ['Seasoning', 'Spices', ['@flavor', '@aromatics']],
-      ['To Finish', 'Garnish', ['@herbs:1-2', 'lemon|1|cut into wedges']],
+      ['The Sheet Pan', ['@main', '@veg:2-3', 'olive oil|3 tbsp', 'kosher salt|1 1/2 tsp', 'black pepper|1/2 tsp']],
+      ['Seasoning', ['@flavor', '@aromatics']],
+      ['To Finish', ['@herbs:1-2', 'lemon|1|cut into wedges']],
     ],
     steps: [
       ['Heat the Oven', '5-5 p', 'Heat the oven to **425°F** with a rack in the upper third. Line a large sheet pan with parchment if you like.'],
@@ -156,16 +152,15 @@ export const TEMPLATES = [
     style: 'grill',
     serves: [2, 4],
     titles: ['{Flavor} {Main} Grain Bowl with {Veg}', '{Main} Power Bowl with {Flavor} Dressing', 'Charred {Main} & {Veg} Bowl'],
-    short: '{Main} Bowl',
     desc: [
       'A build-your-own bowl of charred {main}, {veg} and fresh herbs over warm grains, tied together with a {flavor} dressing.',
       'Bright, crunchy and filling: {main} over {starch} with plenty of {veg}.',
     ],
     groups: [
-      ['Grains', 'Base', ['@starch']],
-      ['The {Main}', 'Protein', ['@main', '@flavor', 'vegetable oil|1 tbsp']],
-      ['Toppings', 'Produce', ['@veg:2-4', '@herbs:1-2', '?sesame seeds|1 tbsp|toasted']],
-      ['Dressing', 'Dressing', ['@sauce']],
+      ['Grains', ['@starch']],
+      ['The {Main}', ['@main', '@flavor', 'vegetable oil|1 tbsp']],
+      ['Toppings', ['@veg:2-4', '@herbs:1-2', '?sesame seeds|1 tbsp|toasted']],
+      ['Dressing', ['@sauce']],
     ],
     steps: [
       ['Cook the Grains', '15-25', 'Cook the {starch} according to the package and keep it warm.'],
@@ -189,15 +184,14 @@ export const TEMPLATES = [
     style: 'stirfry',
     serves: [2, 4],
     titles: ['{Flavor} {Main} Fried Rice', '{Main} Fried Rice with {Veg} and a Crispy Egg', 'Day-Old Rice {Main} Fried Rice'],
-    short: '{Main} Fried Rice',
     desc: [
       'The best use of yesterday\'s rice: {main}, {veg} and egg tossed in a screaming-hot wok with {flavor}.',
       'Smoky, savoury fried rice with {main} and {veg}, done in fifteen minutes.',
     ],
     groups: [
-      ['Fried Rice', 'Main', ['jasmine rice|3 cup|cooked and chilled overnight', '@main', 'egg|2-3|beaten', 'ham|4 oz|diced', 'vegetable oil|3 tbsp']],
-      ['Flavour', 'Sauce', ['@aromatics', '@flavor', 'soy sauce|2 tbsp', 'white pepper|1/4 tsp']],
-      ['Vegetables', 'Produce', ['@veg:1-2', 'frozen peas|1/2 cup', '@herbs:1-1']],
+      ['Fried Rice', ['jasmine rice|3 cup|cooked and chilled overnight', '@main', 'egg|2-3|beaten', 'ham|4 oz|diced', 'vegetable oil|3 tbsp']],
+      ['Flavour', ['@aromatics', '@flavor', 'soy sauce|2 tbsp', 'white pepper|1/4 tsp']],
+      ['Vegetables', ['@veg:1-2', 'frozen peas|1/2 cup', '@herbs:1-1']],
     ],
     steps: [
       ['Break Up the Rice', '5-5 p', 'Crumble the cold rice with your hands so there are no clumps.'],
@@ -218,16 +212,15 @@ export const TEMPLATES = [
     style: 'stirfry',
     serves: [2, 4],
     titles: ['{Flavor} {Main} Noodles with {Veg}', 'Saucy {Main} & {Veg} Noodles', '{Flavor} Stir-Fried Noodles with {Main}'],
-    short: '{Main} Noodles',
     desc: [
       'Slurpable noodles tossed with {main}, {veg} and a savoury {flavor} sauce.',
       'Chewy noodles, seared {main} and plenty of {veg} — a better-than-delivery bowl.',
     ],
     groups: [
-      ['Noodles', 'Starch', ['egg noodles|12 oz||fresh, or udon', 'toasted sesame oil|1 tsp']],
-      ['Stir-Fry', 'Main', ['@main', '@veg:2-2', '@aromatics', 'vegetable oil|2 tbsp']],
-      ['Sauce', 'Sauce', ['@sauce', '@flavor']],
-      ['Garnish', 'Garnish', ['@herbs:1-1', '?chili crisp|1 tbsp']],
+      ['Noodles', ['egg noodles|12 oz||fresh, or udon', 'toasted sesame oil|1 tsp']],
+      ['Stir-Fry', ['@main', '@veg:2-2', '@aromatics', 'vegetable oil|2 tbsp']],
+      ['Sauce', ['@sauce', '@flavor']],
+      ['Garnish', ['@herbs:1-1', '?chili crisp|1 tbsp']],
     ],
     steps: [
       ['Cook the Noodles', '5-8', 'Cook the noodles until just shy of tender, drain, rinse under cold water and toss with the sesame oil.'],
@@ -246,15 +239,14 @@ export const TEMPLATES = [
     style: 'grill',
     serves: [4, 6],
     titles: ['Grilled {Flavor} {Main} Skewers', '{Flavor} {Main} Skewers with {Veg}', 'Charcoal-Grilled {Main} Skewers, {cuisine} Style'],
-    short: '{Main} Skewers',
     desc: [
       'Smoky, charred {main} skewers in a {flavor} marinade, made for summer evenings.',
       'Marinated {main} grilled until caramelized, served with {veg} and herbs to wrap.',
     ],
     groups: [
-      ['Marinade', 'Marinade', ['@flavor', '@aromatics', 'vegetable oil|2 tbsp', 'brown sugar|1 tbsp']],
-      ['Skewers', 'Protein', ['@main', 'bamboo skewers|12||soaked 30 minutes']],
-      ['To Serve', 'Serve', ['@veg:1-2', '@herbs:1-2', '@starch', 'lime|1|cut into wedges']],
+      ['Marinade', ['@flavor', '@aromatics', 'vegetable oil|2 tbsp', 'brown sugar|1 tbsp']],
+      ['Skewers', ['@main', 'bamboo skewers|12||soaked 30 minutes']],
+      ['To Serve', ['@veg:1-2', '@herbs:1-2', '@starch', 'lime|1|cut into wedges']],
     ],
     steps: [
       ['Marinate', '15-20 p', 'Blend the marinade ingredients and toss with the {main}. Cover and refrigerate for at least 1 hour, or overnight.'],
@@ -275,11 +267,10 @@ export const TEMPLATES = [
     style: 'ground',
     serves: [2, 4],
     titles: ['{Flavor} {Main} Lettuce Wraps', 'Crunchy {Main} Lettuce Cups with {Flavor}', '{Main} Lettuce Wraps with Pickled {Veg}'],
-    short: '{Main} Lettuce Wraps',
     desc: ['Savoury {flavor} {main} spooned into cold, crisp lettuce cups — light, fast and fun to eat with your hands.'],
     groups: [
-      ['Filling', 'Main', ['@main', '@aromatics', '@flavor', 'vegetable oil|1 tbsp', 'hoisin sauce|2 tbsp']],
-      ['Wraps & Toppings', 'Produce', ['butter lettuce|2 head|leaves separated', '@veg:1-2', '@herbs:1-2', '?roasted peanuts|1/4 cup|chopped']],
+      ['Filling', ['@main', '@aromatics', '@flavor', 'vegetable oil|1 tbsp', 'hoisin sauce|2 tbsp']],
+      ['Wraps & Toppings', ['butter lettuce|2 head|leaves separated', '@veg:1-2', '@herbs:1-2', '?roasted peanuts|1/4 cup|chopped']],
     ],
     steps: [
       ['Prep the Lettuce', '10-10 p', 'Separate, wash and dry the lettuce leaves, and chill them until serving.'],
@@ -298,12 +289,11 @@ export const TEMPLATES = [
     style: 'ground',
     serves: [4, 6],
     titles: ['{Flavor} {Main} Meatballs', 'Tender {Main} Meatballs with {Flavor} Sauce', 'Baked {Main} Meatballs with {Veg}'],
-    short: '{Main} Meatballs',
     desc: ['Juicy, herby {main} meatballs, browned and simmered until tender, with a {flavor} kick.'],
     groups: [
-      ['Meatballs', 'Main', ['@main', 'panko|1/2 cup', 'whole milk|1/4 cup', 'egg|1', '@aromatics', 'kosher salt|1 tsp']],
-      ['Sauce', 'Sauce', ['@flavor', 'crushed tomatoes|1 can||28 oz', 'olive oil|2 tbsp']],
-      ['To Serve', 'Serve', ['@starch', '@herbs:1-1', '@veg:1-1']],
+      ['Meatballs', ['@main', 'panko|1/2 cup', 'whole milk|1/4 cup', 'egg|1', '@aromatics', 'kosher salt|1 tsp']],
+      ['Sauce', ['@flavor', 'crushed tomatoes|1 can||28 oz', 'olive oil|2 tbsp']],
+      ['To Serve', ['@starch', '@herbs:1-1', '@veg:1-1']],
     ],
     steps: [
       ['Soak the Crumbs', '5-5 p', 'Stir the panko into the milk and let it soften into a paste — this keeps the meatballs tender.'],
@@ -322,12 +312,11 @@ export const TEMPLATES = [
     style: 'soup',
     serves: [4, 4],
     titles: ['Phở {Main} with Charred Ginger Broth', 'Weeknight Phở with {Main} and Fresh Herbs', 'Star Anise {Main} Phở'],
-    short: '{Main} Phở',
     desc: ['A fragrant, star-anise-scented broth poured over rice noodles and {main}, with a pile of fresh herbs, lime and chili on the side.'],
     groups: [
-      ['Broth', 'Broth', ['@broth:8 cup', 'onion|1|halved', 'ginger|1 piece|halved lengthwise|4-inch', 'star anise|4', 'cinnamon stick|1', 'whole cloves|4', 'fish sauce|3 tbsp', 'sugar|1 tbsp||or rock sugar']],
-      ['Bowls', 'Noodles & Protein', ['banh pho noodles|14 oz||dried, flat', '@main']],
-      ['The Herb Plate', 'Garnish', ['bean sprouts|2 cup', 'thai basil|1 bunch', 'cilantro|1/2 bunch', 'lime|2|cut into wedges', 'red chili|1|thinly sliced', '?hoisin sauce|2 tbsp', '?sriracha|2 tbsp']],
+      ['Broth', ['@broth:8 cup', 'onion|1|halved', 'ginger|1 piece|halved lengthwise|4-inch', 'star anise|4', 'cinnamon stick|1', 'whole cloves|4', 'fish sauce|3 tbsp', 'sugar|1 tbsp||or rock sugar']],
+      ['Bowls', ['banh pho noodles|14 oz||dried, flat', '@main']],
+      ['The Herb Plate', ['bean sprouts|2 cup', 'thai basil|1 bunch', 'cilantro|1/2 bunch', 'lime|2|cut into wedges', 'red chili|1|thinly sliced', '?hoisin sauce|2 tbsp', '?sriracha|2 tbsp']],
     ],
     steps: [
       ['Char the Aromatics', '10-12', 'Char the onion and ginger directly over a gas flame or under the broiler until blackened in spots.'],
@@ -349,12 +338,11 @@ export const TEMPLATES = [
     style: 'grill',
     serves: [4, 4],
     titles: ['{Flavor} {Main} Rice Noodle Bowl', 'Bún with {Flavor} Grilled {Main} and Nước Chấm', '{Flavor} {Main} Vermicelli Bowl with Pickled Carrot'],
-    short: '{Main} Noodle Bowl',
     desc: ['Cold rice vermicelli, warm caramelized {main}, crunchy pickles and a heap of herbs, all drenched in sweet-sour nước chấm.'],
     groups: [
-      ['Grilled {Main}', 'Protein', ['@main', '@flavor', 'shallot|2|minced', 'fish sauce|2 tbsp', 'sugar|1 tbsp', 'vegetable oil|1 tbsp']],
-      ['Bowls', 'Noodles & Produce', ['rice vermicelli|8 oz', '@veg:2-3', '@herbs:2-3', 'roasted peanuts|1/3 cup|crushed']],
-      ['Nước Chấm', 'Sauce', ['@sauce', 'rice vinegar|2 tbsp', 'carrot|1|shredded']],
+      ['Grilled {Main}', ['@main', '@flavor', 'shallot|2|minced', 'fish sauce|2 tbsp', 'sugar|1 tbsp', 'vegetable oil|1 tbsp']],
+      ['Bowls', ['rice vermicelli|8 oz', '@veg:2-3', '@herbs:2-3', 'roasted peanuts|1/3 cup|crushed']],
+      ['Nước Chấm', ['@sauce', 'rice vinegar|2 tbsp', 'carrot|1|shredded']],
     ],
     steps: [
       ['Marinate', '15-30 p', 'Mix the {main} with the {flavor} ingredients, shallot, fish sauce, sugar and oil. Marinate at least 30 minutes.'],
@@ -375,12 +363,11 @@ export const TEMPLATES = [
     style: 'braise',
     serves: [3, 4],
     titles: ['Caramel-Braised {Main} in a Clay Pot', '{Main} Kho with Black Pepper and Coconut Water', 'Sticky Caramel {Main} Kho'],
-    short: '{Main} Kho',
     desc: ['A Vietnamese home-cooking classic: {main} simmered in a dark, bittersweet caramel with fish sauce and black pepper, made for spooning over rice.'],
     groups: [
-      ['Caramel', 'Sauce', ['sugar|3 tbsp', 'fish sauce|3 tbsp', 'black pepper|1 tsp|coarsely cracked']],
-      ['Kho', 'Main', ['@main', 'shallot|3|sliced', 'garlic|4 clove|minced', 'coconut milk|1 cup||or coconut water', 'red chili|1|sliced']],
-      ['To Serve', 'Serve', ['jasmine rice|1 1/2 cup', 'green onion|3 stalk|sliced', '@veg:1-1']],
+      ['Caramel', ['sugar|3 tbsp', 'fish sauce|3 tbsp', 'black pepper|1 tsp|coarsely cracked']],
+      ['Kho', ['@main', 'shallot|3|sliced', 'garlic|4 clove|minced', 'coconut milk|1 cup||or coconut water', 'red chili|1|sliced']],
+      ['To Serve', ['jasmine rice|1 1/2 cup', 'green onion|3 stalk|sliced', '@veg:1-1']],
     ],
     steps: [
       ['Make the Caramel', '5-6', 'Melt the sugar in a clay pot or heavy saucepan over medium heat, without stirring, until it turns **the colour of dark coffee**. Immediately add 2 tbsp water (it will spit).\n\n> Too pale and the dish is just sweet; too far and it\'s acrid. Pull it at mahogany.'],
@@ -400,12 +387,11 @@ export const TEMPLATES = [
     style: 'ground',
     serves: [2, 4],
     titles: ['Mapo Tofu with {Main} and Sichuan Peppercorn', 'Numbing Mapo Tofu with {Main}', 'Ma La Mapo Tofu with {Main}'],
-    short: 'Mapo Tofu',
     desc: ['Silky tofu in a fiery, numbing sauce of doubanjiang and Sichuan peppercorn with crisp {main} — the ultimate rice companion.'],
     groups: [
-      ['Mapo', 'Main', ['silken tofu|1 lb|cut into 1-inch cubes', '@main', 'doubanjiang|2 tbsp', 'fermented black beans|1 tbsp|rinsed', 'garlic|3 clove|minced', 'ginger|1 tbsp|minced', 'vegetable oil|3 tbsp']],
-      ['Sauce', 'Sauce', ['@broth:1 cup', 'light soy sauce|1 tsp', 'cornstarch|1 tbsp|mixed with 2 tbsp water', 'sichuan peppercorns|1 tsp|toasted and ground']],
-      ['To Serve', 'Serve', ['jasmine rice|1 1/2 cup', 'green onion|2 stalk|sliced']],
+      ['Mapo', ['silken tofu|1 lb|cut into 1-inch cubes', '@main', 'doubanjiang|2 tbsp', 'fermented black beans|1 tbsp|rinsed', 'garlic|3 clove|minced', 'ginger|1 tbsp|minced', 'vegetable oil|3 tbsp']],
+      ['Sauce', ['@broth:1 cup', 'light soy sauce|1 tsp', 'cornstarch|1 tbsp|mixed with 2 tbsp water', 'sichuan peppercorns|1 tsp|toasted and ground']],
+      ['To Serve', ['jasmine rice|1 1/2 cup', 'green onion|2 stalk|sliced']],
     ],
     steps: [
       ['Blanch the Tofu', '5-5', 'Simmer the tofu cubes gently in salted water for 2 minutes to firm them up, then drain.'],
@@ -426,12 +412,11 @@ export const TEMPLATES = [
     style: 'ground',
     serves: [4, 6],
     titles: ['Pan-Fried {Main} Dumplings with {Veg}', '{Main} & {Veg} Potstickers', 'Crispy-Bottom {Main} Dumplings with Chili Vinegar'],
-    short: '{Main} Dumplings',
     desc: ['Juicy {main} and {veg} dumplings with lacy, crisp bottoms and a tangy dipping sauce. A fun weekend project that fills the freezer.'],
     groups: [
-      ['Filling', 'Filling', ['@main', '@veg:1-1', '@aromatics', 'soy sauce|1 tbsp', 'toasted sesame oil|1 tsp', 'white pepper|1/4 tsp']],
-      ['Wrapping', 'Wrappers', ['dumpling wrappers|1 package||about 40', 'vegetable oil|2 tbsp']],
-      ['Dipping Sauce', 'Sauce', ['chinkiang vinegar|3 tbsp', 'soy sauce|1 tbsp', 'chili crisp|1 tbsp', 'ginger|1 tsp|julienned']],
+      ['Filling', ['@main', '@veg:1-1', '@aromatics', 'soy sauce|1 tbsp', 'toasted sesame oil|1 tsp', 'white pepper|1/4 tsp']],
+      ['Wrapping', ['dumpling wrappers|1 package||about 40', 'vegetable oil|2 tbsp']],
+      ['Dipping Sauce', ['chinkiang vinegar|3 tbsp', 'soy sauce|1 tbsp', 'chili crisp|1 tbsp', 'ginger|1 tsp|julienned']],
     ],
     steps: [
       ['Make the Filling', '15-20 p', 'Finely chop the {veg}. Mix with the {main}, {aromatics}, soy sauce, sesame oil and white pepper, stirring in one direction until sticky.'],
@@ -452,12 +437,11 @@ export const TEMPLATES = [
     style: 'stirfry',
     serves: [2, 4],
     titles: ['Kung Pao {Main} with Roasted Peanuts', 'Sichuan Kung Pao {Main}', 'Smoky Kung Pao {Main} with {Veg}'],
-    short: 'Kung Pao {Main}',
     desc: ['Sweet, sour, numbing and hot: {main} with dried chilies, Sichuan peppercorn and crunchy peanuts.'],
     groups: [
-      ['The {Main}', 'Protein', ['@main', 'cornstarch|1 tbsp', 'shaoxing wine|1 tbsp']],
-      ['Kung Pao Sauce', 'Sauce', ['chinkiang vinegar|1 tbsp', 'light soy sauce|1 tbsp', 'sugar|2 tsp', 'cornstarch|1 tsp']],
-      ['The Wok', 'Aromatics', ['red chili|8||dried', 'sichuan peppercorns|1 tsp', '@aromatics', '@veg:1-1', 'roasted peanuts|1/2 cup', 'vegetable oil|2 tbsp']],
+      ['The {Main}', ['@main', 'cornstarch|1 tbsp', 'shaoxing wine|1 tbsp']],
+      ['Kung Pao Sauce', ['chinkiang vinegar|1 tbsp', 'light soy sauce|1 tbsp', 'sugar|2 tsp', 'cornstarch|1 tsp']],
+      ['The Wok', ['red chili|8||dried', 'sichuan peppercorns|1 tsp', '@aromatics', '@veg:1-1', 'roasted peanuts|1/2 cup', 'vegetable oil|2 tbsp']],
     ],
     steps: [
       ['Marinate', '10-10 p', 'Toss the {main} with the cornstarch and Shaoxing wine. Stir the sauce together.'],
@@ -477,12 +461,11 @@ export const TEMPLATES = [
     style: 'curry',
     serves: [4, 4],
     titles: ['Thai Red Curry {Main} with {Veg}', 'Red Curry {Main} with Thai Basil', 'Coconut Red Curry {Main} with {Veg} and Lime Leaf'],
-    short: '{Main} Curry',
     desc: ['A rich coconut curry with {main} and {veg}, bright with lime leaf and Thai basil.'],
     groups: [
-      ['Curry Base', 'Sauce', ['thai red curry paste|3 tbsp', 'coconut milk|2 can||13.5 oz', 'fish sauce|1 tbsp', 'palm sugar|1 tbsp|grated', 'kaffir lime leaf|4|torn']],
-      ['Curry', 'Main', ['@main', '@veg:2-3']],
-      ['To Serve', 'Serve', ['jasmine rice|1 1/2 cup', 'thai basil|1 handful', 'lime|1|cut into wedges']],
+      ['Curry Base', ['thai red curry paste|3 tbsp', 'coconut milk|2 can||13.5 oz', 'fish sauce|1 tbsp', 'palm sugar|1 tbsp|grated', 'kaffir lime leaf|4|torn']],
+      ['Curry', ['@main', '@veg:2-3']],
+      ['To Serve', ['jasmine rice|1 1/2 cup', 'thai basil|1 handful', 'lime|1|cut into wedges']],
     ],
     steps: [
       ['Crack the Cream', '5-5', 'Simmer the thick cream from the top of the cans in a wok until the oil separates and glistens, then fry the curry paste in it until fragrant.'],
@@ -501,12 +484,11 @@ export const TEMPLATES = [
     style: 'stirfry',
     serves: [2, 2],
     titles: ['Pad Thai with {Main} and Tamarind', 'Street-Style {Main} Pad Thai', 'Tamarind {Main} Pad Thai with Crushed Peanuts'],
-    short: '{Main} Pad Thai',
     desc: ['Chewy rice noodles in a sweet-sour tamarind sauce with {main}, egg, bean sprouts and crushed peanuts.'],
     groups: [
-      ['Pad Thai Sauce', 'Sauce', ['tamarind paste|3 tbsp', 'fish sauce|2 tbsp', 'palm sugar|3 tbsp|grated']],
-      ['Wok', 'Main', ['rice noodles|8 oz||thin, 1/4 inch', '@main', 'egg|2', 'shallot|2|sliced', 'garlic|3 clove|minced', 'vegetable oil|3 tbsp']],
-      ['Garnish', 'Garnish', ['bean sprouts|2 cup', 'green onion|4 stalk|cut into lengths', 'roasted peanuts|1/3 cup|crushed', 'lime|1|cut into wedges', '?red pepper flakes|1 tsp']],
+      ['Pad Thai Sauce', ['tamarind paste|3 tbsp', 'fish sauce|2 tbsp', 'palm sugar|3 tbsp|grated']],
+      ['Wok', ['rice noodles|8 oz||thin, 1/4 inch', '@main', 'egg|2', 'shallot|2|sliced', 'garlic|3 clove|minced', 'vegetable oil|3 tbsp']],
+      ['Garnish', ['bean sprouts|2 cup', 'green onion|4 stalk|cut into lengths', 'roasted peanuts|1/3 cup|crushed', 'lime|1|cut into wedges', '?red pepper flakes|1 tsp']],
     ],
     steps: [
       ['Soak the Noodles', '30-30 p', 'Soak the noodles in room-temperature water for 30 minutes until pliable but still firm. Simmer the sauce ingredients until the sugar dissolves.'],
@@ -525,11 +507,10 @@ export const TEMPLATES = [
     style: 'roast',
     serves: [2, 4],
     titles: ['Glossy {Main} Teriyaki with {Veg}', 'Homemade {Main} Teriyaki', 'Pan-Glazed {Main} Teriyaki with Sesame'],
-    short: '{Main} Teriyaki',
     desc: ['{Main} glazed in a from-scratch teriyaki of soy, mirin and sake until lacquered and shiny, with {veg} and rice.'],
     groups: [
-      ['Teriyaki', 'Main', ['@main', 'vegetable oil|1 tbsp', 'soy sauce|1/4 cup', 'mirin|1/4 cup', 'sake|2 tbsp', 'sugar|1 tbsp']],
-      ['To Serve', 'Serve', ['sushi rice|1 1/2 cup', '@veg:1-2', 'sesame seeds|1 tsp|toasted', 'green onion|1 stalk|sliced']],
+      ['Teriyaki', ['@main', 'vegetable oil|1 tbsp', 'soy sauce|1/4 cup', 'mirin|1/4 cup', 'sake|2 tbsp', 'sugar|1 tbsp']],
+      ['To Serve', ['sushi rice|1 1/2 cup', '@veg:1-2', 'sesame seeds|1 tsp|toasted', 'green onion|1 stalk|sliced']],
     ],
     steps: [
       ['Make the Sauce', '3-3 p', 'Stir the soy sauce, mirin, sake and sugar together.'],
@@ -549,11 +530,10 @@ export const TEMPLATES = [
     style: 'soup',
     serves: [2, 4],
     titles: ['Miso Ramen with {Main} and Soft Eggs', 'Weeknight {Main} Ramen with {Veg}', 'Sesame-Miso {Main} Ramen'],
-    short: '{Main} Ramen',
     desc: ['A shortcut miso ramen with a rich, savoury broth, springy noodles, {main} and jammy eggs.'],
     groups: [
-      ['Broth', 'Broth', ['@broth:6 cup', 'dashi|2 cup', 'white miso|1/4 cup', 'soy sauce|2 tbsp', 'garlic|2 clove|grated', 'ginger|1 tsp|grated', 'toasted sesame oil|1 tbsp']],
-      ['Bowls', 'Noodles & Toppings', ['ramen noodles|4 package||fresh or dried', '@main', 'egg|4', '@veg:1-2', 'nori|1 package|cut into strips', 'green onion|3 stalk|sliced']],
+      ['Broth', ['@broth:6 cup', 'dashi|2 cup', 'white miso|1/4 cup', 'soy sauce|2 tbsp', 'garlic|2 clove|grated', 'ginger|1 tsp|grated', 'toasted sesame oil|1 tbsp']],
+      ['Bowls', ['ramen noodles|4 package||fresh or dried', '@main', 'egg|4', '@veg:1-2', 'nori|1 package|cut into strips', 'green onion|3 stalk|sliced']],
     ],
     steps: [
       ['Jammy Eggs', '7-7', 'Lower the eggs into boiling water for **exactly 6½ minutes**, then into ice water. Peel when cool.'],
@@ -572,11 +552,10 @@ export const TEMPLATES = [
     style: 'cutlet',
     serves: [2, 4],
     titles: ['Crispy {Main} Katsu with Shredded Cabbage', '{Main} Katsu Curry', 'Panko {Main} Katsu with Tonkatsu Sauce'],
-    short: '{Main} Katsu',
     desc: ['Golden, shatteringly crisp panko-crusted {main} with a mound of shredded cabbage and tangy sauce.'],
     groups: [
-      ['Katsu', 'Main', ['@main', 'all-purpose flour|1/2 cup', 'egg|2|beaten', 'panko|2 cup', 'vegetable oil|2 cup||for frying', 'kosher salt|1 tsp']],
-      ['Sauce & Sides', 'Serve', ['napa cabbage|1/4 head|finely shredded', 'sushi rice|1 1/2 cup', 'mayonnaise|2 tbsp', 'soy sauce|1 tbsp', 'honey|1 tbsp', 'lemon|1|cut into wedges']],
+      ['Katsu', ['@main', 'all-purpose flour|1/2 cup', 'egg|2|beaten', 'panko|2 cup', 'vegetable oil|2 cup||for frying', 'kosher salt|1 tsp']],
+      ['Sauce & Sides', ['napa cabbage|1/4 head|finely shredded', 'sushi rice|1 1/2 cup', 'mayonnaise|2 tbsp', 'soy sauce|1 tbsp', 'honey|1 tbsp', 'lemon|1|cut into wedges']],
     ],
     steps: [
       ['Bread the {Main}', '15-15 p', 'Season the {main} with salt, then dredge in flour, dip in egg and press firmly into the panko.'],
@@ -595,13 +574,12 @@ export const TEMPLATES = [
     style: 'stirfry',
     serves: [4, 4],
     titles: ['Bibimbap with {Flavor} {Main} and Crispy Rice', 'Dolsot-Style {Main} Bibimbap', '{Main} Bibimbap with Fried Egg and {Veg}'],
-    short: '{Main} Bibimbap',
     desc: ['Warm rice topped with seasoned vegetables, {main}, a runny fried egg and a spoonful of gochujang sauce — stir it all together at the table.'],
     groups: [
-      ['Rice', 'Base', ['sushi rice|2 cup||short-grain']],
-      ['{Main}', 'Protein', ['@main', '@flavor', 'soy sauce|2 tbsp', 'sugar|1 tsp', 'garlic|2 clove|minced']],
-      ['Namul', 'Vegetables', ['@veg:3-4', 'toasted sesame oil|2 tbsp', 'sesame seeds|1 tbsp']],
-      ['Sauce & Egg', 'Sauce', ['gochujang|3 tbsp', 'rice vinegar|1 tbsp', 'honey|1 tbsp', 'egg|4']],
+      ['Rice', ['sushi rice|2 cup||short-grain']],
+      ['{Main}', ['@main', '@flavor', 'soy sauce|2 tbsp', 'sugar|1 tsp', 'garlic|2 clove|minced']],
+      ['Namul', ['@veg:3-4', 'toasted sesame oil|2 tbsp', 'sesame seeds|1 tbsp']],
+      ['Sauce & Egg', ['gochujang|3 tbsp', 'rice vinegar|1 tbsp', 'honey|1 tbsp', 'egg|4']],
     ],
     steps: [
       ['Cook the Rice', '20-20', 'Cook the rice and keep it warm.'],
@@ -621,12 +599,11 @@ export const TEMPLATES = [
     style: 'curry',
     serves: [4, 6],
     titles: ['{Flavor} {Main} Curry with {Veg}', '{Main} Masala with {Flavor}', 'Home-Style {Main} Curry'],
-    short: '{Main} Curry',
     desc: ['A deeply spiced, tomato-rich {main} curry built on slowly browned onions, finished with {flavor}.', 'Weeknight {main} curry with {veg}, warm with garam masala and fresh coriander.'],
     groups: [
-      ['Masala', 'Base', ['@aromatics', 'ghee|3 tbsp', 'cumin seeds|1 tsp', 'ground turmeric|1/2 tsp', 'kashmiri chili powder|1 tsp', '@sauce']],
-      ['Curry', 'Main', ['@main', '@flavor', '@veg:1-2', 'kosher salt|1 1/2 tsp']],
-      ['To Serve', 'Serve', ['@starch', '@herbs:1-1', '?plain yogurt|1/2 cup']],
+      ['Masala', ['@aromatics', 'ghee|3 tbsp', 'cumin seeds|1 tsp', 'ground turmeric|1/2 tsp', 'kashmiri chili powder|1 tsp', '@sauce']],
+      ['Curry', ['@main', '@flavor', '@veg:1-2', 'kosher salt|1 1/2 tsp']],
+      ['To Serve', ['@starch', '@herbs:1-1', '?plain yogurt|1/2 cup']],
     ],
     steps: [
       ['Brown the Onions', '15-20', 'Fry the cumin seeds in the ghee, then the onion, stirring often, until **deep golden brown**. Add the garlic, ginger and chili and cook 2 minutes.\n\n> Rushing the onions gives a thin, sharp curry. Their colour is the curry\'s colour.'],
@@ -646,11 +623,10 @@ export const TEMPLATES = [
     style: 'grill',
     serves: [4, 4],
     titles: ['{Flavor} {Main} Tacos with {Veg}', '{Main} Tacos with {Flavor} Crema', 'Charred {Main} Street Tacos'],
-    short: '{Main} Tacos',
     desc: ['Warm corn tortillas piled with {flavor} {main}, crunchy {veg}, crema and lime.', 'Taco night: charred {main}, quick-pickled onion and everything to pile on top.'],
     groups: [
-      ['Filling', 'Main', ['@main', '@flavor', 'ground cumin|1 tsp', 'vegetable oil|2 tbsp', 'kosher salt|1 tsp']],
-      ['Toppings', 'Toppings', ['corn tortilla|12', '@veg:2-2', 'red onion|1/2|thinly sliced and pickled in lime', '@herbs:1-1', 'cotija|1/2 cup|crumbled', 'sour cream|1/2 cup', 'lime|2|cut into wedges']],
+      ['Filling', ['@main', '@flavor', 'ground cumin|1 tsp', 'vegetable oil|2 tbsp', 'kosher salt|1 tsp']],
+      ['Toppings', ['corn tortilla|12', '@veg:2-2', 'red onion|1/2|thinly sliced and pickled in lime', '@herbs:1-1', 'cotija|1/2 cup|crumbled', 'sour cream|1/2 cup', 'lime|2|cut into wedges']],
     ],
     steps: [
       ['Quick Pickle', '10-10 p', 'Cover the sliced onion with lime juice and a pinch of salt and set aside.'],
@@ -671,12 +647,11 @@ export const TEMPLATES = [
     style: 'braise',
     serves: [4, 6],
     titles: ['{Flavor} {Main} Enchiladas', '{Main} Enchiladas Suizas with {Flavor}', 'Cheesy {Main} & {Veg} Enchiladas'],
-    short: '{Main} Enchiladas',
     desc: ['Corn tortillas rolled around {main} and {veg}, smothered in {flavor} sauce and melted cheese, baked until bubbling.'],
     groups: [
-      ['Sauce', 'Sauce', ['@flavor', 'crushed tomatoes|1 can||14 oz', '@broth:1 cup', '@aromatics']],
-      ['Filling', 'Filling', ['@main', '@veg:1-2', 'black beans|1 can|drained|15 oz']],
-      ['Assembly', 'Assembly', ['corn tortilla|12', 'monterey jack|2 cup|grated', 'sour cream|1/2 cup', '@herbs:1-1']],
+      ['Sauce', ['@flavor', 'crushed tomatoes|1 can||14 oz', '@broth:1 cup', '@aromatics']],
+      ['Filling', ['@main', '@veg:1-2', 'black beans|1 can|drained|15 oz']],
+      ['Assembly', ['corn tortilla|12', 'monterey jack|2 cup|grated', 'sour cream|1/2 cup', '@herbs:1-1']],
     ],
     steps: [
       ['Make the Sauce', '15-20', 'Simmer the sauce ingredients 10 minutes and blend until smooth.'],
@@ -695,11 +670,10 @@ export const TEMPLATES = [
     style: 'ground',
     serves: [6, 8],
     titles: ['{Flavor} {Main} Chili', 'One-Pot {Main} Chili with {Veg}', 'Game-Day {Main} Chili'],
-    short: '{Main} Chili',
     desc: ['A thick, smoky pot of {main} chili with beans and {flavor}, made for toppings and leftovers.'],
     groups: [
-      ['Chili', 'Main', ['@main', '@aromatics', '@flavor', 'chili powder|2 tbsp', 'ground cumin|2 tsp', 'crushed tomatoes|1 can||28 oz', 'black beans|2 can|drained|15 oz', '@broth:1 cup', 'olive oil|2 tbsp']],
-      ['Toppings', 'Toppings', ['cheddar|1 cup|grated', 'sour cream|1/2 cup', '@herbs:1-1', '?avocado|1|diced']],
+      ['Chili', ['@main', '@aromatics', '@flavor', 'chili powder|2 tbsp', 'ground cumin|2 tsp', 'crushed tomatoes|1 can||28 oz', 'black beans|2 can|drained|15 oz', '@broth:1 cup', 'olive oil|2 tbsp']],
+      ['Toppings', ['cheddar|1 cup|grated', 'sour cream|1/2 cup', '@herbs:1-1', '?avocado|1|diced']],
     ],
     steps: [
       ['Brown', '10-12', 'Brown the {main} in the oil, breaking it up, then add the {aromatics} and cook until soft.'],
@@ -719,11 +693,10 @@ export const TEMPLATES = [
     style: 'ground',
     serves: [4, 4],
     titles: ['{Flavor} {Main} Burgers', 'Smash-Style {Main} Burgers with {Flavor} Mayo', 'Backyard {Main} Burgers'],
-    short: '{Main} Burgers',
     desc: ['Juicy {main} burgers with crisp, lacy edges, a {flavor} sauce and soft brioche buns.'],
     groups: [
-      ['Patties', 'Main', ['@main', 'kosher salt|1 tsp', 'black pepper|1/2 tsp', '@flavor']],
-      ['Build', 'Toppings', ['brioche bun|4|toasted', 'mayonnaise|1/3 cup', 'cheddar|4 slice', 'tomato|1|sliced|large', 'red onion|1/2|thinly sliced', 'butter lettuce|4 leaf']],
+      ['Patties', ['@main', 'kosher salt|1 tsp', 'black pepper|1/2 tsp', '@flavor']],
+      ['Build', ['brioche bun|4|toasted', 'mayonnaise|1/3 cup', 'cheddar|4 slice', 'tomato|1|sliced|large', 'red onion|1/2|thinly sliced', 'butter lettuce|4 leaf']],
     ],
     steps: [
       ['Shape', '10-10 p', 'Divide the {main} into four loose balls without packing them tight. Mix the mayonnaise with the {flavor} ingredients.'],
@@ -741,12 +714,11 @@ export const TEMPLATES = [
     serves: [4, 6],
     mealdb: 'Chicken',
     titles: ['{Flavor} Roast Chicken with {Veg}', 'Sunday Roast Chicken with {Flavor} Pan Juices', 'Crackling-Skin {Flavor} Roast Chicken'],
-    short: 'Roast Chicken',
     desc: ['A whole chicken roasted over {veg} until the skin crackles, with {flavor} pan juices to spoon over everything.'],
     groups: [
-      ['The Bird', 'Protein', ['whole chicken|1||about 4 lb', 'kosher salt|1 tbsp', 'unsalted butter|3 tbsp|softened', '@flavor', 'kitchen twine|1 piece']],
-      ['The Roasting Pan', 'Produce', ['@veg:2-2', 'onion|2|quartered', 'olive oil|2 tbsp', 'dry white wine|1/2 cup']],
-      ['Finish', 'Garnish', ['@herbs:1-1', 'lemon|1|halved']],
+      ['The Bird', ['whole chicken|1||about 4 lb', 'kosher salt|1 tbsp', 'unsalted butter|3 tbsp|softened', '@flavor', 'kitchen twine|1 piece']],
+      ['The Roasting Pan', ['@veg:2-2', 'onion|2|quartered', 'olive oil|2 tbsp', 'dry white wine|1/2 cup']],
+      ['Finish', ['@herbs:1-1', 'lemon|1|halved']],
     ],
     steps: [
       ['Dry-Brine', '10-10 p', 'Pat the chicken dry and salt it all over, inside and out. Refrigerate uncovered overnight if you can.'],
@@ -767,12 +739,11 @@ export const TEMPLATES = [
     style: 'roast',
     serves: [2, 4],
     titles: ['Crispy-Skin {Main} with {Flavor} Butter and {Veg}', 'Pan-Seared {Main} with {Flavor} Sauce', '{Flavor} {Main} with Blistered {Veg}'],
-    short: 'Seared {Main}',
     desc: ['{Main} seared until golden and crisp, finished with a {flavor} pan sauce and {veg}. Twenty-five minutes, start to finish.'],
     groups: [
-      ['The Fish', 'Protein', ['@main', 'vegetable oil|1 tbsp', 'flaky sea salt||to taste']],
-      ['Pan Sauce', 'Sauce', ['@flavor', '@sauce', 'shallot|1|minced']],
-      ['Sides', 'Produce', ['@veg:1-2', '@herbs:1-1']],
+      ['The Fish', ['@main', 'vegetable oil|1 tbsp', 'flaky sea salt||to taste']],
+      ['Pan Sauce', ['@flavor', '@sauce', 'shallot|1|minced']],
+      ['Sides', ['@veg:1-2', '@herbs:1-1']],
     ],
     steps: [
       ['Dry the Fish', '10-10 p', 'Pat the {main} **bone-dry** and salt it 15 minutes before cooking.'],
@@ -792,12 +763,11 @@ export const TEMPLATES = [
     style: 'soup',
     serves: [2, 4],
     titles: ['{Flavor} Risotto with {Main} and {Veg}', 'Creamy {Main} Risotto', '{Main} & {Veg} Risotto with Parmesan'],
-    short: '{Main} Risotto',
     desc: ['Patiently stirred risotto, creamy without any cream, with {main}, {veg} and a {flavor} finish.'],
     groups: [
-      ['Risotto', 'Grains', ['arborio rice|1 1/2 cup', '@broth:6 cup', 'shallot|2|finely minced', 'dry white wine|1/2 cup', 'olive oil|2 tbsp']],
-      ['Add-Ins', 'Main', ['@main', '@veg:1-1', '@flavor']],
-      ['Mantecatura', 'Finish', ['unsalted butter|3 tbsp|cold, cubed', 'parmesan|3/4 cup|finely grated', '@herbs:1-1']],
+      ['Risotto', ['arborio rice|1 1/2 cup', '@broth:6 cup', 'shallot|2|finely minced', 'dry white wine|1/2 cup', 'olive oil|2 tbsp']],
+      ['Add-Ins', ['@main', '@veg:1-1', '@flavor']],
+      ['Mantecatura', ['unsalted butter|3 tbsp|cold, cubed', 'parmesan|3/4 cup|finely grated', '@herbs:1-1']],
     ],
     steps: [
       ['Heat the Broth', '5-5 p', 'Keep the broth at a bare simmer in a saucepan next to the risotto pot.'],
@@ -818,12 +788,11 @@ export const TEMPLATES = [
     mealdb: 'Pasta',
     serves: [4, 4],
     titles: ['{Flavor} Orecchiette with {Main} and {Veg}', 'Rigatoni with {Main} Ragù', 'Spaghetti with {Flavor} {Main} and {Veg}'],
-    short: '{Main} Pasta',
     desc: ['A big bowl of pasta with {main}, {veg} and {flavor}, tossed with plenty of grated cheese.'],
     groups: [
-      ['Pasta', 'Pasta', ['orecchiette|1 lb||or rigatoni', 'kosher salt|2 tbsp||for the pasta water']],
-      ['Sauce', 'Sauce', ['@main', '@aromatics', '@flavor', '@veg:1-1', 'olive oil|3 tbsp']],
-      ['To Finish', 'Finish', ['pecorino romano|3/4 cup|finely grated', '@herbs:1-1']],
+      ['Pasta', ['orecchiette|1 lb||or rigatoni', 'kosher salt|2 tbsp||for the pasta water']],
+      ['Sauce', ['@main', '@aromatics', '@flavor', '@veg:1-1', 'olive oil|3 tbsp']],
+      ['To Finish', ['pecorino romano|3/4 cup|finely grated', '@herbs:1-1']],
     ],
     steps: [
       ['Boil the Water', '10-10 p', 'Bring a big pot of water to a boil and salt it well.'],
@@ -844,12 +813,11 @@ export const TEMPLATES = [
     mealdb: 'Pasta',
     serves: [6, 8],
     titles: ['Baked Rigatoni with {Main} and Ricotta', 'Cheesy {Main} & {Veg} Pasta Bake', '{Flavor} {Main} Pasta al Forno'],
-    short: '{Main} Pasta Bake',
     desc: ['Rigatoni baked in a rich {main} tomato sauce under pools of ricotta and molten mozzarella — feeds a crowd.'],
     groups: [
-      ['Pasta', 'Pasta', ['rigatoni|1 lb']],
-      ['Ragù', 'Sauce', ['@main', '@aromatics', 'san marzano tomatoes|1 can||28 oz', '@veg:1-1', 'olive oil|2 tbsp']],
-      ['Cheese', 'Dairy', ['ricotta|1 cup', 'mozzarella|8 oz|grated', 'parmesan|1/2 cup|grated', '@herbs:1-1']],
+      ['Pasta', ['rigatoni|1 lb']],
+      ['Ragù', ['@main', '@aromatics', 'san marzano tomatoes|1 can||28 oz', '@veg:1-1', 'olive oil|2 tbsp']],
+      ['Cheese', ['ricotta|1 cup', 'mozzarella|8 oz|grated', 'parmesan|1/2 cup|grated', '@herbs:1-1']],
     ],
     steps: [
       ['Make the Ragù', '25-30', 'Brown the {main} in the oil, add the {aromatics} and {veg}, then the tomatoes crushed by hand. Simmer until thick.'],
@@ -868,12 +836,11 @@ export const TEMPLATES = [
     serves: [4, 6],
     mealdb: 'Vegetarian',
     titles: ['{Flavor} Red Lentil Dal with Tadka', 'Golden Dal with {Veg} and {Flavor}', 'Everyday Masoor Dal'],
-    short: 'Red Lentil Dal',
     desc: ['Comforting, silky red lentils finished with a sizzling tadka of ghee, cumin and chili.'],
     groups: [
-      ['Dal', 'Lentils', ['red lentils|1 1/2 cup|rinsed', 'ground turmeric|1 tsp', 'kosher salt|1 1/2 tsp', '@veg:1-1']],
-      ['Tadka', 'Tempering', ['ghee|3 tbsp', 'cumin seeds|1 tsp', 'black mustard seeds|1 tsp', 'curry leaf|10', '@aromatics', '@flavor']],
-      ['To Serve', 'Serve', ['@starch', '@herbs:1-1', 'lime|1|cut into wedges']],
+      ['Dal', ['red lentils|1 1/2 cup|rinsed', 'ground turmeric|1 tsp', 'kosher salt|1 1/2 tsp', '@veg:1-1']],
+      ['Tadka', ['ghee|3 tbsp', 'cumin seeds|1 tsp', 'black mustard seeds|1 tsp', 'curry leaf|10', '@aromatics', '@flavor']],
+      ['To Serve', ['@starch', '@herbs:1-1', 'lime|1|cut into wedges']],
     ],
     steps: [
       ['Simmer the Lentils', '25-30', 'Simmer the lentils with turmeric and 4 cups water until they collapse. Add the {veg} for the last 10 minutes, then season.'],
@@ -892,11 +859,10 @@ export const TEMPLATES = [
     style: 'soup',
     serves: [4, 6],
     titles: ['{Flavor} {Main} Soup with {Veg}', 'Brothy {Main} & {Veg} Soup', 'Ten-Ingredient {Flavor} {Main} Soup'],
-    short: '{Main} Soup',
     desc: ['A light, brothy {main} soup with {veg} and a {flavor} backbone — the kind of bowl that fixes a cold.'],
     groups: [
-      ['Soup', 'Main', ['@broth:6 cup', '@main', '@aromatics', '@flavor', '@veg:2-2']],
-      ['Finish', 'Garnish', ['@herbs:1-2', 'lime|1|cut into wedges', '?red pepper flakes|1/2 tsp']],
+      ['Soup', ['@broth:6 cup', '@main', '@aromatics', '@flavor', '@veg:2-2']],
+      ['Finish', ['@herbs:1-2', 'lime|1|cut into wedges', '?red pepper flakes|1/2 tsp']],
     ],
     steps: [
       ['Aromatics', '5-6', 'Soften the {aromatics} in a little oil in a soup pot.'],
@@ -916,11 +882,10 @@ export const TEMPLATES = [
     style: 'ground',
     serves: [2, 4],
     titles: ['{Flavor} Flatbread with {Main} and {Veg}', 'Crispy {Main} & {Veg} Flatbread', 'Blistered {Flavor} Flatbread with {Main}'],
-    short: '{Main} Flatbread',
     desc: ['Chewy, blistered flatbread topped with {main}, {veg} and {flavor}, straight from a very hot oven.'],
     groups: [
-      ['Dough', 'Base', ['pizza dough|1 lb||room temperature', 'all-purpose flour|2 tbsp||for dusting', 'olive oil|2 tbsp']],
-      ['Toppings', 'Toppings', ['@main', '@flavor', '@veg:1-2', 'fresh mozzarella|8 oz|torn', '@herbs:1-1', '?flaky sea salt||to taste']],
+      ['Dough', ['pizza dough|1 lb||room temperature', 'all-purpose flour|2 tbsp||for dusting', 'olive oil|2 tbsp']],
+      ['Toppings', ['@main', '@flavor', '@veg:1-2', 'fresh mozzarella|8 oz|torn', '@herbs:1-1', '?flaky sea salt||to taste']],
     ],
     steps: [
       ['Heat the Oven', '30-45 p', 'Heat the oven as hot as it goes with a pizza stone or upturned sheet pan inside for at least 30 minutes.'],
@@ -938,11 +903,10 @@ export const TEMPLATES = [
     serves: [2, 4],
     mealdb: 'Breakfast',
     titles: ['{Flavor} Shakshuka with Feta', 'Green Shakshuka with {Veg}', 'Spiced Shakshuka with {Flavor} and Herbs'],
-    short: 'Shakshuka',
     desc: ['Eggs gently poached in a spiced tomato and pepper sauce, finished with feta and herbs. Bring the pan to the table with plenty of bread.'],
     groups: [
-      ['Sauce', 'Sauce', ['olive oil|3 tbsp', 'red bell pepper|2|sliced', '@aromatics', '@flavor', 'ground cumin|1 tsp', 'crushed tomatoes|1 can||28 oz']],
-      ['Eggs & Toppings', 'Eggs', ['egg|6', 'feta|1/2 cup|crumbled', '@herbs:1-2', 'pita bread|4|warmed']],
+      ['Sauce', ['olive oil|3 tbsp', 'red bell pepper|2|sliced', '@aromatics', '@flavor', 'ground cumin|1 tsp', 'crushed tomatoes|1 can||28 oz']],
+      ['Eggs & Toppings', ['egg|6', 'feta|1/2 cup|crumbled', '@herbs:1-2', 'pita bread|4|warmed']],
     ],
     steps: [
       ['Soften the Peppers', '10-12', 'Cook the peppers and {aromatics} in the oil until soft and sweet.'],
@@ -962,12 +926,11 @@ export const TEMPLATES = [
     style: 'grill',
     serves: [4, 4],
     titles: ['{Flavor} {Main} Bánh Mì', 'Bánh Mì with {Flavor} {Main} and Pickled Daikon', 'Crispy {Main} Bánh Mì'],
-    short: '{Main} Bánh Mì',
     desc: ['Crackly baguettes stuffed with {flavor} {main}, quick-pickled carrot and daikon, cucumber, chili and a fistful of cilantro.'],
     groups: [
-      ['{Main}', 'Protein', ['@main', '@flavor', 'fish sauce|1 tbsp', 'sugar|1 tsp', 'vegetable oil|1 tbsp']],
-      ['Đồ Chua (Pickles)', 'Pickles', ['carrot|1|julienned', 'daikon|1 piece|julienned|4-inch', 'rice vinegar|1/2 cup', 'sugar|2 tbsp']],
-      ['Sandwich', 'Bread & Fillings', ['baguette|2|cut into 4 lengths|light and airy', 'mayonnaise|1/4 cup', 'cucumber|1|cut into spears', 'jalapeño|1|thinly sliced', 'cilantro|1 bunch']],
+      ['{Main}', ['@main', '@flavor', 'fish sauce|1 tbsp', 'sugar|1 tsp', 'vegetable oil|1 tbsp']],
+      ['Đồ Chua (Pickles)', ['carrot|1|julienned', 'daikon|1 piece|julienned|4-inch', 'rice vinegar|1/2 cup', 'sugar|2 tbsp']],
+      ['Sandwich', ['baguette|2|cut into 4 lengths|light and airy', 'mayonnaise|1/4 cup', 'cucumber|1|cut into spears', 'jalapeño|1|thinly sliced', 'cilantro|1 bunch']],
     ],
     steps: [
       ['Quick Pickles', '10-10 p', 'Toss the carrot and daikon with the vinegar, sugar and a pinch of salt. Leave at least 20 minutes.'],
@@ -985,11 +948,10 @@ export const TEMPLATES = [
     style: 'soup',
     serves: [4, 4],
     titles: ['Gỏi Cuốn: {Main} Fresh Spring Rolls', 'Fresh {Main} Spring Rolls with Peanut Hoisin Sauce', 'Summer Rolls with {Main} and Herbs'],
-    short: '{Main} Spring Rolls',
     desc: ['Translucent rice-paper rolls packed with {main}, vermicelli and herbs, dunked in a peanut-hoisin sauce. No cooking beyond the filling.'],
     groups: [
-      ['Rolls', 'Rolls', ['rice paper|12', '@main', 'rice vermicelli|4 oz', 'butter lettuce|1 head', '@herbs:2-3', 'cucumber|1|cut into matchsticks']],
-      ['Peanut Hoisin Sauce', 'Sauce', ['hoisin sauce|1/4 cup', 'peanut butter|2 tbsp', 'roasted peanuts|2 tbsp|crushed', 'lime|1|juiced']],
+      ['Rolls', ['rice paper|12', '@main', 'rice vermicelli|4 oz', 'butter lettuce|1 head', '@herbs:2-3', 'cucumber|1|cut into matchsticks']],
+      ['Peanut Hoisin Sauce', ['hoisin sauce|1/4 cup', 'peanut butter|2 tbsp', 'roasted peanuts|2 tbsp|crushed', 'lime|1|juiced']],
     ],
     steps: [
       ['Cook the Filling', '8-10', 'Poach the {main} in simmering water until just done, cool and slice. Cook the vermicelli and rinse.'],
@@ -1008,11 +970,10 @@ export const TEMPLATES = [
     style: 'ground',
     serves: [2, 4],
     titles: ['Larb {Main} with Toasted Rice', 'Spicy {Main} Larb Lettuce Cups', 'Herby {Main} Larb'],
-    short: '{Main} Larb',
     desc: ['A hot, sour, herby Thai salad of minced {main}, lime, chili and nutty toasted rice powder.'],
     groups: [
-      ['Larb', 'Main', ['@main', 'glutinous rice|2 tbsp||toasted and ground', 'fish sauce|2 tbsp', 'lime|2|juiced', 'red pepper flakes|1 tsp', 'shallot|2|thinly sliced']],
-      ['Herbs & Serving', 'Herbs', ['mint|1/2 cup', 'cilantro|1/2 cup', 'green onion|2 stalk|sliced', 'butter lettuce|1 head', 'cucumber|1|sliced']],
+      ['Larb', ['@main', 'glutinous rice|2 tbsp||toasted and ground', 'fish sauce|2 tbsp', 'lime|2|juiced', 'red pepper flakes|1 tsp', 'shallot|2|thinly sliced']],
+      ['Herbs & Serving', ['mint|1/2 cup', 'cilantro|1/2 cup', 'green onion|2 stalk|sliced', 'butter lettuce|1 head', 'cucumber|1|sliced']],
     ],
     steps: [
       ['Toast the Rice', '6-8 p', 'Toast the rice in a dry pan until **deep golden**, then grind to a coarse powder.'],
@@ -1032,12 +993,11 @@ export const TEMPLATES = [
     style: 'soup',
     serves: [2, 4],
     titles: ['Cold {Flavor} Noodle Salad with {Main}', 'Sesame Noodle Salad with {Main} and {Veg}', 'Chilled {Main} Noodles with {Flavor} Dressing'],
-    short: '{Main} Noodle Salad',
     desc: ['Chilled noodles tossed with {main}, crunchy {veg} and a {flavor} dressing. Perfect for a packed lunch.'],
     groups: [
-      ['Noodles', 'Noodles', ['soba noodles|8 oz', '@main']],
-      ['Vegetables', 'Produce', ['@veg:2-3', '@herbs:1-2']],
-      ['Dressing', 'Dressing', ['@sauce', '@flavor', 'toasted sesame oil|1 tbsp']],
+      ['Noodles', ['soba noodles|8 oz', '@main']],
+      ['Vegetables', ['@veg:2-3', '@herbs:1-2']],
+      ['Dressing', ['@sauce', '@flavor', 'toasted sesame oil|1 tbsp']],
     ],
     steps: [
       ['Cook the Noodles', '5-6', 'Cook the noodles, rinse under cold water until chilled, and drain well.'],
@@ -1057,12 +1017,11 @@ export const TEMPLATES = [
     mealdb: 'Side',
     serves: [2, 4],
     titles: ['{Flavor} Chopped Salad with {Main}', 'Crunchy {Main} & {Veg} Salad', 'Big {Flavor} {Main} Salad'],
-    short: '{Main} Salad',
     desc: ['A hearty chopped salad with {main}, {veg} and a {flavor} dressing — lunch that actually fills you up.'],
     groups: [
-      ['Salad', 'Produce', ['romaine lettuce|2 head|chopped', '@veg:2-3', '@main', '@herbs:1-1']],
-      ['Dressing', 'Dressing', ['@flavor', 'extra virgin olive oil|1/3 cup', 'red wine vinegar|2 tbsp', 'dijon mustard|1 tsp', 'kosher salt|1/2 tsp']],
-      ['Crunch', 'Toppings', ['?feta|1/2 cup|crumbled', '?sliced almonds|1/4 cup|toasted']],
+      ['Salad', ['romaine lettuce|2 head|chopped', '@veg:2-3', '@main', '@herbs:1-1']],
+      ['Dressing', ['@flavor', 'extra virgin olive oil|1/3 cup', 'red wine vinegar|2 tbsp', 'dijon mustard|1 tsp', 'kosher salt|1/2 tsp']],
+      ['Crunch', ['?feta|1/2 cup|crumbled', '?sliced almonds|1/4 cup|toasted']],
     ],
     steps: [
       ['Cook the {Main}', '10-12', 'Season and cook the {main} until golden, then cool and chop.'],
@@ -1081,12 +1040,11 @@ export const TEMPLATES = [
     style: 'roast',
     serves: [2, 4],
     titles: ['{Flavor} {Main} Mezze Plate with Whipped Feta', 'Mezze Platter with {Main}, {Veg} and Pita', 'Crispy {Main} with Whipped Feta and {Flavor}'],
-    short: '{Main} Mezze Plate',
     desc: ['A lunch of little things: {flavor} {main}, creamy whipped feta, {veg} and warm pita for scooping.'],
     groups: [
-      ['Whipped Feta', 'Dip', ['feta|6 oz', 'greek yogurt|1/2 cup', 'lemon|1|zested']],
-      ['Mezze', 'Main', ['@main', '@flavor', 'olive oil|2 tbsp', '@veg:2-2', 'kalamata olives|1/2 cup']],
-      ['To Serve', 'Serve', ['pita bread|4', '@herbs:1-1']],
+      ['Whipped Feta', ['feta|6 oz', 'greek yogurt|1/2 cup', 'lemon|1|zested']],
+      ['Mezze', ['@main', '@flavor', 'olive oil|2 tbsp', '@veg:2-2', 'kalamata olives|1/2 cup']],
+      ['To Serve', ['pita bread|4', '@herbs:1-1']],
     ],
     steps: [
       ['Whip the Feta', '5-5 p', 'Blend the feta, yogurt and lemon zest until smooth.'],
@@ -1104,11 +1062,10 @@ export const TEMPLATES = [
     serves: [4, 4],
     mealdb: 'Breakfast',
     titles: ['Fluffy Buttermilk Pancakes with Blueberries', 'Weekend Buttermilk Pancakes with Maple Butter', 'Brown Butter Pancakes with Berries'],
-    short: 'Buttermilk Pancakes',
     desc: ['Tall, tender buttermilk pancakes with crisp edges, berries and real maple syrup.'],
     groups: [
-      ['Batter', 'Batter', ['all-purpose flour|2 cup', 'sugar|2 tbsp', 'baking powder|2 tsp', 'baking soda|1/2 tsp', 'kosher salt|1/2 tsp', 'buttermilk|2 cup', 'egg|2', 'unsalted butter|4 tbsp|melted']],
-      ['To Serve', 'Toppings', ['blueberries|1 cup', 'maple syrup|1/2 cup', '?unsalted butter|2 tbsp']],
+      ['Batter', ['all-purpose flour|2 cup', 'sugar|2 tbsp', 'baking powder|2 tsp', 'baking soda|1/2 tsp', 'kosher salt|1/2 tsp', 'buttermilk|2 cup', 'egg|2', 'unsalted butter|4 tbsp|melted']],
+      ['To Serve', ['blueberries|1 cup', 'maple syrup|1/2 cup', '?unsalted butter|2 tbsp']],
     ],
     steps: [
       ['Mix', '10-10 p', 'Whisk the dry ingredients, then the wet ones separately. Fold together **until just combined** — lumps are fine.\n\n> Overmixing makes tough, flat pancakes.'],
@@ -1128,11 +1085,10 @@ export const TEMPLATES = [
     mealdb: 'Breakfast',
     serves: [4, 4],
     titles: ['Silky {Main} Congee with Ginger', '{Main} Rice Porridge with Crispy Shallots', 'Slow-Simmered {Main} Congee'],
-    short: '{Main} Congee',
     desc: ['Slow-simmered rice porridge, silky and soothing, with {main}, ginger and a pile of crunchy toppings.'],
     groups: [
-      ['Congee', 'Base', ['jasmine rice|3/4 cup|rinsed', '@broth:8 cup', 'ginger|1 piece|thinly sliced|2-inch', '@main']],
-      ['Toppings', 'Toppings', ['green onion|3 stalk|sliced', 'shallot|3|thinly sliced and fried crisp', 'white pepper|1/4 tsp', 'soy sauce|1 tbsp', '?chili crisp|1 tbsp', '@herbs:1-1']],
+      ['Congee', ['jasmine rice|3/4 cup|rinsed', '@broth:8 cup', 'ginger|1 piece|thinly sliced|2-inch', '@main']],
+      ['Toppings', ['green onion|3 stalk|sliced', 'shallot|3|thinly sliced and fried crisp', 'white pepper|1/4 tsp', 'soy sauce|1 tbsp', '?chili crisp|1 tbsp', '@herbs:1-1']],
     ],
     steps: [
       ['Simmer', '60-90', 'Simmer the rice in the broth with the ginger, stirring now and then, until the grains **burst and turn creamy**.\n\n> Stir the bottom regularly in the last half hour — congee scorches easily.'],
@@ -1151,11 +1107,10 @@ export const TEMPLATES = [
     serves: [4, 6],
     mealdb: 'Breakfast',
     titles: ['{Flavor} Frittata with {Veg}', '{Veg} & Feta Frittata', 'Spring Frittata with {Veg} and Herbs'],
-    short: 'Frittata',
     desc: ['A thick, custardy frittata with {veg} and {flavor} — breakfast, lunch, or a picnic.'],
     groups: [
-      ['Eggs', 'Eggs & Dairy', ['egg|10', 'heavy cream|1/4 cup', 'parmesan|1/2 cup|grated', 'kosher salt|3/4 tsp']],
-      ['Filling', 'Produce', ['@veg:2-2', '@aromatics', '@flavor', 'olive oil|2 tbsp', '@herbs:1-1', 'feta|1/3 cup|crumbled']],
+      ['Eggs', ['egg|10', 'heavy cream|1/4 cup', 'parmesan|1/2 cup|grated', 'kosher salt|3/4 tsp']],
+      ['Filling', ['@veg:2-2', '@aromatics', '@flavor', 'olive oil|2 tbsp', '@herbs:1-1', 'feta|1/3 cup|crumbled']],
     ],
     steps: [
       ['Cook the Vegetables', '8-10', 'Sauté the {veg} and {aromatics} in the oil in an ovenproof skillet until tender.'],
@@ -1173,11 +1128,10 @@ export const TEMPLATES = [
     serves: [1, 2],
     mealdb: 'Breakfast',
     titles: ['Overnight Oats with Berries and Maple', 'Banana-Blueberry Overnight Oats', 'Cinnamon Maple Overnight Oats'],
-    short: 'Overnight Oats',
     desc: ['Five minutes the night before, a creamy, ready-to-eat breakfast in the morning.'],
     groups: [
-      ['Oats', 'Base', ['rolled oats|1/2 cup', 'whole milk|1/2 cup', 'greek yogurt|1/4 cup', 'maple syrup|1 tbsp', 'ground cinnamon|1 pinch']],
-      ['Toppings', 'Toppings', ['banana|1|sliced', 'blueberries|1/2 cup', '?walnuts|2 tbsp|chopped']],
+      ['Oats', ['rolled oats|1/2 cup', 'whole milk|1/2 cup', 'greek yogurt|1/4 cup', 'maple syrup|1 tbsp', 'ground cinnamon|1 pinch']],
+      ['Toppings', ['banana|1|sliced', 'blueberries|1/2 cup', '?walnuts|2 tbsp|chopped']],
     ],
     steps: [
       ['Mix', '5-5 p', 'Stir the oats, milk, yogurt, maple syrup and cinnamon together in a jar.'],
@@ -1197,11 +1151,10 @@ export const TEMPLATES = [
     serves: [8, 10],
     mealdb: 'Dessert',
     titles: ['Lemon Olive Oil Cake', 'Lemon & Almond Olive Oil Cake', 'Olive Oil Cake with Fresh Strawberries'],
-    short: 'Olive Oil Cake',
     desc: ['A plush, fragrant olive oil cake with a crackly sugar top. Keeps for days and gets better.'],
     groups: [
-      ['Cake', 'Batter', ['all-purpose flour|1 1/2 cup', 'almond flour|1/2 cup', 'sugar|1 cup', 'egg|3', 'extra virgin olive oil|3/4 cup', 'whole milk|3/4 cup', 'lemon|2|zested and juiced', 'baking powder|1 1/2 tsp', 'kosher salt|1/2 tsp']],
-      ['Finish', 'Topping', ['powdered sugar|2 tbsp', '?strawberries|1 lb|halved', 'parchment paper|1 piece||to line the pan']],
+      ['Cake', ['all-purpose flour|1 1/2 cup', 'almond flour|1/2 cup', 'sugar|1 cup', 'egg|3', 'extra virgin olive oil|3/4 cup', 'whole milk|3/4 cup', 'lemon|2|zested and juiced', 'baking powder|1 1/2 tsp', 'kosher salt|1/2 tsp']],
+      ['Finish', ['powdered sugar|2 tbsp', '?strawberries|1 lb|halved', 'parchment paper|1 piece||to line the pan']],
     ],
     steps: [
       ['Prep', '10-10 p', 'Heat the oven to 350°F and line a 9-inch pan with parchment. Rub the sugar and zest together until fragrant.'],
@@ -1218,12 +1171,11 @@ export const TEMPLATES = [
     serves: [6, 8],
     mealdb: 'Dessert',
     titles: ['Cinnamon Apple Crisp', 'Apple Crisp with Oat Crumble', 'Old-Fashioned Apple Crisp'],
-    short: 'Apple Crisp',
     desc: ['Jammy baked fruit under a buttery oat crumble, with a scoop of ice cream melting on top.'],
     groups: [
-      ['Fruit', 'Filling', ['apple|6|peeled and sliced', 'brown sugar|1/4 cup', 'lemon|1|juiced', 'cornstarch|1 tbsp', 'ground cinnamon|1 tsp']],
-      ['Crumble', 'Topping', ['rolled oats|1 cup', 'all-purpose flour|3/4 cup', 'brown sugar|1/2 cup', 'unsalted butter|1 stick|cold, cubed', 'kosher salt|1/2 tsp']],
-      ['To Serve', 'Serve', ['vanilla ice cream|1 package||a pint']],
+      ['Fruit', ['apple|6|peeled and sliced', 'brown sugar|1/4 cup', 'lemon|1|juiced', 'cornstarch|1 tbsp', 'ground cinnamon|1 tsp']],
+      ['Crumble', ['rolled oats|1 cup', 'all-purpose flour|3/4 cup', 'brown sugar|1/2 cup', 'unsalted butter|1 stick|cold, cubed', 'kosher salt|1/2 tsp']],
+      ['To Serve', ['vanilla ice cream|1 package||a pint']],
     ],
     steps: [
       ['Fruit', '15-15 p', 'Toss the fruit with the sugar, lemon, cornstarch and cinnamon and spread in a baking dish.'],
@@ -1241,11 +1193,10 @@ export const TEMPLATES = [
     serves: [4, 4],
     mealdb: 'Dessert',
     titles: ['Mango Sticky Rice with Salted Coconut Cream', 'Khao Niao Mamuang (Mango Sticky Rice)', 'Coconut Sticky Rice with Ripe Mango'],
-    short: 'Mango Sticky Rice',
     desc: ['Sweet coconut-soaked sticky rice with ripe mango and a salty coconut cream drizzle.'],
     groups: [
-      ['Sticky Rice', 'Rice', ['glutinous rice|1 1/2 cup|soaked overnight', 'coconut milk|1 can||13.5 oz', 'sugar|1/2 cup', 'kosher salt|1/2 tsp']],
-      ['To Serve', 'Toppings', ['mango|2|peeled and sliced|ripe', 'sesame seeds|1 tsp|toasted']],
+      ['Sticky Rice', ['glutinous rice|1 1/2 cup|soaked overnight', 'coconut milk|1 can||13.5 oz', 'sugar|1/2 cup', 'kosher salt|1/2 tsp']],
+      ['To Serve', ['mango|2|peeled and sliced|ripe', 'sesame seeds|1 tsp|toasted']],
     ],
     steps: [
       ['Steam the Rice', '25-30', 'Steam the soaked rice in a cloth-lined steamer until tender and translucent.'],
@@ -1263,11 +1214,10 @@ export const TEMPLATES = [
     serves: [4, 4],
     mealdb: 'Dessert',
     titles: ['Chè Chuối: Banana Coconut Pudding', 'Warm Chè Chuối with Toasted Peanuts', 'Vietnamese Banana and Coconut Chè'],
-    short: 'Chè Chuối',
     desc: ['A warm, homey Vietnamese dessert soup of banana and coconut milk, finished with toasted peanuts and sesame.'],
     groups: [
-      ['Chè', 'Pudding', ['banana|4|sliced|ripe', 'coconut milk|1 can||13.5 oz', 'sugar|1/4 cup', 'kosher salt|1 pinch']],
-      ['Toppings', 'Toppings', ['roasted peanuts|1/4 cup|crushed', 'sesame seeds|1 tbsp|toasted']],
+      ['Chè', ['banana|4|sliced|ripe', 'coconut milk|1 can||13.5 oz', 'sugar|1/4 cup', 'kosher salt|1 pinch']],
+      ['Toppings', ['roasted peanuts|1/4 cup|crushed', 'sesame seeds|1 tbsp|toasted']],
     ],
     steps: [
       ['Simmer', '15-20', 'Simmer the coconut milk, sugar and salt with 1 cup water, then add the bananas and cook until soft.'],
@@ -1282,10 +1232,9 @@ export const TEMPLATES = [
     serves: [12, 16],
     mealdb: 'Dessert',
     titles: ['Fudgy Brown Butter Brownies', 'Crackly-Top Dark Chocolate Brownies', 'Salted Dark Chocolate Brownies'],
-    short: 'Brownies',
     desc: ['Dense, fudgy brownies with a shiny crackled top and a sprinkle of flaky salt.'],
     groups: [
-      ['Brownies', 'Batter', ['dark chocolate|6 oz|chopped', 'unsalted butter|1 stick', 'sugar|1 1/4 cup', 'egg|3', 'vanilla extract|1 tsp', 'all-purpose flour|3/4 cup', 'cocoa powder|1/4 cup', 'kosher salt|1/2 tsp', 'flaky sea salt||to taste']],
+      ['Brownies', ['dark chocolate|6 oz|chopped', 'unsalted butter|1 stick', 'sugar|1 1/4 cup', 'egg|3', 'vanilla extract|1 tsp', 'all-purpose flour|3/4 cup', 'cocoa powder|1/4 cup', 'kosher salt|1/2 tsp', 'flaky sea salt||to taste']],
     ],
     steps: [
       ['Melt', '5-5 p', 'Melt the chocolate and butter together. Heat the oven to 350°F.'],
@@ -1304,11 +1253,10 @@ export const TEMPLATES = [
     serves: [6, 6],
     mealdb: 'Dessert',
     titles: ['Vanilla Panna Cotta with Raspberries', 'Honey Panna Cotta with Raspberries', 'Silky Panna Cotta with Honeyed Raspberries'],
-    short: 'Panna Cotta',
     desc: ['A barely set, wobbly cream dessert with sharp berries to cut the richness. Make it a day ahead.'],
     groups: [
-      ['Panna Cotta', 'Custard', ['heavy cream|2 cup', 'whole milk|1 cup', 'sugar|1/3 cup', 'vanilla extract|2 tsp', 'gelatin|2 1/2 tsp||powdered']],
-      ['Berries', 'Topping', ['raspberries|1 cup', 'honey|1 tbsp']],
+      ['Panna Cotta', ['heavy cream|2 cup', 'whole milk|1 cup', 'sugar|1/3 cup', 'vanilla extract|2 tsp', 'gelatin|2 1/2 tsp||powdered']],
+      ['Berries', ['raspberries|1 cup', 'honey|1 tbsp']],
     ],
     steps: [
       ['Heat the Cream', '10-10', 'Warm the cream, milk and sugar until steaming.'],
