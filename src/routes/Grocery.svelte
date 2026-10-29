@@ -756,5 +756,5 @@
 <GroceryPrint
   week={formatRange(planner.weekStart)}
   {sections}
-  sources={sources.map(({ day }) => `${formatWeekday(day.iso)} ${day.recipe.shortTitle}`)}
+  sources={sources.map(({ day }) => `${formatWeekday(day.iso)} ${day.recipe.title}`)}
 />

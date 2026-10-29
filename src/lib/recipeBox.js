@@ -16,8 +16,9 @@ export const withMinutes = (r) => ({ ...r, minutes: r.prepMinutes + r.cookMinute
 
 /** Brings a recipe saved by an earlier build up to date. @param {SavedRecipe} r */
 export function migrate(r) {
-  // Mock-only sample fields, since removed (cook counts now come from the plan; `hero` was a second photo).
-  const { highlight, prep, stat, rating, ratings, cookCount, hero, badge, ...rest } = migrateNotes(r);
+  // Mock-only sample fields, since removed (cook counts now come from the plan; `hero` was a second photo; every
+  // screen now shows `title`, so `shortTitle` went too).
+  const { highlight, prep, stat, rating, ratings, cookCount, hero, badge, shortTitle, ...rest } = migrateNotes(r);
   // `badge.label` was one free-text category: its meal becomes `meals`, any other word joins the tags.
   const { meals, extra } = parseMeals(rest.meals ?? badge?.label ?? 'Dinner');
   return {

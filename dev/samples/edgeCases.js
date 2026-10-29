@@ -15,7 +15,6 @@
  * @typedef {{
  *   key: string,
  *   title: string,
- *   short: string,
  *   desc: string,
  *   category: string,
  *   cuisine: string,
@@ -35,7 +34,6 @@ export const EDGE_CASES = [
   {
     key: 'pickled-onions',
     title: 'Quick-Pickled Red Onions',
-    short: 'Pickled Red Onions',
     desc: 'Bright pink, tangy onions for tacos, bowls and sandwiches. Just pour, shake and wait.',
     category: '',
     cuisine: 'Mexican',
@@ -60,7 +58,6 @@ export const EDGE_CASES = [
     key: 'lamb-feast',
     title:
       'Slow-Roasted Garlic & Rosemary Lamb Shoulder with Crispy Smashed Potatoes, Charred Spring Onions, Anchovy Salsa Verde and a Red Wine Pan Sauce for the Whole Family',
-    short: 'Slow-Roasted Lamb Shoulder',
     desc: 'A centerpiece for a long Sunday lunch: lamb roasted for hours until it pulls apart, with crispy potatoes and a sharp, herby salsa verde to cut the richness.',
     category: 'Dinner',
     cuisine: 'Mediterranean',
@@ -110,7 +107,6 @@ export const EDGE_CASES = [
   {
     key: 'pho-chay',
     title: 'Phở Chay with Đậu Phụ and Shiitake',
-    short: 'Phở Chay',
     desc: 'A vegetarian phở with a deep, charred-onion and star-anise broth, golden đậu phụ and a big plate of herbs, chili and lime.',
     category: 'Dinner',
     cuisine: 'Vietnamese',
@@ -154,7 +150,6 @@ export const EDGE_CASES = [
   {
     key: 'creme-fraiche-toast',
     title: 'Jammy Egg Toast with Crème Fraîche and Radish',
-    short: 'Crème Fraîche Toast',
     desc: 'Breakfast for one: thick sourdough, a swoosh of crème fraîche, jammy eggs, crisp radish and chives.',
     category: 'Breakfast',
     cuisine: 'American',
@@ -183,7 +178,6 @@ export const EDGE_CASES = [
   {
     key: 'lemongrass-chicken-feast',
     title: 'Lemongrass Chicken Rice-Paper Wrap Party',
-    short: 'Lemongrass Chicken Wraps',
     desc: 'Put everything on the table and let everyone roll their own: sizzling lemongrass chicken, herbs, pickles, noodles and nước chấm.',
     category: 'Dinner',
     cuisine: 'Vietnamese',
@@ -240,7 +234,6 @@ export const EDGE_CASES = [
   {
     key: 'margherita',
     title: 'Margherita Pizza on a Home Oven Stone',
-    short: 'Margherita Pizza',
     desc: 'A blistered, chewy crust with bright San Marzano sauce, milky mozzarella and basil — as close to Naples as a home oven gets.',
     category: 'Dinner',
     cuisine: 'Italian',
@@ -274,7 +267,6 @@ export const EDGE_CASES = [
   {
     key: 'miso-cod',
     title: 'Miso-Butter Cod with Soba and Bok Choy',
-    short: 'Miso-Butter Cod',
     desc: 'Flaky cod under a glossy, savoury miso-butter glaze, with soba noodles and tender baby bok choy.',
     category: 'Dinner',
     cuisine: 'Japanese',

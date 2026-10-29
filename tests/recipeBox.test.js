@@ -27,10 +27,11 @@ describe('reading a saved recipe box', () => {
       rating: 5,
       cookCount: 3,
       hero: 'h.jpg',
+      shortTitle: 'O',
       ingredients: [{ title: 'Main', category: '', items: [{ id: 'pasta', qty: 1 }, { qty: 2 }, null] }],
     };
     const r = migrate(old);
-    for (const gone of ['highlight', 'rating', 'cookCount', 'hero']) assert.equal(gone in r, false);
+    for (const gone of ['highlight', 'rating', 'cookCount', 'hero', 'shortTitle']) assert.equal(gone in r, false);
     assert.deepEqual(r.tags, ['Quick (<30m)']);
     assert.deepEqual(r.meals, ['Dinner']);
     assert.equal('badge' in r, false);

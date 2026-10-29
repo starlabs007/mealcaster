@@ -273,7 +273,6 @@ export function formToRecipe(form, { editing, tags, ingredientId, newId, today }
     ...base,
     id: editing?.id ?? newId(title),
     title,
-    shortTitle: editing && title === editing.title ? editing.shortTitle : title,
     description: form.description.trim(),
     image: image || undefined,
     prepMinutes: form.prepMinutes || 0,

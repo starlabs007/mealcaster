@@ -164,10 +164,7 @@ const RECIPE_COLUMNS = {
   Recipe_ID: { get: (r) => r.id, set: () => {} },
   Title: {
     get: (r) => r.title,
-    set: (r, v) => {
-      r.title = str(v) || sheetText.untitledRecipe;
-      r.shortTitle = r.title;
-    },
+    set: (r, v) => (r.title = str(v) || sheetText.untitledRecipe),
   },
   Description: { get: (r) => r.description, set: (r, v) => (r.description = str(v)) },
   Ingredients_JSON: {
@@ -234,7 +231,6 @@ function blankRecipe(id, today) {
   return {
     id,
     title: '',
-    shortTitle: '',
     description: '',
     prepMinutes: 0,
     cookMinutes: 0,
@@ -269,7 +265,7 @@ export function recipeFromRow(row, existing, { columns, favorites, today }) {
     c.set(recipe, row[col], ctx);
   }
   if (ctx.extraTags?.length) recipe.tags = normalizeTags([...recipe.tags, ...ctx.extraTags]);
-  if (!recipe.title) recipe.title = recipe.shortTitle = sheetText.untitledRecipe;
+  if (!recipe.title) recipe.title = sheetText.untitledRecipe;
   recipe.minutes = recipe.prepMinutes + recipe.cookMinutes;
   return { recipe, favorite: ctx.favorite };
 }

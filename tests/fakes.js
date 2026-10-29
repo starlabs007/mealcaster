@@ -95,7 +95,6 @@ export function fakeSheet(tabs = {}) {
 export const recipe = (id, title, extra = {}) => ({
   id,
   title,
-  shortTitle: title,
   description: 'd',
   prepMinutes: 10,
   cookMinutes: 20,

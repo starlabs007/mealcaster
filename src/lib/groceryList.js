@@ -94,8 +94,8 @@ export function mergeAmounts(parts) {
  *   week: string,
  *   thisWeek: string,
  *   list: WeekList,
- *   dinners: { iso: string, recipe: { id: string, shortTitle: string, ingredients: { items: import('./ingredients.js').RecipeLine[] }[] } }[],
- *   recipeOf: (id: string) => { id: string, shortTitle: string, ingredients: { items: import('./ingredients.js').RecipeLine[] }[] } | undefined,
+ *   dinners: { iso: string, recipe: { id: string, title: string, ingredients: { items: import('./ingredients.js').RecipeLine[] }[] } }[],
+ *   recipeOf: (id: string) => { id: string, title: string, ingredients: { items: import('./ingredients.js').RecipeLine[] }[] } | undefined,
  *   ingredientOf: (id: string) => import('./ingredients.js').Ingredient | undefined,
  *   every: EveryWeekItem[],
  * }} input
@@ -138,7 +138,7 @@ export function buildWeekList({ week, thisWeek, list, dinners, recipeOf, ingredi
   for (const day of dinners) {
     planned.add(day.recipe.id);
     const weekday = fromISO(day.iso).getDay();
-    addRecipe(day.recipe, { label: sheetText.sourceDinner(formatWeekday(day.iso).slice(0, 3), day.recipe.shortTitle), tone: DAY_TONES[weekday] });
+    addRecipe(day.recipe, { label: sheetText.sourceDinner(formatWeekday(day.iso).slice(0, 3), day.recipe.title), tone: DAY_TONES[weekday] });
   }
   for (const pair of list.pushed) {
     const [recipeId, ingredientId] = pair.split(':');
@@ -146,7 +146,7 @@ export function buildWeekList({ week, thisWeek, list, dinners, recipeOf, ingredi
     // A pushed recipe that's also one of the week's dinners is already counted.
     if (!recipe || planned.has(recipeId)) continue;
     const before = byId.get(ingredientId)?.sources.length ?? 0;
-    addRecipe(recipe, { label: recipe.shortTitle, tone: 'neutral' }, ingredientId);
+    addRecipe(recipe, { label: recipe.title, tone: 'neutral' }, ingredientId);
     if ((byId.get(ingredientId)?.sources.length ?? 0) > before) entry(ingredientId).pushed.push(recipeId);
   }
   for (const [id, note] of Object.entries(list.added)) {
