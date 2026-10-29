@@ -108,12 +108,6 @@ export const departmentText = {
 /** Title of the single ingredient group a flat ingredient list is wrapped in, and of a group with no title. */
 export const defaultGroupTitle = 'Ingredients';
 
-/** Category text of an ingredient group: "1 item", "5 items". */
-export const groupCategory = (n) => `${n} ${n === 1 ? 'item' : 'items'}`;
-
-/** Category text of a wrapped flat list. Always plural, as it has always been written ("1 items"). */
-export const flatGroupCategory = (n) => `${n} items`;
-
 /** Title given to a recipe whose Title cell is empty. */
 export const untitledRecipe = 'Untitled recipe';
 

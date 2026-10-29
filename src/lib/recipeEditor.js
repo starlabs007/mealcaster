@@ -5,7 +5,7 @@
 
 import { normalizeTags } from './tags.js';
 import { normalizeMeals } from './meals.js';
-import { defaultAisle, defaultIngredientGroup, defaultStepTitle, groupCategory } from './sheetText.js';
+import { defaultAisle, defaultIngredientGroup, defaultStepTitle } from './sheetText.js';
 import { formatQty } from './format.js';
 import { parseQty } from './ingredientText.js';
 import { canonicalUnit } from './ingredients.js';
@@ -15,9 +15,9 @@ import { text } from './text.js';
 /**
  * An ingredient row's `text` is the ingredient's name: saving picks the ingredient with that name (or plural), or
  * creates one in `aisle`. `id` keeps the ingredient of a line whose name wasn't touched (so an unknown id survives).
- * A group is a section of rows; its `category` ("Protein"…) is the sheet's and survives a rename.
+ * A group is a section of rows.
  * @typedef {{ key: number, qty: string, unit: string, text: string, id?: string, note: string, prep: string, optional: boolean, aisle: string, aisleSet: boolean }} IngredientRow
- * @typedef {{ key: number, title: string, category: string, rows: IngredientRow[] }} IngredientGroup
+ * @typedef {{ key: number, title: string, rows: IngredientRow[] }} IngredientGroup
  * @typedef {{ key: number, title: string, text: string, minutes: string }} StepRow
  * @typedef {{
  *   title: string, description: string, image: string, meals: string[],
@@ -35,7 +35,7 @@ export const nextKey = () => ++lastKey;
 /** @returns {IngredientRow} */
 export const blankIngredient = () => ({ key: nextKey(), qty: '', unit: '', text: '', note: '', prep: '', optional: false, aisle: '', aisleSet: false });
 /** @returns {IngredientGroup} */
-export const blankGroup = (rows = 1, title = '', category = '') => ({ key: nextKey(), title, category, rows: Array.from({ length: rows }, blankIngredient) });
+export const blankGroup = (rows = 1, title = '') => ({ key: nextKey(), title, rows: Array.from({ length: rows }, blankIngredient) });
 /** @returns {StepRow} */
 export const blankStep = () => ({ key: nextKey(), title: '', text: '', minutes: '' });
 
@@ -78,7 +78,6 @@ export function formFromRecipe(r, ingredientOf) {
       ? r.ingredients.map((g) => ({
           key: nextKey(),
           title: g.title,
-          category: g.category,
           rows: g.items.map((item) => {
             const ingredient = ingredientOf(item.id);
             return {
@@ -127,11 +126,11 @@ export function loadDraft(drafts, editing, opened, baseline) {
   draft = { headsUp, headsUpDays, ...draft };
   if (!Array.isArray(draft.groups)) {
     const { ingredients: rows = [], steps, notes, ...head } = draft;
-    const categoryOf = (title) => editing?.ingredients.find((g) => g.title.toLowerCase() === title.toLowerCase())?.category ?? '';
-    const groups = sectionsOf(rows, categoryOf);
+    const groups = sectionsOf(rows);
     draft = { ...head, groups: groups.length ? groups : [blankGroup(1)], steps, notes };
   }
-  draft.groups = draft.groups.map((g) => ({
+  // Drafts kept before #271 have a `category` on each group; it's dropped.
+  draft.groups = draft.groups.map(({ category, ...g }) => ({
     ...blankGroup(0),
     ...g,
     key: nextKey(),
@@ -246,11 +245,8 @@ export function savedHeadsUps(previous = [], form) {
  * }} how `tags` is the form's with what is typed in its box; `editing` is a plain copy
  */
 export function formToRecipe(form, { editing, tags, ingredientId, newId, today }) {
-  // Group categories ("Protein", "Aromatics"…) travel with their section, so a renamed group keeps its own.
-  const originalCategory = new Map(editing?.ingredients.map((g) => [g.title.toLowerCase(), g.category]) ?? []);
   const groups = savedGroups(form.groups, {
     fallbackTitle: defaultIngredientGroup,
-    category: (g) => originalCategory.get(g.title.toLowerCase()) || groupCategory(g.items.length),
     item: (row) => {
       const qty = parseQty(row.qty);
       const unit = canonicalUnit(row.unit);

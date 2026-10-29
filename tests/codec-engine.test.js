@@ -40,10 +40,10 @@ describe('codec', () => {
   });
 
   it('reads ingredient groups and flat line lists, and rejects bad JSON', () => {
-    const groups = [{ title: 'Main', category: '1 item', items: [{ id: 'beef', qty: 1, unit: 'lb', note: 'flank or ribeye', prep: 'sliced', optional: true }] }];
+    const groups = [{ title: 'Main', items: [{ id: 'beef', qty: 1, unit: 'lb', note: 'flank or ribeye', prep: 'sliced', optional: true }] }];
     assert.deepEqual(codec.parseIngredients(JSON.stringify(groups)), groups);
     assert.deepEqual(codec.parseIngredients('[{"id":"wild-trout","qty":"450g"}]'), [
-      { title: 'Ingredients', category: '1 items', items: [{ id: 'wild-trout', qty: 450, unit: 'g' }] },
+      { title: 'Ingredients', items: [{ id: 'wild-trout', qty: 450, unit: 'g' }] },
     ]);
     assert.deepEqual(codec.parseIngredients(''), []);
     assert.equal(codec.parseIngredients('not json'), null);
@@ -56,11 +56,19 @@ describe('codec', () => {
 
   it('skips nulls, bare values and lines without an ingredient id', () => {
     assert.deepEqual(codec.parseIngredients('[{"title":"Main","items":[null,"rice",{"text":"salt"},{"id":"salt"}]}]'), [
-      { title: 'Main', category: '1 item', items: [{ id: 'salt' }] },
+      { title: 'Main', items: [{ id: 'salt' }] },
     ]);
     assert.deepEqual(codec.parseIngredients('[null,{"id":"salt"}]'), [
-      { title: 'Ingredients', category: '1 items', items: [{ id: 'salt' }] },
+      { title: 'Ingredients', items: [{ id: 'salt' }] },
     ]);
+  });
+
+  it('reads a group category that older builds wrote, and writes the group back without it', () => {
+    const cell = '[{"title":"Broth","category":"Protein","items":[{"id":"beef","qty":1}]}]';
+    const ingredients = codec.parseIngredients(cell);
+    assert.deepEqual(ingredients, [{ title: 'Broth', items: [{ id: 'beef', qty: 1 }] }]);
+    const row = codec.recipeToRow({ ...recipe('r1', 'Pho'), ingredients }, new Set());
+    assert.equal(row.Ingredients_JSON, '[{"title":"Broth","items":[{"id":"beef","qty":1}]}]');
   });
 
   it('tells old-layout ingredient lines (text, no id) from new ones', () => {

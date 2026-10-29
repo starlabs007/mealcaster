@@ -17,7 +17,7 @@ import { EDGE_CASES } from './edgeCases.js';
 import { DESC_EXTRA, GENERAL_TIPS, NOTE_HEADINGS } from './phrases.js';
 
 /** Bump whenever the output for a given seed and count changes (it is part of the dev data key). */
-export const GENERATOR_VERSION = 6;
+export const GENERATOR_VERSION = 7;
 
 /**
  * The day `addedAt` dates count back from, as a UTC timestamp: `today` ("YYYY-MM-DD"), else the SAMPLE_DATE
@@ -209,7 +209,7 @@ const pickPattern = (rng, patterns, words) => {
  *   serves: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
- *   groups: { title: string, category: string, lines: ReturnType<typeof parseLine>[] }[],
+ *   groups: { title: string, lines: ReturnType<typeof parseLine>[] }[],
  *   steps: { title: string, minutes: number, text: string }[],
  *   notes: string,
  *   headsUps: { text: string, daysBefore: number }[],
@@ -248,7 +248,7 @@ const swapNames = (text, swaps) => [...swaps].reduce((t, [from, to]) => t.replac
 
 /** @param {import('./edgeCases.js').EdgeCase} edge @param {ReturnType<typeof random>} rng @returns {Draft} */
 function edgeDraft(edge, rng) {
-  const groups = edge.groups.map(([title, category, lines]) => ({ title, category, lines: lines.map((l) => parseLine(l, rng)) }));
+  const groups = edge.groups.map(([title, lines]) => ({ title, lines: lines.map((l) => parseLine(l, rng)) }));
   return {
     key: edge.key,
     title: edge.title,
@@ -295,7 +295,7 @@ function templateDraft(rng) {
   const mainKey = mainKeys.length ? rng.pick(mainKeys) : '';
   const main = mainKey ? MAINS[mainKey] : undefined;
   const flavor = rng.pick(cuisine.flavors);
-  const usesFlavor = t.groups.some(([, , lines]) => lines.includes('@flavor'));
+  const usesFlavor = t.groups.some(([, lines]) => lines.includes('@flavor'));
 
   /** Names picked for the slots, for the text. */
   const picked = { veg: [], herbs: [], aromatics: [], starch: [] };
@@ -340,10 +340,10 @@ function templateDraft(rng) {
     }
   };
 
-  const groups = t.groups.map(([title, category, tokens]) => {
+  const groups = t.groups.map(([title, tokens]) => {
     const lines = tokens.flatMap(expand).map((spec) => parseLine(spec, rng));
     for (const l of lines) inRecipe.add(l.name);
-    return { title, category, lines };
+    return { title, lines };
   });
   const vegetarian = main?.kind === 'veg';
   const { groups: adjusted, swaps } = adjustLines(groups, { vegetarian, prefer: cuisine.prefer });
@@ -567,7 +567,7 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
       addedAt: addedDate(day, rng.int(0, 364)),
       tags,
       notes: draft.notes,
-      ingredients: draft.groups.map((g) => ({ title: g.title, category: g.category, items: g.lines.map(toLine) })),
+      ingredients: draft.groups.map((g) => ({ title: g.title, items: g.lines.map(toLine) })),
       steps: draft.steps,
       headsUps: draft.headsUps,
     });

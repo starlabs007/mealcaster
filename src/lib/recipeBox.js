@@ -25,7 +25,8 @@ export function migrate(r) {
     ...rest,
     meals,
     tags: normalizeTags([...(r.tags ?? []), ...extra]),
-    ingredients: (rest.ingredients ?? []).map((g) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
+    // Groups had a `category` until #271; it's dropped.
+    ingredients: (rest.ingredients ?? []).map(({ category, ...g }) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
     headsUps: normalizeHeadsUps(rest.headsUps),
   };
 }

@@ -104,7 +104,7 @@ export const recipe = (id, title, extra = {}) => ({
   addedAt: '2026-01-01',
   tags: ['quick'],
   notes: '',
-  ingredients: [{ title: 'Main', category: '1 item', items: [{ id: 'pasta', qty: 1, unit: 'lb' }] }],
+  ingredients: [{ title: 'Main', items: [{ id: 'pasta', qty: 1, unit: 'lb' }] }],
   steps: [{ title: 'Boil', minutes: 10, text: 'Boil it.' }],
   custom: true,
   ...extra,
