@@ -11,6 +11,19 @@
 export const signature = (form) => JSON.stringify(form, (key, value) => (key === 'key' ? undefined : value));
 
 /**
+ * A `base` kept while ingredient groups still had a `category` (before #271), signed as it would be without one.
+ * @param {string} base
+ */
+function withoutGroupCategories(base) {
+  try {
+    const form = JSON.parse(base);
+    return Array.isArray(form?.groups) ? signature({ ...form, groups: form.groups.map(({ category, ...g }) => g) }) : base;
+  } catch {
+    return base;
+  }
+}
+
+/**
  * @param {Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>} store
  * @param {string} newKey @param {string} editsKey
  */
@@ -40,7 +53,7 @@ export function createDraftStore(store, newKey, editsKey) {
           return isForm(form) ? form : null;
         }
         const entry = readEdits()[id];
-        return isForm(entry?.form) && entry.base === base ? entry.form : null;
+        return isForm(entry?.form) && (entry.base === base || withoutGroupCategories(entry.base) === base) ? entry.form : null;
       } catch {
         return null;
       }
@@ -96,16 +109,16 @@ export function flatForm({ groups, steps, notes, ...head }) {
 
 /**
  * A flat draft's rows back in sections, in the order their groups first appear (names compared without case).
- * @param {{ group?: string }[]} rows @param {(title: string) => string} [categoryOf] a group's category by its name
- * @returns {{ title: string, category: string, rows: object[] }[]}
+ * @param {{ group?: string }[]} rows
+ * @returns {{ title: string, rows: object[] }[]}
  */
-export function sectionsOf(rows, categoryOf = () => '') {
-  /** @type {{ title: string, category: string, rows: object[] }[]} */
+export function sectionsOf(rows) {
+  /** @type {{ title: string, rows: object[] }[]} */
   const sections = [];
   for (const { group = '', ...row } of rows) {
     const title = String(group).trim();
     let section = sections.find((s) => s.title.toLowerCase() === title.toLowerCase());
-    if (!section) sections.push((section = { title, category: categoryOf(title) ?? '', rows: [] }));
+    if (!section) sections.push((section = { title, rows: [] }));
     section.rows.push(row);
   }
   return sections;
@@ -113,23 +126,21 @@ export function sectionsOf(rows, categoryOf = () => '') {
 
 /**
  * The recipe's ingredient groups from the editor's sections: rows without a name are left out, and so are sections
- * left empty; an untitled section takes `fallbackTitle`, and sections with one name save as one group. A section
- * keeps its category whatever it's called; one without gets `category(group)`.
+ * left empty; an untitled section takes `fallbackTitle`, and sections with one name save as one group.
  * @template Item
- * @param {{ title: string, category?: string, rows: { text: string }[] }[]} sections
- * @param {{ fallbackTitle: string, item: (row: any) => Item, category: (group: { title: string, items: Item[] }) => string }} how
+ * @param {{ title: string, rows: { text: string }[] }[]} sections
+ * @param {{ fallbackTitle: string, item: (row: any) => Item }} how
  */
-export function savedGroups(sections, { fallbackTitle, item, category }) {
-  /** @type {{ title: string, category: string, items: Item[] }[]} */
+export function savedGroups(sections, { fallbackTitle, item }) {
+  /** @type {{ title: string, items: Item[] }[]} */
   const groups = [];
   for (const section of sections) {
     const rows = section.rows.filter((r) => r.text.trim());
     if (!rows.length) continue;
     const title = section.title.trim() || fallbackTitle;
     let group = groups.find((g) => g.title.toLowerCase() === title.toLowerCase());
-    if (!group) groups.push((group = { title, category: section.category ?? '', items: [] }));
+    if (!group) groups.push((group = { title, items: [] }));
     for (const row of rows) group.items.push(item(row));
   }
-  for (const g of groups) g.category = g.category || category(g);
   return groups;
 }

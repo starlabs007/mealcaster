@@ -146,13 +146,12 @@ export function parseIngredients(value) {
       const kept = items(g.items);
       return {
         title: str(g.title) || sheetText.defaultGroupTitle,
-        category: str(g.category) || sheetText.groupCategory(kept.length),
         items: kept,
       };
     });
   }
   const flat = items(data);
-  return flat.length ? [{ title: sheetText.defaultGroupTitle, category: sheetText.flatGroupCategory(flat.length), items: flat }] : [];
+  return flat.length ? [{ title: sheetText.defaultGroupTitle, items: flat }] : [];
 }
 
 /**

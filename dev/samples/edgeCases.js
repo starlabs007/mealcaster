@@ -22,7 +22,7 @@
  *   serves: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
- *   groups: [string, string, string[]][],
+ *   groups: [string, string[]][],
  *   steps: [string, number, string, boolean?][],
  *   notes: string,
  *   tags: string[],
@@ -42,7 +42,7 @@ export const EDGE_CASES = [
     prepMinutes: 10,
     cookMinutes: 0,
     groups: [
-      ['Pickle', 'Pantry', [
+      ['Pickle', [
         'red onion|2 medium|thinly sliced into rings',
         'apple cider vinegar|250 ml',
         'sugar|1 tbsp',
@@ -66,7 +66,7 @@ export const EDGE_CASES = [
     prepMinutes: 40,
     cookMinutes: 270,
     groups: [
-      ['The Lamb', 'Protein', [
+      ['The Lamb', [
         'lamb shoulder|3 kg|scored in a crosshatch|bone-in',
         'garlic|2 head|cloves separated and smashed',
         'rosemary|6 sprig',
@@ -74,12 +74,12 @@ export const EDGE_CASES = [
         'kosher salt|2 tbsp',
         'kitchen twine|1 roll||for tying',
       ]],
-      ['Potatoes & Onions', 'Produce', [
+      ['Potatoes & Onions', [
         'yukon gold potato|2 kg|boiled until tender',
         'green onion|2 bunch|trimmed',
         'olive oil|1/3 cup',
       ]],
-      ['Salsa Verde', 'Sauce', [
+      ['Salsa Verde', [
         'flat-leaf parsley|2 bunch|finely chopped',
         'anchovy fillet|6 fillet|minced',
         'capers|1 jar|drained and chopped|small',
@@ -87,7 +87,7 @@ export const EDGE_CASES = [
         'lemon|1|zested',
         'extra virgin olive oil|3/4 cup',
       ]],
-      ['Pan Sauce', 'Sauce', [
+      ['Pan Sauce', [
         'dry red wine|1/2 bottle',
         'beef broth|2 cup',
         'unsalted butter|2 tbsp|cold',
@@ -115,7 +115,7 @@ export const EDGE_CASES = [
     prepMinutes: 20,
     cookMinutes: 60,
     groups: [
-      ['Broth', 'Broth', [
+      ['Broth', [
         'vegetable broth|2 l',
         'shiitake mushroom|1 bag|soaked and sliced|dried, about 1 oz',
         'onion|1 large|halved and charred',
@@ -125,11 +125,11 @@ export const EDGE_CASES = [
         'light soy sauce|3 tbsp',
         'sugar|1 tbsp',
       ]],
-      ['Bowls', 'Noodles & Tofu', [
+      ['Bowls', [
         'banh pho noodles|1 package||14 oz',
         'đậu phụ|400 g|cut into slabs and pan-fried',
       ]],
-      ['The Herb Plate', 'Garnish', [
+      ['The Herb Plate', [
         'bean sprouts|1 bag',
         'thai basil|1 bunch',
         'lime|2|cut into wedges',
@@ -158,7 +158,7 @@ export const EDGE_CASES = [
     prepMinutes: 5,
     cookMinutes: 7,
     groups: [
-      ['Toast', 'Toast', [
+      ['Toast', [
         'sourdough bread|1 slice|thick-cut',
         'crème fraîche|2 tbsp',
         'egg|2',
@@ -186,29 +186,29 @@ export const EDGE_CASES = [
     prepMinutes: 15,
     cookMinutes: 12,
     groups: [
-      ['Lemongrass Chicken', 'Protein', [
+      ['Lemongrass Chicken', [
         'chicken thigh|2 lb|thinly sliced|boneless, skinless',
         'vegetable oil|2 tbsp',
       ]],
-      ['Marinade', 'Marinade', [
+      ['Marinade', [
         'lemongrass|3 stalk|tender core minced',
         'garlic|4 clove|minced',
         'shallot|2|minced',
         'fish sauce|2 tbsp',
         'sugar|1 tbsp',
       ]],
-      ['Nước Chấm', 'Sauce', [
+      ['Nước Chấm', [
         'fish sauce|3 tbsp',
         'lime|2|juiced',
         'sugar|3 tbsp',
         'red chili|1|thinly sliced',
       ]],
-      ['Quick Pickles', 'Pickles', [
+      ['Quick Pickles', [
         'carrot|1|julienned',
         'daikon|1 piece|julienned|4-inch',
         'rice vinegar|1/3 cup',
       ]],
-      ['The Herb Plate', 'Herbs', [
+      ['The Herb Plate', [
         'mint|1 bunch',
         'cilantro|1 bunch',
         'perilla leaf|10 leaf',
@@ -216,7 +216,7 @@ export const EDGE_CASES = [
         'butter lettuce|1 head|leaves separated',
         'cucumber|1|cut into spears',
       ]],
-      ['Wrappers & Noodles', 'Wrappers', [
+      ['Wrappers & Noodles', [
         'rice paper|1 package',
         'rice vermicelli|8 oz|cooked and rinsed',
         'roasted peanuts|1/3 cup|crushed',
@@ -242,11 +242,11 @@ export const EDGE_CASES = [
     prepMinutes: 50,
     cookMinutes: 10,
     groups: [
-      ['Dough', 'Base', [
+      ['Dough', [
         'pizza dough|1 ball||room temperature',
         'all-purpose flour|1/4 cup||for dusting',
       ]],
-      ['Toppings', 'Toppings', [
+      ['Toppings', [
         'san marzano tomatoes|1 can|crushed by hand|14 oz',
         'fresh mozzarella|1 ball|torn and drained',
         'basil|1 handful',
@@ -275,14 +275,14 @@ export const EDGE_CASES = [
     prepMinutes: 15,
     cookMinutes: 25,
     groups: [
-      ['Miso Glaze', 'Sauce', [
+      ['Miso Glaze', [
         'white miso|3 tbsp',
         'unsalted butter|1/2 stick|softened',
         'mirin|2 tbsp',
         'sake|1 tbsp',
         'soy sauce|1 tsp',
       ]],
-      ['Fish & Noodles', 'Main', [
+      ['Fish & Noodles', [
         'cod fillet|4||6 oz each',
         'soba noodles|8 oz',
         'baby bok choy|4 head|halved',

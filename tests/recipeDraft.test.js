@@ -92,7 +92,7 @@ const row = (key, text, extra = {}) => ({ key, qty: '1', unit: '', text, id: tex
 describe('grouped drafts', () => {
   it('a grouped form is a draft too', () => {
     const drafts = createDraftStore(memory(), 'new', 'edits');
-    drafts.write(undefined, { title: 'Pho', groups: [{ key: 1, title: '', category: '', rows: [] }], steps: [] });
+    drafts.write(undefined, { title: 'Pho', groups: [{ key: 1, title: '', rows: [] }], steps: [] });
     assert.equal(drafts.read(undefined).title, 'Pho');
   });
 
@@ -101,8 +101,8 @@ describe('grouped drafts', () => {
       title: 'Burgers',
       tags: [],
       groups: [
-        { key: 1, title: 'Patties', category: 'Protein', rows: [row(2, 'lamb')] },
-        { key: 3, title: 'Build', category: 'Assembly', rows: [row(4, 'bun')] },
+        { key: 1, title: 'Patties', rows: [row(2, 'lamb')] },
+        { key: 3, title: 'Build', rows: [row(4, 'bun')] },
       ],
       steps: [],
       notes: '',
@@ -122,45 +122,45 @@ describe('grouped drafts', () => {
 
   it('sectionsOf puts flat rows back in their groups, in first-seen order, ignoring case', () => {
     const rows = [{ text: 'lamb', group: 'Patties' }, { text: 'bun', group: 'Build' }, { text: 'salt', group: 'patties ' }, { text: 'ice' }];
-    const sections = sectionsOf(rows, (title) => (title === 'Patties' ? 'Protein' : ''));
+    const sections = sectionsOf(rows);
     assert.deepEqual(
-      sections.map((s) => [s.title, s.category, s.rows.map((r) => r.text)]),
-      [['Patties', 'Protein', ['lamb', 'salt']], ['Build', '', ['bun']], ['', '', ['ice']]],
+      sections.map((s) => [s.title, s.rows.map((r) => r.text)]),
+      [['Patties', ['lamb', 'salt']], ['Build', ['bun']], ['', ['ice']]],
     );
     assert.equal('group' in sections[0].rows[0], false);
   });
 });
 
 describe('savedGroups', () => {
-  const how = { fallbackTitle: 'Main', item: (r) => ({ id: r.text }), category: (g) => `auto ${g.items.length}` };
+  const how = { fallbackTitle: 'Main', item: (r) => ({ id: r.text }) };
 
   it('saves sections in order, skipping empty rows and sections; untitled ones become Main', () => {
     const groups = savedGroups(
       [
-        { title: '', category: '', rows: [row(1, 'rice'), row(2, '  ')] },
-        { title: 'Sauce', category: '', rows: [row(3, '')] },
-        { title: 'Top', category: '', rows: [row(4, 'scallion')] },
+        { title: '', rows: [row(1, 'rice'), row(2, '  ')] },
+        { title: 'Sauce', rows: [row(3, '')] },
+        { title: 'Top', rows: [row(4, 'scallion')] },
       ],
       how,
     );
     assert.deepEqual(groups, [
-      { title: 'Main', category: 'auto 1', items: [{ id: 'rice' }] },
-      { title: 'Top', category: 'auto 1', items: [{ id: 'scallion' }] },
+      { title: 'Main', items: [{ id: 'rice' }] },
+      { title: 'Top', items: [{ id: 'scallion' }] },
     ]);
   });
 
-  it("keeps a renamed section's category, and merges sections that share a name", () => {
+  it('merges sections that share a name', () => {
     const groups = savedGroups(
       [
-        { title: 'Lamb Patties', category: 'Protein', rows: [row(1, 'lamb')] },
-        { title: '', category: '', rows: [row(2, 'bun')] },
-        { title: 'main', category: '', rows: [row(3, 'lettuce')] },
+        { title: 'Lamb Patties', rows: [row(1, 'lamb')] },
+        { title: '', rows: [row(2, 'bun')] },
+        { title: 'main', rows: [row(3, 'lettuce')] },
       ],
       how,
     );
     assert.deepEqual(
-      groups.map((g) => [g.title, g.category, g.items.map((i) => i.id)]),
-      [['Lamb Patties', 'Protein', ['lamb']], ['Main', 'auto 2', ['bun', 'lettuce']]],
+      groups.map((g) => [g.title, g.items.map((i) => i.id)]),
+      [['Lamb Patties', ['lamb']], ['Main', ['bun', 'lettuce']]],
     );
   });
 });

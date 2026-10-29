@@ -95,11 +95,6 @@ describe('sheetText', () => {
 
   it('defaults written to the sheet', () => {
     assert.equal(t.defaultGroupTitle, 'Ingredients', HINT);
-    assert.equal(t.groupCategory(1), '1 item', HINT);
-    assert.equal(t.groupCategory(0), '0 items', HINT);
-    assert.equal(t.groupCategory(5), '5 items', HINT);
-    assert.equal(t.flatGroupCategory(1), '1 items', HINT);
-    assert.equal(t.flatGroupCategory(5), '5 items', HINT);
     assert.equal(t.sourceAddedByYou, 'Added by you', HINT);
     assert.equal(t.sourceEveryWeek, 'Every week', HINT);
     assert.equal(t.sourceDinner('Mon', 'Pasta'), 'Mon: Pasta', HINT);
