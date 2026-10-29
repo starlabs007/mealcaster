@@ -63,7 +63,7 @@
 
       <button
         type="button"
-        aria-label={favorite ? text.catalog.card.removeFavoriteAria(recipe.shortTitle) : text.catalog.card.addFavoriteAria(recipe.shortTitle)}
+        aria-label={favorite ? text.catalog.card.removeFavoriteAria(recipe.title) : text.catalog.card.addFavoriteAria(recipe.title)}
         aria-pressed={favorite}
         onclick={() => toggleFavorite(recipe.id)}
         class="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-lowest/90 shadow-sm backdrop-blur-md transition-colors {favorite
@@ -116,7 +116,7 @@
     <a
       href={href(`/recipe/${recipe.id}`, { day })}
       title={text.catalog.card.previewTitle}
-      aria-label={text.catalog.card.openAria(recipe.shortTitle)}
+      aria-label={text.catalog.card.openAria(recipe.title)}
       class="rounded-xl bg-surface-container-low p-2.5 text-on-surface-variant transition-colors hover:bg-surface-container-high"
     >
       <Icon name="open_in_full" class="text-[18px]" />

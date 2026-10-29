@@ -133,7 +133,7 @@ describe('the recipe a form saves as', () => {
     const r = formToRecipe(form, how());
     assert.equal(r.id, 'custom-Pho');
     assert.equal(r.title, 'Pho');
-    assert.equal(r.shortTitle, 'Pho');
+    assert.equal('shortTitle' in r, false);
     assert.equal(r.prepMinutes, 0);
     assert.equal(r.cookMinutes, 0);
     assert.equal('image' in r, false);
@@ -149,12 +149,10 @@ describe('the recipe a form saves as', () => {
     ]);
   });
 
-  it('keeps the short title unless the title changed, and fields the form does not show', () => {
-    const editing = recipe('pho', 'Pho', { shortTitle: 'Phở', sheetRow: 7, headsUpsRaw: 'bad' });
+  it('keeps fields the form does not show', () => {
+    const editing = recipe('pho', 'Pho', { sheetRow: 7, headsUpsRaw: 'bad' });
     const form = formFromRecipe(editing, lookup.ingredientOf);
-    assert.equal(formToRecipe(form, how({ editing })).shortTitle, 'Phở');
     assert.equal(formToRecipe(form, how({ editing })).sheetRow, 7);
-    assert.equal(formToRecipe({ ...form, title: 'Pho 2' }, how({ editing })).shortTitle, 'Pho 2');
     assert.equal(formToRecipe(form, how({ editing })).id, 'pho');
   });
 

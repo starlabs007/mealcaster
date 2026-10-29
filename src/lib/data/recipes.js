@@ -9,7 +9,6 @@
  * @typedef {{
  *   id: string,
  *   title: string,
- *   shortTitle: string,
  *   description: string,
  *   image?: string,
  *   prepMinutes: number,

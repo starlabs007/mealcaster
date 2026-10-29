@@ -207,7 +207,7 @@
       if (note) showToast(note);
       return;
     }
-    const added = text.catalog.toasts.added(surprised ? text.planner.toasts.surprise(recipe.shortTitle) : recipe.shortTitle, formatLong(iso));
+    const added = text.catalog.toasts.added(surprised ? text.planner.toasts.surprise(recipe.title) : recipe.title, formatLong(iso));
     showToast(note ? `${added} ${note}` : added, {
       label: text.catalog.toasts.goToWeekly,
       run: () => navigate('/'),
@@ -219,7 +219,7 @@
     const status = statusOf(iso);
     const id = planner.entries[iso]?.recipeId;
     const detail =
-      status === 'open' ? text.catalog.dayOpen : status === 'diningOut' ? text.catalog.dayDiningOut : (recipeById.get(id)?.shortTitle ?? '');
+      status === 'open' ? text.catalog.dayOpen : status === 'diningOut' ? text.catalog.dayDiningOut : (recipeById.get(id)?.title ?? '');
     return `${formatLong(iso)} — ${detail}`;
   }
 </script>

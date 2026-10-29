@@ -33,6 +33,7 @@
 // Plain module (no runes) so components, .svelte.js stores and plain modules such as dates.js can all import it.
 
 import * as sheetText from './sheetText.js';
+import { toastTitle } from './toastText.js';
 
 /**
  * The word for a count: plural(1, 'slot') → "slot", plural(2, 'slot') → "slots". Returns the word only, so the
@@ -93,7 +94,7 @@ export const text = {
       calloutAria: 'Heads-up',
       /** Toast when a dinner lands on a day too soon for its heads-up. */
       tooSoon: (/** @type {string} */ title, /** @type {number} */ n, /** @type {string} */ what) =>
-        `${title} needs ${n === 1 ? 'a day’s' : `${n} days’`} notice: ${what}`,
+        `${toastTitle(title)} needs ${n === 1 ? 'a day’s' : `${n} days’`} notice: ${what}`,
     },
   },
 
@@ -283,15 +284,15 @@ export const text = {
 
     toasts: {
       noRecipes: 'Add a recipe to the catalog first.',
-      surprise: (/** @type {string} */ title) => `Surprise! ${title}`,
-      surpriseOn: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title}`,
+      surprise: (/** @type {string} */ title) => `Surprise! ${toastTitle(title)}`,
+      surpriseOn: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${toastTitle(title)}`,
       nightOff: (/** @type {string} */ date) => `${date} is now a night off.`,
       cleared: (/** @type {string} */ weekday) => `Cleared ${weekday}.`,
       switched: (/** @type {string} */ a, /** @type {string} */ b) => `Switched ${a} and ${b}.`,
       moved: (/** @type {string} */ weekday) => `Moved to ${weekday}.`,
       allPlanned: 'Every dinner this week is already planned.',
       // One evening names the dish; a few name the days ("Thu, Sat and Sun"); more just count.
-      filledOne: (/** @type {string} */ weekday, /** @type {string} */ title) => `Planned ${weekday}: ${title}`,
+      filledOne: (/** @type {string} */ weekday, /** @type {string} */ title) => `Planned ${weekday}: ${toastTitle(title)}`,
       filled: (/** @type {string[]} */ days) =>
         days.length <= 4 ? `Planned ${joinList(days)}.` : `Planned ${days.length} evenings, starting ${days[0]}.`,
       // Auto-fill's suggestions: nothing is planned until Accept All.
@@ -306,9 +307,9 @@ export const text = {
       copied: (/** @type {string[]} */ days) =>
         days.length <= 4 ? `Copied ${joinList(days)} from the previous week.` : `Copied ${days.length} evenings from the previous week.`,
       // Changes with no toast of their own; Cmd/Ctrl+Z repeats them as "Undone: …".
-      assigned: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title}`,
-      markedDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title} marked done.`,
-      markedNotDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${title} marked not done.`,
+      assigned: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${toastTitle(title)}`,
+      markedDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${toastTitle(title)} marked done.`,
+      markedNotDone: (/** @type {string} */ weekday, /** @type {string} */ title) => `${weekday}: ${toastTitle(title)} marked not done.`,
       nightOffEnded: (/** @type {string} */ weekday) => `${weekday} is no longer a night off.`,
       nothingToUndo: 'Nothing to undo.',
       reset: (/** @type {number} */ n) => `Cleared ${n} upcoming ${plural(n, 'evening')}.`,
@@ -373,7 +374,7 @@ export const text = {
       button: 'Surprise Me & Assign',
     },
     toasts: {
-      added: (/** @type {string} */ title, /** @type {string} */ date) => `${title} added to ${date} dinner and your grocery basket was updated.`,
+      added: (/** @type {string} */ title, /** @type {string} */ date) => `${toastTitle(title)} added to ${date} dinner and your grocery basket was updated.`,
       goToWeekly: 'Go to Weekly View',
     },
     errors: {
@@ -478,9 +479,9 @@ export const text = {
       afterTitle: ' will be removed from your recipes. You can undo this right after.',
     },
     toasts: {
-      addedFromRecipe: (/** @type {number} */ n, /** @type {string} */ title) => `Added ${n} ${plural(n, 'ingredient')} from ${title} to your grocery list.`,
-      planned: (/** @type {string} */ title, /** @type {string} */ date) => `${title} planned for ${date}.`,
-      deleted: (/** @type {string} */ title) => `${title} deleted.`,
+      addedFromRecipe: (/** @type {number} */ n, /** @type {string} */ title) => `Added ${n} ${plural(n, 'ingredient')} from ${toastTitle(title)} to your grocery list.`,
+      planned: (/** @type {string} */ title, /** @type {string} */ date) => `${toastTitle(title)} planned for ${date}.`,
+      deleted: (/** @type {string} */ title) => `${toastTitle(title)} deleted.`,
       atHome: (/** @type {string} */ name) => `${name} marked at home: it stays off your grocery lists.`,
       notAtHome: (/** @type {string} */ name) => `${name} is no longer at home.`,
     },
@@ -708,7 +709,7 @@ export const text = {
       noIngredientsFound: 'No ingredients found — put one per line, e.g. “1 lb rigatoni”.',
       addedIngredients: (/** @type {number} */ n) => `Added ${n} ${plural(n, 'ingredient')} — check the amounts and aisles.`,
       updated: 'Recipe updated.',
-      added: (/** @type {string} */ title) => `${title} saved.`,
+      added: (/** @type {string} */ title) => `${toastTitle(title)} saved.`,
       reverted: 'Recipe reverted to the original.',
       draftNoSpace: 'This device ran out of space for the draft. Try a smaller photo or an image link.',
       draftDiscarded: 'Draft discarded.',

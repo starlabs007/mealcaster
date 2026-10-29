@@ -13,7 +13,7 @@ const ING = {
   mint: { id: 'mint', name: 'mint', plural: '', aisle: 'Herbs', onHand: false },
   juice: { id: 'juice', name: 'juice', plural: '', aisle: 'Other', onHand: false },
 };
-const recipe = (id, shortTitle, items) => ({ id, shortTitle, ingredients: [{ items }] });
+const recipe = (id, title, items) => ({ id, title, ingredients: [{ items }] });
 const PHO = recipe('pho', 'Phở', [
   { id: 'beef', qty: 1, unit: 'lb', note: 'eye round' },
   { id: 'onion', qty: 1 },

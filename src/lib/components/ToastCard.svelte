@@ -5,6 +5,7 @@
   import { toast, toastFocus, dismissToast, pauseToast, resumeToast } from '../toast.svelte.js';
   import { text } from '../text.js';
   import { undoShortcutHint } from '../undoShortcut.js';
+  import { fitToast, toastPlain } from '../toastText.js';
 
   const hint = undoShortcutHint(typeof navigator === 'undefined' ? '' : navigator.platform);
 
@@ -17,6 +18,34 @@
 
   /** @param {HTMLElement} el */
   const engaged = (el) => el.matches(':hover') || el.contains(document.activeElement);
+
+  /**
+   * Fills the message in, shortening recipe titles until it fits the three-line clamp (rules in toastText.js); again
+   * when the width changes.
+   * @param {HTMLElement} node @param {string} message
+   */
+  function fitLines(node, message) {
+    const fits = (/** @type {string} */ shown) => {
+      node.textContent = shown;
+      return node.scrollHeight <= node.clientHeight + 1;
+    };
+    let width = 0;
+    const fit = () => {
+      width = node.clientWidth;
+      node.textContent = fitToast(message, fits);
+    };
+    fit();
+    const observer = new ResizeObserver(() => node.clientWidth !== width && fit());
+    observer.observe(node);
+    return {
+      /** @param {string} next */
+      update(next) {
+        message = next;
+        fit();
+      },
+      destroy: () => observer.disconnect(),
+    };
+  }
 </script>
 
 {#key toast.id}
@@ -31,7 +60,10 @@
       onmouseleave={(e) => engaged(e.currentTarget) || resumeToast()}
       onfocusout={(e) => e.currentTarget.contains(/** @type {Node | null} */ (e.relatedTarget)) || e.currentTarget.matches(':hover') || resumeToast()}
     >
-      <span class="min-w-0 flex-1">{toast.message}</span>
+      <!-- Three lines at most: recipe titles are shortened first, so what happened stays whole. Visual only: screen
+           readers get the whole message. -->
+      <span class="sr-only">{toastPlain(toast.message)}</span>
+      <span use:fitLines={toast.message} aria-hidden="true" class="line-clamp-3 min-w-0 flex-1 break-words" title={toastPlain(toast.message)}></span>
       {#if toast.action}
         <button
           type="button"

@@ -7,7 +7,7 @@ import { CATALOG, NEAR_DUPLICATES } from '../dev/samples/ingredients.js';
 import { EDGE_CASES } from '../dev/samples/edgeCases.js';
 import * as codec from '../src/lib/sync/codec.js';
 import { SCHEMA } from '../src/lib/schema.js';
-import { UNITS } from '../src/lib/ingredients.js';
+import { UNITS, foldKey } from '../src/lib/ingredients.js';
 import { aisles } from '../src/lib/data/aisles.js';
 import { TONES, assignTones, normalizeTag, suggestedTags } from '../src/lib/tags.js';
 
@@ -71,6 +71,16 @@ describe('generateSamples', () => {
     assert.equal(new Set(s.recipes.map((r) => r.id)).size, 60);
     assert.equal(new Set(s.ingredients.map((i) => i.id)).size, s.ingredients.length);
     assert.equal(generateSamples({ seed: 3, count: 400 }).recipes.length, 400);
+  });
+
+  it('takes recipe ids from the title, cut at a whole word within 40 characters', () => {
+    const lamb = s.recipes.find((r) => r.title.startsWith('Slow-Roasted Garlic'));
+    assert.equal(lamb.id, 'slow-roasted-garlic-rosemary-lamb');
+    for (const r of s.recipes) {
+      const slug = r.id.replace(/-\d+$/, '');
+      assert.ok(slug.length <= 40, r.id);
+      assert.ok(`${foldKey(r.title).replace(/[^a-z0-9]+/g, '-')}-`.startsWith(`${slug}-`), r.id);
+    }
   });
 
   it('only refers to ingredients in the list, with valid aisles and units', () => {
