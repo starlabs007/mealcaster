@@ -107,7 +107,7 @@ describe('a spreadsheet kept in sync over several passes', () => {
     assert.deepEqual(added.ingredients[0].items[0], { id: 'rice', qty: 200, unit: 'g' });
     assert.deepEqual(
       added.steps.map((s) => [s.title, s.minutes, s.text]),
-      [['Step 1', 0, 'Rinse rice'], ['Cook', 15, 'Simmer']],
+      [['', 0, 'Rinse rice'], ['Cook', 15, 'Simmer']],
     );
     // Only the ID cell was written; the typed cells stay exactly as typed.
     assert.equal(sheet.column('Recipes', 'Method_Steps')[1], '1. Rinse rice\n2. Cook (15 min): Simmer');

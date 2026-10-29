@@ -121,7 +121,7 @@ describe('validation', () => {
 describe('the recipe a form saves as', () => {
   const how = (extra = {}) => ({ tags: ['Soup'], ingredientId: (r) => `id-${r.text}`, newId: (t) => `custom-${t}`, today: '2026-10-23', ...extra });
 
-  it('makes a new recipe: trimmed text, empty minutes as 0, steps without text dropped, default step titles', () => {
+  it('makes a new recipe: trimmed text, empty minutes as 0, steps without text dropped, blank step titles kept blank', () => {
     const form = valid();
     form.title = '  Pho ';
     form.description = ' broth ';
@@ -141,11 +141,22 @@ describe('the recipe a form saves as', () => {
     assert.equal(r.custom, true);
     assert.deepEqual(r.meals, ['Lunch', 'Dinner'], 'saved in list order');
     assert.deepEqual(r.steps, [
-      { title: 'Step 1', minutes: 0, text: 'Boil' },
+      { title: '', minutes: 0, text: 'Boil' },
       { title: 'Eat', minutes: 5, text: 'Serve' },
     ]);
     assert.deepEqual(r.ingredients, [
       { title: 'Main', items: [{ id: 'id-rice', qty: 1.5, unit: 'cup', note: 'fine', prep: 'rinsed', optional: true }] },
+    ]);
+  });
+
+  it('keeps a blank step title blank through reopening and reordering', () => {
+    const editing = recipe('pho', 'Pho', { steps: [{ title: '', minutes: 0, text: 'Boil' }, { title: 'Eat', minutes: 5, text: 'Serve' }] });
+    const form = formFromRecipe(editing, lookup.ingredientOf);
+    assert.deepEqual(form.steps.map((s) => s.title), ['', 'Eat']);
+    form.steps = moveItem(form.steps, 0, 1);
+    assert.deepEqual(formToRecipe(form, how({ editing })).steps, [
+      { title: 'Eat', minutes: 5, text: 'Serve' },
+      { title: '', minutes: 0, text: 'Boil' },
     ]);
   });
 

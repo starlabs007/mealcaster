@@ -32,10 +32,31 @@ describe('codec', () => {
     assert.equal(codec.formatSteps([{ title: 'Sear', minutes: 8, text: 'Pat dry.', critical: true }]), '1. Sear (8 min): Pat dry.');
   });
 
-  it('reads plain numbered steps typed in the sheet', () => {
+  it('reads plain numbered steps typed in the sheet as untitled', () => {
     assert.deepEqual(codec.parseSteps('1. Boil water\n2) Add pasta'), [
-      { title: 'Step 1', minutes: 0, text: 'Boil water' },
-      { title: 'Step 2', minutes: 0, text: 'Add pasta' },
+      { title: '', minutes: 0, text: 'Boil water' },
+      { title: '', minutes: 0, text: 'Add pasta' },
+    ]);
+  });
+
+  it('writes untitled steps without a title and reads them back, colons in the text included', () => {
+    const steps = [
+      { title: '', minutes: 0, text: 'Stir.' },
+      { title: '', minutes: 8, text: 'Simmer: low heat.' },
+      { title: '', minutes: 0, text: 'Note: stir well.\nThen: serve.' },
+      { title: '', minutes: 0, text: '(about 5 min): rest' },
+      { title: 'Rest', minutes: 0, text: 'Wait.' },
+    ];
+    const cell = codec.formatSteps(steps);
+    assert.equal(cell, '1. Stir.\n2. (8 min): Simmer: low heat.\n3. : Note: stir well.\n    Then: serve.\n4. : (about 5 min): rest\n5. Rest: Wait.');
+    assert.deepEqual(codec.parseSteps(cell), steps);
+  });
+
+  it('reads the "Step N" titles older builds wrote for untitled steps as untitled', () => {
+    assert.deepEqual(codec.parseSteps('1. Step 1: Boil.\n2. Step 7 (5 min): Drain.\n3. Step two: Eat.'), [
+      { title: '', minutes: 0, text: 'Boil.' },
+      { title: '', minutes: 5, text: 'Drain.' },
+      { title: 'Step two', minutes: 0, text: 'Eat.' },
     ]);
   });
 

@@ -5,7 +5,7 @@
 
 import { normalizeTags } from './tags.js';
 import { normalizeMeals } from './meals.js';
-import { defaultAisle, defaultIngredientGroup, defaultStepTitle } from './sheetText.js';
+import { defaultAisle, defaultIngredientGroup } from './sheetText.js';
 import { formatQty } from './format.js';
 import { parseQty } from './ingredientText.js';
 import { canonicalUnit } from './ingredients.js';
@@ -280,8 +280,8 @@ export function formToRecipe(form, { editing, tags, ingredientId, newId, today }
     ingredients: groups,
     steps: form.steps
       .filter((s) => s.text.trim())
-      .map((s, i) => ({
-        title: s.title.trim() || defaultStepTitle(i + 1),
+      .map((s) => ({
+        title: s.title.trim(),
         minutes: Number(s.minutes) || 0,
         text: s.text.trim(),
       })),

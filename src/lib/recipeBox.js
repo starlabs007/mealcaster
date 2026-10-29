@@ -6,7 +6,7 @@ import { migrateNotes } from './markdown.js';
 import { normalizeTags, retag } from './tags.js';
 import { parseMeals } from './meals.js';
 import { normalizeHeadsUps } from './headsUps.js';
-import { cellText, recipeToRow } from './sync/codec.js';
+import { cellText, recipeToRow, stepTitle } from './sync/codec.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */
@@ -28,6 +28,8 @@ export function migrate(r) {
     // Groups had a `category` until #271; it's dropped.
     ingredients: (rest.ingredients ?? []).map(({ category, ...g }) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
     headsUps: normalizeHeadsUps(rest.headsUps),
+    // Untitled steps were saved as "Step N" until #272; they're blank now.
+    steps: (rest.steps ?? []).map((s) => ({ ...s, title: stepTitle(s.title) })),
   };
 }
 

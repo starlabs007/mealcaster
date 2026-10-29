@@ -86,6 +86,20 @@ export function renderMarkdown(src) {
   return out.join('');
 }
 
+/**
+ * The first line of some Markdown with its markup taken out, as plain text (a one-line stand-in, e.g. for a folded
+ * method step with no title). @param {string} src
+ */
+export function firstLineText(src) {
+  const line = String(src ?? '').split(/\r?\n/).find((l) => l.trim()) ?? '';
+  return line
+    .replace(/^\s*(?:#{1,6}\s+|>\s*|(?:[-*+]|\d+[.)])\s+)/, '')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\*\*(.+?)\*\*|__(.+?)__|~~(.+?)~~|`([^`]+)`/g, (_, a, b, c, d) => a ?? b ?? c ?? d)
+    .replace(/(^|[^*\w])\*(?!\s)(.+?)\*(?!\*)|(^|[^_\w])_(?!\s)(.+?)_(?![_\w])/g, (m, p1, a, p2, b) => (a !== undefined ? p1 + a : p2 + b))
+    .trim();
+}
+
 /** Recipes saved before notes became one Markdown field kept `secret` and `pairing` apart. */
 export function migrateNotes(r) {
   if (!r || (r.secret === undefined && r.pairing === undefined)) return r;

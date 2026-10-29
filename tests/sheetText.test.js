@@ -102,7 +102,8 @@ describe('sheetText', () => {
     assert.equal(t.untitledRecipe, 'Untitled recipe', HINT);
     assert.equal(t.diningOutNote, 'Dining out', HINT);
     assert.equal(t.defaultIngredientGroup, 'Main', HINT);
-    assert.equal(t.defaultStepTitle(3), 'Step 3', HINT);
+    assert.ok(t.isOldStepTitle('Step 3') && t.isOldStepTitle('Step 12'), HINT);
+    assert.ok(!t.isOldStepTitle('Step two') && !t.isOldStepTitle('Steps 3') && !t.isOldStepTitle(''), HINT);
     assert.equal(t.defaultAisle, 'Pantry', HINT);
     assert.equal(t.defaultDepartmentShort, 'Pantry', HINT);
   });
