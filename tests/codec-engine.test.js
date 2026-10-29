@@ -4,7 +4,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import * as codec from '../src/lib/sync/codec.js';
-import { fingerprint, reconcile, resolveColumns } from '../src/lib/sync/engine.js';
+import { fingerprint, reconcile, resolveColumns, settleCells } from '../src/lib/sync/engine.js';
 import { SCHEMA } from '../src/lib/schema.js';
 import { recipe } from './fakes.js';
 
@@ -287,6 +287,99 @@ describe('codec', () => {
         '2026-10-03': { pushed: [], status: {}, added: {} },
       },
     );
+  });
+});
+
+describe('Date_Added cell', () => {
+  const options = { columns: ['Recipe_ID', 'Title', 'Date_Added'], favorites: new Set(), today: '2026-10-28' };
+  const read = (cell, existing = recipe('r1', 'Pasta', { addedAt: '2026-03-01' })) =>
+    codec.recipeFromRow({ Recipe_ID: 'r1', Title: 'Pasta', Date_Added: cell }, existing, options).recipe.addedAt;
+
+  it('reads YYYY-MM-DD text and Sheets date values; anything else is not a date', () => {
+    assert.equal(codec.addedDate('2026-3-1'), '2026-03-01');
+    assert.equal(codec.addedDate(' 2026-10-28 '), '2026-10-28');
+    assert.equal(codec.addedDate(46323), '2026-10-28');
+    assert.equal(codec.addedDate(46323.9), '2026-10-28', 'a time of day stays on its date');
+    for (const cell of ['', 'soon', '10/28/2026', '2026-02-30', '2026-13-01', '2026-10-28 extra', 0, -5, true]) {
+      assert.equal(codec.addedDate(cell), '', JSON.stringify(cell));
+    }
+  });
+
+  it('writes the device date', () => {
+    assert.equal(codec.recipeToRow(recipe('r1', 'Pasta', { addedAt: '2026-03-01' }), new Set()).Date_Added, '2026-03-01');
+  });
+
+  it('keeps the earlier date, whichever side has it', () => {
+    assert.equal(read('2026-01-15'), '2026-01-15');
+    assert.equal(read('2026-06-01'), '2026-03-01');
+    assert.equal(read(45900), '2025-08-31');
+  });
+
+  it('keeps the device date when the cell is empty or not a date', () => {
+    assert.equal(read(''), '2026-03-01');
+    assert.equal(read('soon'), '2026-03-01');
+    assert.equal(read('2026-02-30'), '2026-03-01');
+  });
+
+  it('dates a row added in the sheet from its cell, or today', () => {
+    assert.equal(read('2026-05-05', null), '2026-05-05');
+    assert.equal(read('', null), '2026-10-28');
+    assert.equal(read('2027-01-01', null), '2026-10-28', 'a date after today is not taken');
+  });
+});
+
+describe('settleCells', () => {
+  const cells = { Date_Added: codec.addedDate };
+  const columns = ['Recipe_ID', 'Title', 'Date_Added'];
+  const table = (rows) => ({ rows: new Map(rows.map((row, i) => [row.Recipe_ID, { index: i + 1, row }])), keyFixes: [] });
+
+  it('writes back just the cells the device settled differently, and updates the final rows', () => {
+    const sheet = table([
+      { Recipe_ID: 'a', Title: 'A', Date_Added: '' },
+      { Recipe_ID: 'b', Title: 'B', Date_Added: 45900 },
+      { Recipe_ID: 'c', Title: 'C', Date_Added: '2026-06-01' },
+    ]);
+    const device = new Map([
+      ['a', { Recipe_ID: 'a', Title: 'A', Date_Added: '2026-01-01' }],
+      ['b', { Recipe_ID: 'b', Title: 'B', Date_Added: '2025-08-31' }],
+      ['c', { Recipe_ID: 'c', Title: 'C!', Date_Added: '2026-03-01' }],
+    ]);
+    const result = { final: new Map([...sheet.rows].map(([k, s]) => [k, s.row])), fromSheet: new Set(['a', 'b', 'c']), updates: [], appends: [], deletes: [] };
+    settleCells({ sheet, result, device, cells, columns });
+    assert.deepEqual(result.updates, [
+      { index: 1, row: { Recipe_ID: 'a', Title: 'A', Date_Added: '2026-01-01' }, only: ['Date_Added'] },
+      { index: 3, row: { Recipe_ID: 'c', Title: 'C', Date_Added: '2026-03-01' }, only: ['Date_Added'] },
+    ]);
+    assert.equal(result.final.get('a').Date_Added, '2026-01-01');
+    assert.equal(result.final.get('b').Date_Added, 45900, 'a Sheets date value that reads the same stays');
+  });
+
+  it('leaves rows written in full, deleted, or without the column alone; joins a key fix', () => {
+    const sheet = table([
+      { Recipe_ID: 'a', Title: 'A', Date_Added: '' },
+      { Recipe_ID: 'b', Title: 'B', Date_Added: '' },
+      { Recipe_ID: 'new', Title: 'Typed', Date_Added: '' },
+    ]);
+    const device = new Map([
+      ['a', { Recipe_ID: 'a', Title: 'A2', Date_Added: '2026-01-01' }],
+      ['new', { Recipe_ID: 'new', Title: 'Typed', Date_Added: '2026-10-28' }],
+    ]);
+    const keyFix = { index: 3, row: sheet.rows.get('new').row, only: ['Recipe_ID'] };
+    const result = {
+      final: new Map([['a', device.get('a')], ['new', sheet.rows.get('new').row]]),
+      fromSheet: new Set(['new']),
+      updates: [{ index: 1, row: device.get('a') }, keyFix],
+      appends: [],
+      deletes: [2],
+    };
+    settleCells({ sheet, result, device, cells, columns });
+    assert.equal(result.updates.length, 2);
+    assert.deepEqual(keyFix.only, ['Recipe_ID', 'Date_Added']);
+    assert.equal(keyFix.row.Date_Added, '2026-10-28');
+
+    const without = { ...result, updates: [] };
+    settleCells({ sheet, result: without, device, cells, columns: ['Recipe_ID', 'Title'] });
+    assert.deepEqual(without.updates, []);
   });
 });
 

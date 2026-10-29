@@ -64,6 +64,19 @@ export function isoDate(v) {
   return `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
 }
 
+/**
+ * Date_Added cell → "YYYY-MM-DD": a Sheets date value or text written as YYYY-MM-DD. Anything else, an impossible
+ * date ("2026-02-30") included, is '' — the earlier date wins, so a misread cell must never count as a date.
+ * @returns {string}
+ */
+export function addedDate(v) {
+  if (typeof v === 'number') return v > 0 ? isoDate(Math.floor(v)) : '';
+  const m = str(v).match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (!m) return '';
+  const date = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  return date.getUTCMonth() === Number(m[2]) - 1 && date.getUTCDate() === Number(m[3]) ? date.toISOString().slice(0, 10) : '';
+}
+
 /** Whether a row has anything in it. @param {Row} row */
 export const isBlankRow = (row) => Object.values(row).every((v) => str(v) === '');
 
@@ -229,6 +242,14 @@ const RECIPE_COLUMNS = {
       r.headsUps = headsUps;
       if (raw) r.headsUpsRaw = raw;
       else delete r.headsUpsRaw;
+    },
+  },
+  // The earlier date wins; an empty cell or one that isn't a date keeps the device's (sync writes it back, see run.js).
+  Date_Added: {
+    get: (r) => r.addedAt,
+    set: (r, v) => {
+      const date = addedDate(v);
+      if (date && !(r.addedAt <= date)) r.addedAt = date;
     },
   },
 };

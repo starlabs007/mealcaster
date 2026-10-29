@@ -1305,6 +1305,7 @@ export const text = {
           Cook_Minutes: 'Cooking time in minutes.',
           Notes: 'Cook’s secrets, in Markdown.',
           Heads_Up_JSON: `Things to do ahead, e.g. [{"${sheetText.headsUpKeys.text}": "Soak the chickpeas overnight.", "${sheetText.headsUpKeys.daysBefore}": 1}]; plain text = on the day.`,
+          Date_Added: 'Date the recipe was added (YYYY-MM-DD), for the Newest sort. The earliest date any device has wins.',
         },
         provisions: {
           Week_Of: `First day of the grocery week (${sheetText.weekdays[6]} unless changed in Profile & Settings).`,

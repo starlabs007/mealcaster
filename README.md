@@ -337,6 +337,12 @@ Disconnect…. Below `sm` it's icon-only and opens the menu. The states and acti
   `Section` + `Name` (`[Ingredients]` first, so recipes and grocery rows read the latest ingredients): if a row
   changed in the sheet since the last sync the sheet wins; otherwise this device's edit is pushed.
   Rows are updated in place and only MealCaster's columns are written, so extra columns stay put.
+- **Date added** (`Date_Added` in `[Recipes]`, YYYY-MM-DD; drives Recently Added to Box): the earlier of the
+  sheet's and this device's date wins, and the sheet is written back when this device's is earlier. An empty cell, or
+  one that isn't a date, keeps the device's date (a row typed into the sheet gets today's), written back. Sheets date
+  values read as dates. Editing a recipe never changes it; type an earlier date into the sheet to change it. Optional:
+  added to an existing sheet on the next sync and filled from the device, no schema change (older builds leave the
+  column alone).
 - Choosing or creating a spreadsheet doesn't sync: its first sync starts from step 3 (**Start Syncing**). Until
   then the header shows **Finish Connecting** and automatic syncs (Instant Push, regaining focus) wait.
 - First sync with data on both sides asks, on step 3: **Merge** (device-only rows are added, the sheet wins on
