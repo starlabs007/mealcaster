@@ -40,6 +40,7 @@ export const COLUMN_INFO = {
     Cook_Minutes: { note: text.sheets.columns.notes.recipes.Cook_Minutes, aliases: ['cook', 'cook time', 'cooking time', 'cook mins'] },
     Notes: { note: text.sheets.columns.notes.recipes.Notes, aliases: ['recipe notes', 'tips', 'comments'] },
     Heads_Up_JSON: { note: text.sheets.columns.notes.recipes.Heads_Up_JSON, aliases: ['heads up', 'heads-ups', 'prep ahead', 'make ahead', 'reminder', 'reminders'] },
+    Date_Added: { note: text.sheets.columns.notes.recipes.Date_Added, aliases: ['added', 'date added', 'added on', 'created', 'date created', 'created on'] },
   },
   provisions: {
     Week_Of: { note: text.sheets.columns.notes.provisions.Week_Of, required: true, aliases: ['week', 'week start', 'week starting'] },

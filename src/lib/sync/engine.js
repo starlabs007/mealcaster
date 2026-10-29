@@ -228,6 +228,34 @@ export function reconcile({ sheet, local, base, columns, strategy }) {
   return { final, fromSheet, updates, appends, deletes };
 }
 
+/**
+ * Cells the device settles its own way after reading the sheet (Date_Added keeps the earlier date, and an empty cell
+ * keeps the device's): where the device now differs from the sheet, just those cells are written back, and `final`
+ * takes the written values so the next base matches the sheet. Rows written in full or deleted are left alone.
+ * Changes `result` in place.
+ * @param {{
+ *   sheet: SheetTable, result: Reconciled, device: Map<string, Row>,
+ *   cells: Record<string, (v: unknown) => string>, columns: string[],
+ * }} input `cells`: column → how its value reads (two cells that read the same aren't rewritten)
+ */
+export function settleCells({ sheet, result, device, cells, columns }) {
+  const full = new Set(result.updates.filter((u) => !u.only).map((u) => u.index));
+  const deleted = new Set(result.deletes);
+  for (const key of result.final.keys()) {
+    const s = sheet.rows.get(key);
+    const d = device.get(key);
+    if (!s || !d || full.has(s.index) || deleted.has(s.index)) continue;
+    const changed = Object.keys(cells).filter((c) => columns.includes(c) && cells[c](d[c]) !== cells[c](s.row[c]));
+    if (!changed.length) continue;
+    const row = { ...s.row, ...Object.fromEntries(changed.map((c) => [c, d[c]])) };
+    result.final.set(key, row);
+    // A row that also had its key filled in gets both in one write.
+    const keyFix = result.updates.find((u) => u.index === s.index);
+    if (keyFix) Object.assign(keyFix, { row, only: [...keyFix.only, ...changed] });
+    else result.updates.push({ index: s.index, row, only: changed });
+  }
+}
+
 // ---- Writing --------------------------------------------------------------------
 
 /** 'Tab name'!A1 notation with the tab name quoted. */

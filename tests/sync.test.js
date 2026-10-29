@@ -207,6 +207,99 @@ describe('first sync', () => {
   });
 });
 
+describe('Date_Added', () => {
+  // A build from before the column: it ignores Date_Added, like an older build would.
+  const OLD_BUILD = { recipes: { map: {}, ignore: ['Date_Added'], append: [] } };
+  const sheet = fakeSheet();
+  const device = fakeDevice({ recipes: [recipe('r1', 'Pasta', { addedAt: '2026-01-01' }), recipe('r2', 'Soup', { addedAt: '2026-03-01' })] });
+  let base = emptyBase('S1');
+  const sync = async (extra = {}) => {
+    const result = await runSync(syncOptions(sheet, device, base, { tabs: [TABS[0]], ...extra }));
+    assert.equal(result.status, 'done');
+    base = result.base;
+    return result;
+  };
+  const dates = () => sheet.column('Recipes', 'Date_Added');
+  const added = (d = device) => d.recipes.map((r) => r.addedAt);
+  const setDate = (row, value) => {
+    const grid = sheet.find('Recipes').grid;
+    grid[row][grid[0].indexOf('Date_Added')] = value;
+  };
+  const quiet = async () => {
+    const writes = sheet.calls.writes;
+    const result = await sync();
+    assert.equal(result.pushed + result.pulled, 0);
+    assert.equal(sheet.calls.writes, writes, 'nothing left to write');
+  };
+
+  it('is added to an existing sheet on the next sync, filled from the device', async () => {
+    await sync({ schemaCheck: OLD_BUILD });
+    assert.ok(!sheet.find('Recipes').grid[0].includes('Date_Added'));
+    await sync();
+    assert.deepEqual(dates(), ['2026-01-01', '2026-03-01']);
+    assert.deepEqual(added(), ['2026-01-01', '2026-03-01']);
+    await quiet();
+  });
+
+  it('takes an earlier sheet date and writes the device date over a later one', async () => {
+    setDate(1, '2025-12-01');
+    setDate(2, '2026-06-01');
+    await sync();
+    assert.deepEqual(added(), ['2025-12-01', '2026-03-01']);
+    assert.deepEqual(dates(), ['2025-12-01', '2026-03-01']);
+    await quiet();
+  });
+
+  it('reads a Sheets date value and leaves the cell a date', async () => {
+    setDate(1, 45900); // 2025-08-31
+    await sync();
+    assert.deepEqual(added(), ['2025-08-31', '2026-03-01']);
+    assert.equal(dates()[0], 45900);
+    await quiet();
+  });
+
+  it('keeps the device date over an empty cell or text that is not a date, and writes it back', async () => {
+    setDate(1, '');
+    setDate(2, 'soon');
+    await sync();
+    assert.deepEqual(added(), ['2025-08-31', '2026-03-01']);
+    assert.deepEqual(dates(), ['2025-08-31', '2026-03-01']);
+    await quiet();
+  });
+
+  it('dates a row typed in the sheet without one today, written with its new ID', async () => {
+    const grid = sheet.find('Recipes').grid;
+    const typed = [];
+    typed[grid[0].indexOf('Title')] = 'Typed';
+    typed[grid[0].indexOf('Ingredients_JSON')] = '[]';
+    grid.push(typed);
+    const before = sheet.calls.ranges.length;
+    await sync();
+    assert.equal(device.recipes[2].addedAt, '2026-09-30');
+    assert.equal(dates()[2], '2026-09-30');
+    assert.equal(sheet.column('Recipes', 'Recipe_ID')[2], device.recipes[2].id);
+    assert.deepEqual(sheet.calls.ranges.slice(before), ["'Recipes'!A4"], 'one write for the row');
+    await quiet();
+  });
+
+  it('settles two devices that first saw a recipe on different days', async () => {
+    const other = fakeDevice({ recipes: [recipe('r2', 'Soup', { addedAt: '2026-02-01' })] });
+    const first = await runSync(syncOptions(sheet, other, emptyBase('S1'), { tabs: [TABS[0]], choice: 'merge' }));
+    assert.equal(first.status, 'done');
+    assert.deepEqual(added(other), ['2025-08-31', '2026-02-01', '2026-09-30']);
+    assert.deepEqual(dates(), ['2025-08-31', '2026-02-01', '2026-09-30']);
+    await sync();
+    assert.deepEqual(added(), ['2025-08-31', '2026-02-01', '2026-09-30']);
+  });
+
+  it('is never changed by editing the recipe', async () => {
+    device.recipes[0] = { ...device.recipes[0], title: 'Pasta Night' };
+    await sync();
+    assert.equal(sheet.column('Recipes', 'Title')[0], 'Pasta Night');
+    assert.equal(dates()[0], '2025-08-31');
+  });
+});
+
 describe('clearing device data (switching dev modes)', () => {
   // Why env.js clears the sync base together with the data.
   const setUp = async () => {
