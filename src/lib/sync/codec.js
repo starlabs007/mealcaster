@@ -69,19 +69,33 @@ export const isBlankRow = (row) => Object.values(row).every((v) => str(v) === ''
 
 // ---- Recipes ----------------------------------------------------------------
 
-/** "1. Sear the salmon (8 min): Pat the fillets dry…" per line. */
+/** A step's title as stored: trimmed, with an old "Step N" default read as no title. @param {string} title */
+export function stepTitle(title) {
+  const t = str(title).trim();
+  return sheetText.isOldStepTitle(t) ? '' : t;
+}
+
+/**
+ * "1. Sear the salmon (8 min): Pat the fillets dry…" per line. An untitled step leaves the title out ("2. (5 min): …",
+ * "3. Stir."); when its first line has a ": " of its own, a leading ": " marks the missing title ("4. : Tip: …") so
+ * the text isn't read back as a title.
+ */
 export function formatSteps(steps) {
   return steps
     .map((s, i) => {
       // Continuation lines are indented so Markdown lists inside a step aren't read as new steps.
-      return `${i + 1}. ${s.title}${s.minutes ? ` (${s.minutes} min)` : ''}: ${s.text.replace(/\n/g, '\n    ')}`;
+      const text = s.text.replace(/\n/g, '\n    ');
+      const head = `${s.title}${s.minutes ? `${s.title ? ' ' : ''}(${s.minutes} min)` : ''}`;
+      if (head) return `${i + 1}. ${head}: ${text}`;
+      return `${i + 1}. ${s.text.split('\n')[0].includes(': ') ? ': ' : ''}${text}`;
     })
     .join('\n');
 }
 
 /**
- * Tolerant reverse of formatSteps; plain numbered lines work too. "critical" in the brackets is an old flag that
- * is still recognised (so "(8 min, critical)" parses as 8 minutes) but ignored; the next write drops it.
+ * Tolerant reverse of formatSteps; plain numbered lines work too and are untitled. "critical" in the brackets is an
+ * old flag that is still recognised (so "(8 min, critical)" parses as 8 minutes) but ignored; the next write drops it.
+ * The "Step N" titles older builds wrote for untitled steps read as untitled.
  */
 export function parseSteps(text) {
   const steps = [];
@@ -94,15 +108,15 @@ export function parseSteps(text) {
     const body = (start ? start[2] : line).trim();
     if (!body) continue;
     const split = body.indexOf(': ');
-    let head = split > 0 ? body.slice(0, split) : '';
-    const rest = split > 0 ? body.slice(split + 2).trim() : body;
+    let head = split >= 0 ? body.slice(0, split) : '';
+    const rest = split >= 0 ? body.slice(split + 2).trim() : body;
     let minutes = 0;
     const flags = head.match(/\s*\(([^)]*)\)\s*$/);
     if (flags && /\bmin\b|\bcritical\b/i.test(flags[1])) {
       minutes = Number(flags[1].match(/(\d+)\s*min/i)?.[1] ?? 0);
       head = head.slice(0, flags.index);
     }
-    steps.push({ title: head.trim() || `Step ${steps.length + 1}`, minutes, text: rest });
+    steps.push({ title: stepTitle(head), minutes, text: rest });
   }
   for (const s of steps) s.text = s.text.trim();
   return steps;

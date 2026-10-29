@@ -20,7 +20,7 @@ const samples = [sample('pho'), sample('bun')];
 const isSample = (id) => samples.some((s) => s.id === id);
 
 describe('reading a saved recipe box', () => {
-  it('drops mock-only fields and group categories, turns the category into meals, fixes the tags, and keeps only lines with an ingredient', () => {
+  it('drops mock-only fields and group categories, turns the category into meals, fixes the tags, blanks old "Step N" titles, and keeps only lines with an ingredient', () => {
     const old = {
       ...recipe('old', 'Old', { tags: ['Quick (<30m)', 'Quick (<30m)'], badge: { label: '  dinner ' } }),
       highlight: 'x',
@@ -29,6 +29,7 @@ describe('reading a saved recipe box', () => {
       hero: 'h.jpg',
       shortTitle: 'O',
       ingredients: [{ title: 'Main', category: 'Protein', items: [{ id: 'pasta', qty: 1 }, { qty: 2 }, null] }],
+      steps: [{ title: 'Step 1', minutes: 0, text: 'Boil' }, { title: 'Step 3', minutes: 2, text: 'Drain' }, { title: 'Serve', minutes: 0, text: 'Eat' }],
     };
     const r = migrate(old);
     for (const gone of ['highlight', 'rating', 'cookCount', 'hero', 'shortTitle']) assert.equal(gone in r, false);
@@ -37,6 +38,7 @@ describe('reading a saved recipe box', () => {
     assert.equal('badge' in r, false);
     assert.deepEqual(r.ingredients, [{ title: 'Main', items: [{ id: 'pasta', qty: 1 }] }]);
     assert.deepEqual(r.headsUps, []);
+    assert.deepEqual(r.steps.map((s) => s.title), ['', '', 'Serve']);
   });
 
   it('starts empty when nothing is stored or it cannot be read', () => {

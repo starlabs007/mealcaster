@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { renderMarkdown, migrateNotes } from '../src/lib/markdown.js';
+import { renderMarkdown, migrateNotes, firstLineText } from '../src/lib/markdown.js';
 
 describe('renderMarkdown', () => {
   it('renders emphasis, lists and paragraphs', () => {
@@ -20,6 +20,16 @@ describe('renderMarkdown', () => {
     assert.equal(renderMarkdown('<script>alert(1)</script>'), '<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>');
     assert.ok(!renderMarkdown('[x](javascript:alert(1))').includes('<a'));
     assert.match(renderMarkdown('[x](https://a.com)'), /<a href="https:\/\/a.com" target="_blank" rel="noopener noreferrer">x<\/a>/);
+  });
+});
+
+describe('firstLineText', () => {
+  it('gives the first line without its markup', () => {
+    assert.equal(firstLineText('\n**Stir** the _sauce_ and `taste`.\nThen serve.'), 'Stir the sauce and taste.');
+    assert.equal(firstLineText('- [Toast](https://a.com) the ~~seeds~~ nuts'), 'Toast the seeds nuts');
+    assert.equal(firstLineText('## Rest'), 'Rest');
+    assert.equal(firstLineText('2 * 3 = 6, snake_case'), '2 * 3 = 6, snake_case');
+    assert.equal(firstLineText(''), '');
   });
 });
 

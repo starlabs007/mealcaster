@@ -6,7 +6,7 @@
 //   - one ingredient group; servings 1                 → creme-fraiche-toast
 //   - six ingredient groups; ten tags                  → lemongrass-chicken-feast
 //   - nested Markdown lists and headings in notes      → margherita
-//   - no tags at all                                   → miso-cod
+//   - no tags at all; untitled steps (one with ": ")   → miso-cod
 //   - every unit in UNITS at least once                → all of them together
 // Lines are 'name|amount|prep|note' as in cuisines.js. Built-in tags are worked out from the ingredients like any
 // other sample's; `tags` here are only the custom ones.
@@ -294,8 +294,8 @@ export const EDGE_CASES = [
     steps: [
       ['Glaze the Fish', 10, 'Beat the miso, butter, mirin, sake and soy sauce together and spread over the cod.'],
       ['Broil', 12, 'Broil 6 inches from the element until the glaze is browned in spots and the fish flakes.'],
-      ['Noodles & Greens', 10, 'Cook the soba, and steam the bok choy with the ginger.'],
-      ['Serve', 3, 'Serve the cod over soba and bok choy, scattered with green onion and sesame.'],
+      ['', 10, 'Cook the soba, and steam the bok choy with the ginger.'],
+      ['', 0, 'To serve: lay the cod over the soba and bok choy, scattered with green onion and sesame.'],
     ],
     notes: 'Spread the glaze thickly; it protects the fish as it broils.',
     tags: [],

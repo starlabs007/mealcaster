@@ -54,7 +54,7 @@
       {#each recipe.steps as step, i (i)}
         <li class="mb-[0.7em] break-inside-avoid">
           <h3 class="font-bold">
-            {i + 1}. {step.title}{#if step.minutes}<span class="font-normal text-on-surface-variant">&nbsp;· {mins(step.minutes)}</span>{/if}
+            {i + 1}.{#if step.title}{' '}{step.title}{/if}{#if step.minutes}<span class="font-normal text-on-surface-variant">&nbsp;{step.title ? '· ' : ''}{mins(step.minutes)}</span>{/if}
           </h3>
           <div class="notes-md">{@html renderMarkdown(step.text)}</div>
         </li>

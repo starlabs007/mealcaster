@@ -1,7 +1,7 @@
 <script>
   import { missingKeys, minutesText, nextStepIndex, resolveDay, timeStats, toggleAll as toggleAllIn, toggleIn, visibleHeadsUps } from '../lib/recipePage.js';
   import Icon from '../lib/components/Icon.svelte';
-  import { renderMarkdown } from '../lib/markdown.js';
+  import { firstLineText, renderMarkdown } from '../lib/markdown.js';
   import RecipeImage from '../lib/components/RecipeImage.svelte';
   import PrintOptionsDialog from '../lib/components/PrintOptionsDialog.svelte';
   import DeleteRecipeDialog from '../lib/components/DeleteRecipeDialog.svelte';
@@ -700,8 +700,14 @@
                   </span>
                 </button>
                 <div class={cook ? 'contents' : 'flex-1'}>
-                  <div class={cook ? 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5' : 'mb-1.5 flex items-start justify-between gap-3'}>
-                    <h3 class="font-display print:text-on-surface {cook && !folded ? 'text-headline-md' : 'text-headline-sm'} {done ? 'text-on-surface-variant' : 'text-on-surface'}">{step.title}</h3>
+                  <!-- An untitled step shows just its number; folded in the cook view, its text stands in for the title. -->
+                  {#if cook || step.title || isNext || step.minutes}
+                  <div class={cook ? 'flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5' : `mb-1.5 flex items-start gap-3 ${step.title ? 'justify-between' : ''}`}>
+                    {#if step.title}
+                      <h3 class="font-display print:text-on-surface {cook && !folded ? 'text-headline-md' : 'text-headline-sm'} {done ? 'text-on-surface-variant' : 'text-on-surface'}">{step.title}</h3>
+                    {:else if folded}
+                      <p class="min-w-0 flex-1 truncate text-body-lg text-on-surface-variant">{firstLineText(step.text)}</p>
+                    {/if}
                     {#if isNext}
                       <span class="shrink-0 rounded-full bg-primary px-2.5 py-0.5 text-label-sm uppercase text-on-primary">{text.recipe.cook.nextBadge}</span>
                     {/if}
@@ -711,6 +717,7 @@
                       </span>
                     {/if}
                   </div>
+                  {/if}
                   {#if !folded}
                     <div class="notes-md text-on-surface-variant {cook ? 'col-span-2 text-body-xl' : 'text-body-lg'}">{@html renderMarkdown(step.text)}</div>
                   {/if}
