@@ -3,9 +3,10 @@
 // combinations read as real dishes (no tacos on a phở broth).
 //
 // Template fields:
-//   category: Dinner, Lunch, Breakfast or Dessert (the recipe's meal; generate.js adds a second to some)
+//   category: Dinner, Lunch, Breakfast, Dessert, Side, Snack or Other (the recipe's meal; generate.js adds a second to some)
 //   style: which cut of the main it takes (cuisines.js MAINS[…].cuts); omitted = no main
-//   mealdb: TheMealDB category for its photo when it isn't the main's (Dessert, Breakfast, Pasta, Side, Starter)
+//   mealdb: TheMealDB category for its photo when it isn't the main's (Dessert, Breakfast, Pasta, Side, Starter); none = Miscellaneous
+//   photo: TheMealDB dish names whose photos suit it best, used first when the photo list has one (any category)
 //   titles / desc: patterns; {Main} {main} {Veg} {veg} {Flavor} {flavor} {herbs} {aromatics} {starch} {cuisine}
 //   groups: [title, lines]. A line is 'name|amount|prep|note' (see cuisines.js) or a slot:
 //     @main, @flavor, @aromatics, @sauce, @starch, @veg:min-max, @herbs:min-max, @broth:amount
@@ -22,6 +23,7 @@
  *   mains?: string[],
  *   style?: string,
  *   mealdb?: string,
+ *   photo?: RegExp,
  *   serves: [number, number],
  *   titles: string[],
  *   desc: string[],
@@ -1266,5 +1268,159 @@ export const TEMPLATES = [
     headsUps: [['Make it the day before so it can set overnight.', 1]],
     tips: ['It should wobble like jelly, not stand stiff.'],
     tags: ['Date Night'],
+  },
+  // ======== Sides ==================================================================================================
+  {
+    id: 'smashed-cucumber',
+    photo: /cucumber salad/i,
+    category: 'Side',
+    cuisines: ['Chinese'],
+    serves: [4, 4],
+    mealdb: 'Side',
+    titles: ['Smashed Cucumber Salad with Garlic and Black Vinegar', 'Garlicky Smashed Cucumbers', 'Sesame Smashed Cucumber Salad'],
+    desc: ['Cool, crunchy cucumbers cracked open so they soak up a sharp garlic and black vinegar dressing.'],
+    groups: [
+      ['Cucumbers', ['english cucumber|2', 'kosher salt|1 tsp']],
+      ['Dressing', ['garlic|3 clove|minced', 'chinkiang vinegar|1 tbsp', 'light soy sauce|1 tbsp', 'toasted sesame oil|1 tsp', 'sugar|1 tsp', '?chili crisp|1 tbsp']],
+    ],
+    steps: [
+      ['Smash & Salt', '10-15 p', 'Smash the cucumbers with the flat of a knife, break them into bite-size pieces and toss with the salt. Drain in a colander.'],
+      ['Dress', '2-2', 'Shake off the liquid, toss with the dressing and serve **straight away** so they stay crisp.'],
+    ],
+    tips: ['Salting draws water out, so the dressing sticks instead of pooling.'],
+  },
+  {
+    id: 'garlic-greens',
+    photo: /green beans/i,
+    veg: ['bok choy', 'baby bok choy', 'broccolini', 'green beans', 'snow peas', 'spinach'],
+    category: 'Side',
+    cuisines: ['Chinese', 'Vietnamese', 'Thai'],
+    serves: [2, 4],
+    mealdb: 'Side',
+    titles: ['Garlicky Stir-Fried {Veg}', '{Veg} with Garlic and Oyster Sauce', 'Quick Garlic {Veg}'],
+    desc: ['A hot wok and plenty of garlic: {veg} on the table in five minutes.'],
+    groups: [['Greens', ['@veg:1-1', 'garlic|4 clove|thinly sliced', 'vegetable oil|1 tbsp', 'oyster sauce|1 tbsp', 'kosher salt|1 pinch']]],
+    steps: [
+      ['Garlic', '1-1', 'Heat the oil in a wok over high heat and stir the garlic for a few seconds until fragrant.'],
+      ['Greens', '3-4', 'Add the {veg}, a splash of water and the salt; toss until bright green, then stir in the oyster sauce.'],
+    ],
+    tips: ['Dry the greens well — wet leaves cool the wok down and steam.'],
+  },
+  {
+    id: 'roast-potatoes',
+    photo: /^(boulangère|breakfast) potatoes/i,
+    category: 'Side',
+    cuisines: ['American', 'Italian', 'Mediterranean'],
+    serves: [4, 6],
+    mealdb: 'Side',
+    titles: ['Crispy Rosemary Roast Potatoes', 'Garlic and Rosemary Roast Potatoes', 'Golden Roast Potatoes with Flaky Salt'],
+    desc: ['Craggy, golden potatoes with crisp edges and fluffy middles, roasted with garlic and rosemary.'],
+    groups: [['Potatoes', ['yukon gold potato|2 lb|cut into chunks', 'olive oil|3 tbsp', 'garlic|4 clove|smashed', 'rosemary|2 sprig', 'kosher salt|1 1/2 tsp', 'black pepper|1/2 tsp', 'flaky sea salt||to taste']]],
+    steps: [
+      ['Parboil', '10-12', 'Boil the potatoes in salted water until the edges soften, then drain and shake to rough them up.'],
+      ['Roast', '40-45', 'Toss with the oil, garlic, rosemary, salt and pepper and roast at 425°F, turning once, until **deep golden**.'],
+    ],
+    tips: ['Roughing up the parboiled potatoes is what gives you the crunchy bits.'],
+    tags: ['Comfort Food'],
+  },
+
+  // ======== Snacks =================================================================================================
+  {
+    id: 'edamame',
+    photo: /edamame|roasted peanuts/i,
+    category: 'Snack',
+    cuisines: ['Japanese', 'Chinese'],
+    serves: [2, 4],
+    mealdb: 'Starter',
+    titles: ['Garlic Chili Edamame', 'Salted Edamame with Sesame', 'Spicy Garlic Edamame'],
+    desc: ['Warm edamame pods tossed in garlic, sesame and salt — for eating with your fingers.'],
+    groups: [['Edamame', ['frozen edamame|1 lb', 'garlic|2 clove|minced', 'toasted sesame oil|1 tsp', 'flaky sea salt|1 tsp', '?chili crisp|1 tbsp']]],
+    steps: [
+      ['Boil', '4-5', 'Boil the edamame in salted water until hot through, then drain well.'],
+      ['Toss', '2-2', 'Warm the sesame oil and garlic in the pan for 30 seconds, add the edamame and toss with the salt and chili crisp.'],
+    ],
+    tips: ['Put out an empty bowl for the pods.'],
+    tags: ['Kid Friendly'],
+  },
+  {
+    id: 'hummus',
+    photo: /^hummus$/i,
+    category: 'Snack',
+    cuisines: ['Mediterranean'],
+    serves: [6, 6],
+    mealdb: 'Starter',
+    titles: ['Silky Hummus with Warm Pita', 'Lemony Hummus with Paprika Oil', 'Whipped Tahini Hummus'],
+    desc: ['Smooth, lemony hummus whipped with plenty of tahini, with warm pita for scooping.'],
+    groups: [
+      ['Hummus', ['chickpeas|1 can||15 oz', 'tahini|1/3 cup', 'lemon|1|juiced', 'garlic|1 clove', 'ground cumin|1/2 tsp', 'kosher salt|3/4 tsp']],
+      ['To Serve', ['extra virgin olive oil|2 tbsp', 'sweet paprika|1 pinch', 'pita bread|4|cut into wedges']],
+    ],
+    steps: [
+      ['Blend', '5-5 p', 'Blend the tahini, lemon juice and garlic with 3 tbsp ice water until pale, then add the chickpeas, cumin and salt and blend for **a full 3 minutes**.'],
+      ['Serve', '5-5', 'Spread in a shallow bowl, drizzle with oil and paprika, and serve with the warmed pita.'],
+    ],
+    tips: ['Ice water is the trick to a light, fluffy hummus.'],
+    tags: ['Meal Prep'],
+  },
+
+  // ======== Other (sauces, dressings) ==============================================================================
+  {
+    id: 'nuoc-cham',
+    photo: /nuoc cham/i,
+    category: 'Other',
+    cuisines: ['Vietnamese'],
+    serves: [8, 8],
+    titles: ['Nước Chấm Dipping Sauce', 'Everyday Nước Chấm', 'Garlic Chili Nước Chấm'],
+    desc: ['The sweet, sour, salty, garlicky dipping sauce that goes with spring rolls, noodle bowls and grilled meat.'],
+    groups: [['Sauce', ['fish sauce|3 tbsp', 'lime|2|juiced', 'sugar|3 tbsp', 'garlic|2 clove|minced', 'thai chili|2|thinly sliced', '?carrot|1 small|finely shredded']]],
+    steps: [['Mix', '5-5 p', 'Dissolve the sugar in 1/2 cup warm water, then stir in the fish sauce and lime juice. Taste for balance and add the garlic and chili last so they float.']],
+    tips: ['Keeps a week in the fridge; add the garlic and chili fresh each time.'],
+    tags: ['Meal Prep'],
+  },
+  {
+    id: 'chili-oil',
+    photo: /chili oil|^achiote oil/i,
+    category: 'Other',
+    cuisines: ['Chinese'],
+    serves: [16, 16],
+    titles: ['Homemade Sichuan Chili Oil', 'Crispy Garlic Chili Oil', 'Spiced Chili Oil with Sichuan Pepper'],
+    desc: ['Fragrant, numbing chili oil with crispy shallots and garlic, for noodles, dumplings and eggs.'],
+    groups: [
+      ['Infused Oil', ['vegetable oil|1 cup', 'sichuan peppercorns|1 tbsp', 'star anise|2', 'cinnamon stick|1', 'shallot|2|thinly sliced', 'garlic|6 clove|thinly sliced']],
+      ['Chili Base', ['red pepper flakes|1/2 cup', 'sesame seeds|1 tbsp', 'sugar|1 tsp', 'kosher salt|1 tsp']],
+    ],
+    steps: [
+      ['Infuse', '20-25', 'Warm the oil with the spices, shallot and garlic over **low heat** until the shallot and garlic are golden and crisp.'],
+      ['Pour', '5-5', 'Strain the hot oil over the chili base, stir in the crispy bits and let it cool before jarring.'],
+    ],
+    tips: ['Pull the shallots a shade early: they keep darkening in the hot oil.'],
+    tags: ['Meal Prep'],
+  },
+  {
+    id: 'pesto',
+    photo: /pesto|green sauce/i,
+    category: 'Other',
+    cuisines: ['Italian'],
+    serves: [6, 6],
+    titles: ['Basil Pesto', 'Classic Basil and Pine Nut Pesto', 'Lemony Basil Pesto'],
+    desc: ['A bright green, garlicky pesto for pasta, sandwiches and roasted vegetables.'],
+    groups: [['Pesto', ['basil|2 bunch|leaves picked', 'pine nuts|1/3 cup|toasted', 'parmesan|1/2 cup|grated', 'garlic|1 clove', 'extra virgin olive oil|1/2 cup', 'kosher salt|1/2 tsp', '?lemon|1/2|juiced']]],
+    steps: [['Blend', '10-10 p', 'Pulse the basil, pine nuts, garlic and salt, then stream in the oil and stir in the parmesan.']],
+    tips: ['A thin layer of oil on top keeps it green in the fridge.'],
+  },
+  {
+    id: 'salsa-verde',
+    photo: /salsa/i,
+    category: 'Other',
+    cuisines: ['Mexican'],
+    serves: [8, 8],
+    titles: ['Roasted Tomatillo Salsa Verde', 'Charred Tomatillo Salsa', 'Smoky Salsa Verde'],
+    desc: ['Tangy charred tomatillo salsa with jalapeño and cilantro, for tacos, eggs and chips.'],
+    groups: [['Salsa', ['tomatillo|1 lb|husked and rinsed', 'jalapeño|2', 'yellow onion|1/2', 'garlic|2 clove', 'cilantro|1 bunch', 'lime|1|juiced', 'kosher salt|1 tsp']]],
+    steps: [
+      ['Char', '10-12', 'Broil the tomatillos, jalapeños, onion and garlic until blackened in spots.'],
+      ['Blend', '5-5 p', 'Blend with the cilantro, lime and salt until chunky. Cool before serving.'],
+    ],
+    tips: ['Leave the jalapeño seeds in for more heat.'],
   },
 ];

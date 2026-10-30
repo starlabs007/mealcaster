@@ -5,8 +5,8 @@
 import { foldKey } from './ingredients.js';
 import { normalizeTag } from './tags.js';
 
-/** The fixed list, in display order. */
-export const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Side', 'Snack', 'Dessert'];
+/** The fixed list, in display order. Other = the rest (sauces, dressings, stocks): never a dinner. */
+export const MEALS = ['Breakfast', 'Lunch', 'Dinner', 'Side', 'Snack', 'Dessert', 'Other'];
 
 /**
  * Splits a stored meals list or a sheet cell ("lunch, Dinner") into the known meals (in MEALS order, no

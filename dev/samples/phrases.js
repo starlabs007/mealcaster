@@ -12,6 +12,9 @@ export const DESC_EXTRA = {
   Lunch: ['Packs well for the office.', 'Ready in about {time}.', 'Light but filling.'],
   Breakfast: ['Worth getting up for.', 'Ready in about {time}.', 'A slow-weekend favourite.'],
   Dessert: ['Make it ahead; it keeps well.', 'Best with a strong coffee.', 'Ready in about {time}.'],
+  Side: ['Goes with almost any dinner.', 'Ready in about {time}.', 'Easy to double.'],
+  Snack: ['Gone in minutes at a party.', 'Ready in about {time}.'],
+  Other: ['Keeps for a week in the fridge.', 'Makes enough for several meals.', 'Spoon it over almost anything.'],
 };
 
 /** Tips that suit almost any dish. */
