@@ -23,8 +23,8 @@ Without `.env.local` the app still runs; Google sync is just unavailable.
 
 ### Sample data
 
-`npm run dev` generates sample data when the dev server starts: varied recipes from about 50 dish templates and ten
-cuisines (Chinese and Vietnamese included), the ingredients they use, four past weeks and part of this week planned,
+`npm run dev` generates sample data when the dev server starts: varied recipes from about 60 dish templates and ten
+cuisines (Chinese and Vietnamese included) covering every meal, sauces under Other included, the ingredients they use, four past weeks and part of this week planned,
 some favorites, and grocery extras (two every-week items, one addition this week). It comes from the seeded generator
 in `dev/samples/` (served to the app as `virtual:sample-data` by a plugin in `vite.config.js`); production builds get
 empty data from the plugin and never load the generator.
@@ -175,7 +175,7 @@ Each tag gets the least-used of five colours the first time it appears and keeps
 built-ins) can be recoloured, renamed or deleted under Profile & Settings → Recipe Tags.
 The `Tags` column holds them as comma-separated text.
 
-A recipe has any number of **meals** from a fixed list (Breakfast, Lunch, Dinner, Side, Snack, Dessert; shown on the cards
+A recipe has any number of **meals** from a fixed list (Breakfast, Lunch, Dinner, Side, Snack, Dessert, Other — for sauces and the like; shown on the cards
 and the detail hero as "Lunch · Dinner"). The editor's Category field is a row of toggle chips. The `Category` column holds
 them comma-separated ("Lunch, Dinner", always in list order); an older single value reads as a one-item list, blank means
 none, and a value outside the list ("Brunch") is moved into the recipe's Tags when read. Auto-fill and Surprise Me pick

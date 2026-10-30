@@ -1299,7 +1299,7 @@ export const text = {
           Image_URL: 'Link to a photo of the dish.',
           Tags: 'Comma-separated recipe tags (e.g. Vegetarian, Gluten-Free).',
           Favorite_Flag: 'TRUE for starred recipes.',
-          Category: 'Optional, comma-separated meals: Breakfast, Lunch, Dinner, Side, Snack, Dessert. Anything else becomes a tag.',
+          Category: 'Optional, comma-separated meals: Breakfast, Lunch, Dinner, Side, Snack, Dessert, Other. Anything else becomes a tag.',
           Servings: 'How many people the recipe feeds.',
           Prep_Minutes: 'Hands-on prep time in minutes.',
           Cook_Minutes: 'Cooking time in minutes.',

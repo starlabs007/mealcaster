@@ -180,6 +180,8 @@ describe('codec', () => {
     assert.deepEqual(read('').meals, [], 'blank means none');
     assert.deepEqual(read('Dessert').meals, ['Dessert'], 'an older single value is a one-item list');
     assert.deepEqual(read('dinner,  Lunch').meals, ['Lunch', 'Dinner'], 'kept in the list order');
+    const sauce = read('other', 'Soup');
+    assert.deepEqual([sauce.meals, sauce.tags], [['Other'], ['Soup']], 'Other is a meal, not a tag');
     const brunch = read('  sunday brunch , Lunch', 'Soup');
     assert.deepEqual(brunch.meals, ['Lunch']);
     assert.deepEqual(brunch.tags, ['Soup', 'Sunday Brunch'], 'a value outside the list becomes a tag');

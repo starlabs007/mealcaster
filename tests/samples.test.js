@@ -10,6 +10,7 @@ import { SCHEMA } from '../src/lib/schema.js';
 import { UNITS, foldKey } from '../src/lib/ingredients.js';
 import { aisles } from '../src/lib/data/aisles.js';
 import { TONES, assignTones, normalizeTag, suggestedTags } from '../src/lib/tags.js';
+import { MEALS } from '../src/lib/meals.js';
 
 /** A small fake photo list in the shape images.js returns: every category, a few areas. */
 const CATEGORIES = ['Beef', 'Breakfast', 'Chicken', 'Dessert', 'Lamb', 'Miscellaneous', 'Pasta', 'Pork', 'Seafood', 'Side', 'Vegan', 'Vegetarian'];
@@ -138,10 +139,15 @@ describe('generateSamples', () => {
     assert.deepEqual(s.grocery.weeks.map((w) => [w.weekOffset, Object.keys(w.added).length]), [[0, 1]]);
   });
 
-  it('mixes categories and cuisines, Chinese and Vietnamese included', () => {
+  it('covers every meal, Dinner most, and mixes cuisines, Chinese and Vietnamese included', () => {
     const count = (label) => s.recipes.filter((r) => r.meals.includes(label)).length;
     assert.ok(count('Dinner') > 30);
     for (const label of ['Lunch', 'Breakfast', 'Dessert']) assert.ok(count(label) >= 3, label);
+    for (const label of MEALS) assert.ok(count(label) >= 2, label);
+    for (const seed of [2, 3]) {
+      const other = generateSamples({ seed, count: 60 }).recipes;
+      for (const label of MEALS) assert.ok(other.some((r) => r.meals.includes(label)), `seed ${seed}: ${label}`);
+    }
     const tags = new Set(s.recipes.flatMap((r) => r.tags));
     assert.ok(tags.has('Chinese') && tags.has('Vietnamese'));
   });
@@ -253,6 +259,17 @@ describe('generateSamples', () => {
     const area = new Map(images.map((p) => [p.url, p.area]));
     const vietnamese = withPhoto.filter((r) => r.tags.includes('Vietnamese') && !MISSING.test(r.image));
     assert.ok(vietnamese.some((r) => area.get(r.image) === 'Vietnamese'));
+  });
+
+  it('prefers photos named like the dish when its template names them', () => {
+    const named = ['Sesame Cucumber Salad', 'Green Beans', 'Boulangère Potatoes', 'Edamame', 'Hummus', 'Nuoc Cham', 'Chili Oil', 'Green Sauce', 'Salsa']
+      .map((name, i) => ({ id: String(53900 + i), name, category: 'Miscellaneous', area: '', url: `https://www.themealdb.com/images/media/meals/named${i}.jpg` }));
+    const withNamed = generateSamples({ seed: 1, count: 60, images: [...images, ...named], today: TODAY });
+    const namedUrls = new Set(named.map((p) => p.url));
+    const picked = withNamed.recipes.filter((r) => r.meals.some((m) => ['Side', 'Snack', 'Other'].includes(m)) && r.image && !MISSING.test(r.image));
+    assert.ok(picked.length >= 5, `${picked.length} with photos`);
+    for (const r of picked) assert.ok(namedUrls.has(r.image), `${r.id}: ${r.image}`);
+    assert.ok(withNamed.recipes.filter((r) => namedUrls.has(r.image)).every((r) => picked.includes(r)), 'named photos go only to their dishes');
   });
 
   it('has no photos without an image list', () => {

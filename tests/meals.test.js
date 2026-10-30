@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { MEALS, parseMeals, normalizeMeals, formatMeals, isDinner, hasAnyMeal, mealFilters } from '../src/lib/meals.js';
 
 test('the list is fixed and in display order', () => {
-  assert.deepEqual(MEALS, ['Breakfast', 'Lunch', 'Dinner', 'Side', 'Snack', 'Dessert']);
+  assert.deepEqual(MEALS, ['Breakfast', 'Lunch', 'Dinner', 'Side', 'Snack', 'Dessert', 'Other']);
 });
 
 test('parseMeals reads lists and sheet cells, in list order without duplicates', () => {
@@ -18,6 +18,12 @@ test('parseMeals hands back words outside the list, tidied like tags', () => {
   assert.deepEqual(normalizeMeals(['Snack', 'Brunch']), ['Snack']);
 });
 
+test('Other is a meal, last in the list, read in any case', () => {
+  assert.deepEqual(parseMeals('other, Dessert'), { meals: ['Dessert', 'Other'], extra: [] }, 'no longer moved into Tags');
+  assert.deepEqual(parseMeals(['Other', 'Breakfast', 'OTHER']).meals, ['Breakfast', 'Other']);
+  assert.equal(formatMeals(parseMeals(' other ').meals), 'Other');
+});
+
 test('formatMeals writes the sheet cell', () => {
   assert.equal(formatMeals(['Lunch', 'Dinner']), 'Lunch, Dinner');
   assert.equal(formatMeals([]), '');
@@ -28,6 +34,7 @@ test('isDinner: Dinner among the meals, or none at all', () => {
   assert.equal(isDinner([]), true);
   assert.equal(isDinner(undefined), true);
   assert.equal(isDinner(['Lunch']), false);
+  assert.equal(isDinner(['Other']), false, 'a sauce is never a dinner');
 });
 
 test('hasAnyMeal matches any chosen meal; no choice matches everything', () => {
@@ -41,4 +48,5 @@ test('hasAnyMeal matches any chosen meal; no choice matches everything', () => {
 test('mealFilters lists meals in use in list order, keeping an active one', () => {
   assert.deepEqual(mealFilters([['Dinner'], ['Lunch', 'Dinner'], []], []), ['Lunch', 'Dinner']);
   assert.deepEqual(mealFilters([['Dinner']], ['Dessert']), ['Dinner', 'Dessert']);
+  assert.deepEqual(mealFilters([['Other'], ['Breakfast']], []), ['Breakfast', 'Other']);
 });

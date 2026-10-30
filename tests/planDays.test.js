@@ -83,7 +83,7 @@ test('Undo puts the exact previous week back after Copy and after Reset', () => 
 
 test('dinner pool: recipes with Dinner among their meals and ones with no meals, or everything when there are none', () => {
   const r = (id, ...meals) => ({ id, meals });
-  const mixed = [r('a', 'Dinner'), r('b', 'Lunch', 'Dinner'), r('c'), r('d', 'Breakfast'), r('e', 'Dessert'), r('f', 'Lunch')];
+  const mixed = [r('a', 'Dinner'), r('b', 'Lunch', 'Dinner'), r('c'), r('d', 'Breakfast'), r('e', 'Dessert'), r('f', 'Lunch'), r('h', 'Other')];
   assert.deepEqual(dinnerPool(mixed).map((x) => x.id), ['a', 'b', 'c']);
   assert.deepEqual(dinnerPool([{ id: 'g' }]).map((x) => x.id), ['g'], 'a recipe saved without meals counts as having none');
   const noDinners = [r('d', 'Breakfast'), r('e', 'Dessert')];

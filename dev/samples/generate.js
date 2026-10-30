@@ -17,7 +17,7 @@ import { EDGE_CASES } from './edgeCases.js';
 import { DESC_EXTRA, GENERAL_TIPS, NOTE_HEADINGS } from './phrases.js';
 
 /** Bump whenever the output for a given seed and count changes (it is part of the dev data key). */
-export const GENERATOR_VERSION = 8;
+export const GENERATOR_VERSION = 9;
 
 /**
  * The day `addedAt` dates count back from, as a UTC timestamp: `today` ("YYYY-MM-DD"), else the SAMPLE_DATE
@@ -37,10 +37,13 @@ export function sampleDay(today = globalThis.process?.env?.SAMPLE_DATE) {
 
 /** Share of recipes per category (Dinner the rest). */
 const CATEGORY_WEIGHTS = [
-  ['Dinner', 0.62],
-  ['Lunch', 0.14],
-  ['Breakfast', 0.1],
-  ['Dessert', 0.14],
+  ['Dinner', 0.5],
+  ['Lunch', 0.13],
+  ['Breakfast', 0.09],
+  ['Dessert', 0.12],
+  ['Side', 0.06],
+  ['Snack', 0.04],
+  ['Other', 0.06],
 ];
 
 /**
@@ -206,6 +209,7 @@ const pickPattern = (rng, patterns, words) => {
  *   category: string,
  *   cuisine: string,
  *   mealdb: string,
+ *   photo?: RegExp,
  *   serves: number,
  *   prepMinutes: number,
  *   cookMinutes: number,
@@ -385,6 +389,7 @@ function templateDraft(rng) {
     category: t.category,
     cuisine: cuisine.name,
     mealdb: t.mealdb ?? main?.mealdb ?? 'Miscellaneous',
+    photo: t.photo,
     serves: rng.int(...t.serves),
     prepMinutes,
     cookMinutes,
@@ -443,8 +448,8 @@ const addedDate = (day, daysAgo) => new Date(day - daysAgo * 86_400_000).toISOSt
 // ---- Photos --------------------------------------------------------------------------------------------------------
 
 /**
- * Picks photos that match a recipe: the same TheMealDB category, and the same area when there are any. Prefers
- * photos not used yet. Candidates are sorted by meal id, so picks only depend on the PRNG.
+ * Picks photos that match a recipe: ones named like the dish when its template says what to look for, else the same
+ * TheMealDB category, and the same area when there are any. Prefers photos not used yet. Candidates are sorted by meal id, so picks only depend on the PRNG.
  * @param {Photo[]} images
  */
 function photoPicker(images) {
@@ -454,9 +459,10 @@ function photoPicker(images) {
   return (draft, rng) => {
     if (!sorted.length) return undefined;
     const area = cuisineByName.get(draft.cuisine)?.area;
+    const named = draft.photo ? sorted.filter((p) => draft.photo?.test(p.name)) : [];
     const inCategory = sorted.filter((p) => p.category === draft.mealdb);
     const inArea = inCategory.filter((p) => p.area === area);
-    let pool = inArea.length ? inArea : inCategory.length ? inCategory : sorted;
+    let pool = named.length ? named : inArea.length ? inArea : inCategory.length ? inCategory : sorted;
     const fresh = pool.filter((p) => !used.has(p.id));
     if (fresh.length) pool = fresh;
     const photo = rng.pick(pool);
