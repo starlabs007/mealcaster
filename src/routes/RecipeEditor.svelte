@@ -474,6 +474,12 @@
     };
   }
 
+  /** Adds an empty step at the end and puts the cursor in its title. */
+  function addStep() {
+    form.steps.push(blankStep());
+    focusRow('#step-rows', form.steps.length - 1);
+  }
+
   /** @param {number} index @param {-1 | 1} delta */
   function moveStep(index, delta) {
     form.steps = moveItem(form.steps, index, delta);
@@ -1159,7 +1165,7 @@
           <button
             type="button"
             class="btn mt-3 w-full bg-surface-container-low py-2.5 text-body-md text-on-surface hover:bg-surface-container-high"
-            onclick={() => form.steps.push(blankStep())}
+            onclick={addStep}
           >
             <Icon name="add_circle" class="text-[18px]" /> {text.editor.method.add(String(form.steps.length + 1).padStart(2, '0'))}
           </button>
