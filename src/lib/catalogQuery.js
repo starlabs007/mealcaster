@@ -8,7 +8,7 @@ import { hasAnyMeal, mealFilters, normalizeMeals } from './meals.js';
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 
 /** The catalog's sort orders, in the order they are offered. */
-export const SORT_IDS = ['most-cooked', 'quickest', 'name', 'name-desc', 'recent'];
+export const SORT_IDS = ['most-cooked', 'not-made-lately', 'quickest', 'name', 'name-desc', 'recent'];
 
 /** The order the catalog opens in. */
 export const DEFAULT_SORT = 'name';
@@ -17,7 +17,9 @@ const byTitle = (a, b) => a.title.localeCompare(b.title, undefined, { sensitivit
 
 /**
  * The comparison for a sort order. Most cooked comes from the plan history: ties go to the one made most recently,
- * then A–Z. Quickest puts recipes with no time (0 minutes) last.
+ * then A–Z. Not made in a while puts the meal made longest ago first; a meal never made counts from the day it was
+ * added, so untried recipes rise as they age instead of all leading or all trailing; ties go A–Z. Quickest puts
+ * recipes with no time (0 minutes) last.
  * @param {string} id
  * @param {{ timesMade: (id: string) => number, lastMadeOn: (id: string) => string | undefined }} history
  * @returns {(a: Recipe, b: Recipe) => number}
@@ -26,6 +28,10 @@ export function sortCompare(id, { timesMade, lastMadeOn }) {
   switch (id) {
     case 'most-cooked':
       return (a, b) => timesMade(b.id) - timesMade(a.id) || (lastMadeOn(b.id) ?? '').localeCompare(lastMadeOn(a.id) ?? '') || a.title.localeCompare(b.title);
+    case 'not-made-lately': {
+      const since = (/** @type {Recipe} */ r) => lastMadeOn(r.id) ?? r.addedAt;
+      return (a, b) => since(a).localeCompare(since(b)) || byTitle(a, b);
+    }
     case 'quickest':
       return (a, b) => (a.minutes || Infinity) - (b.minutes || Infinity) || 0;
     case 'name':
