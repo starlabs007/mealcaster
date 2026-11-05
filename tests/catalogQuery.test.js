@@ -36,7 +36,7 @@ describe('sort orders', () => {
   const list = [r('b', 'Bún', { minutes: 40, addedAt: '2026-03-01' }), r('a', 'apple pie', { minutes: 0, addedAt: '2026-05-01' }), r('c', 'Curry', { minutes: 15, addedAt: '2026-01-01' })];
 
   it('knows its six orders', () => {
-    assert.deepEqual(SORT_IDS, ['most-cooked', 'longest-since-made', 'quickest', 'name', 'name-desc', 'recent']);
+    assert.deepEqual(SORT_IDS, ['most-cooked', 'not-made-lately', 'quickest', 'name', 'name-desc', 'recent']);
     assert.equal(DEFAULT_SORT, 'name');
     assert.ok(SORT_IDS.includes(DEFAULT_SORT));
     assert.throws(() => sortCompare('nope', history()), /Unknown sort/);
@@ -70,13 +70,13 @@ describe('sort orders', () => {
       r('untried', 'Untried', { addedAt: '2026-04-01' }),
       r('old', 'Old', { addedAt: '2025-01-01' }),
     ];
-    assert.deepEqual(ids([...all].sort(sortCompare('longest-since-made', history(made)))), ['old', 'untried', 'mid', 'last', 'newbie']);
+    assert.deepEqual(ids([...all].sort(sortCompare('not-made-lately', history(made)))), ['old', 'untried', 'mid', 'last', 'newbie']);
   });
 
-  it('breaks longest-since-made ties A–Z, made or not', () => {
+  it('breaks not-made-lately ties A–Z, made or not', () => {
     const made = { b: [1, '2026-05-01'] };
     const all = [r('b', 'banh mi', { addedAt: '2025-01-01' }), r('c', 'Curry', { addedAt: '2026-05-01' }), r('a', 'Adobo', { addedAt: '2026-05-01' })];
-    assert.deepEqual(ids([...all].sort(sortCompare('longest-since-made', history(made)))), ['a', 'b', 'c']);
+    assert.deepEqual(ids([...all].sort(sortCompare('not-made-lately', history(made)))), ['a', 'b', 'c']);
   });
 });
 

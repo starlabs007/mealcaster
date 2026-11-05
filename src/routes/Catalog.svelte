@@ -28,7 +28,7 @@
   const PAGE_SIZE = 9;
   const sortLabels = {
     'most-cooked': text.catalog.sorts.mostCooked,
-    'longest-since-made': text.catalog.sorts.longestSinceMade,
+    'not-made-lately': text.catalog.sorts.notMadeLately,
     quickest: text.catalog.sorts.quickest,
     name: text.catalog.sorts.nameAsc,
     'name-desc': text.catalog.sorts.nameDesc,
