@@ -3,49 +3,9 @@ import { defineConfig, loadEnv } from 'vite';
 import { svelte } from '@sveltejs/vite-plugin-svelte';
 import tailwindcss from 'tailwindcss';
 import autoprefixer from 'autoprefixer';
+import { contentSecurityPolicy } from './config/csp.js';
 
 const root = fileURLToPath(new URL('.', import.meta.url));
-
-/**
- * Content Security Policy as a <meta> tag (GitHub Pages can't send headers).
- * Allows this site, Google Fonts, Google sign-in (accounts.google.com), the
- * Picker (apis.google.com scripts, docs.google.com frame) and the Sheets/Drive
- * REST APIs. Images may come from any https host (recipe photo links), plus
- * data:/blob: for photos not yet uploaded — which uploadPhoto also fetch()es.
- * @param {boolean} dev also allow Vite's HMR websocket
- */
-function contentSecurityPolicy(dev) {
-  const policy = {
-    'default-src': ["'self'"],
-    'script-src': ["'self'", 'https://accounts.google.com', 'https://apis.google.com'],
-    // 'unsafe-inline': Svelte style="" attributes and transitions.
-    'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://accounts.google.com'],
-    'font-src': ['https://fonts.gstatic.com'],
-    'img-src': ["'self'", 'data:', 'blob:', 'https:'],
-    'connect-src': [
-      "'self'",
-      'data:',
-      'https://sheets.googleapis.com',
-      'https://www.googleapis.com',
-      'https://accounts.google.com',
-      'https://oauth2.googleapis.com',
-      ...(dev ? ['ws:'] : []),
-    ],
-    'frame-src': ['https://accounts.google.com', 'https://docs.google.com', 'https://drive.google.com'],
-    'object-src': ["'none'"],
-    'base-uri': ["'self'"],
-    'form-action': ["'self'"],
-  };
-  const content = Object.entries(policy)
-    .map(([directive, sources]) => `${directive} ${sources.join(' ')}`)
-    .join('; ');
-  return {
-    name: 'mealcaster-csp',
-    transformIndexHtml: () => [
-      { tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content }, injectTo: 'head-prepend' },
-    ],
-  };
-}
 
 /**
  * Serves `virtual:sample-data`: `{ samples, sampleKey }`. In dev, recipes, ingredients, a plan, favorites and grocery

@@ -448,6 +448,8 @@ src/
     components/              AppHeader, DayListCard, RecipeCard, LastMade, ...
 dev/samples/                 dev sample data generator (plain Node modules, never bundled): generate.js, dish
                              templates, cuisines, ingredient catalog, phrases, images.js (TheMealDB photo cache)
+config/csp.js                Content Security Policy <meta> plugin: inline scripts in index.html allowed by sha256
+                             hash, computed at build/serve time (plain Node module, tested)
 .cache/                      gitignored: sample-images.json
 ```
 
