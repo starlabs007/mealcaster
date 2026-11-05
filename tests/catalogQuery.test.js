@@ -27,7 +27,7 @@ const ingredients = { rice: { name: 'rice', plural: 'rices' }, scallion: { name:
 const base = {
   query: '', sort: 'name', tags: [], meals: [], favoritesOnly: false, favoriteIds: [], hideRecent: false, hidePlanned: false, plannedIds: new Set(),
 };
-const lookup = (made = {}, recent = []) => ({ ingredientOf: (id) => ingredients[id], madeRecently: (id) => recent.includes(id), ...history(made) });
+const lookup = (made = {}, recent = []) => ({ ingredientOf: (id) => ingredients[id], nearby: (id) => recent.includes(id), ...history(made) });
 const ids = (list) => list.map((x) => x.id);
 
 describe('sort orders', () => {
@@ -86,7 +86,7 @@ describe('filters', () => {
     assert.deepEqual(run({ favoritesOnly: false, favoriteIds: ['stew'] }), ['cake', 'pho', 'stew']);
   });
 
-  it('hides recently made ones only when asked', () => {
+  it('hides repeats within a week only when asked', () => {
     assert.deepEqual(run({ hideRecent: true }, lookup({}, ['pho'])), ['cake', 'stew']);
     assert.deepEqual(run({ hideRecent: false }, lookup({}, ['pho'])), ['cake', 'pho', 'stew']);
   });

@@ -110,7 +110,7 @@ test('a single-day snapshot takes back Mark Done, a new pick and a cleared eveni
 // Auto-fill and Surprise Me: which recipes they pick from for an evening.
 const meal = (id, daysBefore) => ({ id, meals: ['Dinner'], ...(daysBefore !== undefined && { headsUps: [{ text: `Prep ${id}`, daysBefore }] }) });
 const ids = (tier) => tier.map((r) => r.id);
-const history = ({ used = [], recent = [] } = {}) => ({ used: new Set(used), madeRecently: (id) => recent.includes(id) });
+const history = ({ used = [], recent = [] } = {}) => ({ used: new Set(used), nearby: (id) => recent.includes(id) });
 
 test('pickTier: a recipe whose heads-up is already late loses to one still in time', () => {
   // Tomorrow (Thursday): a heads-up due the day before is in time (tonight); two days before was yesterday.
@@ -127,11 +127,17 @@ test('pickTier: a late recipe is still picked when nothing else fits', () => {
   assert.deepEqual(pickTier([], today, today, history()), []);
 });
 
-test('pickTier: in time comes first, then not on the menu, then not made recently', () => {
+test('pickTier: asks about repeats around the evening being planned, not today (#287)', () => {
+  const asked = [];
+  pickTier([meal('pho')], '2026-10-29', today, { used: new Set(), nearby: (id, iso) => (asked.push([id, iso]), false) });
+  assert.deepEqual(asked, [['pho', '2026-10-29']]);
+});
+
+test('pickTier: in time comes first, then not on the menu, then no repeat within a week', () => {
   const pool = [meal('fresh'), meal('recent'), meal('onMenu'), meal('late', 1)];
   const h = history({ used: ['onMenu'], recent: ['recent'] });
   assert.deepEqual(ids(pickTier(pool, today, today, h)), ['fresh']);
-  // Without a fresh one: in time but made recently beats a fresh recipe that's late.
+  // Without a fresh one: in time but a repeat within the week beats a fresh recipe that's late.
   assert.deepEqual(ids(pickTier([meal('recent'), meal('onMenu'), meal('late', 1)], today, today, h)), ['recent']);
   // Only the week's own meal is in time: it still beats a late one not on the menu.
   assert.deepEqual(ids(pickTier([meal('onMenu'), meal('late', 1)], today, today, h)), ['onMenu']);

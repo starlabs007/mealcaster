@@ -17,7 +17,7 @@
   import { favorites } from '../lib/favorites.svelte.js';
   import { ingredientOf } from '../lib/ingredients.svelte.js';
   import { DEFAULT_SORT, SORT_IDS, activeFilterCount, activeFilters, mealOptions, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
-  import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
+  import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, nearOnPlan, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
   import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate, left } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
@@ -41,7 +41,7 @@
   // On by default and remembered on this device: don't offer meals the viewed week already has (planned or completed).
   const hidePlanned = $derived(devicePrefs.hidePlanned);
 
-  // "Not made recently" is remembered on this device (see Profile): skipping repeats is a standing preference.
+  // "No repeats within a week" is remembered on this device (see Profile): skipping repeats is a standing preference.
   const hideRecent = $derived(devicePrefs.hideRecent);
 
   /** @param {boolean} on */
@@ -115,11 +115,15 @@
   // The week's dinners, except the target day's own — swapping it should still show the current pick.
   const plannedIds = $derived(plannedIdsOf(currentWeek(), targetDay));
 
+  // "No repeats within a week" looks either side of the evening being planned, other weeks included (#287); with no
+  // evening to plan, either side of today.
+  const nearby = $derived((/** @type {string} */ id) => nearOnPlan(id, targetDay ?? planner.today));
+
   const results = $derived(
     searchRecipes(
       recipes,
       { query, sort, tags: active, meals, favoritesOnly, favoriteIds: favorites.ids, hideRecent, hidePlanned, plannedIds },
-      { ingredientOf, madeRecently, timesMade, lastMadeOn },
+      { ingredientOf, nearby, timesMade, lastMadeOn },
     ),
   );
   const visible = $derived(results.slice(0, pages * PAGE_SIZE));
@@ -153,7 +157,7 @@
   function chipLabel(f) {
     if (f.kind === 'favorites') return text.catalog.filters.favorites;
     if (f.kind === 'unplanned') return text.catalog.filters.unplanned;
-    if (f.kind === 'recent') return text.catalog.filters.notMadeRecently;
+    if (f.kind === 'recent') return text.catalog.filters.noRepeats;
     return f.value ?? '';
   }
 
@@ -349,7 +353,7 @@
         {#snippet switches()}
           {@render pill(favoritesOnly, text.catalog.filters.favorites, 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
           {@render pill(hidePlanned, text.catalog.filters.unplanned, 'event_busy', () => (setHidePlanned(!hidePlanned), (pages = 1)))}
-          {@render pill(hideRecent, text.catalog.filters.notMadeRecently, 'history', () => toggleHideRecent(!hideRecent))}
+          {@render pill(hideRecent, text.catalog.filters.noRepeats, 'history', () => toggleHideRecent(!hideRecent))}
         {/snippet}
         {@render group(text.catalog.filters.show, switches)}
         {#if mealChoices.length > 1 || meals.length}

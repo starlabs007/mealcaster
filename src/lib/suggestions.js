@@ -16,12 +16,12 @@ export const suggestableDays = (days, today, statusOf) => days.filter((iso) => i
  * counts as on the menu; `not` (the evening's current suggestion) is left out unless nothing else is left.
  * @template {import('./data/recipes.js').Recipe} R
  * @param {R[]} pool @param {string} iso @param {string} today
- * @param {{ used: Set<string | undefined>, madeRecently: (recipeId: string) => boolean, not?: string, random?: () => number }} options
+ * @param {{ used: Set<string | undefined>, nearby: (recipeId: string, iso: string) => boolean, not?: string, random?: () => number }} options
  * @returns {string | undefined} undefined only when `pool` is empty
  */
-export function pickSuggestion(pool, iso, today, { used, madeRecently, not, random = Math.random }) {
+export function pickSuggestion(pool, iso, today, { used, nearby, not, random = Math.random }) {
   const others = pool.filter((r) => r.id !== not);
-  const best = pickTier(others.length ? others : pool, iso, today, { used, madeRecently });
+  const best = pickTier(others.length ? others : pool, iso, today, { used, nearby });
   return best[Math.floor(random() * best.length)]?.id;
 }
 
@@ -29,15 +29,15 @@ export function pickSuggestion(pool, iso, today, { used, madeRecently, not, rand
  * A suggestion for each of `days`, each avoiding the others and the week's planned meals (`planned`). With `previous`
  * (Shuffle All), each evening also avoids what it had.
  * @param {string[]} days @param {import('./data/recipes.js').Recipe[]} pool @param {string} today
- * @param {{ planned: Iterable<string | undefined>, madeRecently: (recipeId: string) => boolean, previous?: Suggestions, random?: () => number }} options
+ * @param {{ planned: Iterable<string | undefined>, nearby: (recipeId: string, iso: string) => boolean, previous?: Suggestions, random?: () => number }} options
  * @returns {Suggestions}
  */
-export function suggestDays(days, pool, today, { planned, madeRecently, previous = {}, random }) {
+export function suggestDays(days, pool, today, { planned, nearby, previous = {}, random }) {
   const used = new Set(planned);
   /** @type {Suggestions} */
   const picked = {};
   for (const iso of days) {
-    const id = pickSuggestion(pool, iso, today, { used, madeRecently, not: previous[iso], random });
+    const id = pickSuggestion(pool, iso, today, { used, nearby, not: previous[iso], random });
     if (!id) break;
     picked[iso] = id;
     used.add(id);
@@ -48,11 +48,11 @@ export function suggestDays(days, pool, today, { planned, madeRecently, previous
 /**
  * Another suggestion for one evening, avoiding the week's planned meals, the other suggestions and its own.
  * @param {Suggestions} suggestions @param {string} iso @param {import('./data/recipes.js').Recipe[]} pool @param {string} today
- * @param {{ planned: Iterable<string | undefined>, madeRecently: (recipeId: string) => boolean, random?: () => number }} options
+ * @param {{ planned: Iterable<string | undefined>, nearby: (recipeId: string, iso: string) => boolean, random?: () => number }} options
  */
-export function rerollDay(suggestions, iso, pool, today, { planned, madeRecently, random }) {
+export function rerollDay(suggestions, iso, pool, today, { planned, nearby, random }) {
   const others = Object.entries(suggestions).filter(([day]) => day !== iso).map(([, id]) => id);
-  return pickSuggestion(pool, iso, today, { used: new Set([...planned, ...others]), madeRecently, not: suggestions[iso], random });
+  return pickSuggestion(pool, iso, today, { used: new Set([...planned, ...others]), nearby, not: suggestions[iso], random });
 }
 
 /**
