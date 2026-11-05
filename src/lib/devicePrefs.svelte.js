@@ -1,10 +1,13 @@
 // Small display preferences remembered on this device only (never synced).
 
+import { untrack } from 'svelte';
 import { storageKey } from './env.js';
 import { THEME_COLOR, resolveTheme, themeChoice } from './theme.js';
+import { savedFilters } from './catalogQuery.js';
 
 const HIDE_RECENT_KEY = storageKey('catalogHideRecent.v1');
 const HIDE_PLANNED_KEY = storageKey('catalogHidePlanned.v1');
+const CATALOG_FILTERS_KEY = storageKey('catalogFilters.v1');
 const GROCERY_HINT_KEY = storageKey('groceryHintSeen.v1');
 // index.html reads this key too (as 'mealcaster.theme.v1'), to set the theme before the first paint.
 const THEME_KEY = storageKey('theme.v1');
@@ -23,6 +26,14 @@ function readHidePlanned() {
     return localStorage.getItem(HIDE_PLANNED_KEY) !== 'false';
   } catch {
     return true;
+  }
+}
+
+function readCatalogFilters() {
+  try {
+    return savedFilters(JSON.parse(localStorage.getItem(CATALOG_FILTERS_KEY) ?? 'null'));
+  } catch {
+    return savedFilters(null);
   }
 }
 
@@ -47,10 +58,12 @@ export const devicePrefs = $state({
   theme: readTheme(),
   /** Grocery list: the "tap an item" hint was dismissed. */
   groceryHintSeen: readHintSeen(),
-  /** Catalog: hide recipes made in the last week ("Not made recently", 7 days). */
+  /** Catalog: hide recipes made or planned within a week of the evening being planned ("No repeats within a week"). */
   hideRecent: readHideRecent(),
   /** Catalog: hide recipes the viewed week already has planned or completed. On by default. */
   hidePlanned: readHidePlanned(),
+  /** Catalog: the tag, meal and favourites filters and the sort, kept across screens and visits (#286). */
+  catalogFilters: readCatalogFilters(),
   /** Planner: minimal view. Kept while the app is open (survives switching tabs), not saved. */
   plannerMinimal: false,
   /** Grocery list: minimal view (no On Hand section or sidebar). Same lifetime as plannerMinimal. */
@@ -74,6 +87,18 @@ export function setHidePlanned(on) {
   devicePrefs.hidePlanned = on;
   try {
     localStorage.setItem(HIDE_PLANNED_KEY, String(on));
+  } catch {
+    // In-memory only.
+  }
+}
+
+/** Saves the catalog's filters (the catalog calls it from an effect, so it doesn't track what it reads). @param {import('./catalogQuery.js').CatalogFilters} filters */
+export function setCatalogFilters(filters) {
+  const next = savedFilters(filters);
+  if (untrack(() => JSON.stringify(next) === JSON.stringify(devicePrefs.catalogFilters))) return;
+  untrack(() => (devicePrefs.catalogFilters = next));
+  try {
+    localStorage.setItem(CATALOG_FILTERS_KEY, JSON.stringify(next));
   } catch {
     // In-memory only.
   }

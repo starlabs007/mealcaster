@@ -9,7 +9,7 @@ import { switchedEntries } from './switchDays.js';
 import { remindersOn } from './headsUps.js';
 import { copiedEntries, dayStatus, dinnerPool, pickTier, resetDays, restoreDays, snapshotDays } from './planDays.js';
 import { acceptedEntries, liveSuggestions, rerollDay, suggestDays, suggestableDays, suggestionsIn } from './suggestions.js';
-import { createUndoSlot, firstTooSoon, madeIndex as buildMadeIndex, nextPlannedAfter as nextWithRecipe, rollToday, summarize, switchTargets as targetsFor, weekOffset as offsetBetween } from './plannerState.js';
+import { createUndoSlot, firstTooSoon, madeIndex as buildMadeIndex, nextPlannedAfter as nextWithRecipe, onPlanNear, planDates, rollToday, summarize, switchTargets as targetsFor, weekOffset as offsetBetween } from './plannerState.js';
 import { dismissToast, showToast, toast } from './toast.svelte.js';
 import { text } from './text.js';
 import { samples } from 'virtual:sample-data';
@@ -98,7 +98,7 @@ export function statusOf(iso) {
   return dayStatus(planner.entries[iso], iso, planner.today, (id) => recipeById.has(id));
 }
 
-/** Meals made within this many days count as recent (the catalog can hide them). */
+/** Meals made within this many days count as recent; the catalog, Auto-fill and Surprise Me keep repeats this far apart. */
 export const RECENT_DAYS = 7;
 
 // recipe id → how often and when it was last made: past days on the plan, plus today once marked done.
@@ -115,6 +115,16 @@ export function madeRecently(recipeId) {
   const iso = lastMadeOn(recipeId);
   return !!iso && daysBetween(iso, planner.today) <= RECENT_DAYS;
 }
+
+// recipe id → every date it is on the plan (past and upcoming).
+const planDateIndex = $derived(planDates(planner.entries));
+
+/**
+ * On the plan within RECENT_DAYS days either side of `iso`, made or still to come, that evening's own pick aside
+ * (#287): what "No repeats within a week", Auto-fill and Surprise Me keep away from.
+ * @param {string} recipeId @param {string} iso the evening being planned
+ */
+export const nearOnPlan = (recipeId, iso) => onPlanNear(planDateIndex.get(recipeId), iso, RECENT_DAYS);
 
 /** The day the planner should scroll to and briefly highlight (after a meal is picked in the catalog). */
 export const spotlight = $state({ days: /** @type {string[]} */ ([]) });
@@ -184,13 +194,13 @@ function snapshotWeek() {
 }
 
 /**
- * Pick a random recipe from `pool` for `iso`, from the best tier pickTier finds (planDays.js: not on the menu, not
- * made recently, heads-up still in time).
+ * Pick a random recipe from `pool` for `iso`, from the best tier pickTier finds (planDays.js: not on the menu, no
+ * repeat within a week, heads-up still in time).
  * @param {string} iso @param {import('./data/recipes.js').Recipe[]} pool
  */
 function pickRecipe(iso, pool = dinnerPool(recipes)) {
   const used = new Set(weekDates(planner.weekStart).map((d) => planner.entries[d]?.recipeId));
-  const best = pickTier(pool, iso, planner.today, { used, madeRecently });
+  const best = pickTier(pool, iso, planner.today, { used, nearby: nearOnPlan });
   return best[Math.floor(Math.random() * best.length)];
 }
 
@@ -385,7 +395,7 @@ export function autoFillRemaining() {
   const shuffling = weekSuggestions().length > 0;
   const picked = suggestDays(open, dinnerPool(recipes), planner.today, {
     planned: plannedThisWeek(),
-    madeRecently,
+    nearby: nearOnPlan,
     previous: shuffling ? suggested.days : {},
   });
   suggested.days = { ...suggested.days, ...picked };
@@ -398,7 +408,7 @@ export function autoFillRemaining() {
  * @returns {import('./data/recipes.js').Recipe | undefined}
  */
 export function rerollSuggestion(iso) {
-  const id = rerollDay(suggested.days, iso, dinnerPool(recipes), planner.today, { planned: plannedThisWeek(), madeRecently });
+  const id = rerollDay(suggested.days, iso, dinnerPool(recipes), planner.today, { planned: plannedThisWeek(), nearby: nearOnPlan });
   if (id) suggested.days[iso] = id;
   return recipeById.get(id ?? '');
 }

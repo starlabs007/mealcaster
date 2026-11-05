@@ -2,8 +2,8 @@
 // orders, the filter and search pipeline, the filter lists, which filters are on, and which day is being planned.
 
 import { foldKey } from './ingredients.js';
-import { tagChoices } from './tags.js';
-import { hasAnyMeal, mealFilters } from './meals.js';
+import { normalizeTags, tagChoices } from './tags.js';
+import { hasAnyMeal, mealFilters, normalizeMeals } from './meals.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 
@@ -51,7 +51,7 @@ export function sortCompare(id, { timesMade, lastMadeOn }) {
  * }} filters
  * @param {{
  *   ingredientOf: (id: string) => { name: string, plural?: string } | undefined,
- *   madeRecently: (id: string) => boolean,
+ *   nearby: (id: string) => boolean,
  *   timesMade: (id: string) => number, lastMadeOn: (id: string) => string | undefined,
  * }} lookup
  */
@@ -60,7 +60,7 @@ export function searchRecipes(recipes, filters, lookup) {
   const words = foldKey(query).split(' ').filter(Boolean);
   return recipes
     .filter((r) => !favoritesOnly || favoriteIds.includes(r.id))
-    .filter((r) => !hideRecent || !lookup.madeRecently(r.id))
+    .filter((r) => !hideRecent || !lookup.nearby(r.id))
     .filter((r) => !hidePlanned || !plannedIds.has(r.id))
     .filter((r) => hasAnyMeal(r.meals, meals))
     .filter((r) => tags.every((t) => r.tags.includes(t)))
@@ -125,3 +125,33 @@ export const plannedIdsOf = (days, target) =>
 
 /** The search as shown, to tell whether the catalog comes back to the same one. @param {{ q?: string, filter?: string, meals?: string, category?: string }} query @param {string | undefined} day */
 export const placeKey = (query, day) => JSON.stringify([query.q ?? '', query.filter ?? '', query.meals ?? query.category ?? '', day ?? '']);
+
+/** @typedef {{ tags: string[], meals: string[], favoritesOnly: boolean, sort: string }} CatalogFilters */
+
+/**
+ * The catalog's tag, meal and favourites filters and its sort, as saved on this device (#286), tidied: anything
+ * unreadable falls back to no filters, A–Z.
+ * @param {unknown} value the parsed saved value
+ * @returns {CatalogFilters}
+ */
+export function savedFilters(value) {
+  const v = /** @type {Record<string, unknown>} */ (value && typeof value === 'object' ? value : {});
+  return {
+    tags: normalizeTags(v.tags),
+    meals: Array.isArray(v.meals) ? normalizeMeals(v.meals) : [],
+    favoritesOnly: v.favoritesOnly === true,
+    sort: SORT_IDS.includes(/** @type {string} */ (v.sort)) ? /** @type {string} */ (v.sort) : DEFAULT_SORT,
+  };
+}
+
+/**
+ * The filters the catalog opens with. A link that names tags or meals (a recipe's tag link, an older `category` link)
+ * sets both, none for the one it leaves out; any other visit (header tab, breadcrumb, "Swap") gets the saved ones.
+ * Favourites and the sort are never in a link, so they always come from the saved filters.
+ * @param {{ filter?: string, meals?: string, category?: string }} query @param {CatalogFilters} saved
+ * @returns {CatalogFilters}
+ */
+export function openingFilters(query, saved) {
+  if (!(query.filter || query.meals || query.category)) return saved;
+  return { ...saved, tags: normalizeTags(query.filter?.split(',')), meals: normalizeMeals(query.meals ?? query.category) };
+}

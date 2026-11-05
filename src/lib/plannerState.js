@@ -1,5 +1,5 @@
 // The planner's rules on plain data (planner.svelte.js holds the plan, the saving and the toasts): how often and when
-// each recipe was made, rolling today forward, the week's summary, where a meal can move, the week's neighbours, and
+// each recipe was made, which recipes sit near an evening, rolling today forward, the week's summary, where a meal can move, the week's neighbours, and
 // the one-level undo slot behind Cmd/Ctrl+Z.
 
 import { byLead, missedHeadsUps } from './headsUps.js';
@@ -24,6 +24,30 @@ export function madeIndex(entries, today) {
   }
   return index;
 }
+
+/**
+ * recipe id → every date it is on the plan: past, today and upcoming, made or not. Feeds `onPlanNear`.
+ * @param {Record<string, PlanEntry | undefined>} entries
+ * @returns {Map<string, string[]>}
+ */
+export function planDates(entries) {
+  const index = new Map();
+  for (const [iso, entry] of Object.entries(entries)) {
+    if (!entry?.recipeId) continue;
+    const dates = index.get(entry.recipeId);
+    if (dates) dates.push(iso);
+    else index.set(entry.recipeId, [iso]);
+  }
+  return index;
+}
+
+/**
+ * Whether a recipe is on the plan within `days` days either side of `iso`, made or still to come, leaving out that
+ * evening's own pick (#287). Measured from the evening being planned, not from today: planning next week has to see
+ * this week's dinners that aren't cooked yet, and a dinner made yesterday is no repeat three weeks out.
+ * @param {string[] | undefined} dates the recipe's dates from `planDates` @param {string} iso @param {number} days
+ */
+export const onPlanNear = (dates, iso, days) => !!dates?.some((d) => d !== iso && Math.abs(daysBetween(d, iso)) <= days);
 
 /**
  * The date and viewed week after the date changed while the page sat open. A viewer on the week that was "this week"

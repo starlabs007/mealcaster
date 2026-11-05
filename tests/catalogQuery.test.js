@@ -9,8 +9,10 @@ import {
   activeFilterCount,
   activeFilters,
   mealOptions,
+  openingFilters,
   placeKey,
   plannedIdsOf,
+  savedFilters,
   searchRecipes,
   sortCompare,
   tagFilters,
@@ -27,7 +29,7 @@ const ingredients = { rice: { name: 'rice', plural: 'rices' }, scallion: { name:
 const base = {
   query: '', sort: 'name', tags: [], meals: [], favoritesOnly: false, favoriteIds: [], hideRecent: false, hidePlanned: false, plannedIds: new Set(),
 };
-const lookup = (made = {}, recent = []) => ({ ingredientOf: (id) => ingredients[id], madeRecently: (id) => recent.includes(id), ...history(made) });
+const lookup = (made = {}, recent = []) => ({ ingredientOf: (id) => ingredients[id], nearby: (id) => recent.includes(id), ...history(made) });
 const ids = (list) => list.map((x) => x.id);
 
 describe('sort orders', () => {
@@ -86,7 +88,7 @@ describe('filters', () => {
     assert.deepEqual(run({ favoritesOnly: false, favoriteIds: ['stew'] }), ['cake', 'pho', 'stew']);
   });
 
-  it('hides recently made ones only when asked', () => {
+  it('hides repeats within a week only when asked', () => {
     assert.deepEqual(run({ hideRecent: true }, lookup({}, ['pho'])), ['cake', 'stew']);
     assert.deepEqual(run({ hideRecent: false }, lookup({}, ['pho'])), ['cake', 'pho', 'stew']);
   });
@@ -207,5 +209,37 @@ describe('the day being planned', () => {
     assert.notEqual(placeKey({ q: 'a' }, undefined), placeKey({ q: 'b' }, undefined));
     assert.notEqual(placeKey({ filter: 'x' }, undefined), placeKey({ meals: 'x' }, undefined));
     assert.equal(placeKey({ category: 'Dinner' }, undefined), placeKey({ meals: 'Dinner' }, undefined), 'an older link keeps its place');
+  });
+});
+
+describe('saved catalog filters (#286)', () => {
+  const none = { tags: [], meals: [], favoritesOnly: false, sort: DEFAULT_SORT };
+  const kept = { tags: ['Vietnamese'], meals: ['Dinner', 'Side'], favoritesOnly: true, sort: 'quickest' };
+
+  it('reads back what was saved', () => {
+    assert.deepEqual(savedFilters(JSON.parse(JSON.stringify(kept))), kept);
+  });
+
+  it('falls back to no filters, A–Z, for anything unreadable', () => {
+    for (const value of [null, undefined, 'x', 3, [], {}]) assert.deepEqual(savedFilters(value), none, String(value));
+    assert.deepEqual(savedFilters({ tags: 'Vietnamese', meals: 'Dinner', favoritesOnly: 'yes', sort: 'nope' }), none);
+  });
+
+  it('tidies saved tags and meals: unknown meals dropped, meals in list order, no repeats', () => {
+    const tidy = savedFilters({ tags: [' Vietnamese ', 'Vietnamese', ''], meals: ['side', 'Dinner', 'Brunch'] });
+    assert.deepEqual(tidy.tags, ['Vietnamese']);
+    assert.deepEqual(tidy.meals, ['Dinner', 'Side']);
+  });
+
+  it('opens with the saved filters when the link names no tags or meals (header tab, breadcrumb, Swap, search)', () => {
+    for (const query of [{}, { day: '2026-11-05' }, { q: 'pho' }, { filter: '', meals: '' }]) {
+      assert.deepEqual(openingFilters(query, kept), kept, JSON.stringify(query));
+    }
+  });
+
+  it('a link that names tags or meals sets both, keeping the saved favourites and sort', () => {
+    assert.deepEqual(openingFilters({ filter: 'Quick,Vegan' }, kept), { ...kept, tags: ['Quick', 'Vegan'], meals: [] });
+    assert.deepEqual(openingFilters({ meals: 'Lunch' }, kept), { ...kept, tags: [], meals: ['Lunch'] });
+    assert.deepEqual(openingFilters({ category: 'Dessert' }, kept), { ...kept, tags: [], meals: ['Dessert'] }, 'an older link');
   });
 });

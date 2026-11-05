@@ -2,8 +2,8 @@
   import { placeKey } from '../lib/catalogQuery.js';
 
   /**
-   * Where the catalog was left (batches shown, sort, favorites, scroll), for the same search coming back from a recipe.
-   * @type {{ key: string, pages: number, sort: string, favoritesOnly: boolean, scrollY: number } | null}
+   * Where the catalog was left (batches shown, scroll), for the same search coming back from a recipe.
+   * @type {{ key: string, pages: number, scrollY: number } | null}
    */
   let place = null;
 
@@ -13,12 +13,12 @@
   import { onDestroy, tick, untrack } from 'svelte';
   import Icon from '../lib/components/Icon.svelte';
   import RecipeCard from '../lib/components/RecipeCard.svelte';
-  import { recipes, recipeById, tagIcon, normalizeTags, normalizeMeals } from '../lib/recipes.svelte.js';
+  import { recipes, recipeById, tagIcon, normalizeMeals } from '../lib/recipes.svelte.js';
   import { favorites } from '../lib/favorites.svelte.js';
   import { ingredientOf } from '../lib/ingredients.svelte.js';
-  import { DEFAULT_SORT, SORT_IDS, activeFilterCount, activeFilters, mealOptions, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
-  import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, madeRecently, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
-  import { devicePrefs, setHideRecent, setHidePlanned } from '../lib/devicePrefs.svelte.js';
+  import { SORT_IDS, activeFilterCount, activeFilters, mealOptions, openingFilters, plannedIdsOf, searchRecipes, tagFilters, targetDay as dayToPlan } from '../lib/catalogQuery.js';
+  import { planner, statusOf, currentWeek, firstOpenDay, assignRecipe, spotlightDay, surpriseMe, tooSoonNote, nearOnPlan, timesMade, lastMadeOn } from '../lib/planner.svelte.js';
+  import { devicePrefs, setHideRecent, setHidePlanned, setCatalogFilters } from '../lib/devicePrefs.svelte.js';
   import { route, href, navigate, left } from '../lib/router.svelte.js';
   import { showToast } from '../lib/toast.svelte.js';
   import { settings } from '../lib/settings.svelte.js';
@@ -35,13 +35,15 @@
   };
   const sorts = SORT_IDS.map((id) => ({ id, label: sortLabels[id] }));
 
+  // Tags, meals, favourites and the sort are kept on this device across screens and visits (#286); the search isn't.
+  const saved = devicePrefs.catalogFilters;
   let query = $state('');
-  let sort = $state(DEFAULT_SORT);
-  let favoritesOnly = $state(false);
+  let sort = $state(saved.sort);
+  let favoritesOnly = $state(saved.favoritesOnly);
   // On by default and remembered on this device: don't offer meals the viewed week already has (planned or completed).
   const hidePlanned = $derived(devicePrefs.hidePlanned);
 
-  // "Not made recently" is remembered on this device (see Profile): skipping repeats is a standing preference.
+  // "No repeats within a week" is remembered on this device (see Profile): skipping repeats is a standing preference.
   const hideRecent = $derived(devicePrefs.hideRecent);
 
   /** @param {boolean} on */
@@ -59,22 +61,24 @@
   let restore = left.path.startsWith('/recipe/') ? place : null;
   let key = '';
 
-  // Keep search / filter in sync with the URL (header search, "Browse Recipes" links).
-  // `filter` is a comma-separated list of tags (tags never contain commas), `meals` one of meals; an older
-  // link carries `category`.
+  // Keep search / filter in sync with the URL (header search, tag links). `filter` is a comma-separated list of tags
+  // (tags never contain commas), `meals` one of meals; an older link carries `category`. A URL without them gets the
+  // saved filters (openingFilters).
   $effect(() => {
     query = route.query.q ?? '';
-    active = normalizeTags(route.query.filter?.split(','));
-    meals = normalizeMeals(route.query.meals ?? route.query.category);
+    const opening = openingFilters(route.query, untrack(() => devicePrefs.catalogFilters));
+    active = opening.tags;
+    meals = opening.meals;
     const back = restore?.key === placeKey(route.query, untrack(() => targetDay)) ? restore : null;
     restore = null;
     pages = back?.pages ?? 1;
-    if (back) {
-      sort = back.sort;
-      favoritesOnly = back.favoritesOnly;
-      // After the router's scroll to the top, once the restored batches are on the page.
-      tick().then(() => window.scrollTo({ top: back.scrollY }));
-    }
+    // After the router's scroll to the top, once the restored batches are on the page.
+    if (back) tick().then(() => window.scrollTo({ top: back.scrollY }));
+  });
+
+  // Every change is saved, so the next visit opens with the same filters.
+  $effect(() => {
+    setCatalogFilters({ tags: active, meals, favoritesOnly, sort });
   });
 
   // The search as shown, for onDestroy (by then the route is the next page's).
@@ -84,7 +88,7 @@
 
   // By the time the catalog goes away the router has scrolled to the top, so the scroll comes from `left`.
   onDestroy(() => {
-    place = { key, pages, sort, favoritesOnly, scrollY: left.scrollY };
+    place = { key, pages, scrollY: left.scrollY };
   });
 
   /** Shows the next batch whenever the sentinel under the grid comes near the screen. @param {HTMLElement} node */
@@ -115,11 +119,15 @@
   // The week's dinners, except the target day's own — swapping it should still show the current pick.
   const plannedIds = $derived(plannedIdsOf(currentWeek(), targetDay));
 
+  // "No repeats within a week" looks either side of the evening being planned, other weeks included (#287); with no
+  // evening to plan, either side of today.
+  const nearby = $derived((/** @type {string} */ id) => nearOnPlan(id, targetDay ?? planner.today));
+
   const results = $derived(
     searchRecipes(
       recipes,
       { query, sort, tags: active, meals, favoritesOnly, favoriteIds: favorites.ids, hideRecent, hidePlanned, plannedIds },
-      { ingredientOf, madeRecently, timesMade, lastMadeOn },
+      { ingredientOf, nearby, timesMade, lastMadeOn },
     ),
   );
   const visible = $derived(results.slice(0, pages * PAGE_SIZE));
@@ -153,7 +161,7 @@
   function chipLabel(f) {
     if (f.kind === 'favorites') return text.catalog.filters.favorites;
     if (f.kind === 'unplanned') return text.catalog.filters.unplanned;
-    if (f.kind === 'recent') return text.catalog.filters.notMadeRecently;
+    if (f.kind === 'recent') return text.catalog.filters.noRepeats;
     return f.value ?? '';
   }
 
@@ -349,7 +357,7 @@
         {#snippet switches()}
           {@render pill(favoritesOnly, text.catalog.filters.favorites, 'favorite', () => ((favoritesOnly = !favoritesOnly), (pages = 1)))}
           {@render pill(hidePlanned, text.catalog.filters.unplanned, 'event_busy', () => (setHidePlanned(!hidePlanned), (pages = 1)))}
-          {@render pill(hideRecent, text.catalog.filters.notMadeRecently, 'history', () => toggleHideRecent(!hideRecent))}
+          {@render pill(hideRecent, text.catalog.filters.noRepeats, 'history', () => toggleHideRecent(!hideRecent))}
         {/snippet}
         {@render group(text.catalog.filters.show, switches)}
         {#if mealChoices.length > 1 || meals.length}
