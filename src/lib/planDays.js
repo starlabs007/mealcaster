@@ -76,16 +76,17 @@ export function dinnerPool(recipes) {
 
 /**
  * The recipes Auto-fill and Surprise Me pick from for `iso`: the first non-empty tier of `pool`, best first.
- * Recipes neither on the week's menu (`used`) nor made recently come first, then ones just not on the menu, then any;
+ * Recipes neither on the week's menu (`used`) nor on the plan within a week of `iso` (`nearby`, made or still to come)
+ * come first, then ones just not on the menu, then any;
  * within that order, recipes whose heads-up would already be late on `iso` come after all the ones still in time
  * (doing the prep this evening for tomorrow is in time). Empty only when `pool` is.
  * @template {import('./data/recipes.js').Recipe} R
  * @param {R[]} pool @param {string} iso @param {string} today
- * @param {{ used: Set<string | undefined>, madeRecently: (recipeId: string) => boolean }} history
+ * @param {{ used: Set<string | undefined>, nearby: (recipeId: string, iso: string) => boolean }} history
  * @returns {R[]}
  */
-export function pickTier(pool, iso, today, { used, madeRecently }) {
-  const byHistory = [pool.filter((r) => !used.has(r.id) && !madeRecently(r.id)), pool.filter((r) => !used.has(r.id)), pool];
+export function pickTier(pool, iso, today, { used, nearby }) {
+  const byHistory = [pool.filter((r) => !used.has(r.id) && !nearby(r.id, iso)), pool.filter((r) => !used.has(r.id)), pool];
   const inTime = (r) => !missedHeadsUps(r, iso, today).length;
   return [...byHistory.map((tier) => tier.filter(inTime)), ...byHistory].find((tier) => tier.length) ?? [];
 }

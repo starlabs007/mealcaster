@@ -47,7 +47,7 @@ export const devicePrefs = $state({
   theme: readTheme(),
   /** Grocery list: the "tap an item" hint was dismissed. */
   groceryHintSeen: readHintSeen(),
-  /** Catalog: hide recipes made in the last week ("Not made recently", 7 days). */
+  /** Catalog: hide recipes made or planned within a week of the evening being planned ("No repeats within a week"). */
   hideRecent: readHideRecent(),
   /** Catalog: hide recipes the viewed week already has planned or completed. On by default. */
   hidePlanned: readHidePlanned(),

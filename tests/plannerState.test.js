@@ -3,7 +3,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { createUndoSlot, firstTooSoon, madeIndex, nextPlannedAfter, rollToday, summarize, switchTargets, weekOffset } from '../src/lib/plannerState.js';
+import { createUndoSlot, firstTooSoon, madeIndex, nextPlannedAfter, onPlanNear, planDates, rollToday, summarize, switchTargets, weekOffset } from '../src/lib/plannerState.js';
 import { setWeekStartDay } from '../src/lib/dates.js';
 
 setWeekStartDay(6); // weeks start on Saturday, as the app's default
@@ -30,6 +30,47 @@ describe('made history', () => {
 
   it('leaves out nights off, empty days and entries with no recipe', () => {
     assert.equal(madeIndex({ '2026-10-20': { diningOut: true }, '2026-10-19': {}, '2026-10-18': undefined, '2026-10-17': { notes: 'x' } }, today).size, 0);
+  });
+});
+
+describe('on the plan near an evening', () => {
+  it('lists every date a recipe is on the plan, past and upcoming, made or not', () => {
+    const index = planDates({ '2026-10-10': { recipeId: 'pho' }, '2026-10-30': { recipeId: 'pho' }, '2026-10-24': { recipeId: 'bun', completed: true } });
+    assert.deepEqual(index.get('pho').sort(), ['2026-10-10', '2026-10-30']);
+    assert.deepEqual(index.get('bun'), ['2026-10-24']);
+  });
+
+  it('leaves out nights off, empty days and entries with no recipe', () => {
+    assert.equal(planDates({ '2026-10-20': { diningOut: true }, '2026-10-19': {}, '2026-10-18': undefined, '2026-10-17': { notes: 'x' } }).size, 0);
+  });
+
+  it('#287: planning next week sees a dinner later this week that is not cooked yet', () => {
+    // Today Monday 2 Nov; burgers last made three weeks ago and planned for Friday 6 Nov; planning Tuesday 10 Nov.
+    const dates = planDates({ '2026-10-12': { recipeId: 'burgers' }, '2026-11-06': { recipeId: 'burgers' } }).get('burgers');
+    assert.equal(onPlanNear(dates, '2026-11-10', 7), true);
+  });
+
+  it('counts dinners after the evening too, both ends of the window included', () => {
+    const dates = ['2026-11-09'];
+    assert.equal(onPlanNear(dates, '2026-11-08', 7), true, 'the day after');
+    assert.equal(onPlanNear(dates, '2026-11-02', 7), true, 'seven days after');
+    assert.equal(onPlanNear(dates, '2026-11-16', 7), true, 'seven days before');
+    assert.equal(onPlanNear(dates, '2026-11-01', 7), false, 'eight days after');
+    assert.equal(onPlanNear(dates, '2026-11-17', 7), false, 'eight days before');
+  });
+
+  it('measures from the evening being planned, not from today', () => {
+    // Made yesterday is no repeat for an evening three weeks out.
+    assert.equal(onPlanNear(['2026-11-01'], '2026-11-23', 7), false);
+  });
+
+  it("leaves out the evening's own pick, so swapping it still lists the current meal", () => {
+    assert.equal(onPlanNear(['2026-11-10'], '2026-11-10', 7), false);
+    assert.equal(onPlanNear(['2026-11-10', '2026-11-13'], '2026-11-10', 7), true);
+  });
+
+  it('is false for a recipe that is not on the plan', () => {
+    assert.equal(onPlanNear(undefined, '2026-11-10', 7), false);
   });
 });
 

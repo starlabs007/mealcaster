@@ -28,40 +28,40 @@ test('suggestions go only on open evenings from today on', () => {
 
 test('each suggestion avoids the planned meals and the other suggestions', () => {
   const open = ['2026-10-22', '2026-10-23', '2026-10-25'];
-  const picked = suggestDays(open, pool, today, { planned: ['risotto', 'ragu'], madeRecently: never, random: first });
+  const picked = suggestDays(open, pool, today, { planned: ['risotto', 'ragu'], nearby: never, random: first });
   assert.deepEqual(picked, { '2026-10-22': 'pho', '2026-10-23': 'dal', '2026-10-25': 'tacos' });
   // Recently made recipes come last, like Auto-fill's picks.
-  const fresh = suggestDays(open, pool, today, { planned: [], madeRecently: (id) => id !== 'laksa', random: first });
+  const fresh = suggestDays(open, pool, today, { planned: [], nearby: (id) => id !== 'laksa', random: first });
   assert.equal(fresh['2026-10-22'], 'laksa');
 });
 
 test('Shuffle All gives each evening something other than what it had', () => {
   const previous = { '2026-10-22': 'pho', '2026-10-23': 'dal' };
-  const picked = suggestDays(Object.keys(previous), pool, today, { planned: [], madeRecently: never, previous, random: first });
+  const picked = suggestDays(Object.keys(previous), pool, today, { planned: [], nearby: never, previous, random: first });
   assert.notEqual(picked['2026-10-22'], 'pho');
   assert.notEqual(picked['2026-10-23'], 'dal');
   assert.notEqual(picked['2026-10-22'], picked['2026-10-23']);
 });
 
 test('no recipes, no suggestions', () => {
-  assert.deepEqual(suggestDays(['2026-10-22'], [], today, { planned: [], madeRecently: never }), {});
-  assert.equal(pickSuggestion([], '2026-10-22', today, { used: new Set(), madeRecently: never }), undefined);
+  assert.deepEqual(suggestDays(['2026-10-22'], [], today, { planned: [], nearby: never }), {});
+  assert.equal(pickSuggestion([], '2026-10-22', today, { used: new Set(), nearby: never }), undefined);
 });
 
 test('re-roll avoids its own suggestion, the others and the planned meals', () => {
   const suggestions = { '2026-10-22': 'pho', '2026-10-23': 'dal' };
   for (let i = 0; i < 20; i++) {
-    const id = rerollDay(suggestions, '2026-10-22', pool, today, { planned: ['risotto', 'ragu'], madeRecently: never });
+    const id = rerollDay(suggestions, '2026-10-22', pool, today, { planned: ['risotto', 'ragu'], nearby: never });
     assert.ok(['tacos', 'laksa'].includes(id), id);
   }
   // With one recipe it keeps that one rather than none.
-  assert.equal(rerollDay({ '2026-10-22': 'pho' }, '2026-10-22', [meal('pho')], today, { planned: [], madeRecently: never }), 'pho');
+  assert.equal(rerollDay({ '2026-10-22': 'pho' }, '2026-10-22', [meal('pho')], today, { planned: [], nearby: never }), 'pho');
 });
 
 test('re-roll prefers a recipe whose heads-up is still in time', () => {
   // Thursday: two days' notice is already late, a day's notice is not.
   const late = [meal('pho'), meal('order', 2), meal('soak', 1)];
-  assert.equal(rerollDay({ '2026-10-22': 'pho' }, '2026-10-22', late, today, { planned: [], madeRecently: never }), 'soak');
+  assert.equal(rerollDay({ '2026-10-22': 'pho' }, '2026-10-22', late, today, { planned: [], nearby: never }), 'soak');
 });
 
 test('a suggestion drops once its evening is no longer open', () => {

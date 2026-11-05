@@ -51,7 +51,7 @@ export function sortCompare(id, { timesMade, lastMadeOn }) {
  * }} filters
  * @param {{
  *   ingredientOf: (id: string) => { name: string, plural?: string } | undefined,
- *   madeRecently: (id: string) => boolean,
+ *   nearby: (id: string) => boolean,
  *   timesMade: (id: string) => number, lastMadeOn: (id: string) => string | undefined,
  * }} lookup
  */
@@ -60,7 +60,7 @@ export function searchRecipes(recipes, filters, lookup) {
   const words = foldKey(query).split(' ').filter(Boolean);
   return recipes
     .filter((r) => !favoritesOnly || favoriteIds.includes(r.id))
-    .filter((r) => !hideRecent || !lookup.madeRecently(r.id))
+    .filter((r) => !hideRecent || !lookup.nearby(r.id))
     .filter((r) => !hidePlanned || !plannedIds.has(r.id))
     .filter((r) => hasAnyMeal(r.meals, meals))
     .filter((r) => tags.every((t) => r.tags.includes(t)))

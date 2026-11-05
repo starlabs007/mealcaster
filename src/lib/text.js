@@ -216,7 +216,7 @@ export const text = {
       // What Clear leaves alone (see `resetDays`): evenings before today and a tonight already marked done.
       resetKeeps: 'Keeps past evenings and a finished tonight.',
       moreAria: 'More week actions',
-      autoFillNote: (/** @type {number} */ days) => `Auto-fill picks dinners not made in the last ${days} days.`,
+      autoFillNote: (/** @type {number} */ days) => `Auto-fill avoids dinners made or planned within ${days} days of each evening.`,
     },
 
     card: {
@@ -353,7 +353,7 @@ export const text = {
       show: 'Show',
       favorites: 'Favorites',
       unplanned: 'Unplanned this week',
-      notMadeRecently: 'Not made recently',
+      noRepeats: 'No repeats within a week',
       meals: 'Meal',
       tags: 'Tags',
     },
@@ -940,8 +940,9 @@ export const text = {
         title: 'Catalog',
         hidePlanned: 'Hide meals already planned this week',
         hidePlannedHint: 'Starts the catalog with “Unplanned this week” switched on. The meal on the day you’re swapping stays listed.',
-        hideRecent: 'Hide recently made recipes',
-        hideRecentHint: (/** @type {number} */ days) => `Starts the catalog with “Not made recently” (nothing made in the last ${days} days) switched on.`,
+        hideRecent: 'Hide repeats within a week',
+        hideRecentHint: (/** @type {number} */ days) =>
+          `Starts the catalog with “No repeats within a week” switched on: it hides recipes made or planned within ${days} days of the evening you’re planning.`,
       },
       export: {
         title: 'Export',
