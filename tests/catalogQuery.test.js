@@ -35,8 +35,8 @@ const ids = (list) => list.map((x) => x.id);
 describe('sort orders', () => {
   const list = [r('b', 'Bún', { minutes: 40, addedAt: '2026-03-01' }), r('a', 'apple pie', { minutes: 0, addedAt: '2026-05-01' }), r('c', 'Curry', { minutes: 15, addedAt: '2026-01-01' })];
 
-  it('knows its five orders', () => {
-    assert.deepEqual(SORT_IDS, ['most-cooked', 'quickest', 'name', 'name-desc', 'recent']);
+  it('knows its six orders', () => {
+    assert.deepEqual(SORT_IDS, ['most-cooked', 'longest-since-made', 'quickest', 'name', 'name-desc', 'recent']);
     assert.equal(DEFAULT_SORT, 'name');
     assert.ok(SORT_IDS.includes(DEFAULT_SORT));
     assert.throws(() => sortCompare('nope', history()), /Unknown sort/);
@@ -59,6 +59,24 @@ describe('sort orders', () => {
     const made = { a: [2, '2026-09-01'], b: [2, '2026-10-01'], c: [5, '2026-01-01'], d: [0, undefined], e: [0, undefined] };
     const all = ['a', 'b', 'c', 'd', 'e'].map((id) => r(id, id === 'd' ? 'Zed' : id === 'e' ? 'Eve' : id));
     assert.deepEqual(ids([...all].sort(sortCompare('most-cooked', history(made)))), ['c', 'b', 'a', 'e', 'd']);
+  });
+
+  it('puts the meal made longest ago first; a never-made meal counts from the day it was added', () => {
+    const made = { old: [3, '2026-02-01'], mid: [1, '2026-06-01'], last: [4, '2026-10-30'] };
+    const all = [
+      r('last', 'Last', { addedAt: '2025-01-01' }),
+      r('newbie', 'Newbie', { addedAt: '2026-11-01' }),
+      r('mid', 'Mid', { addedAt: '2025-01-01' }),
+      r('untried', 'Untried', { addedAt: '2026-04-01' }),
+      r('old', 'Old', { addedAt: '2025-01-01' }),
+    ];
+    assert.deepEqual(ids([...all].sort(sortCompare('longest-since-made', history(made)))), ['old', 'untried', 'mid', 'last', 'newbie']);
+  });
+
+  it('breaks longest-since-made ties A–Z, made or not', () => {
+    const made = { b: [1, '2026-05-01'] };
+    const all = [r('b', 'banh mi', { addedAt: '2025-01-01' }), r('c', 'Curry', { addedAt: '2026-05-01' }), r('a', 'Adobo', { addedAt: '2026-05-01' })];
+    assert.deepEqual(ids([...all].sort(sortCompare('longest-since-made', history(made)))), ['a', 'b', 'c']);
   });
 });
 

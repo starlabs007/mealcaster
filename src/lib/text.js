@@ -337,6 +337,7 @@ export const text = {
     sortBy: 'Sort by',
     sorts: {
       mostCooked: 'Most Cooked in Household',
+      longestSinceMade: 'Longest Since Made',
       quickest: 'Quickest Prep Time',
       nameAsc: 'Name (A–Z)',
       nameDesc: 'Name (Z–A)',
