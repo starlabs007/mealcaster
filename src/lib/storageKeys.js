@@ -26,6 +26,7 @@ export const KEPT = [
   'printOptions.v1',
   'catalogHideRecent.v1',
   'catalogHidePlanned.v1',
+  'catalogFilters.v1',
   'groceryHintSeen.v1',
   'theme.v1',
   'devDataMode',
