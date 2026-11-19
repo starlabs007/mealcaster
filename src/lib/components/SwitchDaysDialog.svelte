@@ -65,7 +65,7 @@
   /** @param {string} d */
   function describe(d) {
     const status = statusOf(d);
-    if (status === 'diningOut') return { icon: 'storefront', label: text.planner.switchDialog.nightOff };
+    if (status === 'diningOut') return { icon: 'celebration', label: text.planner.switchDialog.nightOff };
     if (status === 'open') return { icon: 'restaurant', label: text.planner.switchDialog.open };
     return { recipe: recipeById.get(planner.entries[d].recipeId) };
   }
