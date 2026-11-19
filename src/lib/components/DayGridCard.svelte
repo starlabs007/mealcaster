@@ -55,7 +55,7 @@
       swap: { id: 'swap', label: text.planner.card.swapMeal, icon: 'sync_alt', href: href('/catalog', { day: day.iso }) },
       surprise: { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) },
       switch: { id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch?.(day.iso) },
-      nightOff: { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } },
+      nightOff: { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'celebration', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } },
       clear: { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } },
     };
     return groupedActions(
@@ -126,7 +126,7 @@
             </span>
           {/if}
         {:else if day.status === 'diningOut'}
-          <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
+          <span class="rounded bg-tone-paprika px-2 py-0.5 text-label-sm uppercase text-secondary">{text.planner.card.nightOff}</span>
         {:else if day.status === 'missed'}
           <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.noPlan}</span>
         {/if}
@@ -223,17 +223,23 @@
   {:else if day.suggestion}
     <DaySuggestion {day} size={lead ? 'lead' : 'grid'} {wide} />
   {:else if compact}
-    <p class="text-sm text-on-surface-variant">{day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.noPlan}</p>
+    <p class="text-sm {day.status === 'diningOut' ? 'font-display text-secondary-hover' : 'text-on-surface-variant'}">{day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.noPlan}</p>
   {:else}
     <DayHeadsUps {day} />
     <!-- Empty evenings (open, night off, not logged) sit centred in their card, like the photo placeholder. -->
     <div class="flex flex-1 flex-col items-center justify-center gap-3 pb-8 text-center">
       <!-- Stacked: side by side, the text wraps word by word in the narrow seven-column cells. -->
       <div class="flex flex-col items-center gap-2">
-        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-surface-container-highest text-outline">
-          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class="text-xl" />
+        <!-- A night off is a treat: filled party popper on a persimmon tint (#297). Its words use the deeper
+             persimmon (secondary-hover): plain secondary is under 4.5:1 on the grey night-off card. -->
+        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg {day.status === 'diningOut' ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-highest text-outline'}">
+          {#if day.status === 'diningOut'}
+            <Icon name="celebration" class="icon-filled text-xl" />
+          {:else}
+            <Icon name="restaurant" class="text-xl" />
+          {/if}
         </div>
-        <h3 class="font-display text-base leading-snug text-on-surface">
+        <h3 class="font-display text-base leading-snug {day.status === 'diningOut' ? 'text-secondary-hover' : 'text-on-surface'}">
           {day.status === 'diningOut'
             ? text.planner.card.nightOff
             : day.status === 'missed'

@@ -58,7 +58,7 @@
       swap: { id: 'swap', label: text.planner.card.swapMeal, icon: 'sync_alt', href: href('/catalog', { day: day.iso }) },
       surprise: { id: 'surprise', label: text.planner.card.surpriseMe, icon: 'casino', onselect: () => surpriseMe(day.iso) },
       switch: { id: 'switch', label: text.planner.card.switchDays, icon: 'swap_vert', onselect: () => onswitch?.(day.iso) },
-      nightOff: { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'storefront', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } },
+      nightOff: { id: 'nightOff', label: text.planner.card.nightOffAction, icon: 'celebration', onselect: () => { markDiningOut(day.iso); focusDay(day.iso); } },
       clear: { id: 'clear', label: text.planner.card.clearEvening, icon: 'backspace', onselect: () => { clearEvening(day.iso); focusDay(day.iso); } },
     };
     return groupedActions(
@@ -111,10 +111,14 @@
     {:else}
       <div class="flex min-h-12 items-center gap-3 px-3 py-1.5">
         {@render pastWeekday()}
-        <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md bg-surface-container-highest text-outline">
-          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class="text-[18px]" />
+        <div class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md {day.status === 'diningOut' ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-highest text-outline'}">
+          {#if day.status === 'diningOut'}
+            <Icon name="celebration" class="icon-filled text-[18px]" />
+          {:else}
+            <Icon name="restaurant" class="text-[18px]" />
+          {/if}
         </div>
-        <span class="text-sm text-on-surface-variant">
+        <span class="text-sm {day.status === 'diningOut' ? 'font-display text-secondary-hover' : 'text-on-surface-variant'}">
           {day.status === 'diningOut' ? text.planner.card.nightOff : text.planner.card.noPlan}
         </span>
       </div>
@@ -166,7 +170,7 @@
                 </span>
               {/if}
             {:else if day.status === 'diningOut'}
-              <span class="rounded bg-surface-container-high px-2 py-0.5 text-label-sm uppercase text-on-surface-variant">{text.planner.card.nightOff}</span>
+              <span class="rounded bg-tone-paprika px-2 py-0.5 text-label-sm uppercase text-secondary">{text.planner.card.nightOff}</span>
             {/if}
           </div>
         {/if}
@@ -284,12 +288,18 @@
       <DaySuggestion {day} size={minimal ? 'minimal' : day.isToday ? 'tonight' : 'row'} />
     {:else}
       <div class="flex flex-1 items-center gap-3">
-        <div class="flex flex-shrink-0 items-center justify-center bg-surface-container-highest text-outline {minimal ? 'h-8 w-8 rounded-md' : 'h-12 w-12 rounded-lg'}">
-          <Icon name={day.status === 'diningOut' ? 'storefront' : 'restaurant'} class={minimal ? 'text-[18px]' : 'text-2xl'} />
+        <!-- A night off is a treat: filled party popper on a persimmon tint (#297). Its words use the deeper
+             persimmon (secondary-hover): plain secondary is under 4.5:1 on the grey night-off card. -->
+        <div class="flex flex-shrink-0 items-center justify-center {day.status === 'diningOut' ? 'bg-secondary/10 text-secondary' : 'bg-surface-container-highest text-outline'} {minimal ? 'h-8 w-8 rounded-md' : 'h-12 w-12 rounded-lg'}">
+          {#if day.status === 'diningOut'}
+            <Icon name="celebration" class="icon-filled {minimal ? 'text-[18px]' : 'text-2xl'}" />
+          {:else}
+            <Icon name="restaurant" class={minimal ? 'text-[18px]' : 'text-2xl'} />
+          {/if}
         </div>
         <div class="min-w-0 flex-1">
           {#if day.status === 'diningOut'}
-            <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.nightOff}</h3>
+            <h3 class="font-display text-secondary-hover {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.nightOff}</h3>
             {#if !minimal}<p class="mt-0.5 text-xs text-on-surface-variant">{text.planner.card.nightOffNote}</p>{/if}
           {:else}
             <h3 class="font-display text-on-surface {minimal ? 'text-sm' : 'text-base'}">{text.planner.card.nothingPlanned}</h3>
