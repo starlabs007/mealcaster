@@ -405,6 +405,10 @@ export const text = {
     weeklyPlan: 'Weekly Dinner Plan',
     dayDinner: (/** @type {string} */ weekday) => `${weekday} Dinner`,
     catalog: 'Recipe Catalog',
+    /** Cook view's way back to the dish a linked recipe was opened from (#300). */
+    backToDish: (/** @type {string} */ title) => `Back to ${title}`,
+    /** The dishes whose ingredients link this recipe (#300). */
+    usedIn: { title: 'Used in' },
     buttons: {
       edit: 'Edit',
       delete: 'Delete',
@@ -455,6 +459,13 @@ export const text = {
       pushHint: 'Tap the house for what you have at home, then add the rest to your grocery list.',
       push: (/** @type {number} */ n) => `Add Missing to Grocery List (${n})`,
       pushed: 'Everything is on your list or at home',
+      /** A line that links another recipe (#300). */
+      link: {
+        open: (/** @type {string} */ name) => `Open the recipe: ${name}`,
+        printMark: '(recipe)',
+        batch: 'batch',
+        batches: 'batches',
+      },
     },
     method: {
       title: 'Method',
@@ -593,6 +604,8 @@ export const text = {
       addRow: 'Add Ingredient',
       addTo: (/** @type {string} */ group) => `Add Ingredient to ${group}`,
       addGroup: 'Add Group',
+      /** A row linking another recipe (#300). */
+      link: { hint: 'Recipe', batch: 'batch', batches: 'batches', gone: 'Not in your recipes any more. It stays as written.' },
       groupsHint: 'Groups become the numbered sections of Ingredients on the recipe page.',
       aisleNote: 'Aisles come from your ingredient list and are shared by every recipe; you choose one only for a new ingredient.',
       groupNameAria: (/** @type {number} */ n) => `Group ${n} name`,

@@ -8,6 +8,9 @@
 //
 // Plain module (no runes) so it can be tested.
 
+import { formatQty } from './format.js';
+import { unitLabel } from './ingredients.js';
+
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {import('./ingredients.js').RecipeLine} RecipeLine */
 /** @typedef {(id: string) => Recipe | undefined} RecipeOf */
@@ -30,6 +33,18 @@ export const linkName = (line, recipeOf) => (isLink(line) && recipeOf(/** @type 
 /** How many batches of its target a linked line asks for. @param {RecipeLine} line */
 export const batchesOf = (line) => (typeof line.qty === 'number' && line.qty > 0 ? line.qty : 1);
 
+/**
+ * A linked line's amount for display: batches ("2 batches", "1/2 batch") scaled with the dish's servings, nothing when
+ * it has no qty (one batch). A unit typed into the sheet is shown as written instead of batches.
+ * @param {RecipeLine} line @param {number} scale @param {{ batch: string, batches: string }} words
+ */
+export function linkAmount(line, scale, words) {
+  if (line.qty == null) return '';
+  const qty = line.qty * scale;
+  const unit = line.unit ? unitLabel(line.unit, qty) : qty > 1 ? words.batches : words.batch;
+  return `${formatQty(qty)} ${unit}`;
+}
+
 /** Ids of the recipes a recipe links to, once each, in line order, itself left out. @param {Recipe} recipe */
 export function linkedIds(recipe) {
   const ids = [];
@@ -37,6 +52,17 @@ export function linkedIds(recipe) {
     for (const line of group.items) if (isLink(line) && line.recipe !== recipe.id && !ids.includes(line.recipe)) ids.push(line.recipe);
   }
   return /** @type {string[]} */ (ids);
+}
+
+/**
+ * The dish a recipe page was opened from (`?from=`): only one that exists and still links to `id`; anything else
+ * (a stale or hand-typed `from`, the recipe itself) is ignored. @param {string | undefined} fromId @param {string} id
+ * @param {RecipeOf} recipeOf
+ */
+export function cameFrom(fromId, id, recipeOf) {
+  if (!fromId || fromId === id) return undefined;
+  const dish = recipeOf(fromId);
+  return dish && linkedIds(dish).includes(id) ? dish : undefined;
 }
 
 /**

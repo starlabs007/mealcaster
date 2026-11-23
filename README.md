@@ -213,8 +213,17 @@ for every recipe and the grocery list.
 - **Linked lines** (schema 3, #300, in progress): a line can point at another recipe instead of an ingredient —
   `{ "recipe": "<Recipe_ID>", "name": "<its title>", "qty": 2, … }` in `Ingredients_JSON`, `qty` counting batches of
   that recipe (none = 1). `name` is a copy of the title, shown when the recipe is gone. Rules in
-  `src/lib/recipeLinks.js`. For now a linked line shows as plain text and adds nothing to the grocery list; the
-  editor keeps it while its name is unchanged.
+  `src/lib/recipeLinks.js`. Linked lines have no unit: the amount is batches ("2 batches"); a unit typed in the sheet
+  is shown as written.
+  - **Recipe page:** the line shows the recipe's photo and title and a chevron that opens it (keeping cook view); the
+    tick works as on any line; no aisle or house. A link to a recipe that's gone shows its kept title as plain text.
+    The opened recipe's breadcrumb leads back through the dish ("Recipe Catalog / Bún… / Nước Chấm"), cook view
+    shows "← Bún…" above the title. A recipe that other dishes link shows a **Used in** card (not in cook view or
+    print). Prints as "Nước Chấm (recipe)".
+  - **Editor:** the ingredient box also suggests recipes (marked Recipe); picking one makes the row a link (recipe
+    icon, "batch(es)" instead of a unit). Changing its name turns it back into an ingredient row. Saving refreshes
+    the title copies.
+  - Not yet: the grocery list doesn't add the linked recipe's ingredients (#300 step 4).
 
 ## Grocery List (`#/grocery`)
 

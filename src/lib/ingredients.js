@@ -204,7 +204,11 @@ export function findByName(list, name) {
 
 // ---- Suggestions (autocomplete) ----------------------------------------------
 
-/** @typedef {{ value: string, label: string, hint?: string, keys?: string[] }} Suggestion  `keys`: other words it's found by */
+/**
+ * @typedef {{ value: string, label: string, hint?: string, keys?: string[], key?: string, icon?: string, recipe?: string }} Suggestion
+ * `keys`: other words it's found by; `key`: tells it from another option with the same value; `icon`: shown before
+ * the label; `recipe`: a recipe to link (#300), listed after ingredients that match as well.
+ */
 
 /**
  * Options matching typed text, best first: the whole text, then the start, then the start of a word, then anywhere
@@ -227,7 +231,7 @@ export function suggest(options, query, limit = 8) {
     if (best < Infinity) scored.push([best, option]);
   }
   return scored
-    .sort(([a, x], [b, y]) => a - b || x.label.length - y.label.length || x.label.localeCompare(y.label))
+    .sort(([a, x], [b, y]) => a - b || Number(!!x.recipe) - Number(!!y.recipe) || x.label.length - y.label.length || x.label.localeCompare(y.label))
     .slice(0, limit)
     .map(([, option]) => option);
 }

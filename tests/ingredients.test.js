@@ -193,3 +193,15 @@ describe('a linked line in parts (#300)', () => {
     });
   });
 });
+
+describe('suggesting recipes beside ingredients (#300)', () => {
+  it('ranks by match, an ingredient before a recipe that matches as well', () => {
+    const options = [
+      { value: 'chili oil recipe', label: 'Chili Oil', recipe: 'r1' },
+      { value: 'chili oil', label: 'chili oil' },
+      { value: 'Sichuan Chili Oil', label: 'Sichuan Chili Oil', recipe: 'r2' },
+      { value: 'red chili', label: 'red chili' },
+    ];
+    assert.deepEqual(ing.suggest(options, 'chili oil').map((o) => o.value), ['chili oil', 'chili oil recipe', 'Sichuan Chili Oil']);
+  });
+});

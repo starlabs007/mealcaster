@@ -4,6 +4,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  isLinkRow,
+  linkRow,
+  recipeSuggestions,
   addBulkRows,
   blankForm,
   blankGroup,
@@ -479,5 +482,22 @@ describe('linked lines in the editor (#300)', () => {
     form.groups[0].rows[1].text = 'Chili Sauce';
     form.groups[0].rows[1].aisle = 'Sauces';
     assert.deepEqual(formToRecipe(form, how({ editing })).ingredients[0].items[1], { id: 'id-Chili Sauce', qty: 2, optional: true });
+  });
+});
+
+describe('picking a recipe in the ingredient box (#300)', () => {
+  it('offers every other recipe A–Z, marked as a recipe', () => {
+    const list = recipeSuggestions([{ id: 'b', title: 'Pickles' }, { id: 'me', title: 'Me' }, { id: 'a', title: 'Nước Chấm' }], 'me', 'Recipe');
+    assert.deepEqual(list.map((s) => [s.label, s.recipe, s.hint, s.key]), [['Nước Chấm', 'a', 'Recipe', 'recipe:a'], ['Pickles', 'b', 'Recipe', 'recipe:b']]);
+  });
+
+  it('turns the row into a link that saves as one, dropping its unit and aisle', () => {
+    const r = row('nuoc', { id: 'nuoc', unit: 'cup', qty: '2' });
+    linkRow(r, { id: 'sauce', title: 'Nước Chấm' });
+    assert.equal(isLinkRow(r), true);
+    assert.deepEqual([r.text, r.unit, r.aisle, 'id' in r], ['Nước Chấm', '', '', false]);
+    const form = { ...valid(), groups: [{ ...blankGroup(0), rows: [r] }] };
+    assert.equal(check(form).valid, true);
+    assert.deepEqual(formToRecipe(form, { tags: [], ingredientId: () => 'x', newId: (t) => t, today: '2026-11-22' }).ingredients[0].items, [{ recipe: 'sauce', name: 'Nước Chấm', qty: 2 }]);
   });
 });

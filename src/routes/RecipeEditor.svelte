@@ -20,6 +20,8 @@
     formFromRecipe,
     formToRecipe,
     isBlank,
+    isLinkRow,
+    linkRow,
     loadDraft,
     moveItem,
     moveRow,
@@ -27,6 +29,7 @@
     photoProblem,
     photoSize,
     problemList,
+    recipeSuggestions,
     removeRow,
     removeStep as withoutStep,
     rowIngredient as ingredientNamedBy,
@@ -62,6 +65,8 @@
   import Combobox from '../lib/components/Combobox.svelte';
   import ActionMenu from '../lib/components/ActionMenu.svelte';
   import { HEADS_UP_MAX_LENGTH, MAX_EDITOR_LEAD } from '../lib/headsUps.js';
+  import { withLinkNames } from '../lib/recipeLinks.js';
+  import { parseQty } from '../lib/ingredientText.js';
 
   /** @type {{ id?: string }} */
   let { id } = $props();
@@ -271,6 +276,18 @@
       .map((i) => ({ value: i.name, label: i.name, hint: aisleLabel(i.aisle), keys: i.plural ? [i.plural] : [] }))
       .sort((a, b) => a.label.localeCompare(b.label)),
   );
+  // The ingredient box also offers the other recipes, to link one (#300); ingredients win a tie.
+  const nameSuggestions = $derived([...ingredientSuggestions, ...recipeSuggestions(recipes, editing?.id, text.editor.ingredients.link.hint)]);
+
+  /** A pick from the ingredient box: a recipe makes the row a link, an ingredient fills its name as before. */
+  function onNamePick(row, option) {
+    if (option.recipe) {
+      const target = recipeById.get(option.recipe);
+      if (target) linkRow(row, target);
+      return;
+    }
+    onIngredientText(row);
+  }
 
   // ---- Ingredients ---------------------------------------------------------
 
@@ -536,14 +553,18 @@
   // ---- Save / draft ------------------------------------------------------------
 
   /** The recipe as saved; ingredients that don't exist yet are added. */
+  // Linked lines keep their target's current title as their copy (#300).
   const toRecipe = () =>
-    formToRecipe(form, {
-      editing: editing && $state.snapshot(editing),
-      tags: withNewTag(),
-      ingredientId: (row) => rowIngredientId(row, lookup),
-      newId: newRecipeId,
-      today: toISO(new Date()),
-    });
+    withLinkNames(
+      formToRecipe(form, {
+        editing: editing && $state.snapshot(editing),
+        tags: withNewTag(),
+        ingredientId: (row) => rowIngredientId(row, lookup),
+        newId: newRecipeId,
+        today: toISO(new Date()),
+      }),
+      (id) => recipeById.get(id),
+    );
 
   function save() {
     submitted = true;
@@ -1004,13 +1025,18 @@
                   {@const n = rowNumber.get(row.key) ?? 0}
                   {@const badQty = submitted && check.qtyRows.has(row.key)}
                   {@const badAisle = submitted && check.aisleRows.has(row.key)}
-                  {@const known = rowIngredient(row)}
+                  {@const linked = isLinkRow(row)}
+                  {@const known = linked ? undefined : rowIngredient(row)}
                   {@const summary = detailsSummary(row)}
-                  {@const isNew = Boolean(row.text.trim()) && !known && !(row.id && row.text.trim() === row.id)}
+                  {@const isNew = !linked && Boolean(row.text.trim()) && !known && !(row.id && row.text.trim() === row.id)}
                   {@const similar = isNew ? similarIngredients(ingredients, row.text) : []}
                   <li data-row={row.key} class="flex flex-col gap-1.5">
                     <div class={rowGrid}>
                       <input type="text" inputmode="decimal" aria-label={text.editor.ingredients.qtyAria(n)} placeholder={text.editor.ingredients.qtyPlaceholder} bind:value={row.qty} aria-invalid={badQty ? 'true' : undefined} aria-describedby={badQty ? `err-qty-${row.key}` : undefined} class="{cellField} {border(badQty)} w-full text-center" />
+                      {#if linked}
+                        <!-- A linked recipe counts batches: no unit to choose. -->
+                        <span class="px-2 text-body-lg text-on-surface-variant fine:text-body-sm">{(parseQty(row.qty) ?? 1) > 1 ? text.editor.ingredients.link.batches : text.editor.ingredients.link.batch}</span>
+                      {:else}
                       <Combobox
                         label={text.editor.ingredients.unitAria(n)}
                         placeholder={text.editor.ingredients.unitPlaceholder}
@@ -1021,13 +1047,15 @@
                         inputClass="{cellField} {border(false)}"
                         listClass="w-44"
                       />
+                      {/if}
                       <Combobox
                         label={text.editor.ingredients.nameAria(n)}
                         placeholder={n === 1 ? text.editor.ingredients.namePlaceholderFirst : text.editor.ingredients.namePlaceholder}
-                        suggestions={ingredientSuggestions}
+                        suggestions={nameSuggestions}
+                        icon={linked ? 'menu_book' : undefined}
                         bind:value={row.text}
                         oninput={() => onIngredientText(row)}
-                        onpick={() => onIngredientText(row)}
+                        onpick={(option) => onNamePick(row, option)}
                         onkey={(e) => {
                           // Enter starts the next row of this group, instead of saving the recipe.
                           if (e.key === 'Enter') {
@@ -1041,10 +1069,17 @@
                         align="right"
                         inputClass="{cellField} {border(show('ingredients') && n === 1)}"
                       />
-                      <span class="hidden truncate px-1 text-body-sm text-on-surface-variant md:block" title={known ? aisleLabel(known.aisle) : undefined}>{known ? aisleLabel(known.aisle) : ''}</span>
+                      {#if linked}
+                        <span class="hidden px-1 md:block"><span class="rounded bg-primary-fixed px-1.5 py-0.5 text-label-sm text-primary">{text.editor.ingredients.link.hint}</span></span>
+                      {:else}
+                        <span class="hidden truncate px-1 text-body-sm text-on-surface-variant md:block" title={known ? aisleLabel(known.aisle) : undefined}>{known ? aisleLabel(known.aisle) : ''}</span>
+                      {/if}
                       <ActionMenu label={text.editor.ingredients.rowMenuAria(n, row.text.trim())} items={rowActions(row, group)} />
                     </div>
                     {#if badQty}<div class={indent}>{@render errorText(`qty-${row.key}`, text.editor.errors.qty)}</div>{/if}
+                    {#if linked && !recipeById.has(row.recipe)}
+                      <p class="{indent} text-body-sm text-on-surface-variant">{text.editor.ingredients.link.gone}</p>
+                    {/if}
                     {#if isNew}
                       <div class="{indent} flex flex-wrap items-center gap-x-2 gap-y-1.5">
                         <span class="rounded bg-tertiary-fixed px-1.5 py-0.5 text-label-sm uppercase text-tertiary" title={text.editor.ingredients.newBadgeTitle(row.text.trim())}>{text.editor.ingredients.newBadge}</span>

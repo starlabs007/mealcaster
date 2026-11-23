@@ -2,7 +2,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { batchesOf, isLink, linkName, linkTarget, linkedIds, linkedTargets, usedIn, withLinkNames } from '../src/lib/recipeLinks.js';
+import { batchesOf, cameFrom, isLink, linkAmount, linkName, linkTarget, linkedIds, linkedTargets, usedIn, withLinkNames } from '../src/lib/recipeLinks.js';
 import { recipe } from './fakes.js';
 
 const lines = (...items) => [{ title: 'Main', items }];
@@ -84,5 +84,26 @@ describe('saving the title copies', () => {
   it('returns the same recipe when every copy is current', () => {
     const current = withLinkNames(banhXeo, recipeOf);
     assert.equal(withLinkNames(current, recipeOf), current);
+  });
+});
+
+describe("a linked line's amount", () => {
+  const words = { batch: 'batch', batches: 'batches' };
+  it('counts batches scaled with the servings, says nothing without a qty, and keeps a unit typed in the sheet', () => {
+    assert.equal(linkAmount({ recipe: 'x', qty: 1 }, 2, words), '2 batches');
+    assert.equal(linkAmount({ recipe: 'x', qty: 1 }, 0.5, words), '1/2 batch');
+    assert.equal(linkAmount({ recipe: 'x', qty: 1 }, 1, words), '1 batch');
+    assert.equal(linkAmount({ recipe: 'x' }, 2, words), '');
+    assert.equal(linkAmount({ recipe: 'x', qty: 2, unit: 'tbsp' }, 1, words), '2 tbsp');
+  });
+});
+
+describe('the dish a page was opened from', () => {
+  it('counts only a dish that exists and links here', () => {
+    assert.equal(cameFrom('banh-xeo', 'nuoc-cham', recipeOf), banhXeo);
+    assert.equal(cameFrom('banh-xeo', 'other', recipeOf), undefined, 'no longer links here');
+    assert.equal(cameFrom('gone', 'nuoc-cham', recipeOf), undefined);
+    assert.equal(cameFrom('nuoc-cham', 'nuoc-cham', recipeOf), undefined);
+    assert.equal(cameFrom(undefined, 'nuoc-cham', recipeOf), undefined);
   });
 });

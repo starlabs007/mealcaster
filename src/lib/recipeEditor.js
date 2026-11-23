@@ -194,6 +194,31 @@ export function rowIngredientId(row, lookup) {
 /** Whether a row still saves as its linked recipe: it opened as one and its name wasn't changed. @param {IngredientRow} row */
 export const isLinkRow = (row) => Boolean(row.recipe) && row.text.trim() === row.recipeName;
 
+/**
+ * The recipes the ingredient box offers to link (#300), A–Z, never the recipe being edited.
+ * @param {{ id: string, title: string }[]} recipes @param {string | undefined} editingId @param {string} hint
+ * @returns {import('./ingredients.js').Suggestion[]}
+ */
+export const recipeSuggestions = (recipes, editingId, hint) =>
+  recipes
+    .filter((r) => r.id !== editingId)
+    .map((r) => ({ value: r.title, label: r.title, hint, key: `recipe:${r.id}`, icon: 'menu_book', recipe: r.id }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+/**
+ * Makes a row a link to `recipe`: its name becomes the title, and the unit and aisle go (a link counts batches and is
+ * never bought as such). Changes the row in place. @param {IngredientRow} row @param {{ id: string, title: string }} recipe
+ */
+export function linkRow(row, recipe) {
+  delete row.id;
+  row.recipe = recipe.id;
+  row.recipeName = recipe.title;
+  row.text = recipe.title;
+  row.unit = '';
+  row.aisle = '';
+  row.aisleSet = true;
+}
+
 // ---- Validation ---------------------------------------------------------------
 
 /** Empty, or a whole number of minutes. */
