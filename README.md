@@ -25,7 +25,9 @@ Without `.env.local` the app still runs; Google sync is just unavailable.
 
 `npm run dev` generates sample data when the dev server starts: varied recipes from about 60 dish templates and ten
 cuisines (Chinese and Vietnamese included) covering every meal, sauces under Other included, the ingredients they use, four past weeks and part of this week planned,
-some favorites, and grocery extras (two every-week items, one addition this week). It comes from the seeded generator
+some favorites, and grocery extras (two every-week items, one addition this week). Some dishes link a sauce from
+the samples instead of spelling it out (Bún → Nước Chấm, tacos → pickled onions, dumplings → chili oil, when the
+samples have that sauce), and the edge cases keep a loop and a link to a recipe that's gone (#300). It comes from the seeded generator
 in `dev/samples/` (served to the app as `virtual:sample-data` by a plugin in `vite.config.js`); production builds get
 empty data from the plugin and never load the generator.
 

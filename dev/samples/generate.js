@@ -17,7 +17,7 @@ import { EDGE_CASES } from './edgeCases.js';
 import { DESC_EXTRA, GENERAL_TIPS, NOTE_HEADINGS } from './phrases.js';
 
 /** Bump whenever the output for a given seed and count changes (it is part of the dev data key). */
-export const GENERATOR_VERSION = 9;
+export const GENERATOR_VERSION = 10;
 
 /**
  * The day `addedAt` dates count back from, as a UTC timestamp: `today` ("YYYY-MM-DD"), else the SAMPLE_DATE
@@ -218,6 +218,7 @@ const pickPattern = (rng, patterns, words) => {
  *   notes: string,
  *   headsUps: { text: string, daysBefore: number }[],
  *   customTags: string[],
+ *   links?: import('./edgeCases.js').EdgeLink[],
  * }} Draft
  */
 
@@ -268,6 +269,7 @@ function edgeDraft(edge, rng) {
     notes: edge.notes,
     headsUps: [],
     customTags: edge.tags,
+    links: edge.links,
   };
 }
 
@@ -535,6 +537,8 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
   const keys = new Set();
   /** @type {Map<string, number>} */
   const templateUses = new Map();
+  /** @type {Draft[]} the draft of each recipe, for the links pass */
+  const drafts = [];
 
   for (let i = 0; i < count; i++) {
     const rng = random(mixSeed(seed, i));
@@ -553,6 +557,7 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
     }
     keys.add(draft.key);
     titles.add(draft.title);
+    drafts.push(draft);
     const slug = recipeSlug(draft.title) || 'recipe';
     let id = slug;
     for (let n = 2; ids.has(id); n++) id = `${slug}-${n}`;
@@ -579,6 +584,8 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
     });
   }
 
+  linkSamples(recipes, drafts);
+
   const rng = random(mixSeed(seed, 0x5eed, count));
   // Two photos that 404, on recipes past the edge cases that have one.
   if (images.length) {
@@ -598,6 +605,51 @@ export function generateSamples({ seed = 1, count = 60, images = [], today } = {
     .map(({ id, name, plural, aisle, onHand }) => ({ id, name, plural, aisle, onHand }));
 
   return { recipes, ingredients, plan, favorites, grocery: makeGrocery() };
+}
+
+// ---- Recipe links (#300) -------------------------------------------------------------------------------------------
+
+/**
+ * Dishes that link a sauce from the samples instead of spelling it out. `from` / `to`: template ids or edge-case keys.
+ * The link goes into `group`, or in place of the line naming `replace`; `dropGroup` / `dropStep` (titles) go, as the
+ * linked recipe has them. Times stay: the sauce is still made.
+ * @type {{ from: string, to: string, group?: string, replace?: string, dropGroup?: string, dropStep?: string, line: Partial<RecipeLine> }[]}
+ */
+const SAMPLE_LINKS = [
+  { from: 'bun-bowl', to: 'nuoc-cham', group: 'Bowls', dropGroup: 'Nước Chấm', dropStep: 'Make Nước Chấm', line: { qty: 1, note: 'for the bowls' } },
+  { from: 'tacos', to: 'pickled-onions', replace: 'red onion', dropStep: 'Quick Pickle', line: { qty: 0.5 } },
+  { from: 'dumplings', to: 'chili-oil', replace: 'chili crisp', line: { note: 'for the dipping sauce', optional: true } },
+];
+
+/**
+ * Adds the links between samples, without touching the random stream (so every other sample stays the same): the
+ * template ones (SAMPLE_LINKS, to the first recipe of the target kind; none when the samples have no such recipe)
+ * and the edge cases' own (`links`, which may point at a recipe that isn't there, to keep the "gone" state shown).
+ * @param {Recipe[]} recipes @param {Draft[]} drafts the draft of each recipe, same order
+ */
+function linkSamples(recipes, drafts) {
+  const kindOf = (i) => drafts[i].template ?? drafts[i].key;
+  const firstOf = (kind) => recipes.find((_, i) => kindOf(i) === kind);
+  /** @param {Recipe} target @param {Partial<RecipeLine>} line @returns {RecipeLine} */
+  const linkLine = (target, line) => ({ recipe: target.id, name: target.title, ...line });
+
+  recipes.forEach((recipe, i) => {
+    for (const link of SAMPLE_LINKS.filter((l) => l.from === kindOf(i))) {
+      const target = firstOf(link.to);
+      if (!target) continue;
+      const line = linkLine(target, link.line);
+      if (link.replace) {
+        const id = entry(link.replace).id;
+        for (const g of recipe.ingredients) g.items = g.items.map((l) => (l.id === id ? line : l));
+      } else recipe.ingredients.find((g) => g.title === link.group)?.items.push(line);
+      if (link.dropGroup) recipe.ingredients = recipe.ingredients.filter((g) => g.title !== link.dropGroup);
+      if (link.dropStep) recipe.steps = recipe.steps.filter((st) => st.title !== link.dropStep);
+    }
+    for (const { group, to, name, ...line } of drafts[i].links ?? []) {
+      const target = firstOf(to);
+      recipe.ingredients.find((g) => g.title === group)?.items.push(target ? linkLine(target, line) : { recipe: to, name, ...line });
+    }
+  });
 }
 
 /** Cuisines the generator uses, for tests and docs. */

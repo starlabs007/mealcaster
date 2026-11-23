@@ -8,6 +8,8 @@
 //   - nested Markdown lists and headings in notes      → margherita
 //   - no tags at all; untitled steps (one with ": ")   → miso-cod
 //   - every unit in UNITS at least once                → all of them together
+//   - recipe links (#300): a loop (each links the other), → lemongrass-chicken-feast, pickled-onions
+//     and a link to a recipe that's gone (deleted)
 // Lines are 'name|amount|prep|note' as in cuisines.js. Built-in tags are worked out from the ingredients like any
 // other sample's; `tags` here are only the custom ones.
 
@@ -26,7 +28,11 @@
  *   steps: [string, number, string, boolean?][],
  *   notes: string,
  *   tags: string[],
+ *   links?: EdgeLink[],
  * }} EdgeCase
+ * @typedef {{ group: string, to: string, name?: string, qty?: number, note?: string, optional?: boolean }} EdgeLink
+ *   A linked line added to `group`: `to` is an edge-case key or template id (its first recipe), else the id of a
+ *   recipe that isn't there, shown by `name`.
  */
 
 /** @type {EdgeCase[]} */
@@ -53,6 +59,7 @@ export const EDGE_CASES = [
     steps: [],
     notes: 'Keeps for two weeks in the fridge. Pour boiling water over the onions first for a milder, crunchier pickle.',
     tags: ['Mexican', 'Meal Prep'],
+    links: [{ group: 'Pickle', to: 'lemongrass-chicken-feast', note: 'to serve them with', optional: true }],
   },
   {
     key: 'lamb-feast',
@@ -230,6 +237,10 @@ export const EDGE_CASES = [
     notes:
       '- Keep the chicken in a single layer so it sizzles instead of stewing.\n- Make the nước chấm first; it gets better as it sits.\n\n**Pairing:** iced jasmine tea, or a cold lager.',
     tags: ['Vietnamese', 'Date Night', 'Spring', 'Summer', 'Spicy', 'Meal Prep', 'Kid Friendly'],
+    links: [
+      { group: 'Quick Pickles', to: 'pickled-onions', qty: 0.5, note: 'for the wraps', optional: true },
+      { group: 'Wrappers & Noodles', to: 'peanut-hoisin-dip', name: 'Peanut Hoisin Dip', qty: 1 },
+    ],
   },
   {
     key: 'margherita',
