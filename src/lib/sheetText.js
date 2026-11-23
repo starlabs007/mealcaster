@@ -137,6 +137,9 @@ export const sourceEveryWeek = 'Every week';
 /** Source label of a planned dinner: "Mon: Pasta". @param {string} weekday3 first three letters @param {string} title */
 export const sourceDinner = (weekday3, title) => `${weekday3}: ${title}`;
 
+/** Note on a source for the lines a linked recipe brings: "Tue: Bún (for Nước Chấm)". @param {string} title the linked recipe */
+export const sourceForLinked = (title) => `for ${title}`;
+
 /** Detail-column marker for an optional ingredient. */
 export const detailOptional = 'optional';
 

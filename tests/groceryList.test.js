@@ -129,3 +129,42 @@ describe('buildWeekList', () => {
     assert.deepEqual(build({ list, ingredientOf }).hidden.map((l) => l.ingredientId), ['beef']);
   });
 });
+
+describe('linked lines (#300)', () => {
+  const SAUCE = recipe('sauce', 'Nước Chấm', [{ id: 'onion', qty: 1, note: 'minced' }, { id: 'juice', qty: 0.5, unit: 'cup' }, { id: 'mint' }]);
+  const of = (id) => (id === 'sauce' ? SAUCE : id === 'dish' ? DISH : RECIPES[id]);
+  const DISH = recipe('dish', 'Bún', [{ id: 'onion', qty: 1 }, { recipe: 'sauce', name: 'Old Name', qty: 2, note: 'for the bowls' }, { recipe: 'gone', name: 'Gone' }]);
+
+  it("bring their recipe's lines times the batches, under the dish's source with a note naming the recipe", () => {
+    const { lines } = build({ dinners: [{ iso: '2026-10-12', recipe: DISH }], recipeOf: of });
+    const onion = lines.find((l) => l.ingredientId === 'onion');
+    assert.equal(onion.amount, '3');
+    assert.deepEqual(onion.sources, [
+      { label: 'Mon: Bún', tone: 'paprika', recipeId: 'dish' },
+      { label: 'Mon: Bún', tone: 'paprika', recipeId: 'dish', note: 'for Nước Chấm, for the bowls, minced' },
+    ]);
+    assert.equal(lines.find((l) => l.ingredientId === 'juice').amount, '1 cup');
+    assert.equal(lines.find((l) => l.ingredientId === 'mint').amount, 'to taste');
+    assert.deepEqual(lines.map((l) => l.ingredientId), ['onion', 'juice', 'mint'], 'a gone target brings nothing');
+  });
+
+  it('count one batch without a qty or with a unit typed in the sheet, and an optional link makes its lines optional', () => {
+    const dish = recipe('dish', 'Bún', [{ recipe: 'sauce', qty: 2, unit: 'tbsp', optional: true }]);
+    const { lines } = build({ dinners: [{ iso: '2026-10-12', recipe: dish }], recipeOf: (id) => (id === 'sauce' ? SAUCE : undefined) });
+    assert.deepEqual(lines.map((l) => [l.ingredientId, l.amount, l.optional]), [['onion', '1', true], ['juice', '1/2 cup', true], ['mint', 'to taste', true]]);
+  });
+
+  it("follow one level only: the linked recipe's own links bring nothing, so a loop ends", () => {
+    const sauce = recipe('sauce', 'Nước Chấm', [{ id: 'juice', qty: 1 }, { recipe: 'dish' }]);
+    const dish = recipe('dish', 'Bún', [{ id: 'onion', qty: 1 }, { recipe: 'sauce' }, { recipe: 'dish' }]);
+    const { lines } = build({ dinners: [{ iso: '2026-10-12', recipe: dish }], recipeOf: (id) => ({ sauce, dish })[id] });
+    assert.deepEqual(lines.map((l) => [l.ingredientId, l.amount]), [['onion', '1'], ['juice', '1']]);
+  });
+
+  it("pushed through the dish, put the linked recipe's line on the list as the dish's", () => {
+    const list = { ...emptyWeek(), pushed: ['dish:juice'] };
+    const { lines } = build({ dinners: [], list, recipeOf: of });
+    assert.deepEqual(lines.map((l) => [l.ingredientId, l.amount, l.pushed]), [['juice', '1 cup', ['dish']]]);
+    assert.deepEqual(lines[0].sources, [{ label: 'Bún', tone: 'neutral', recipeId: 'dish', note: 'for Nước Chấm, for the bowls' }]);
+  });
+});

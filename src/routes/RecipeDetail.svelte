@@ -7,14 +7,15 @@
   import DeleteRecipeDialog from '../lib/components/DeleteRecipeDialog.svelte';
   import RecipePrintSimple from '../lib/components/RecipePrintSimple.svelte';
   import { printOptions, setPrintOptions, TEXT_DELTA } from '../lib/printOptions.svelte.js';
-  import { recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon, aisleLabel } from '../lib/recipes.svelte.js';
+  import { recipes, recipeById, formatMinutes, deleteRecipe, restoreRecipe, tagIcon, aisleLabel } from '../lib/recipes.svelte.js';
   import { tagClass } from '../lib/tagColors.svelte.js';
   import LastMade from '../lib/components/LastMade.svelte';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
-  import { groceryKeys, isOnHandKey, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
+  import { groceryKeys, isOnHandKey, ingredientKeys, shoppingKeys, addToGrocery } from '../lib/grocery.svelte.js';
   import { ingredientOf, setOnHand } from '../lib/ingredients.svelte.js';
   import { preppedKeys, setPrepped, doneSteps, setDoneSteps } from '../lib/recipePrep.svelte.js';
   import { lineParts } from '../lib/ingredients.js';
+  import { cameFrom, isLink, linkAmount, linkName, linkTarget, usedIn } from '../lib/recipeLinks.js';
   import { planner, dayOfRecipe, nextPlannedAfter, firstOpenDay, assignRecipe, tooSoonNote, setDone } from '../lib/planner.svelte.js';
   import { rememberedServings, rememberServings } from '../lib/recipeServings.svelte.js';
   import { MIN_SERVINGS, MAX_SERVINGS } from '../lib/recipeServings.js';
@@ -55,7 +56,7 @@
 
   /** @param {boolean} on */
   async function setCook(on) {
-    replace(`/recipe/${id}${href('', { day: route.query.day, cook: on ? '1' : undefined }).slice(1)}`);
+    replace(`/recipe/${id}${href('', { day: route.query.day, from: route.query.from, cook: on ? '1' : undefined }).slice(1)}`);
     cookAnnounce = on ? text.recipe.cook.on : text.recipe.cook.off;
     window.scrollTo({ top: 0 });
     if (!on) {
@@ -85,11 +86,22 @@
   const day = $derived(resolved.day);
   // Opened from the catalog while planning a day this recipe isn't on: carry that day back to the catalog.
   const planningDay = $derived(resolved.planningDay);
+
+  // Recipe links (#300). Opened from a dish's linked line (`?from=`): the way back to that dish, under the dish's own
+  // place in the plan. Its linked lines carry this recipe along as `from`, and cook view with it.
+  const fromDish = $derived(recipe ? cameFrom(route.query.from, recipe.id, recipeOf) : undefined);
+  const fromDay = $derived(fromDish ? dayOfRecipe(fromDish.id) : undefined);
+  /** @param {string} targetId */
+  const linkHref = (targetId) => href(`/recipe/${targetId}`, { from: recipe.id, cook: cook ? '1' : undefined });
+  // The dishes that link here, for the "Used in" card.
+  const usedInDishes = $derived(recipe ? usedIn(recipes, recipe.id) : []);
   const editable = $derived(!!day && day >= planner.today);
   const next = $derived(day ? nextPlannedAfter(day) : undefined);
   const openDay = $derived(day ? undefined : firstOpenDay());
   const favorite = $derived(recipe ? isFavorite(recipe.id) : false);
   const scale = $derived(recipe ? servings / recipe.serves : 1);
+  /** @param {string} rid */
+  const recipeOf = (rid) => recipeById.get(rid);
 
   const allKeys = recipe ? ingredientKeys(recipe.id) : [];
   // A ticked line is prepped: cooking progress, kept on this device for today only.
@@ -98,8 +110,10 @@
   // Lines of the same ingredient follow together.
   const atHome = $derived(allKeys.filter(isOnHandKey));
   const onList = $derived(groceryKeys());
-  // Only what's missing: not on the list yet and not at home.
-  const missing = $derived(missingKeys(allKeys, onList, atHome));
+  // Only what's missing: not on the list yet and not at home. A linked recipe (#300) brings its own lines, which have
+  // no row here, so their at-home flag is read from their ingredient.
+  const shopping = $derived(recipe ? shoppingKeys(recipe.id) : []);
+  const missing = $derived(missingKeys(shopping, onList, shopping.filter(isOnHandKey)));
 
   function togglePrepped(key) {
     setPrepped(recipe.id, toggleIn(prepped, key));
@@ -287,6 +301,62 @@
   </div>
 {/snippet}
 
+<!-- The prep tick: a hidden checkbox and its circle, inside the row's <label>. -->
+{#snippet tickMark(/** @type {string} */ key, /** @type {boolean} */ isPrepped)}
+  <input type="checkbox" class="peer sr-only" checked={isPrepped} onchange={() => togglePrepped(key)} />
+  <span
+    class="mt-0.5 flex shrink-0 {cook ? 'h-[22px] w-[22px] fine:mt-1' : 'h-[18px] w-[18px]'} items-center justify-center rounded-full border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary-container print:border-outline print:bg-transparent print:text-transparent {isPrepped
+      ? 'border-primary-container bg-primary-container text-on-primary'
+      : 'border-outline bg-surface-container-lowest text-transparent'}"
+    aria-hidden="true"
+  >
+    <Icon name="check" class="text-[13px]" />
+  </span>
+{/snippet}
+
+<!-- A line linking another recipe (#300): the ingredient row with the target's photo before its name and a chevron in
+     the house's place that opens it. The tick works as on any line. A link to this recipe itself or to one that's gone
+     shows its name as plain text, with neither. -->
+{#snippet linkedLine(/** @type {import('../lib/ingredients.js').RecipeLine} */ item, /** @type {string} */ key, /** @type {boolean} */ isPrepped)}
+  {@const target = linkTarget(item, recipe.id, recipeOf)}
+  {@const name = linkName(item, recipeOf)}
+  {@const amount = linkAmount(item, scale, text.recipe.ingredients.link)}
+  <!-- The photo makes the row taller than a line of text, so the tick and chevron centre on it. -->
+  <li class="flex items-center gap-1 print:break-inside-avoid">
+    <label class="flex min-h-11 flex-1 cursor-pointer items-center gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container fine:min-h-0 [&>span:first-of-type]:mt-0">
+      {@render tickMark(key, isPrepped)}
+      <span class="flex min-w-0 flex-1 items-center gap-2 print:text-body-sm {cook ? 'text-body-xl' : 'text-body-lg md:text-body-sm'} print:text-on-surface {isPrepped ? 'text-on-surface-variant line-through' : 'text-on-surface'}">
+        {#if target}<RecipeImage src={target.image} alt="" class="h-8 w-8 shrink-0 rounded-md print:hidden" />{/if}
+        <span class="min-w-0">
+          {#if amount}<strong class="font-semibold">{amount}</strong>{' '}{/if}
+          {#if target}
+            <!-- The chevron is the link screen readers and the keyboard get; the name is a second, pointer-only way in. -->
+            <a href={linkHref(target.id)} tabindex="-1" aria-hidden="true" class="font-semibold hover:text-primary print:font-normal">{name}</a>
+          {:else}
+            <span class="italic">{name}</span>
+          {/if}
+          <span class="hidden print:inline">{' '}{text.recipe.ingredients.link.printMark}</span>
+          {#if item.note}{' '}<span class="text-on-surface-variant">({item.note})</span>{/if}{#if item.prep}, {item.prep}{/if}
+          {#if item.optional}<span class="ml-1 text-label-sm text-on-surface-variant">{text.recipe.ingredients.optional}</span>{/if}
+        </span>
+      </span>
+    </label>
+    {#if target}
+      <a
+        href={linkHref(target.id)}
+        aria-label={text.recipe.ingredients.link.open(name)}
+        class="group focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-full fine:h-7 fine:w-7 print:hidden"
+      >
+        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-primary-fixed/60 text-primary transition-colors group-hover:bg-primary-fixed fine:h-7 fine:w-7">
+          <Icon name="chevron_right" class="text-[20px]" />
+        </span>
+      </a>
+    {:else if !cook}
+      <span class="w-11 shrink-0 fine:w-7 print:hidden" aria-hidden="true"></span>
+    {/if}
+  </li>
+{/snippet}
+
 {#snippet exitButton()}
   <button type="button" class="focus-ring inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-3 text-label-md text-on-surface hover:bg-surface-container" aria-label={text.recipe.cook.exitAria} onclick={() => setCook(false)}>
     <Icon name="close" class="text-[20px]" /> {text.recipe.cook.exit}
@@ -334,7 +404,18 @@
     <div class="mx-auto flex max-w-page flex-col gap-3 px-gutter py-3 md:flex-row md:items-center md:justify-between md:px-gutter-desktop">
       <nav aria-label={text.recipe.breadcrumbAria} class="flex min-w-0 items-center gap-1.5 text-label-md text-on-surface-variant">
         <Icon name="arrow_back" class="text-[16px]" />
-        {#if day}
+        {#if fromDish}
+          <!-- The dish's own place first; its title gives way before this recipe's. -->
+          {#if fromDay}
+            <a href={href('/')} class="shrink-0 font-semibold text-on-surface hover:text-primary">{text.recipe.weeklyPlan}</a>
+            <span class="text-outline">/</span>
+            <span class="shrink-0">{text.recipe.dayDinner(formatWeekday(fromDay))}</span>
+          {:else}
+            <a href={href('/catalog')} class="shrink-0 font-semibold text-on-surface hover:text-primary">{text.recipe.catalog}</a>
+          {/if}
+          <span class="text-outline">/</span>
+          <a href={href(`/recipe/${fromDish.id}`)} class="min-w-16 shrink-[3] truncate font-semibold text-on-surface hover:text-primary">{fromDish.title}</a>
+        {:else if day}
           <a href={href('/')} class="shrink-0 font-semibold text-on-surface hover:text-primary">{text.recipe.weeklyPlan}</a>
           <span class="text-outline">/</span>
           <span class="shrink-0">{text.recipe.dayDinner(formatWeekday(day))}</span>
@@ -414,6 +495,16 @@
           </span>
         {/if}
       </div>
+      {#if cook && fromDish}
+        <!-- Cook view has no breadcrumb: the way back to the dish, still cooking. -->
+        <a
+          href={href(`/recipe/${fromDish.id}`, { cook: '1' })}
+          class="focus-ring -ml-1 inline-flex min-h-11 max-w-full items-center gap-1.5 self-start rounded-lg px-1 text-label-md text-on-surface-variant hover:text-primary fine:min-h-0 print:hidden"
+          aria-label={text.recipe.backToDish(fromDish.title)}
+        >
+          <Icon name="arrow_back" class="shrink-0 text-[16px]" /> <span class="truncate">{fromDish.title}</span>
+        </a>
+      {/if}
       <h1 class="max-w-4xl font-display text-primary {cook ? 'text-headline-lg-mobile md:text-headline-lg' : 'text-headline-xl-mobile md:text-headline-xl'}">{recipe.title}</h1>
       {#if recipe.description && !cook}<p class="max-w-3xl text-body-lg text-on-surface-variant">{recipe.description}</p>{/if}
       {#if headsUpsShown.length}
@@ -523,6 +614,29 @@
           </div>
         </section>
         {/if}
+
+        {#if usedInDishes.length && !cook}
+        <!-- The dishes whose ingredients link this recipe (#300): from lg under Cook's Secrets, on phones last. -->
+        <section class="rounded-2xl border border-surface-container-high bg-surface-container-lowest p-5 shadow-card max-lg:order-4 print:hidden">
+          <div class="mb-3 flex items-center gap-3">
+            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-container-low text-primary">
+              <Icon name="link" class="text-[18px]" />
+            </span>
+            <h2 class="font-display text-headline-sm text-on-surface">{text.recipe.usedIn.title}</h2>
+          </div>
+          <ul class="flex flex-col">
+            {#each usedInDishes as dish (dish.id)}
+              <li>
+                <a href={href(`/recipe/${dish.id}`)} class="focus-ring flex min-h-11 items-center gap-3 rounded-lg px-1 py-1.5 text-body-md text-on-surface hover:bg-surface-container hover:text-primary md:text-body-sm fine:min-h-0">
+                  <RecipeImage src={dish.image} alt="" class="h-8 w-8 shrink-0 rounded-md" />
+                  <span class="min-w-0 flex-1 font-semibold">{dish.title}</span>
+                  <Icon name="chevron_right" class="shrink-0 text-[18px] text-outline" />
+                </a>
+              </li>
+            {/each}
+          </ul>
+        </section>
+        {/if}
       </aside>
 
       <!-- Right: ingredients & method -->
@@ -570,17 +684,12 @@
                     {@const ingredient = ingredientOf(item.id)}
                     {@const home = !!ingredient?.onHand}
                     {@const line = lineParts(item, ingredient, scale)}
+                    {#if isLink(item)}
+                      {@render linkedLine(item, key, isPrepped)}
+                    {:else}
                     <li class="flex items-center gap-1 print:break-inside-avoid fine:items-start">
                       <label class="flex min-h-11 flex-1 cursor-pointer items-center gap-3 rounded-lg px-1 py-1.5 hover:bg-surface-container fine:min-h-0 fine:items-start">
-                        <input type="checkbox" class="peer sr-only" checked={isPrepped} onchange={() => togglePrepped(key)} />
-                        <span
-                          class="mt-0.5 flex shrink-0 {cook ? 'h-[22px] w-[22px] fine:mt-1' : 'h-[18px] w-[18px]'} items-center justify-center rounded-full border-[1.5px] transition-colors peer-focus-visible:ring-2 peer-focus-visible:ring-primary-container print:border-outline print:bg-transparent print:text-transparent {isPrepped
-                            ? 'border-primary-container bg-primary-container text-on-primary'
-                            : 'border-outline bg-surface-container-lowest text-transparent'}"
-                          aria-hidden="true"
-                        >
-                          <Icon name="check" class="text-[13px]" />
-                        </span>
+                        {@render tickMark(key, isPrepped)}
                         <!-- Below sm the aisle drops under the name, leaving the row's width to the name. -->
                         <span class="flex min-w-0 flex-1 flex-col items-start gap-1 sm:flex-row sm:gap-3">
                         <span class="sm:flex-1 print:text-body-sm {cook ? 'text-body-xl' : 'text-body-lg md:text-body-sm'} print:text-on-surface print:no-underline {isPrepped ? 'text-on-surface-variant line-through' : 'text-on-surface'}">
@@ -621,6 +730,7 @@
                         <span class="w-11 shrink-0 fine:w-7 print:hidden" aria-hidden="true"></span>
                       {/if}
                     </li>
+                    {/if}
                   {/each}
                 </ul>
               </div>

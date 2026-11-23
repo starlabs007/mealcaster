@@ -43,7 +43,9 @@ for (const [of, name] of NEAR_DUPLICATES) flagsByName.set(name, flagsByName.get(
 const TODAY = '2026-10-20';
 const s = generateSamples({ seed: 1, count: 60, images, today: TODAY });
 const ingredientById = new Map(s.ingredients.map((i) => [i.id, i]));
-const lines = (r) => r.ingredients.flatMap((g) => g.items);
+// Ingredient lines only: linked lines (#300) name a recipe.
+const lines = (r) => r.ingredients.flatMap((g) => g.items).filter((l) => !l.recipe);
+const links = (r) => r.ingredients.flatMap((g) => g.items).filter((l) => l.recipe);
 const flagsOf = (r) => lines(r).map((l) => flagsByName.get(ingredientById.get(l.id).name));
 
 describe('generateSamples', () => {
@@ -239,6 +241,24 @@ describe('generateSamples', () => {
     assert.ok(r.some((x) => lines(x).some((l) => l.qty == null)), 'a line without a quantity');
     assert.ok(r.some((x) => lines(x).some((l) => l.optional)), 'an optional line');
     assert.ok(r.some((x) => x.notes === '') && r.some((x) => x.notes !== ''), 'with and without notes');
+  });
+
+  it('links sauces from dishes (#300), and keeps a loop and a link to a recipe that is gone', () => {
+    const byId = new Map(s.recipes.map((r) => [r.id, r]));
+    const pairs = s.recipes.flatMap((r) => links(r).map((l) => [r.id, l.recipe]));
+    for (const r of s.recipes) {
+      for (const l of links(r)) {
+        assert.equal(l.id, undefined);
+        assert.ok(l.name, `${r.id}: a title copy`);
+        if (byId.has(l.recipe)) assert.equal(l.name, byId.get(l.recipe).title, `${r.id}: copy of the title`);
+      }
+    }
+    const linked = pairs.filter(([, to]) => byId.has(to));
+    assert.ok(linked.some(([, to]) => byId.get(to).meals.includes('Other')), 'a dish links a sauce');
+    assert.ok(linked.some(([from, to]) => linked.some(([a, b]) => a === to && b === from)), 'a loop');
+    assert.ok(pairs.some(([, to]) => !byId.has(to)), 'a link to a recipe that is gone');
+    const bun = s.recipes.find((r) => links(r).some((l) => /nuoc-cham/.test(l.recipe)));
+    assert.ok(bun && !bun.ingredients.some((g) => g.title === 'Nước Chấm') && !bun.steps.some((st) => st.title === 'Make Nước Chấm'), 'the sauce is not spelled out again');
   });
 
   it('uses every unit once the edge cases are in', () => {

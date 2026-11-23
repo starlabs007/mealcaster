@@ -185,3 +185,23 @@ describe('stored ingredients', () => {
     assert.equal(ing.stockChanges(list, [sugar]), false); // one not in stock goes
   });
 });
+
+describe('a linked line in parts (#300)', () => {
+  it('shows its title copy as the name, scaled like any line', () => {
+    assert.deepEqual(ing.lineParts({ recipe: 'sauce', name: 'Nước Chấm', qty: 1, note: 'for dipping' }, undefined, 2), {
+      amount: '2', name: 'Nước Chấm', note: 'for dipping', prep: '', optional: false,
+    });
+  });
+});
+
+describe('suggesting recipes beside ingredients (#300)', () => {
+  it('ranks by match, an ingredient before a recipe that matches as well', () => {
+    const options = [
+      { value: 'chili oil recipe', label: 'Chili Oil', recipe: 'r1' },
+      { value: 'chili oil', label: 'chili oil' },
+      { value: 'Sichuan Chili Oil', label: 'Sichuan Chili Oil', recipe: 'r2' },
+      { value: 'red chili', label: 'red chili' },
+    ];
+    assert.deepEqual(ing.suggest(options, 'chili oil').map((o) => o.value), ['chili oil', 'chili oil recipe', 'Sichuan Chili Oil']);
+  });
+});

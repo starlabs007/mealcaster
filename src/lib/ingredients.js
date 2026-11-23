@@ -159,8 +159,9 @@ export function ingredientName(ingredient, qty, unit = '') {
 export const shoppingName = (ingredient) => (ingredient ? ingredient.plural || ingredient.name : UNKNOWN_INGREDIENT);
 
 /**
- * @typedef {{ id: string, qty?: number, unit?: string, note?: string, prep?: string, optional?: boolean }} RecipeLine
- *   A recipe's ingredient line (an item of `Ingredients_JSON`).
+ * @typedef {{ id?: string, recipe?: string, name?: string, qty?: number, unit?: string, note?: string, prep?: string, optional?: boolean }} RecipeLine
+ *   A recipe's ingredient line (an item of `Ingredients_JSON`): `id` names an ingredient, or `recipe` another recipe
+ *   (a linked line, recipeLinks.js) with `name` a copy of its title.
  */
 
 /**
@@ -174,7 +175,8 @@ export function lineParts(line, ingredient, scale = 1) {
   const amount = [qty == null ? '' : formatQty(qty), unit && unitLabel(unit, qty)].filter(Boolean).join(' ');
   return {
     amount,
-    name: ingredientName(ingredient, qty, unit),
+    // A linked line has no ingredient: its kept title copy stands in until the screens show the link (#300).
+    name: line.recipe ? line.name ?? '' : ingredientName(ingredient, qty, unit),
     note: line.note ?? '',
     prep: line.prep ?? '',
     optional: Boolean(line.optional),
@@ -202,7 +204,11 @@ export function findByName(list, name) {
 
 // ---- Suggestions (autocomplete) ----------------------------------------------
 
-/** @typedef {{ value: string, label: string, hint?: string, keys?: string[] }} Suggestion  `keys`: other words it's found by */
+/**
+ * @typedef {{ value: string, label: string, hint?: string, keys?: string[], key?: string, icon?: string, recipe?: string }} Suggestion
+ * `keys`: other words it's found by; `key`: tells it from another option with the same value; `icon`: shown before
+ * the label; `recipe`: a recipe to link (#300), listed after ingredients that match as well.
+ */
 
 /**
  * Options matching typed text, best first: the whole text, then the start, then the start of a word, then anywhere
@@ -225,7 +231,7 @@ export function suggest(options, query, limit = 8) {
     if (best < Infinity) scored.push([best, option]);
   }
   return scored
-    .sort(([a, x], [b, y]) => a - b || x.label.length - y.label.length || x.label.localeCompare(y.label))
+    .sort(([a, x], [b, y]) => a - b || Number(!!x.recipe) - Number(!!y.recipe) || x.label.length - y.label.length || x.label.localeCompare(y.label))
     .slice(0, limit)
     .map(([, option]) => option);
 }

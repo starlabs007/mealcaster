@@ -235,13 +235,15 @@ export function reconcile({ sheet, local, base, columns, strategy }) {
  * Changes `result` in place.
  * @param {{
  *   sheet: SheetTable, result: Reconciled, device: Map<string, Row>,
- *   cells: Record<string, (v: unknown) => string>, columns: string[],
- * }} input `cells`: column → how its value reads (two cells that read the same aren't rewritten)
+ *   cells: Record<string, (v: unknown) => string>, columns: string[], keys?: (key: string) => boolean,
+ * }} input `cells`: column → how its value reads (two cells that read the same aren't rewritten); `keys`: which rows
+ * to settle (all by default)
  */
-export function settleCells({ sheet, result, device, cells, columns }) {
+export function settleCells({ sheet, result, device, cells, columns, keys = () => true }) {
   const full = new Set(result.updates.filter((u) => !u.only).map((u) => u.index));
   const deleted = new Set(result.deletes);
   for (const key of result.final.keys()) {
+    if (!keys(key)) continue;
     const s = sheet.rows.get(key);
     const d = device.get(key);
     if (!s || !d || full.has(s.index) || deleted.has(s.index)) continue;

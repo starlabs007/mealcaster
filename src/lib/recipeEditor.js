@@ -15,8 +15,9 @@ import { text } from './text.js';
 /**
  * An ingredient row's `text` is the ingredient's name: saving picks the ingredient with that name (or plural), or
  * creates one in `aisle`. `id` keeps the ingredient of a line whose name wasn't touched (so an unknown id survives).
- * A group is a section of rows.
- * @typedef {{ key: number, qty: string, unit: string, text: string, id?: string, note: string, prep: string, optional: boolean, aisle: string, aisleSet: boolean }} IngredientRow
+ * A linked line (#300) opens with `recipe` and `recipeName` (its title copy) and saves as a link while `text` is still
+ * that name; changing the name makes it an ingredient row. A group is a section of rows.
+ * @typedef {{ key: number, qty: string, unit: string, text: string, id?: string, recipe?: string, recipeName?: string, note: string, prep: string, optional: boolean, aisle: string, aisleSet: boolean }} IngredientRow
  * @typedef {{ key: number, title: string, rows: IngredientRow[] }} IngredientGroup
  * @typedef {{ key: number, title: string, text: string, minutes: string }} StepRow
  * @typedef {{
@@ -79,6 +80,23 @@ export function formFromRecipe(r, ingredientOf) {
           key: nextKey(),
           title: g.title,
           rows: g.items.map((item) => {
+            if (item.recipe) {
+              // No title copy (typed into the sheet): the id stands in, like an unknown ingredient's.
+              const name = item.name || item.recipe;
+              return {
+                key: nextKey(),
+                qty: item.qty == null ? '' : formatQty(item.qty),
+                unit: item.unit ?? '',
+                text: name,
+                recipe: item.recipe,
+                recipeName: name,
+                note: item.note ?? '',
+                prep: item.prep ?? '',
+                optional: Boolean(item.optional),
+                aisle: '',
+                aisleSet: true,
+              };
+            }
             const ingredient = ingredientOf(item.id);
             return {
               key: nextKey(),
@@ -173,6 +191,34 @@ export function rowIngredientId(row, lookup) {
   return (rowIngredient(row, lookup) ?? lookup.createIngredient({ name: row.text, aisle: row.aisle })).id;
 }
 
+/** Whether a row still saves as its linked recipe: it opened as one and its name wasn't changed. @param {IngredientRow} row */
+export const isLinkRow = (row) => Boolean(row.recipe) && row.text.trim() === row.recipeName;
+
+/**
+ * The recipes the ingredient box offers to link (#300), A–Z, never the recipe being edited.
+ * @param {{ id: string, title: string }[]} recipes @param {string | undefined} editingId @param {string} hint
+ * @returns {import('./ingredients.js').Suggestion[]}
+ */
+export const recipeSuggestions = (recipes, editingId, hint) =>
+  recipes
+    .filter((r) => r.id !== editingId)
+    .map((r) => ({ value: r.title, label: r.title, hint, key: `recipe:${r.id}`, icon: 'menu_book', recipe: r.id }))
+    .sort((a, b) => a.label.localeCompare(b.label));
+
+/**
+ * Makes a row a link to `recipe`: its name becomes the title, and the unit and aisle go (a link counts batches and is
+ * never bought as such). Changes the row in place. @param {IngredientRow} row @param {{ id: string, title: string }} recipe
+ */
+export function linkRow(row, recipe) {
+  delete row.id;
+  row.recipe = recipe.id;
+  row.recipeName = recipe.title;
+  row.text = recipe.title;
+  row.unit = '';
+  row.aisle = '';
+  row.aisleSet = true;
+}
+
 // ---- Validation ---------------------------------------------------------------
 
 /** Empty, or a whole number of minutes. */
@@ -188,7 +234,7 @@ export function checkForm(form, existing) {
   const rows = form.groups.flatMap((g) => g.rows);
   const filled = rows.filter((r) => r.text.trim());
   const qty = new Set(rows.filter((r) => Number.isNaN(parseQty(r.qty))).map((r) => r.key));
-  const aisle = new Set(filled.filter((r) => !r.aisle && !existing(r) && !(r.id && r.text.trim() === r.id)).map((r) => r.key));
+  const aisle = new Set(filled.filter((r) => !r.aisle && !existing(r) && !(r.id && r.text.trim() === r.id) && !isLinkRow(r)).map((r) => r.key));
   const wrong = {
     title: !form.title.trim(),
     serves: !(Number.isInteger(form.serves) && form.serves >= 1 && form.serves <= 50),
@@ -251,7 +297,7 @@ export function formToRecipe(form, { editing, tags, ingredientId, newId, today }
       const qty = parseQty(row.qty);
       const unit = canonicalUnit(row.unit);
       return {
-        id: ingredientId(row),
+        ...(isLinkRow(row) ? { recipe: row.recipe, ...(row.recipeName && { name: row.recipeName }) } : { id: ingredientId(row) }),
         ...(qty !== undefined && { qty }),
         ...(unit && { unit }),
         ...(row.note.trim() && { note: row.note.trim() }),
