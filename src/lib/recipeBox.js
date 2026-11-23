@@ -7,6 +7,7 @@ import { normalizeTags, retag } from './tags.js';
 import { parseMeals } from './meals.js';
 import { normalizeHeadsUps } from './headsUps.js';
 import { cellText, recipeToRow, stepTitle } from './sync/codec.js';
+import { isLink } from './recipeLinks.js';
 
 /** @typedef {import('./data/recipes.js').Recipe} Recipe */
 /** @typedef {Omit<Recipe, 'minutes'> & { edited?: boolean }} SavedRecipe */
@@ -25,8 +26,8 @@ export function migrate(r) {
     ...rest,
     meals,
     tags: normalizeTags([...(r.tags ?? []), ...extra]),
-    // Groups had a `category` until #271; it's dropped.
-    ingredients: (rest.ingredients ?? []).map(({ category, ...g }) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id) })),
+    // Groups had a `category` until #271; it's dropped. Lines need an ingredient or a linked recipe (#300).
+    ingredients: (rest.ingredients ?? []).map(({ category, ...g }) => ({ ...g, items: (g.items ?? []).filter((i) => i?.id || isLink(i)) })),
     headsUps: normalizeHeadsUps(rest.headsUps),
     // Untitled steps were saved as "Step N" until #272; they're blank now.
     steps: (rest.steps ?? []).map((s) => ({ ...s, title: stepTitle(s.title) })),

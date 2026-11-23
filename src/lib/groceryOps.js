@@ -3,6 +3,11 @@
 // groceryList.js does the merging into lines.
 
 import { emptyWeek, everyWeekShows } from './groceryList.js';
+import { linkTarget } from './recipeLinks.js';
+
+/** @typedef {import('./data/recipes.js').Recipe} Recipe */
+/** @typedef {import('./ingredients.js').RecipeLine} RecipeLine */
+/** @typedef {import('./recipeLinks.js').RecipeOf} RecipeOf */
 
 /** @typedef {{ weeks: Record<string, import('./groceryList.js').WeekList>, every: import('./groceryList.js').EveryWeekItem[] }} GroceryState */
 
@@ -11,10 +16,47 @@ import { emptyWeek, everyWeekShows } from './groceryList.js';
 /** All line keys of a recipe: `recipeId:group:item`. @param {{ id: string, ingredients: { items: unknown[] }[] }} recipe */
 export const lineKeysOf = (recipe) => recipe.ingredients.flatMap((group, g) => group.items.map((_, i) => `${recipe.id}:${g}:${i}`));
 
-/** @param {string} key a recipe line key @returns {{ recipeId: string, group: number, item: number }} */
+/**
+ * Line keys of what a recipe puts on the grocery list: its lines naming an ingredient (`recipeId:group:item`), then,
+ * for each linked line whose target exists, the target's ingredient lines (`recipeId:group:item:targetGroup:targetItem`,
+ * #300). One level only, like the list itself.
+ * @param {Recipe} recipe @param {RecipeOf} [recipeOf] without it, links are left out
+ */
+export function shoppingKeysOf(recipe, recipeOf) {
+  const keys = [];
+  recipe.ingredients.forEach((group, g) =>
+    group.items.forEach((item, i) => {
+      if (item.id) return void keys.push(`${recipe.id}:${g}:${i}`);
+      const target = recipeOf && linkTarget(item, recipe.id, recipeOf);
+      target?.ingredients.forEach((tg, sg) => tg.items.forEach((t, si) => t.id && keys.push(`${recipe.id}:${g}:${i}:${sg}:${si}`)));
+    }),
+  );
+  return keys;
+}
+
+/**
+ * @param {string} key a recipe line key, or a linked recipe's line through a dish (five parts)
+ * @returns {{ recipeId: string, group: number, item: number, via?: { group: number, item: number } }}
+ *   `via`: the line in the linked recipe; `group` / `item` are then the dish's linked line
+ */
 export function parseLineKey(key) {
-  const [recipeId, g, i] = key.split(':');
-  return { recipeId, group: +g, item: +i };
+  const [recipeId, g, i, sg, si] = key.split(':');
+  return { recipeId, group: +g, item: +i, ...(sg != null && si != null ? { via: { group: +sg, item: +si } } : {}) };
+}
+
+/**
+ * The ingredient line a key points at, with the recipe whose list it goes on: for a key through a link, the dish (so
+ * it goes on the list as the dish's) and the line in the linked recipe. Undefined for a linked line itself, or a key
+ * whose line or link target is gone.
+ * @param {string} key @param {RecipeOf} recipeOf
+ * @returns {{ recipe: Recipe, item: RecipeLine } | undefined}
+ */
+export function lineAt(key, recipeOf) {
+  const { recipeId, group, item: index, via } = parseLineKey(key);
+  const recipe = recipeOf(recipeId);
+  let item = recipe?.ingredients[group]?.items[index];
+  if (item && via) item = linkTarget(item, recipeId, recipeOf)?.ingredients[via.group]?.items[via.item];
+  return recipe && item?.id ? { recipe, item } : undefined;
 }
 
 /**

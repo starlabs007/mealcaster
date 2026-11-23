@@ -4,6 +4,8 @@
   // only has to set the base size.
   import { lineParts } from '../ingredients.js';
   import { ingredientOf } from '../ingredients.svelte.js';
+  import { recipeById } from '../recipes.svelte.js';
+  import { isLink, linkAmount, linkName } from '../recipeLinks.js';
   import { renderMarkdown } from '../markdown.js';
   import { text } from '../text.js';
 
@@ -36,7 +38,12 @@
         {#if recipe.ingredients.length > 1}<h3 class="font-bold">{group.title}</h3>{/if}
         <ul class="list-disc pl-[1.3em]">
           {#each group.items as item, i (i)}
-            {@const line = lineParts(item, ingredientOf(item.id), scale)}
+            <!-- A linked recipe (#300) prints as its title with "(recipe)"; it isn't printed along. -->
+            {@const linked = isLink(item)}
+            {@const parts = lineParts(item, ingredientOf(item.id), scale)}
+            {@const line = linked
+              ? { ...parts, amount: linkAmount(item, scale, text.recipe.ingredients.link), name: `${linkName(item, (id) => recipeById.get(id))} ${text.recipe.ingredients.link.printMark}` }
+              : parts}
             <li>
               {#if line.amount}<strong>{line.amount}</strong>{/if}
               {line.name}{#if line.note}{' '}({line.note}){/if}{#if line.prep}, {line.prep}{/if}{#if line.optional}{' '}({text.recipe.print.simplePage.optional}){/if}

@@ -602,6 +602,52 @@ describe('a spreadsheet in another layout', () => {
     assert.equal((await refused(sheet)).sheetVersion, SCHEMA_VERSION + 1);
   });
 
+  it('is upgraded from version 2: read as it is, then given this version, in either direction and with or without a base', async () => {
+    assert.equal(SCHEMA_VERSION, 3);
+    const v2 = () =>
+      fakeSheet({
+        Settings: [['Section', 'Name', 'Value'], ['Schema', 'Version', 2], ['Preference', 'Week starts on', 'Monday']],
+        Recipes: [RECIPE_HEADERS, ['r1', 'Pasta', '[{"title":"Main","items":[{"id":"pasta","qty":1}]}]', '1. Cook']],
+      });
+    const version = (sheet) => sheet.column('Settings', 'Value')[sheet.column('Settings', 'Name').indexOf('Version')];
+    for (const direction of /** @type {const} */ (['bidirectional', 'pushOnly'])) {
+      const sheet = v2();
+      const device = fakeDevice({ weekStartDay: 6 });
+      const result = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs, direction, choice: direction === 'pushOnly' ? 'confirm' : undefined }));
+      assert.equal(result.status, 'done', direction);
+      assert.equal(Number(version(sheet)), 3, direction);
+      if (direction === 'bidirectional') {
+        // Read as it is: the sheet's recipe and preference came in, and only the version cell was settled.
+        assert.deepEqual(device.recipes.map((r) => r.title), ['Pasta']);
+        assert.equal(device.settings.weekStartDay, 1);
+        assert.equal(sheet.column('Settings', 'Value')[sheet.column('Settings', 'Name').indexOf('Week starts on')], 'Monday');
+        const again = await runSync(syncOptions(sheet, device, result.base, { tabs }));
+        assert.equal(again.pushed, 0, 'nothing left to write');
+      }
+    }
+
+    // A sheet a v2 build synced before: the base holds the v2 row, and the sheet still wins nothing back.
+    const sheet = v2();
+    const device = fakeDevice();
+    const first = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs }));
+    sheet.find('Settings').grid[1][2] = 2;
+    const next = await runSync(syncOptions(sheet, device, first.base, { tabs }));
+    assert.equal(next.status, 'done');
+    assert.equal(Number(version(sheet)), 3);
+  });
+
+  it('keeps linked lines through a sync both ways', async () => {
+    const linked = [{ title: 'Main', items: [{ id: 'pasta', qty: 1 }, { recipe: 'r2', name: 'Soup', qty: 2 }] }];
+    const sheet = fakeSheet();
+    const device = fakeDevice({ ingredients: [ingredient('pasta')], recipes: [recipe('r1', 'Pasta', { ingredients: linked }), recipe('r2', 'Soup')] });
+    const first = await runSync(syncOptions(sheet, device, emptyBase('S1'), { tabs }));
+    assert.match(sheet.column('Recipes', 'Ingredients_JSON')[0], /"recipe":"r2","name":"Soup","qty":2/);
+    const other = fakeDevice();
+    await runSync(syncOptions(sheet, other, emptyBase('S1'), { tabs }));
+    assert.deepEqual(other.recipes.find((r) => r.id === 'r1').ingredients, linked);
+    assert.equal((await runSync(syncOptions(sheet, device, first.base, { tabs }))).pushed, 0);
+  });
+
   it('is fine when it has no version and no old-style lines (a new, empty sheet)', async () => {
     const sheet = fakeSheet({ Recipes: [RECIPE_HEADERS] });
     const result = await runSync(syncOptions(sheet, fakeDevice(), emptyBase('S1'), { tabs }));

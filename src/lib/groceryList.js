@@ -7,6 +7,7 @@ import * as sheetText from './sheetText.js';
 import { shoppingName, unitLabel } from './ingredients.js';
 import { formatQty } from './format.js';
 import { formatWeekday, fromISO } from './dates.js';
+import { linkName, linkedTargets } from './recipeLinks.js';
 
 /**
  * @typedef {'need' | 'bought' | 'skipped'} LineStatus
@@ -113,24 +114,44 @@ export function buildWeekList({ week, thisWeek, list, dinners, recipeOf, ingredi
     return e;
   };
 
-  /** Every line of `recipe` (or only those of `onlyId`) under one source. */
-  const addRecipe = (recipe, source, onlyId) => {
+  /**
+   * Lines under one source, each ingredient once: its amounts (times `times`), whether every one is optional, and the
+   * notes of its lines. @param {import('./ingredients.js').RecipeLine[]} items @param {string} [onlyId] @param {number} [times]
+   * @param {boolean} [optional] all of them optional (a linked line marked optional)
+   */
+  const collect = (items, onlyId, times = 1, optional = false) => {
     /** @type {Map<string, string[]>} ingredient id → notes */
     const seen = new Map();
-    for (const group of recipe.ingredients) {
-      for (const item of group.items) {
-        if (onlyId && item.id !== onlyId) continue;
-        const e = entry(item.id);
-        e.amounts.push({ qty: item.qty, unit: item.unit });
-        if (!item.optional) e.optional = false;
-        const notes = seen.get(item.id);
-        if (notes) {
-          if (item.note) notes.push(item.note);
-        } else seen.set(item.id, item.note ? [item.note] : []);
-      }
+    for (const item of items) {
+      // A linked line (#300) names a recipe, not something to buy: its target's lines come in apart.
+      if (!item.id || (onlyId && item.id !== onlyId)) continue;
+      const e = entry(item.id);
+      e.amounts.push({ qty: item.qty == null ? item.qty : item.qty * times, unit: item.unit });
+      if (!item.optional && !optional) e.optional = false;
+      const notes = seen.get(item.id);
+      if (notes) {
+        if (item.note) notes.push(item.note);
+      } else seen.set(item.id, item.note ? [item.note] : []);
     }
-    for (const [id, notes] of seen) {
-      entry(id).sources.push({ ...source, recipeId: recipe.id, ...(notes.length ? { note: notes.join(', ') } : {}) });
+    return seen;
+  };
+
+  /**
+   * Every line of `recipe` (or only those of `onlyId`) under one source, then the lines of the recipes it links to
+   * (#300), times the batches asked for, under the same source with "for <recipe>" in its note. Their source keeps
+   * the dish's id: they go on the list, and come off it, as the dish's.
+   */
+  const addRecipe = (recipe, source, onlyId) => {
+    const push = (seen, lead = '') => {
+      for (const [id, notes] of seen) {
+        const note = [lead, ...notes].filter(Boolean).join(', ');
+        entry(id).sources.push({ ...source, recipeId: recipe.id, ...(note ? { note } : {}) });
+      }
+    };
+    push(collect(recipe.ingredients.flatMap((g) => g.items), onlyId));
+    for (const { line, target, batches } of linkedTargets(recipe, recipeOf)) {
+      const lead = [sheetText.sourceForLinked(linkName(line, recipeOf)), line.note].filter(Boolean).join(', ');
+      push(collect(target.ingredients.flatMap((g) => g.items), onlyId, batches, !!line.optional), lead);
     }
   };
 

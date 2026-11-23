@@ -79,6 +79,8 @@ export function searchRecipes(recipes, filters, lookup) {
         ...r.tags,
         ...r.ingredients.flatMap((g) =>
           g.items.flatMap((i) => {
+            // A linked line is found by its recipe's title (the copy it keeps).
+            if (!i.id) return i.name ? [i.name] : [];
             const ingredient = lookup.ingredientOf(i.id);
             return ingredient ? [ingredient.name, ingredient.plural] : [];
           }),

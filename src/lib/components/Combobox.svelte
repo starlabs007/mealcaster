@@ -3,6 +3,7 @@
   // <datalist>, whose matching the browser does on its own. Free text is always allowed. Keyboard: ↓/↑ move,
   // Enter picks, Esc closes. Touch: options keep the field focused, so iOS Safari's keyboard stays up.
   import { foldKey, suggest } from '../ingredients.js';
+  import Icon from './Icon.svelte';
   import { text } from '../text.js';
 
   /**
@@ -23,7 +24,9 @@
    *   oninput?: () => void,
    *   onkey?: (event: KeyboardEvent) => void,
    *   id?: string,
+   *   icon?: string,
    * }}
+   * `icon`: a Material Symbols name shown at the start of the field.
    */
   let {
     value = $bindable(''),
@@ -44,6 +47,7 @@
     // Keys the field doesn't use itself (Enter with no option picked, a comma…), for the form around it.
     onkey,
     id = undefined,
+    icon = undefined,
   } = $props();
 
   const uid = $props.id();
@@ -115,8 +119,11 @@
     }}
     onblur={() => (open = false)}
     {onkeydown}
-    class="w-full {inputClass}"
+    class="w-full {inputClass} {icon ? '!pl-8' : ''}"
   />
+  {#if icon}
+    <Icon name={icon} class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[18px] text-primary" />
+  {/if}
   {#if options.length}
     <ul
       id="{uid}-list"
@@ -124,7 +131,7 @@
       aria-label={text.editor.comboboxSuggestionsAria(label)}
       class="absolute {align === 'right' ? 'right-0' : 'left-0'} top-full z-30 mt-1 max-h-64 overflow-y-auto rounded-lg border border-outline-variant bg-surface-container-lowest py-1 shadow-lg {listClass}"
     >
-      {#each options as option, i (option.value)}
+      {#each options as option, i (option.key ?? option.value)}
         <!-- Picked by pointer here; the keyboard works from the field (aria-activedescendant). -->
         <!-- svelte-ignore a11y_click_events_have_key_events -->
         <li
@@ -136,7 +143,10 @@
           onmousedown={(e) => e.preventDefault()}
           onclick={() => pick(option)}
         >
-          <span class="truncate">{option.label}</span>
+          <span class="flex min-w-0 items-baseline gap-1.5">
+            {#if option.icon}<Icon name={option.icon} class="shrink-0 self-center text-[16px] text-primary" />{/if}
+            <span class="truncate">{option.label}</span>
+          </span>
           {#if option.hint}<span class="shrink-0 text-label-sm text-outline">{option.hint}</span>{/if}
         </li>
       {/each}

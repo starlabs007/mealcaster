@@ -25,7 +25,9 @@ Without `.env.local` the app still runs; Google sync is just unavailable.
 
 `npm run dev` generates sample data when the dev server starts: varied recipes from about 60 dish templates and ten
 cuisines (Chinese and Vietnamese included) covering every meal, sauces under Other included, the ingredients they use, four past weeks and part of this week planned,
-some favorites, and grocery extras (two every-week items, one addition this week). It comes from the seeded generator
+some favorites, and grocery extras (two every-week items, one addition this week). Some dishes link a sauce from
+the samples instead of spelling it out (Bún → Nước Chấm, tacos → pickled onions, dumplings → chili oil, when the
+samples have that sauce), and the edge cases keep a loop and a link to a recipe that's gone (#300). It comes from the seeded generator
 in `dev/samples/` (served to the app as `virtual:sample-data` by a plugin in `vite.config.js`); production builds get
 empty data from the plugin and never load the generator.
 
@@ -210,6 +212,23 @@ for every recipe and the grocery list.
   the group above). A row is qty · unit · ingredient · ⋯ (note, prep and optional; move to another group; remove);
   Enter in the ingredient field adds the next row. One group shows no heading; it saves as "Main" when untitled.
 - A recipe line whose ingredient isn't in the tab shows as "Unknown ingredient" and keeps its id; sync doesn't stop.
+- **Linked lines** (schema 3, #300, in progress): a line can point at another recipe instead of an ingredient —
+  `{ "recipe": "<Recipe_ID>", "name": "<its title>", "qty": 2, … }` in `Ingredients_JSON`, `qty` counting batches of
+  that recipe (none = 1). `name` is a copy of the title, shown when the recipe is gone. Rules in
+  `src/lib/recipeLinks.js`. Linked lines have no unit: the amount is batches ("2 batches"); a unit typed in the sheet
+  is shown as written.
+  - **Recipe page:** the line shows the recipe's photo and title and a chevron that opens it (keeping cook view); the
+    tick works as on any line; no aisle or house. A link to a recipe that's gone shows its kept title as plain text.
+    The opened recipe's breadcrumb leads back through the dish ("Recipe Catalog / Bún… / Nước Chấm"), cook view
+    shows "← Bún…" above the title. A recipe that other dishes link shows a **Used in** card (not in cook view or
+    print). Prints as "Nước Chấm (recipe)".
+  - **Editor:** the ingredient box also suggests recipes (marked Recipe); picking one makes the row a link (recipe
+    icon, "batch(es)" instead of a unit). Changing its name turns it back into an ingredient row. Saving refreshes
+    the title copies.
+  - **Grocery list:** a dish brings its linked recipes' ingredient lines (one level: their own links bring nothing),
+    times the batches asked for; a line without a qty, or with a unit typed in the sheet, is one batch. They go
+    under the dish's chip with "for Nước Chấm" in its note, and an optional link makes them optional. **Add Missing**
+    on the dish's page counts and adds them too, as the dish's.
 
 ## Grocery List (`#/grocery`)
 
@@ -253,9 +272,11 @@ for every recipe and the grocery list.
 ## Profile & Settings (`#/profile`)
 
 The `[Settings]` tab is required (it can be renamed, not switched off). Besides the preferences below it holds a
-`Schema | Version` row — the schema version the sheet was written with (currently 2, `SCHEMA_VERSION` in
+`Schema | Version` row — the schema version the sheet was written with (currently 3, `SCHEMA_VERSION` in
 `src/lib/schema.js`). Bump it when a change needs existing sheets migrated. Sync refuses a spreadsheet with another
-version (or with no version row and old-style recipe lines) and says so, without reading or writing anything.
+version (or with no version row and old-style recipe lines) and says so, without reading or writing anything —
+except versions in `UPGRADES_FROM` (2), which it reads as they are and stamps with its own version on that pass, in
+either sync direction, so older builds stop syncing with the sheet from then on.
 Version 1 sheets (ingredient text on each recipe line) are converted once outside the app.
 
 Reached from the avatar in the header (and the footer, on phones).

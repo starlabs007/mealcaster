@@ -22,7 +22,15 @@ export const SCHEMA = {
  * Version of the sheet layout and stored data, written to the [Settings] tab (`Schema | Version`).
  * Bump it when a change needs existing sheets or device data migrated.
  * 2: ingredients moved to their own tab; recipe lines point at them by id (no Have / Aisle settings).
+ * 3: a recipe line can point at another recipe instead (`{ recipe, name, … }`, recipeLinks.js, #300). Older builds
+ *    would drop those lines and write the cell back without them, so they must stop at the version check.
  */
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
+
+/**
+ * Older versions this build syncs with as they are, writing its own version to the sheet on that pass (so older builds
+ * stop syncing with it from then on). A v2 sheet reads the same in v3: it just has no linked lines yet.
+ */
+export const UPGRADES_FROM = [2];
 
 /** @typedef {keyof typeof SCHEMA} TabKey */
