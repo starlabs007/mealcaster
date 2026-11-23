@@ -30,8 +30,11 @@ export function linkTarget(line, fromId, recipeOf) {
 /** The name a linked line shows: the target's title, else the copy kept on the line. @param {RecipeLine} line @param {RecipeOf} recipeOf */
 export const linkName = (line, recipeOf) => (isLink(line) && recipeOf(/** @type {string} */ (line.recipe))?.title) || line.name || '';
 
-/** How many batches of its target a linked line asks for. @param {RecipeLine} line */
-export const batchesOf = (line) => (typeof line.qty === 'number' && line.qty > 0 ? line.qty : 1);
+/**
+ * How many batches of its target a linked line asks for: its qty, one without. A line with a unit typed into the sheet
+ * ("2 tbsp") asks for an amount we can't scale the target by, so it counts as one batch. @param {RecipeLine} line
+ */
+export const batchesOf = (line) => (!line.unit && typeof line.qty === 'number' && line.qty > 0 ? line.qty : 1);
 
 /**
  * A linked line's amount for display: batches ("2 batches", "1/2 batch") scaled with the dish's servings, nothing when

@@ -33,7 +33,8 @@ describe('a linked line', () => {
     assert.equal(linkName({ recipe: 'gone' }, recipeOf), '');
   });
 
-  it('asks for its qty in batches, one when it has none', () => {
+  it('asks for its qty in batches, one when it has none or has a unit typed in the sheet', () => {
+    assert.equal(batchesOf({ recipe: 'x', qty: 2, unit: 'tbsp' }), 1);
     assert.equal(batchesOf({ recipe: 'x', qty: 2 }), 2);
     assert.equal(batchesOf({ recipe: 'x', qty: 0.5 }), 0.5);
     assert.equal(batchesOf({ recipe: 'x' }), 1);

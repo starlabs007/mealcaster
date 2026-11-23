@@ -110,8 +110,10 @@
   // Lines of the same ingredient follow together.
   const atHome = $derived(allKeys.filter(isOnHandKey));
   const onList = $derived(groceryKeys());
-  // Only what's missing: not on the list yet and not at home. Linked recipes (#300) aren't bought.
-  const missing = $derived(missingKeys(recipe ? shoppingKeys(recipe.id) : [], onList, atHome));
+  // Only what's missing: not on the list yet and not at home. A linked recipe (#300) brings its own lines, which have
+  // no row here, so their at-home flag is read from their ingredient.
+  const shopping = $derived(recipe ? shoppingKeys(recipe.id) : []);
+  const missing = $derived(missingKeys(shopping, onList, shopping.filter(isOnHandKey)));
 
   function togglePrepped(key) {
     setPrepped(recipe.id, toggleIn(prepped, key));

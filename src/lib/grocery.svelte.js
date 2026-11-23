@@ -22,7 +22,7 @@ import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { rekeyGroceryWeeks } from './sync/codec.js';
 import { buildWeekList, emptyWeek } from './groceryList.js';
-import { addByHand, freezePast, lineKeysOf, listedLineKeys, shoppingKeysOf, parseLineKey, pushLines, relink, removeAdded as removeAddedFrom, setStatus } from './groceryOps.js';
+import { addByHand, freezePast, lineAt, lineKeysOf, listedLineKeys, shoppingKeysOf, pushLines, relink, removeAdded as removeAddedFrom, setStatus } from './groceryOps.js';
 
 export { deptOfTag } from './groceryList.js';
 
@@ -77,14 +77,15 @@ $effect.root(() => {
 /** Start of the week today is in. */
 export const thisWeekStart = () => weekStartOf(fromISO(planner.today));
 
-/** @param {string} key a recipe line key, `${recipeId}:${groupIndex}:${itemIndex}` */
-function lookup(key) {
-  const { recipeId, group, item: index } = parseLineKey(key);
-  const recipe = recipeById.get(recipeId);
-  const item = recipe?.ingredients[group]?.items[index];
-  // A linked line (#300) has no ingredient to stock or buy.
-  return item?.id ? { recipe, item } : undefined;
-}
+/** @param {string} rid */
+const recipeOf = (rid) => recipeById.get(rid);
+
+/**
+ * The ingredient line a recipe line key points at (`recipeId:group:item`, or a linked recipe's line through the dish),
+ * with the recipe whose list it goes on. Undefined for a linked line itself (#300): it has nothing to stock or buy.
+ * @param {string} key
+ */
+const lookup = (key) => lineAt(key, recipeOf);
 
 /** All ingredient line keys of a recipe (`recipeId:group:item`). */
 export function ingredientKeys(recipeId) {
@@ -92,10 +93,10 @@ export function ingredientKeys(recipeId) {
   return recipe ? lineKeysOf(recipe) : [];
 }
 
-/** Line keys of a recipe's lines that can go on the grocery list (not its linked recipes). */
+/** Line keys of what a recipe puts on the grocery list: its ingredient lines and its linked recipes' (#300). */
 export function shoppingKeys(recipeId) {
   const recipe = recipeById.get(recipeId);
-  return recipe ? shoppingKeysOf(recipe) : [];
+  return recipe ? shoppingKeysOf(recipe, recipeOf) : [];
 }
 
 /**
@@ -113,7 +114,7 @@ const buildWeek = (weekStart) =>
     thisWeek: thisWeekStart(),
     list: grocery.weeks[weekStart] ?? emptyWeek(),
     dinners: weekDinners(weekStart),
-    recipeOf: (id) => recipeById.get(id),
+    recipeOf,
     ingredientOf,
     every: grocery.every,
   });
@@ -131,7 +132,7 @@ export function isOnHandKey(key) {
 }
 
 /** Recipe line keys already on the viewed week's list (to buy or bought), through their recipe and ingredient. */
-export const groceryKeys = () => listedLineKeys(groceryLines(), ingredientKeys, (key) => lookup(key)?.item.id);
+export const groceryKeys = () => listedLineKeys(groceryLines(), shoppingKeys, (key) => lookup(key)?.item.id);
 
 /** Items still to buy — drives the header badge. */
 export const groceryCount = () => groceryLines().filter((l) => l.status === 'need').length;

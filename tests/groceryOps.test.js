@@ -2,7 +2,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { addByHand, freezePast, lineKeysOf, shoppingKeysOf, listedLineKeys, parseLineKey, pushLines, relink, removeAdded, setStatus } from '../src/lib/groceryOps.js';
+import { addByHand, freezePast, lineAt, lineKeysOf, shoppingKeysOf, listedLineKeys, parseLineKey, pushLines, relink, removeAdded, setStatus } from '../src/lib/groceryOps.js';
 
 const THIS = '2026-10-17';
 const NEXT = '2026-10-24';
@@ -198,9 +198,20 @@ describe('merging and deleting ingredients', () => {
 });
 
 describe('shopping keys (#300)', () => {
-  it('are the keys of lines naming an ingredient, not of linked recipes', () => {
-    const r = { id: 'dish', ingredients: [{ items: [{ id: 'onion' }, { recipe: 'sauce' }] }, { items: [{ id: 'lime' }] }] };
+  const sauce = { id: 'sauce', ingredients: [{ items: [{ id: 'chili' }, { recipe: 'other' }] }, { items: [{ id: 'lime' }] }] };
+  const r = { id: 'dish', ingredients: [{ items: [{ id: 'onion' }, { recipe: 'sauce' }, { recipe: 'gone' }] }, { items: [{ id: 'lime' }, { recipe: 'dish' }] }] };
+  const recipeOf = (id) => ({ sauce, dish: r })[id];
+
+  it('are the keys of lines naming an ingredient, then of the linked recipes\' ingredient lines, through the dish', () => {
     assert.deepEqual(shoppingKeysOf(r), ['dish:0:0', 'dish:1:0']);
-    assert.deepEqual(lineKeysOf(r), ['dish:0:0', 'dish:0:1', 'dish:1:0']);
+    assert.deepEqual(shoppingKeysOf(r, recipeOf), ['dish:0:0', 'dish:0:1:0:0', 'dish:0:1:1:0', 'dish:1:0']);
+    assert.deepEqual(lineKeysOf(r), ['dish:0:0', 'dish:0:1', 'dish:0:2', 'dish:1:0', 'dish:1:1']);
+  });
+
+  it("point at their line, a linked recipe's going on the list as the dish's", () => {
+    assert.deepEqual(parseLineKey('dish:0:1:1:0'), { recipeId: 'dish', group: 0, item: 1, via: { group: 1, item: 0 } });
+    assert.deepEqual(lineAt('dish:0:1:1:0', recipeOf), { recipe: r, item: { id: 'lime' } });
+    assert.deepEqual(lineAt('dish:0:0', recipeOf), { recipe: r, item: { id: 'onion' } });
+    for (const key of ['dish:0:1', 'dish:0:2:0:0', 'dish:0:1:0:1', 'dish:1:1:0:0', 'dish:5:0', 'gone:0:0']) assert.equal(lineAt(key, recipeOf), undefined, key);
   });
 });

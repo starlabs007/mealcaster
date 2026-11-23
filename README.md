@@ -223,7 +223,10 @@ for every recipe and the grocery list.
   - **Editor:** the ingredient box also suggests recipes (marked Recipe); picking one makes the row a link (recipe
     icon, "batch(es)" instead of a unit). Changing its name turns it back into an ingredient row. Saving refreshes
     the title copies.
-  - Not yet: the grocery list doesn't add the linked recipe's ingredients (#300 step 4).
+  - **Grocery list:** a dish brings its linked recipes' ingredient lines (one level: their own links bring nothing),
+    times the batches asked for; a line without a qty, or with a unit typed in the sheet, is one batch. They go
+    under the dish's chip with "for Nước Chấm" in its note, and an optional link makes them optional. **Add Missing**
+    on the dish's page counts and adds them too, as the dish's.
 
 ## Grocery List (`#/grocery`)
 
