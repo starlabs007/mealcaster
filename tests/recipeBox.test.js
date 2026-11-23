@@ -159,3 +159,10 @@ describe('classifying a synced list against the samples', () => {
     assert.equal(recipes[0], samples[0]);
   });
 });
+
+describe('reading a saved linked line (#300)', () => {
+  it('keeps lines that link a recipe', () => {
+    const r = migrate({ ...recipe('dish', 'Dish'), ingredients: [{ title: 'Main', items: [{ recipe: 'sauce', name: 'Sauce', qty: 2 }, { recipe: '' }] }] });
+    assert.deepEqual(r.ingredients, [{ title: 'Main', items: [{ recipe: 'sauce', name: 'Sauce', qty: 2 }] }]);
+  });
+});

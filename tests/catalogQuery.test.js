@@ -261,3 +261,10 @@ describe('saved catalog filters (#286)', () => {
     assert.deepEqual(openingFilters({ category: 'Dessert' }, kept), { ...kept, tags: [], meals: ['Dessert'] }, 'an older link');
   });
 });
+
+describe('searching linked lines (#300)', () => {
+  it("finds a dish by the title its linked line keeps", () => {
+    const dish = r('dish', 'Bánh Xèo', { ingredients: [{ title: 'Main', items: [{ id: 'rice' }, { recipe: 'sauce', name: 'Nước Chấm' }, { recipe: 'x' }] }] });
+    assert.deepEqual(ids(searchRecipes([dish], { ...base, query: 'nuoc cham' }, lookup())), ['dish']);
+  });
+});

@@ -84,6 +84,21 @@ describe('codec', () => {
     ]);
   });
 
+  it('reads and writes linked lines: a recipe id, its title copy and the usual fields, never an ingredient id', () => {
+    const cell = JSON.stringify([
+      { title: 'Main', items: [{ id: 'rice-flour', qty: 1, unit: 'cup' }, { recipe: 'nuoc-cham', name: 'Nước Chấm', qty: '2', note: 'for dipping', optional: true }] },
+      { title: 'Extra', items: [{ recipe: 'pickles', id: 'stray', name: ' ' }, { recipe: '', name: 'No target' }] },
+    ]);
+    const ingredients = codec.parseIngredients(cell);
+    assert.deepEqual(ingredients, [
+      { title: 'Main', items: [{ id: 'rice-flour', qty: 1, unit: 'cup' }, { recipe: 'nuoc-cham', name: 'Nước Chấm', qty: 2, note: 'for dipping', optional: true }] },
+      { title: 'Extra', items: [{ recipe: 'pickles' }] },
+    ]);
+    const row = codec.recipeToRow({ ...recipe('r1', 'Bánh Xèo'), ingredients }, new Set());
+    assert.deepEqual(codec.parseIngredients(row.Ingredients_JSON), ingredients);
+    assert.match(row.Ingredients_JSON, /\{"recipe":"nuoc-cham","name":"Nước Chấm","qty":2,/);
+  });
+
   it('reads a group category that older builds wrote, and writes the group back without it', () => {
     const cell = '[{"title":"Broth","category":"Protein","items":[{"id":"beef","qty":1}]}]';
     const ingredients = codec.parseIngredients(cell);
@@ -96,6 +111,7 @@ describe('codec', () => {
     assert.equal(codec.isOldIngredientsJSON('[{"title":"Main","items":[{"qty":1,"text":"onion","tag":"Produce"}]}]'), true);
     assert.equal(codec.isOldIngredientsJSON('[{"name":"Wild Trout"}]'), true);
     assert.equal(codec.isOldIngredientsJSON('[{"title":"Main","items":[{"id":"onion","qty":1}]}]'), false);
+    assert.equal(codec.isOldIngredientsJSON('[{"title":"Main","items":[{"recipe":"nuoc-cham","name":"Nước Chấm"}]}]'), false);
     assert.equal(codec.isOldIngredientsJSON(''), false);
     assert.equal(codec.isOldIngredientsJSON('not json'), false);
   });

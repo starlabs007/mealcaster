@@ -78,7 +78,7 @@ export function revertSample(id) {
   if (index < 0 || !isSample(id)) return;
   recipes[index] = sampleById.get(id);
   // Its lines must resolve, even if one of its ingredients was deleted meanwhile.
-  restoreSampleIngredients(recipes[index].ingredients.flatMap((g) => g.items.map((i) => i.id)));
+  restoreSampleIngredients(recipes[index].ingredients.flatMap((g) => g.items.flatMap((i) => (i.id ? [i.id] : []))));
   recipeById.set(id, recipes[index]);
   persist();
 }

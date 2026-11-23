@@ -210,6 +210,11 @@ for every recipe and the grocery list.
   the group above). A row is qty · unit · ingredient · ⋯ (note, prep and optional; move to another group; remove);
   Enter in the ingredient field adds the next row. One group shows no heading; it saves as "Main" when untitled.
 - A recipe line whose ingredient isn't in the tab shows as "Unknown ingredient" and keeps its id; sync doesn't stop.
+- **Linked lines** (schema 3, #300, in progress): a line can point at another recipe instead of an ingredient —
+  `{ "recipe": "<Recipe_ID>", "name": "<its title>", "qty": 2, … }` in `Ingredients_JSON`, `qty` counting batches of
+  that recipe (none = 1). `name` is a copy of the title, shown when the recipe is gone. Rules in
+  `src/lib/recipeLinks.js`. For now a linked line shows as plain text and adds nothing to the grocery list; the
+  editor keeps it while its name is unchanged.
 
 ## Grocery List (`#/grocery`)
 
@@ -253,9 +258,11 @@ for every recipe and the grocery list.
 ## Profile & Settings (`#/profile`)
 
 The `[Settings]` tab is required (it can be renamed, not switched off). Besides the preferences below it holds a
-`Schema | Version` row — the schema version the sheet was written with (currently 2, `SCHEMA_VERSION` in
+`Schema | Version` row — the schema version the sheet was written with (currently 3, `SCHEMA_VERSION` in
 `src/lib/schema.js`). Bump it when a change needs existing sheets migrated. Sync refuses a spreadsheet with another
-version (or with no version row and old-style recipe lines) and says so, without reading or writing anything.
+version (or with no version row and old-style recipe lines) and says so, without reading or writing anything —
+except versions in `UPGRADES_FROM` (2), which it reads as they are and stamps with its own version on that pass, in
+either sync direction, so older builds stop syncing with the sheet from then on.
 Version 1 sheets (ingredient text on each recipe line) are converted once outside the app.
 
 Reached from the avatar in the header (and the footer, on phones).

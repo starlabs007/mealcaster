@@ -9,7 +9,7 @@ import { freezePastWeeks, grocery, relinkGrocery, replaceGrocery } from './groce
 export function ingredientUses() {
   const uses = new Map();
   for (const r of recipes) {
-    const ids = new Set(r.ingredients.flatMap((g) => g.items.map((item) => item.id)));
+    const ids = new Set(r.ingredients.flatMap((g) => g.items.flatMap((item) => (item.id ? [item.id] : []))));
     for (const id of ids) uses.set(id, (uses.get(id) ?? 0) + 1);
   }
   return uses;

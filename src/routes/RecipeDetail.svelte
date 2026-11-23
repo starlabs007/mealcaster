@@ -11,7 +11,7 @@
   import { tagClass } from '../lib/tagColors.svelte.js';
   import LastMade from '../lib/components/LastMade.svelte';
   import { isFavorite, toggleFavorite } from '../lib/favorites.svelte.js';
-  import { groceryKeys, isOnHandKey, ingredientKeys, addToGrocery } from '../lib/grocery.svelte.js';
+  import { groceryKeys, isOnHandKey, ingredientKeys, shoppingKeys, addToGrocery } from '../lib/grocery.svelte.js';
   import { ingredientOf, setOnHand } from '../lib/ingredients.svelte.js';
   import { preppedKeys, setPrepped, doneSteps, setDoneSteps } from '../lib/recipePrep.svelte.js';
   import { lineParts } from '../lib/ingredients.js';
@@ -98,8 +98,8 @@
   // Lines of the same ingredient follow together.
   const atHome = $derived(allKeys.filter(isOnHandKey));
   const onList = $derived(groceryKeys());
-  // Only what's missing: not on the list yet and not at home.
-  const missing = $derived(missingKeys(allKeys, onList, atHome));
+  // Only what's missing: not on the list yet and not at home. Linked recipes (#300) aren't bought.
+  const missing = $derived(missingKeys(recipe ? shoppingKeys(recipe.id) : [], onList, atHome));
 
   function togglePrepped(key) {
     setPrepped(recipe.id, toggleIn(prepped, key));

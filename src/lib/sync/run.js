@@ -2,8 +2,8 @@
 // on-device stores are passed in, so this runs (and is tested) without either.
 
 import { a1, fingerprint, readTable, reconcile, resolveColumns, rowCells, settleCells } from './engine.js';
-import { addedDate, isOldIngredientsJSON, isoDate, settingsFromRows } from './codec.js';
-import { SCHEMA_VERSION } from '../schema.js';
+import { SCHEMA_VERSION_ROW, addedDate, cellText, isOldIngredientsJSON, isoDate, settingKey, settingsFromRows } from './codec.js';
+import { SCHEMA_VERSION, UPGRADES_FROM } from '../schema.js';
 
 /** @typedef {import('../schema.js').TabKey} TabKey */
 /** @typedef {import('./codec.js').Row} Row */
@@ -33,11 +33,21 @@ import { SCHEMA_VERSION } from '../schema.js';
  *   | { status: 'version', sheetVersion: number, title: string }
  * } SyncResult
  * `version`: the spreadsheet is in another layout (`Schema | Version`, or old-style recipe lines when
- * it has no version row); nothing was read into the device or written.
+ * it has no version row) that this build neither reads nor upgrades; nothing was read into the device or written.
  */
 
-/** Per tab, cells the device settles after reading the sheet and writes back (see `settleCells`). */
-const SETTLED = { recipes: { Date_Added: addedDate } };
+/**
+ * Per tab, cells the device settles after reading the sheet and writes back (see `settleCells`), on the rows `keys`
+ * allows (all when absent). The schema version is always the device's: the check below has stopped any sheet this
+ * build can't read, so a different number is one it upgrades (`UPGRADES_FROM`).
+ */
+const SETTLED = {
+  recipes: { cells: { Date_Added: addedDate } },
+  settings: {
+    cells: { Value: (v) => cellText(v).trim() },
+    keys: (key) => key === settingKey(SCHEMA_VERSION_ROW.Section, SCHEMA_VERSION_ROW.Name),
+  },
+};
 
 export const emptyBase = (spreadsheetId) => ({ spreadsheetId, initialized: false, tabs: {} });
 
@@ -85,7 +95,8 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
   if (tables.settings) {
     const sheetVersion = settingsFromRows([...tables.settings.rows.values()].map((r) => r.row)).schemaVersion;
     const oldLines = () => [...(tables.recipes?.rows.values() ?? [])].some(({ row }) => isOldIngredientsJSON(row.Ingredients_JSON));
-    if (sheetVersion ? sheetVersion !== SCHEMA_VERSION : oldLines()) return { status: 'version', sheetVersion, title: meta.title };
+    const readable = sheetVersion === SCHEMA_VERSION || UPGRADES_FROM.includes(sheetVersion);
+    if (sheetVersion ? !readable : oldLines()) return { status: 'version', sheetVersion, title: meta.title };
   }
 
   // First sync of this spreadsheet: ask before anything is lost. Only ingredients, recipes, plan and
@@ -123,7 +134,7 @@ export async function runSync({ api, spreadsheetId, tabs, schemaCheck, autoAppen
       strategy,
     });
     local.apply(key, result.final, result.fromSheet, plan.columns);
-    if (SETTLED[key]) settleCells({ sheet: tables[key], result, device: local.localRows(key), cells: SETTLED[key], columns: plan.columns });
+    if (SETTLED[key]) settleCells({ sheet: tables[key], result, device: local.localRows(key), ...SETTLED[key], columns: plan.columns });
     results[key] = result;
     pulled += result.fromSheet.size;
   }

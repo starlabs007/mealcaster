@@ -159,8 +159,9 @@ export function ingredientName(ingredient, qty, unit = '') {
 export const shoppingName = (ingredient) => (ingredient ? ingredient.plural || ingredient.name : UNKNOWN_INGREDIENT);
 
 /**
- * @typedef {{ id: string, qty?: number, unit?: string, note?: string, prep?: string, optional?: boolean }} RecipeLine
- *   A recipe's ingredient line (an item of `Ingredients_JSON`).
+ * @typedef {{ id?: string, recipe?: string, name?: string, qty?: number, unit?: string, note?: string, prep?: string, optional?: boolean }} RecipeLine
+ *   A recipe's ingredient line (an item of `Ingredients_JSON`): `id` names an ingredient, or `recipe` another recipe
+ *   (a linked line, recipeLinks.js) with `name` a copy of its title.
  */
 
 /**
@@ -174,7 +175,8 @@ export function lineParts(line, ingredient, scale = 1) {
   const amount = [qty == null ? '' : formatQty(qty), unit && unitLabel(unit, qty)].filter(Boolean).join(' ');
   return {
     amount,
-    name: ingredientName(ingredient, qty, unit),
+    // A linked line has no ingredient: its kept title copy stands in until the screens show the link (#300).
+    name: line.recipe ? line.name ?? '' : ingredientName(ingredient, qty, unit),
     note: line.note ?? '',
     prep: line.prep ?? '',
     optional: Boolean(line.optional),

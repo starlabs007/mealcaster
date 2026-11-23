@@ -129,3 +129,11 @@ describe('buildWeekList', () => {
     assert.deepEqual(build({ list, ingredientOf }).hidden.map((l) => l.ingredientId), ['beef']);
   });
 });
+
+describe('linked lines (#300)', () => {
+  it('put nothing on the list themselves', () => {
+    const dish = recipe('dish', 'Dish', [{ id: 'onion', qty: 1 }, { recipe: 'pho', name: 'Phở', qty: 2 }]);
+    const { lines } = build({ dinners: [{ iso: '2026-10-12', recipe: dish }] });
+    assert.deepEqual(lines.map((l) => l.ingredientId), ['onion']);
+  });
+});

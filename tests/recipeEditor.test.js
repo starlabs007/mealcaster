@@ -456,3 +456,28 @@ describe('photos', () => {
     assert.deepEqual(photoSize(400, 300), { width: 400, height: 300 });
   });
 });
+
+describe('linked lines in the editor (#300)', () => {
+  const how = (extra = {}) => ({ tags: [], ingredientId: (r) => `id-${r.text}`, newId: (t) => `custom-${t}`, today: '2026-11-22', ...extra });
+  const editing = recipe('dish', 'Dish', {
+    ingredients: [{ title: 'Main', items: [{ id: 'rice', qty: 1 }, { recipe: 'sauce', name: 'Nước Chấm', qty: 2, optional: true }, { recipe: 'bare' }] }],
+  });
+
+  it('open as rows that save back as the same links and need no aisle', () => {
+    const form = formFromRecipe(editing, lookup.ingredientOf);
+    const [, linked, bare] = form.groups[0].rows;
+    assert.equal(linked.text, 'Nước Chấm');
+    assert.equal(bare.text, 'bare', 'no title copy: the id stands in');
+    assert.equal(check(form).valid, true);
+    assert.deepEqual(formToRecipe(form, how({ editing })).ingredients, [
+      { title: 'Main', items: [{ id: 'id-Rice', qty: 1 }, { recipe: 'sauce', name: 'Nước Chấm', qty: 2, optional: true }, { recipe: 'bare', name: 'bare' }] },
+    ]);
+  });
+
+  it('become ingredient rows once their name is changed', () => {
+    const form = formFromRecipe(editing, lookup.ingredientOf);
+    form.groups[0].rows[1].text = 'Chili Sauce';
+    form.groups[0].rows[1].aisle = 'Sauces';
+    assert.deepEqual(formToRecipe(form, how({ editing })).ingredients[0].items[1], { id: 'id-Chili Sauce', qty: 2, optional: true });
+  });
+});

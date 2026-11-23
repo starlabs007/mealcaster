@@ -11,6 +11,13 @@ import { emptyWeek, everyWeekShows } from './groceryList.js';
 /** All line keys of a recipe: `recipeId:group:item`. @param {{ id: string, ingredients: { items: unknown[] }[] }} recipe */
 export const lineKeysOf = (recipe) => recipe.ingredients.flatMap((group, g) => group.items.map((_, i) => `${recipe.id}:${g}:${i}`));
 
+/**
+ * Line keys of a recipe's lines that can go on the grocery list: those naming an ingredient, not linked recipes.
+ * @param {{ id: string, ingredients: { items: { id?: string }[] }[] }} recipe
+ */
+export const shoppingKeysOf = (recipe) =>
+  recipe.ingredients.flatMap((group, g) => group.items.flatMap((item, i) => (item.id ? [`${recipe.id}:${g}:${i}`] : [])));
+
 /** @param {string} key a recipe line key @returns {{ recipeId: string, group: number, item: number }} */
 export function parseLineKey(key) {
   const [recipeId, g, i] = key.split(':');

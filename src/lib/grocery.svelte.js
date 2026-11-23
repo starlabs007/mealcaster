@@ -22,7 +22,7 @@ import { storageKey } from './env.js';
 import { saveItem } from './storage.svelte.js';
 import { rekeyGroceryWeeks } from './sync/codec.js';
 import { buildWeekList, emptyWeek } from './groceryList.js';
-import { addByHand, freezePast, lineKeysOf, listedLineKeys, parseLineKey, pushLines, relink, removeAdded as removeAddedFrom, setStatus } from './groceryOps.js';
+import { addByHand, freezePast, lineKeysOf, listedLineKeys, shoppingKeysOf, parseLineKey, pushLines, relink, removeAdded as removeAddedFrom, setStatus } from './groceryOps.js';
 
 export { deptOfTag } from './groceryList.js';
 
@@ -82,13 +82,20 @@ function lookup(key) {
   const { recipeId, group, item: index } = parseLineKey(key);
   const recipe = recipeById.get(recipeId);
   const item = recipe?.ingredients[group]?.items[index];
-  return item ? { recipe, item } : undefined;
+  // A linked line (#300) has no ingredient to stock or buy.
+  return item?.id ? { recipe, item } : undefined;
 }
 
 /** All ingredient line keys of a recipe (`recipeId:group:item`). */
 export function ingredientKeys(recipeId) {
   const recipe = recipeById.get(recipeId);
   return recipe ? lineKeysOf(recipe) : [];
+}
+
+/** Line keys of a recipe's lines that can go on the grocery list (not its linked recipes). */
+export function shoppingKeys(recipeId) {
+  const recipe = recipeById.get(recipeId);
+  return recipe ? shoppingKeysOf(recipe) : [];
 }
 
 /**

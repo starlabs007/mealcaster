@@ -119,7 +119,8 @@ export function buildWeekList({ week, thisWeek, list, dinners, recipeOf, ingredi
     const seen = new Map();
     for (const group of recipe.ingredients) {
       for (const item of group.items) {
-        if (onlyId && item.id !== onlyId) continue;
+        // A linked line (#300) names a recipe, not something to buy.
+        if (!item.id || (onlyId && item.id !== onlyId)) continue;
         const e = entry(item.id);
         e.amounts.push({ qty: item.qty, unit: item.unit });
         if (!item.optional) e.optional = false;

@@ -2,7 +2,7 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { addByHand, freezePast, lineKeysOf, listedLineKeys, parseLineKey, pushLines, relink, removeAdded, setStatus } from '../src/lib/groceryOps.js';
+import { addByHand, freezePast, lineKeysOf, shoppingKeysOf, listedLineKeys, parseLineKey, pushLines, relink, removeAdded, setStatus } from '../src/lib/groceryOps.js';
 
 const THIS = '2026-10-17';
 const NEXT = '2026-10-24';
@@ -194,5 +194,13 @@ describe('merging and deleting ingredients', () => {
     const only = state({}, [item('a', 'bought', THIS, 'x')]);
     relink(only, 'a', 'b');
     assert.deepEqual(only.every, [item('b', 'bought', THIS, 'x')]);
+  });
+});
+
+describe('shopping keys (#300)', () => {
+  it('are the keys of lines naming an ingredient, not of linked recipes', () => {
+    const r = { id: 'dish', ingredients: [{ items: [{ id: 'onion' }, { recipe: 'sauce' }] }, { items: [{ id: 'lime' }] }] };
+    assert.deepEqual(shoppingKeysOf(r), ['dish:0:0', 'dish:1:0']);
+    assert.deepEqual(lineKeysOf(r), ['dish:0:0', 'dish:0:1', 'dish:1:0']);
   });
 });

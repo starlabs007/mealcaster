@@ -185,3 +185,11 @@ describe('stored ingredients', () => {
     assert.equal(ing.stockChanges(list, [sugar]), false); // one not in stock goes
   });
 });
+
+describe('a linked line in parts (#300)', () => {
+  it('shows its title copy as the name, scaled like any line', () => {
+    assert.deepEqual(ing.lineParts({ recipe: 'sauce', name: 'Nước Chấm', qty: 1, note: 'for dipping' }, undefined, 2), {
+      amount: '2', name: 'Nước Chấm', note: 'for dipping', prep: '', optional: false,
+    });
+  });
+});

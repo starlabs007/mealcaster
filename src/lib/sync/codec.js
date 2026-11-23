@@ -137,8 +137,9 @@ export function parseSteps(text) {
 
 /**
  * Ingredients_JSON → ingredient groups. Accepts MealCaster's own groups, or a flat list of lines.
- * A line is `{ id, qty, unit, note, prep, optional }`; `id` is an Ingredient_ID, and lines without
- * one are skipped. Units are stored in their canonical form ("cups" → "cup").
+ * A line is `{ id, qty, unit, note, prep, optional }`, `id` being an Ingredient_ID, or a linked line
+ * `{ recipe, name, qty, … }` pointing at another Recipe_ID (schema 3, recipeLinks.js); lines with neither
+ * are skipped. Units are stored in their canonical form ("cups" → "cup").
  * @returns {import('../data/recipes.js').IngredientGroup[] | null} null when it can't be read
  */
 export function parseIngredients(value) {
@@ -156,8 +157,10 @@ export function parseIngredients(value) {
     const unit = canonicalUnit(i.unit ?? (typeof i.qty === 'string' ? i.qty.replace(/^[\d.,/\s]+/, '') : ''));
     const note = str(i.note);
     const prep = str(i.prep);
+    const recipe = str(i.recipe);
+    const name = str(i.name);
     return {
-      id: str(i.id),
+      ...(recipe ? { recipe, ...(name && { name }) } : { id: str(i.id) }),
       ...(Number.isFinite(qty) && qty > 0 && { qty }),
       ...(unit && { unit }),
       ...(note && { note }),
@@ -166,7 +169,7 @@ export function parseIngredients(value) {
     };
   };
   // Hand-edited cells can hold nulls or bare values; skip them rather than fail the sync.
-  const items = (list) => list.filter((i) => i && typeof i === 'object').map(item).filter((i) => i.id);
+  const items = (list) => list.filter((i) => i && typeof i === 'object').map(item).filter((i) => i.id || i.recipe);
   const isGroup = (g) => g && Array.isArray(g.items);
   if (data.every(isGroup)) {
     return data.map((g) => {
@@ -306,7 +309,7 @@ export function recipeFromRow(row, existing, { columns, favorites, today }) {
 
 /**
  * Whether an Ingredients_JSON cell is in the layout before schema version 2 (lines with their own
- * `text` instead of an ingredient `id`).
+ * `text` instead of an ingredient `id`; a linked line's `name` doesn't count).
  */
 export function isOldIngredientsJSON(value) {
   let data;
@@ -317,7 +320,7 @@ export function isOldIngredientsJSON(value) {
   }
   if (!Array.isArray(data)) return false;
   const lines = data.flatMap((g) => (g && Array.isArray(g.items) ? g.items : [g]));
-  return lines.some((i) => i && typeof i === 'object' && !i.id && (i.text || i.name || i.item));
+  return lines.some((i) => i && typeof i === 'object' && !i.id && !i.recipe && (i.text || i.name || i.item));
 }
 
 /** Recipe_ID for a sheet row that has none. @param {unknown} title @param {Set<string>} taken */

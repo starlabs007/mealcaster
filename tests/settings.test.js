@@ -4,6 +4,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import * as codec from '../src/lib/sync/codec.js';
 import { emptyBase, runSync } from '../src/lib/sync/run.js';
+import { SCHEMA_VERSION } from '../src/lib/schema.js';
 import { SETTINGS_TAB, fakeDevice, fakeSheet, syncOptions, TABS } from './fakes.js';
 
 describe('settings rows', () => {
@@ -70,7 +71,7 @@ describe('syncing the Settings tab', () => {
     const result = await runSync(options(sheet, device, emptyBase('S1')));
     assert.equal(result.status, 'done');
     assert.deepEqual(sheet.find('Settings').grid[0], ['Section', 'Name', 'Value']);
-    assert.deepEqual(sheet.column('Settings', 'Value'), [2, true, 'Saturday', 'Sage']);
+    assert.deepEqual(sheet.column('Settings', 'Value'), [SCHEMA_VERSION, true, 'Saturday', 'Sage']);
   });
 
   it('brings tag colours added in the sheet to the device, and leaves rows it does not know alone', async () => {
@@ -97,13 +98,13 @@ describe('syncing the Settings tab', () => {
     const device = fakeDevice({});
     const base = (await runSync(options(sheet, device, emptyBase('S1')))).base;
     const row = sheet.find('Settings').grid.find((r) => r[0] === 'Schema');
-    assert.deepEqual(row, ['Schema', 'Version', 2]);
+    assert.deepEqual(row, ['Schema', 'Version', SCHEMA_VERSION]);
     assert.equal(codec.settingsFromRows([{ Section: 'Schema', Name: 'Version', Value: '2' }]).schemaVersion, 2);
     assert.equal(codec.settingsFromRows([]).schemaVersion, 0);
     assert.equal(codec.settingsFromRows([{ Section: 'Schema', Name: 'Version', Value: 'x' }]).schemaVersion, 0);
-    row[2] = '2'; // typed as text: same version, kept as typed
+    row[2] = String(SCHEMA_VERSION); // typed as text: same version, kept as typed
     await runSync(options(sheet, device, base));
-    assert.equal(sheet.find('Settings').grid.find((r) => r[0] === 'Schema')[2], '2');
+    assert.equal(sheet.find('Settings').grid.find((r) => r[0] === 'Schema')[2], String(SCHEMA_VERSION));
   });
 
   it('carries the week start day as a weekday name, Saturday by default', () => {
